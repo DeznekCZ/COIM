@@ -5,6 +5,8 @@
     <Configurations>Debug;Release</Configurations>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
+    <Version>0.0.1</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -88,4 +90,8 @@
       <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Unity.VectorGraphics.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net471\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net471\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" />
+  </Target>
 </Project>
