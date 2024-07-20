@@ -14,7 +14,7 @@ namespace ControlledTransport
 		public override string Name => ModName;
 
 		// Version, currently unused.
-		public override int Version => 1;
+		public override int Version => 2;
 
         public bool IsBeingLoaded => throw new NotImplementedException();
 

@@ -19,6 +19,7 @@ using Mafi.Unity.UiFramework;
 using Mafi.Serialization;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Factory.Transports;
+using Mafi.Core.Products;
 
 namespace ControlledTransport
 {
@@ -46,10 +47,11 @@ namespace ControlledTransport
 
         public int MinimumTroughput { get; set; } = 0;
         public int MaximumTroughput { get; set; } = 20;
-
+        public int InputCapacity { get; private set; }
         public IEntityWithPorts InputStorage { get; set; }
         public bool TransportActive { get; private set; }
         public string Error { get; private set; }
+        public ProductProto NextProduct { get; internal set; }
 
         public void AddToConfig(EntityConfigData data)
         {
@@ -61,10 +63,13 @@ namespace ControlledTransport
         {
             MinimumTroughput = data.GetInt("minimum") ?? 0;
             MaximumTroughput = data.GetInt("maximum") ?? 20;
+            InputCapacity = 20;
         }
 
         public Quantity ReceiveAsMuchAsFromPort(ProductQuantity pq, IoPortToken sourcePort)
         {
+            InputCapacity = GetCapacity(sourcePort);
+
             if (IsPaused || !CanSend(sourcePort))
             {
                 return pq.Quantity;
@@ -80,6 +85,26 @@ namespace ControlledTransport
             return partialQuantity.Quantity;
         }
 
+        private int GetCapacity(IoPortToken sourcePort)
+        {
+            IoPort port = Ports.Where(p => p.Name == sourcePort.Name)
+                .ToLyst()[0];
+
+            Error = "";
+
+            if (port.ConnectedPort.ValueOrNull?.OwnerEntity is Storage storage)
+            {
+                return storage.Capacity.Value;
+            }
+            else if (port.ConnectedPort.ValueOrNull?.OwnerEntity is Transport pipe)
+            {
+                return pipe.Trajectory.MaxProducts;
+            }
+
+            Error = "Pipe is not connected to valid output!";
+            return 1;
+        }
+
         private bool CanSend(IoPortToken sourcePort)
         {
             IoPort port = Ports.Where(p => p.Name == sourcePort.Name)
@@ -87,27 +112,29 @@ namespace ControlledTransport
 
             Error = "";
 
-            if (port.ConnectedPort.ValueOrNull.OwnerEntity is StaticEntity staticEntity)
+            if (port.ConnectedPort.ValueOrNull?.OwnerEntity is Storage storage)
             {
-                if (staticEntity is Storage storage)
+                InputStorage = storage;
+                NextProduct = storage.StoredProduct.ValueOrNull;
+                Quantity quantity = storage.CurrentQuantity;
+
+                return ValidateQuantity(quantity);
+            }
+            else if (port.ConnectedPort.ValueOrNull?.OwnerEntity is Transport pipe)
+            {
+                InputStorage = pipe;
+                if (pipe.FirstProduct?.SlimId.Value != null)
+                    NextProduct = Context.ProductsManager.SlimIdManager.ResolveOrPhantom(pipe.FirstProduct.Value.SlimId);
+                else
+                    NextProduct = null;
+                Quantity quantity = Quantity.Zero;
+
+                foreach (var product in pipe.TransportedProducts)
                 {
-                    InputStorage = storage;
-                    Quantity quantity = storage.CurrentQuantity;
-
-                    return ValidateQuantity(quantity);
+                    quantity += product.Quantity;
                 }
-                else if (staticEntity is Transport pipe)
-                {
-                    InputStorage = pipe;
-                    Quantity quantity = Quantity.Zero;
 
-                    foreach (var product in pipe.TransportedProducts)
-                    {
-                        quantity += product.Quantity;
-                    }
-
-                    return ValidateQuantity(quantity);
-                }
+                return ValidateQuantity(quantity);
             }
 
             Error = "Pipe is not connected to valid output!";

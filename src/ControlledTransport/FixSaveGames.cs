@@ -1,18 +1,10 @@
 ﻿
 
 using System;
-using System.Collections.Generic;
 using Mafi;
-using Mafi.Base;
-using Mafi.Collections;
-using Mafi.Collections.ImmutableCollections;
-using Mafi.Collections.ReadonlyCollections;
 using Mafi.Core;
-using Mafi.Core.Buildings.FuelStations;
-using Mafi.Core.Buildings.Mine;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Entities;
-using Mafi.Core.Entities.Dynamic;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Population;
 using Mafi.Core.Products;
@@ -20,9 +12,7 @@ using Mafi.Core.PropertiesDb;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Stats;
 using Mafi.Core.Terrain;
-using Mafi.Core.Vehicles.Trucks;
 using Mafi.Core.World;
-using Mafi.Core.World.Entities;
 
 [GlobalDependency(RegistrationMode.AsEverything, false, false)]
 public class FixSavedGames : IInitializer
