@@ -101,7 +101,7 @@ public class FixSavedGames : IInitializer
 			MethodInfo m = typeof(WorldMapLocation)
 				.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
 				.First(methos => methos.Name == "SetEntityProto");
-			m.Invoke(mapLocation, new object[] { m_protosDb.Get(NewIds.MultiplayerTradeVillage).ValueOrNull });
+			m.Invoke(mapLocation, new object[] { m_protosDb.Get<MultiplayerTradeVillageProto>(NewIds.MultiplayerTradeVillage).ValueOrThrow("Missing multiplayer proto") });
 
 			m = typeof(WorldMapLocation)
 				.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)

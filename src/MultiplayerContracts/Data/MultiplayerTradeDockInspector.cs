@@ -8,7 +8,7 @@ using Mafi.Unity.InputControl.Inspectors;
 namespace MultiplayerContracts
 {
     [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
-    internal class MultiplayerTradeDockInspector : EntityInspector<MultiplayerTradeDock, MultiplayerTradeDockWindowView>
+    internal class MultiplayerTradeDockInspector : EntityInspector<MultiplayerTradeVillage, MultiplayerTradeDockWindowView>
     {
         private readonly ContractsManager m_contractManager;
         private readonly MultiplayerTradeDockWindowView m_windowView;

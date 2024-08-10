@@ -4,6 +4,8 @@ using Mafi.Core.Buildings.Cargo;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Economy;
 using Mafi.Core.Entities;
+using Mafi.Core.Entities.Static;
+using Mafi.Core.Maintenance;
 using Mafi.Core.Notifications;
 using Mafi.Core.Population;
 using Mafi.Core.Products;
@@ -15,11 +17,13 @@ using Mafi.Core.World.Entities;
 using Mafi.Core.World.QuickTrade;
 using Mafi.Serialization;
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace MultiplayerContracts
 {
     [GenerateSerializer(false, null, 0)]
-    internal class MultiplayerTradeVillage : WorldMapVillage
+    internal class MultiplayerTradeVillage : WorldMapMine, IEntityWithSimUpdate
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate (object obj, BlobWriter writer)
         {
@@ -30,8 +34,9 @@ namespace MultiplayerContracts
             ((MultiplayerTradeVillage)obj).DeserializeData(reader);
         };
 
-        public MultiplayerTradeVillage(EntityId entityId, WorldMapVillageProto prototype, WorldMapLocation location, EntityContext context, ISimLoopEvents simLoopEvents, IAssetTransactionManager assetManager, WorldMapManager worldMapManager, IUpointsManager upointsManager, IInstaBuildManager instaBuildManager, IProductsManager productsManager, TradeDockManager tradeDockManager, SettlementsManager settlementsManager, INotificationsManager notificationsManager, IPropertiesDb propertiesDb, AllImplementationsOf<IVirtualProductQuickTradeHandler> virtualTradeHandlers)
-            : base(entityId, prototype, location, context, simLoopEvents, assetManager, worldMapManager, upointsManager, instaBuildManager, productsManager, tradeDockManager, settlementsManager, notificationsManager, propertiesDb, virtualTradeHandlers)
+        public MultiplayerTradeVillage(EntityId entityId, WorldMapMineProto proto, WorldMapLocation location, EntityContext context, WorldMapManager worldMapManager, IUpointsManager upointsManager, IInstaBuildManager instaBuildManager, IProductsManager productsManager, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory, INotificationsManager notificationsManager)
+            
+            : base(entityId, proto, location, context, worldMapManager, upointsManager, instaBuildManager, productsManager, maintenanceProvidersFactory, notificationsManager)
         {
         }
 
@@ -74,6 +79,27 @@ namespace MultiplayerContracts
             {
                 Address = reader.ReadString();
             }
+        }
+
+        private int ticks;
+        protected override void SimUpdateInternal()
+        {
+            base.SimUpdateInternal();
+
+            if (ticks > 300)
+            {
+                ticks = -1;
+
+                ((ProductBuffer)Buffer).Clear();
+                FieldInfo m = typeof(ProductBuffer)
+                    .GetField("m_product", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                m.SetValue(this, Context.ProtosDb.All<ProductProto>()
+                    .SkipWhile(p => new Random().NextDouble() > 0.5)
+                    .Select(p => new ProductBuffer(100.Quantity(), p))
+                    .First());
+            }
+
+            ticks++;
         }
     }
 }

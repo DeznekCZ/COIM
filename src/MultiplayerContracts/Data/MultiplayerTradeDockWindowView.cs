@@ -1,19 +1,13 @@
-﻿using Mafi;
-using Mafi.Base;
+﻿using Mafi.Base;
 using Mafi.Core;
-using Mafi.Core.Buildings.Cargo;
-using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Core.World.Contracts;
-using Mafi.Core.World.Loans;
 using Mafi.Unity.InputControl.Inspectors;
 using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UiToolkit.Library;
-using System;
 
 namespace MultiplayerContracts
 {
-    internal class MultiplayerTradeDockWindowView : StaticEntityInspectorBase<MultiplayerTradeDock>
+    internal class MultiplayerTradeDockWindowView : EntityInspectorBase<MultiplayerTradeVillage>
     {
         private readonly MultiplayerTradeDockInspector m_controller;
         private readonly ContractsManager m_contractManager;
@@ -33,7 +27,7 @@ namespace MultiplayerContracts
             this.m_protoDb = protosDb;
         }
 
-        protected override MultiplayerTradeDock Entity => m_controller.SelectedEntity;
+        protected override MultiplayerTradeVillage Entity => m_controller.SelectedEntity;
 
         public class Texts
         {
@@ -65,19 +59,10 @@ namespace MultiplayerContracts
 
         private void CreateContract()
         {
-            ContractProto contract = m_protoDb.Get<ContractProto>(Ids.Products.Wood.TradeContract()).Value;
-            establishStatus = m_contractManager.CanEstablish(contract);
-            label.SetText(establishStatus.ToString());
         }
 
         private void RemoveContract()
         {
-            if (establishStatus == ContractsManager.EstablishCheckResult.Ok)
-            {
-                ContractProto contract = m_protoDb.Get<ContractProto>(Ids.Products.Wood.TradeContract()).Value;
-                cancelStatus = m_contractManager.CanCancel(contract);
-                label.SetText(cancelStatus.ToString());
-            }
         }
 
         public override void RenderUpdate(GameTime gameTime)

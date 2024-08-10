@@ -20,7 +20,7 @@ using Mafi.Unity.UserInterface;
 namespace Mafi.Unity
 {
 
-	public abstract class EntityInspector<TEntity, TView> : IUnityUi, IEntityInspector<TEntity>, IEntityInspector, IEntityInspectorFactory<TEntity>, IFactory<TEntity, IEntityInspector> where TEntity : class, IEntity, IRenderedEntity where TView : ItemDetailWindowView
+	public abstract class EntityInspector<TEntity, TView> : IUnityUi, IEntityInspector<TEntity>, IEntityInspector, IEntityInspectorFactory<TEntity>, IFactory<TEntity, IEntityInspector> where TEntity : class, IEntity where TView : ItemDetailWindowView
 	{
 		private Option<BuildingsAssigner> m_buildingsAssigner;
 
@@ -72,73 +72,11 @@ namespace Mafi.Unity
 			return this;
 		}
 
-		public void Activate()
-		{
-			if (m_buildingsAssigner.HasValue)
-			{
-				m_buildingsAssigner.Value.SetEntity(SelectedEntity);
-			}
-			Context.Highlighter.Highlight(SelectedEntity, ColorRgba.Yellow);
-			OnActivated();
-			WindowView.Show();
-		}
-
-		public void Deactivate()
-		{
-			if (m_buildingsAssigner.HasValue)
-			{
-				m_buildingsAssigner.Value.DeactivateTool();
-				Controller.SetHoverCursorSuppression(isSuppressed: false);
-			}
-			WindowView.Hide();
-			OnDeactivated();
-			Context.Highlighter.RemoveHighlight(SelectedEntity);
-			RemoveSecondaryHighlight();
-			m_selectedEntity = null;
-		}
-
-		protected void ForceDeactivate()
-		{
-			InputMgr.DeactivateController(Controller);
-		}
-
-		protected void HighlightSecondaryEntity(IRenderedEntity entity)
-		{
-			RemoveSecondaryHighlight();
-			m_secondaryHighlightedEntities.Add(entity);
-			m_secondaryHighlightedEntities.ForEach(delegate (IRenderedEntity x)
-			{
-				Context.Highlighter.Highlight(x, ColorRgba.Blue);
-			});
-		}
-
-		protected void HighlightSecondaryEntities<T>(IEnumerable<T> entities) where T : IRenderedEntity
-		{
-			RemoveSecondaryHighlight();
-			foreach (T entity in entities)
-			{
-				m_secondaryHighlightedEntities.Add(entity);
-			}
-			m_secondaryHighlightedEntities.ForEach(delegate (IRenderedEntity x)
-			{
-				Context.Highlighter.Highlight(x, ColorRgba.Blue);
-			});
-		}
-
-		protected void RemoveSecondaryHighlight()
-		{
-			m_secondaryHighlightedEntities.ForEach(delegate (IRenderedEntity x)
-			{
-				Context.Highlighter.RemoveHighlight(x);
-			});
-			m_secondaryHighlightedEntities.Clear();
-		}
-
 		public virtual void SyncUpdate(GameTime gameTime)
 		{
 			if (SelectedEntity.IsDestroyed)
 			{
-				ForceDeactivate();
+				//ForceDeactivate();
 			}
 			else
 			{
@@ -148,15 +86,6 @@ namespace Mafi.Unity
 
 		public virtual void RenderUpdate(GameTime gameTime)
 		{
-			if (m_buildingsAssigner.HasValue)
-			{
-				m_buildingsAssigner.Value.RenderUpdate();
-			}
-			if (m_restoreHighlightAfterUpgrade)
-			{
-				Context.Highlighter.Highlight(SelectedEntity, ColorRgba.Yellow);
-				m_restoreHighlightAfterUpgrade = false;
-			}
 			WindowView.RenderUpdate(gameTime);
 		}
 
@@ -182,43 +111,6 @@ namespace Mafi.Unity
 			}
 		}
 
-		protected void SetBuildingsAssigner(BuildingsAssigner buildingsAssigner)
-		{
-			m_buildingsAssigner = buildingsAssigner;
-		}
-
-		public void EditInputBuildingsClicked()
-		{
-			if (!m_buildingsAssigner.IsNone)
-			{
-				Controller.SetHoverCursorSuppression(isSuppressed: true);
-				m_buildingsAssigner.Value.ActivateTool(delegate
-				{
-					InputMgr.DeactivateController(Controller);
-				}, isForInputs: true);
-				WindowView.Hide();
-			}
-		}
-
-		public void EditOutputBuildingsClicked()
-		{
-			if (!m_buildingsAssigner.IsNone)
-			{
-				Controller.SetHoverCursorSuppression(isSuppressed: true);
-				m_buildingsAssigner.Value.ActivateTool(delegate
-				{
-					InputMgr.DeactivateController(Controller);
-				}, isForInputs: false);
-				WindowView.Hide();
-			}
-		}
-
-		protected IUiUpdater CreateVehiclesUpdater()
-		{
-			return UpdaterBuilder.Start().Observe(() => ((IEntityAssignedWithVehicles)SelectedEntity).AllSpawnedVehicles(), CompareFixedOrder<Vehicle>.Instance).Do(HighlightSecondaryEntities)
-				.Build(SyncFrequency.MoreThanSec);
-		}
-
 		protected abstract TView GetView();
 
 		protected virtual void OnActivated()
@@ -235,6 +127,31 @@ namespace Mafi.Unity
 			{
 				m_activatedOverlayEntity = Context.OceanOverlayRenderer.DeactivateForSingleEntity(m_activatedOverlayEntity);
 			}
+		}
+
+		public void Activate()
+		{
+			if (m_buildingsAssigner.HasValue)
+			{
+				m_buildingsAssigner.Value.SetEntity(SelectedEntity);
+			}
+			//Context.Highlighter.Highlight(SelectedEntity, ColorRgba.Yellow);
+			OnActivated();
+			WindowView.Show();
+		}
+
+		public void Deactivate()
+		{
+			if (m_buildingsAssigner.HasValue)
+			{
+				m_buildingsAssigner.Value.DeactivateTool();
+				Controller.SetHoverCursorSuppression(isSuppressed: false);
+			}
+			WindowView.Hide();
+			OnDeactivated();
+			//Context.Highlighter.RemoveHighlight(SelectedEntity);
+			//RemoveSecondaryHighlight();
+			m_selectedEntity = null;
 		}
 	}
 }

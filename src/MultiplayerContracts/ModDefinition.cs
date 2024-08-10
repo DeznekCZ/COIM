@@ -38,7 +38,7 @@ namespace MultiplayerContracts
 			//registrator.RegisterData<Terrain>();
 
 			// Use data class registration to register other protos such as machines, recipes, etc.
-			registrator.RegisterData<MultiplayerTradeDockData>();
+			registrator.RegisterData<MultiplayerTradeVillageData>();
 
 			// Registers all research from this assembly. See ExampleResearchData.cs for examples.
 			registrator.RegisterDataWithInterface<IResearchNodesData>();

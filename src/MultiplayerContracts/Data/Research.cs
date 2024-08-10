@@ -13,7 +13,6 @@ namespace MultiplayerContracts
 	public partial class NewIds
 	{
         public static readonly EntityProto.ID MultiplayerTradeVillage = new EntityProto.ID("MultiplayerTradeVillage");
-		public static readonly StaticEntityProto.ID MultiplayerTradeDock = new StaticEntityProto.ID("MultiplayerTradeDock");
 
 		public partial class MultiplayerTradeDocks
         {
@@ -31,15 +30,15 @@ namespace MultiplayerContracts
 
 		protected override void RegisterDataInternal(ProtoRegistrator registrator)
 		{
-			ResearchNodeProto nodeProto = registrator.ResearchNodeProtoBuilder
-				.Start("Captain trades", NewIds.Research.MultiplayerTrade)
-				.Description("Unlocks trade with other friendly captains")
-				.SetCosts(ResearchCostsTpl.Build.SetDifficulty(4))
-				.AddLayoutEntityToUnlock(NewIds.MultiplayerTradeDock)
-				.BuildAndAdd();
-			
-			nodeProto.GridPosition = new Vector2i(36, 14);
-			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.CargoDepot));
+			//ResearchNodeProto nodeProto = registrator.ResearchNodeProtoBuilder
+			//	.Start("Captain trades", NewIds.Research.MultiplayerTrade)
+			//	.Description("Unlocks trade with other friendly captains")
+			//	.SetCosts(ResearchCostsTpl.Build.SetDifficulty(4))
+			//	.AddLayoutEntityToUnlock(NewIds.MultiplayerTradeDock)
+			//	.BuildAndAdd();
+			//
+			//nodeProto.GridPosition = new Vector2i(36, 14);
+			//nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.CargoDepot));
 		}
 
 	}
