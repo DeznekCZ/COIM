@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "MultiplayerContracts": {
+      "commandName": "Project",
+      "remoteDebugEnabled": false,
+      "nativeDebugging": false
+    }
+  }
+}
