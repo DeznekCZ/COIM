@@ -34,47 +34,12 @@ namespace MultiplayerContracts
                 graphics: originalProto.Graphics
             ));
 
-            var productsToTrade = registrator.PrototypesDb.All<ProductProto>().ToList();
-            var amounts = new int[] { 100, 250 };
-            int totalContracts = 0;
-            int totalUniqueContracts = 0;
-            foreach (var product1 in productsToTrade)
-            {
-                if (!product1.IsStorable) continue;
-
-                foreach (var product2 in productsToTrade)
-                {
-                    if (!product2.IsStorable) continue;
-                    if (product1.Id == product2.Id) continue;
-
-                    totalUniqueContracts++;
-
-                    foreach (var amount1 in amounts)
-                    {
-                        foreach (var amount2 in amounts)
-                        {
-                            totalContracts++;
-                            registrator.PrototypesDb.Add(new MultiplayerContractProto(
-                                id: TradeContract.Id(product1.Id, amount1, product2.Id, amount2),
-                                productToBuy: product1.Id.TradeQuantity(amount1, registrator.PrototypesDb),
-                                productToPayWith: product2.Id.TradeQuantity(amount2, registrator.PrototypesDb),
-                                upointsPerMonth: 0.05.Upoints(),
-                                upointsPer100ProductsBought: 0.01.Upoints(),
-                                minReputationRequired: 0
-                            ));
-                        }
-                    }
-                }
-            }
-
-            Log.Debug($"{ModDefinition.ModName}: Total contracts: {totalContracts}, TotalUnique: {totalUniqueContracts}");
-
-            registrator.PrototypesDb.Add(new MultiplayerTradeVillageProto(
-                id: NewIds.MultiplayerTradeVillage,
-                strings: Proto.CreateStr(NewIds.MultiplayerTradeVillage, "Friendly captain village", "Dock of your friendly captain"),
-                graphics: new WorldMapEntityProto.Gfx(Assets.Base.Icons.WorldMap.WoodMine_svg, Assets.Base.Icons.WorldMap.WoodMine_svg),
-                registrator.PrototypesDb
-            ));
+            //registrator.PrototypesDb.Add(new MultiplayerTradeVillageProto(
+            //    id: NewIds.MultiplayerTradeVillage,
+            //    strings: Proto.CreateStr(NewIds.MultiplayerTradeVillage, "Friendly captain village", "Dock of your friendly captain"),
+            //    graphics: new WorldMapEntityProto.Gfx(Assets.Base.Icons.WorldMap.WoodMine_svg, Assets.Base.Icons.WorldMap.WoodMine_svg),
+            //    registrator.PrototypesDb
+            //));
         }
     }
 

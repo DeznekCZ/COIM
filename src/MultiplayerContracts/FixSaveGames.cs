@@ -87,32 +87,32 @@ public class FixSavedGames : IInitializer
 
 	private void SavedGameFixer()
 	{
-		int countOfIsland = m_mapManager.Map.Locations
-			.Where(loc => loc.Entity.ValueOrNull?.Prototype.Id == NewIds.MultiplayerTradeVillage)
-			.Count();
-
-		Log.Debug($"[{ModDefinition.ModName}]: Creating multiplayer island {countOfIsland}");
-		if (countOfIsland == 0)
-		{
-			Log.Debug($"[{ModDefinition.ModName}]: Creating multiplayer island");
-
-			WorldMapLocation mapLocation = new WorldMapLocation("testMPShop", m_mapManager.Map.HomeLocation.Position + new Vector2i(-100, 100));
-
-			MethodInfo m = typeof(WorldMapLocation)
-				.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
-				.First(methos => methos.Name == "SetEntityProto");
-			m.Invoke(mapLocation, new object[] { m_protosDb.Get(NewIds.MultiplayerTradeVillage).ValueOrNull });
-
-			m = typeof(WorldMapLocation)
-				.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
-				.First(methos => methos.Name == "SetState");
-			m.Invoke(mapLocation, new object[] { WorldMapLocationState.NotExplored });
-
-			m_mapManager.Map.AddLocation(mapLocation);
-			m_mapManager.Map.AddConnection(m_mapManager.Map.HomeLocation, mapLocation);
-
-			Log.Debug($"[{ModDefinition.ModName}]: Multiplayer island created");
-		}
+		//int countOfIsland = m_mapManager.Map.Locations
+		//	.Where(loc => loc.Entity.ValueOrNull?.Prototype.Id == NewIds.MultiplayerTradeVillage)
+		//	.Count();
+		//
+		//Log.Debug($"[{ModDefinition.ModName}]: Creating multiplayer island {countOfIsland}");
+		//if (countOfIsland == 0)
+		//{
+		//	Log.Debug($"[{ModDefinition.ModName}]: Creating multiplayer island");
+		//
+		//	WorldMapLocation mapLocation = new WorldMapLocation("testMPShop", m_mapManager.Map.HomeLocation.Position + new Vector2i(-100, 100));
+		//
+		//	MethodInfo m = typeof(WorldMapLocation)
+		//		.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+		//		.First(methos => methos.Name == "SetEntityProto");
+		//	m.Invoke(mapLocation, new object[] { m_protosDb.Get(NewIds.MultiplayerTradeVillage).ValueOrNull });
+		//
+		//	m = typeof(WorldMapLocation)
+		//		.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+		//		.First(methos => methos.Name == "SetState");
+		//	m.Invoke(mapLocation, new object[] { WorldMapLocationState.NotExplored });
+		//
+		//	m_mapManager.Map.AddLocation(mapLocation);
+		//	m_mapManager.Map.AddConnection(m_mapManager.Map.HomeLocation, mapLocation);
+		//
+		//	Log.Debug($"[{ModDefinition.ModName}]: Multiplayer island created");
+		//}
 	}
 
     void IInitializer.DoOnNewGameOrAfterLoad(Action action)

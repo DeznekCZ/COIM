@@ -40,6 +40,8 @@ namespace MultiplayerContracts
 			
 			nodeProto.GridPosition = new Vector2i(36, 14);
 			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.CargoDepot));
+
+			MultiplayerTradeManager.Init(registrator.PrototypesDb);
 		}
 
 	}
