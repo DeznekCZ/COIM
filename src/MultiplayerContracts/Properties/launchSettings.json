@@ -1,9 +1,10 @@
 {
   "profiles": {
-    "MultiplayerContracts": {
-      "commandName": "Project",
-      "remoteDebugEnabled": false,
-      "nativeDebugging": false
+    "Profil 1": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+      "commandLineArgs": "app.js",
+      "workingDirectory": "S:\\git\\COIM-Multiplayer\\src\\MPContracts"
     }
   }
 }

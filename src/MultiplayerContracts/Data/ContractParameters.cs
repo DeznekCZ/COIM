@@ -34,18 +34,18 @@ namespace MultiplayerContracts
 
         public string ToJSON()
         {
-            return $@"{{""supply"":{QuatityToJSON(Supply)},""demand"":{QuatityToJSON(Demand)}}}";
+            return $@"{{""Supply"":{QuatityToJSON(Supply)},""Demand"":{QuatityToJSON(Demand)}}}";
         }
 
         private string QuatityToJSON(ProductQuantity product)
         {
-            return $@"{{""product"":""{product.Product.Id.Value}"",""quantity"":{product.Quantity.Value}}}";
+            return $@"{{""Product"":""{product.Product.Id.Value}"",""Quantity"":{product.Quantity.Value}}}";
         }
 
         public static ContractParameters FromJSON(string json, ProtosDb protosDb)
         {
-            Match supply = new Regex("\"supply\":\\{\"product\":\"(?<sp>\\w+)\",\"quantity\":(?<sq>\\d+)").Match(json);
-            Match demand = new Regex("\"demand\":\\{\"product\":\"(?<dp>\\w+)\",\"quantity\":(?<dq>\\d+)").Match(json);
+            Match supply = new Regex("\"Supply\":\\{\"product\":\"(?<sp>\\w+)\",\"Quantity\":(?<sq>\\d+)").Match(json);
+            Match demand = new Regex("\"Demand\":\\{\"product\":\"(?<dp>\\w+)\",\"Quantity\":(?<dq>\\d+)").Match(json);
 
             return new ContractParameters(
                 new ProductQuantity(

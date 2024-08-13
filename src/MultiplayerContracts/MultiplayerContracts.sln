@@ -5,6 +5,8 @@ VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MultiplayerContracts", "MultiplayerContracts.csproj", "{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}"
 EndProject
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "MPContracts", "..\MPContracts\MPContracts.njsproj", "{0FF90341-A6B6-445C-8838-7FC620C0B99F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FF90341-A6B6-445C-8838-7FC620C0B99F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FF90341-A6B6-445C-8838-7FC620C0B99F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FF90341-A6B6-445C-8838-7FC620C0B99F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FF90341-A6B6-445C-8838-7FC620C0B99F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
