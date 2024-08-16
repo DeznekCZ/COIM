@@ -7,6 +7,8 @@ using Mafi.Core.Buildings.Cargo;
 using Mafi.Core.World.Contracts;
 using Mafi.Core.World.Entities;
 using System.Linq;
+using Mafi.Core.Entities.Static.Layout;
+using Mafi.Base.Prototypes.Buildings;
 
 namespace MultiplayerContracts
 {
@@ -15,7 +17,6 @@ namespace MultiplayerContracts
         public partial class Tags
         {
             public static readonly Tag MultiplayerContract = Tag.Create<ContractProto>("MultiplayerTrade");
-            public static readonly Tag MultiplayerVillage = Tag.Create<WorldMapVillageProto>("MultiplayerVillage");
         }
     }
 
@@ -29,17 +30,18 @@ namespace MultiplayerContracts
                 id: NewIds.MultiplayerTradeDock,
                 strings: Proto.CreateStr(NewIds.MultiplayerTradeDock, "Friendly captain dock", "Dock of your friendly captain"),
                 layout: originalProto.Layout,
-                costs: originalProto.Costs,
-                reservedOceanAreasSets: originalProto.ReservedOceanAreasSets,
-                graphics: originalProto.Graphics
+                costs: Costs.Buildings.TradeDock.MapToEntityCosts(registrator),
+                reservedOceanAreasSets: ShipyardData.AllApproachesAreas,
+                graphics: new LayoutEntityProto.Gfx(
+                    "Assets/Base/Buildings/TradeDock.prefab",
+                    new RelTile3f(6, 0, 0),
+                    default(Option<string>),
+                    default(ColorRgba),
+                    hideBlockedPortsIcon: false,
+                    null,
+                    registrator.GetCategoriesProtos(Ids.ToolbarCategories.Docks)
+                 )
             ));
-
-            //registrator.PrototypesDb.Add(new MultiplayerTradeVillageProto(
-            //    id: NewIds.MultiplayerTradeVillage,
-            //    strings: Proto.CreateStr(NewIds.MultiplayerTradeVillage, "Friendly captain village", "Dock of your friendly captain"),
-            //    graphics: new WorldMapEntityProto.Gfx(Assets.Base.Icons.WorldMap.WoodMine_svg, Assets.Base.Icons.WorldMap.WoodMine_svg),
-            //    registrator.PrototypesDb
-            //));
         }
     }
 

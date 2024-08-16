@@ -25,8 +25,9 @@ namespace MultiplayerContracts
             ((MultiplayerTradeDock)obj).DeserializeData(reader);
         };
 
-        public string Address { get; set; } = string.Empty;
-        public string Authorization { get; set; } = string.Empty;
+        public string Address => m_market;
+        public string Authorization => m_markets.ContainsKey(m_market)
+            ? m_markets[m_market] : $@"{{""EntityId"":{Id.Value}, ""CreationTime"":0}}";
         public ReservedOceanAreaState ReservedOceanAreaState
         {
             get;
@@ -37,7 +38,7 @@ namespace MultiplayerContracts
         public override bool CanBePaused => false;
 
         private readonly IVehicleBuffersRegistry m_vehicleBuffersRegistry;
-
+        private StoredCargoPriorityProvider m_storedCargoPrioProvider;
 
         [DoNotSave(0, null)]
         public new MultiplayerTradeDockProto Prototype
@@ -53,6 +54,16 @@ namespace MultiplayerContracts
             }
         }
 
+        [DoNotSave(0, null)]
+        public Dict<string, string> MarketAuthentications => m_markets;
+        [DoNotSave(0, null)]
+        public string Market { get => m_market ?? "localhost:6442"; set => m_market = value ?? "localhost:6442"; }
+        [DoNotSave(0, null)]
+        public string MarketName => m_marketNames.ContainsKey(m_market)
+            ? m_marketNames[m_market] : $@"Market";
+        [DoNotSave(0, null)]
+        public Dict<string, string> MarketNames => m_marketNames;
+
         public MultiplayerTradeDock(EntityId id, MultiplayerTradeDockProto proto, TileTransform transform, EntityContext context, IVehicleBuffersRegistry vehicleBuffersRegistry)
             : base(id, proto, transform, context)
         {
@@ -60,29 +71,12 @@ namespace MultiplayerContracts
             ReservedOceanProto = proto;
             ReservedOceanAreaState = new ReservedOceanAreaState(proto, this, IdsCore.Notifications.OceanAccessBlocked, context.NotificationsManager);
             m_vehicleBuffersRegistry = vehicleBuffersRegistry;
+            m_storedCargoPrioProvider = new StoredCargoPriorityProvider(this);
             m_cargo = new Dict<ProductProto, ProductBuffer>();
         }
 
         public void SimUpdate()
         {
-            if (Address == null || Address.Trim().Length == 0)
-            {
-                RevokeAllContracts();
-                return;
-            }
-        }
-
-        private void RevokeAllContracts()
-        {
-            //List<ContractProto> contracts = m_contractManager.ActiveContracts
-            //    .AsEnumerable()
-            //    .Where(x => x.Mod.Name == ModDefinition.ModName)
-            //    .ToList();
-            //
-            //foreach (ContractProto item in contracts)
-            //{
-            //    item.SetAvailability(false);
-            //}
         }
 
         public static void Serialize(MultiplayerTradeDock value, BlobWriter writer)
@@ -102,10 +96,17 @@ namespace MultiplayerContracts
             return value;
         }
 
-        private readonly int SerializerVersion = 0;
+        private readonly int SerializerVersion = 2;
         private readonly Dict<ProductProto, ProductBuffer> m_cargo;
-        private int m_cargoExportPriority;
+        internal int m_cargoExportPriority = 5;
         private MultiplayerTradeDockProto m_proto;
+
+        private Dict<string, string> m_markets = new Dict<string, string>();
+        private Dict<string, string> m_marketNames = new Dict<string, string>()
+        {
+            {  "localhost:6542", "Local market" }
+        };
+        private string m_market = "localhost:6542";
 
         [OnlyForSaveCompatibility(null)]
         [InitAfterLoad(InitPriority.Normal)]
@@ -127,6 +128,9 @@ namespace MultiplayerContracts
             writer.WriteGeneric(m_vehicleBuffersRegistry);
             ReservedOceanAreaState.Serialize(ReservedOceanAreaState, writer);
             writer.WriteGeneric(ReservedOceanProto);
+            writer.WriteGeneric(m_markets);
+            writer.WriteGeneric(m_marketNames);
+            writer.WriteString(m_market);
         }
 
         protected override void DeserializeData(BlobReader reader)
@@ -140,6 +144,16 @@ namespace MultiplayerContracts
             reader.SetField(this, "m_vehicleBuffersRegistry", reader.ReadGenericAs<IVehicleBuffersRegistry>());
             ReservedOceanAreaState = ReservedOceanAreaState.Deserialize(reader);
             ReservedOceanProto = reader.ReadGenericAs<IProtoWithReservedOcean>();
+
+            m_markets = Dict<string, string>.Deserialize(reader);
+            m_marketNames = Dict<string, string>.Deserialize(reader);
+            m_market = reader.ReadString();
+
+            if (version > 1)
+                reader.SetField(this, "m_storedCargoPrioProvider", StoredCargoPriorityProvider.Deserialize(reader));
+            else
+                reader.SetField(this, "m_storedCargoPrioProvider", new StoredCargoPriorityProvider(this));
+
             reader.RegisterInitAfterLoad(this, "initSelf", InitPriority.Normal);
         }
 
@@ -171,6 +185,11 @@ namespace MultiplayerContracts
                 if (id == "CargoExportPrio")
                 {
                     m_cargoExportPriority = priority;
+                    foreach (var item in m_cargo)
+                    {
+                        m_vehicleBuffersRegistry.UnregisterOutputBufferAndAssert(item.Value);
+                        m_vehicleBuffersRegistry.RegisterOutputBufferAndAssert(this, item.Value, m_storedCargoPrioProvider, true);
+                    }
                 }
                 else
                 {
@@ -190,7 +209,7 @@ namespace MultiplayerContracts
             {
                 m_cargo[demand.Product] = buffer = new ProductBuffer(demand.Quantity, demand.Product);
                 buffer.StoreAsMuchAs(demand);
-                m_vehicleBuffersRegistry.RegisterOutputBufferAndAssert(this, buffer, new StaticPriorityProvider(BufferStrategy.NoQuantityPreference(1)), true);
+                m_vehicleBuffersRegistry.RegisterOutputBufferAndAssert(this, buffer, m_storedCargoPrioProvider, true);
             }
         }
 

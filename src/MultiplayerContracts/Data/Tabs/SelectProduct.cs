@@ -82,7 +82,7 @@ namespace MultiplayerContracts
                         m_refresh();
                         Refresh();
                     },
-                    (product) => product.Strings.DescShort,
+                    (product) => new Mafi.Localization.LocStrFormatted($"Tradeable: {GetAmount(product)}"),
                     false);
 
                 m_window.SetupInnerWindowWithButton(m_protoPicker, m_btnPreviewHolder, m_btnPreview, () => {
@@ -139,6 +139,22 @@ namespace MultiplayerContracts
                 m_btnPreview.SetIcon(m_product.IconPath);
             else
                 m_btnPreview.SetIcon(m_builder.Style.Icons.Empty);
+        }
+
+        private long GetAmount(SelectProduct m_product)
+        {
+            if (m_product.Product == null)
+                return 0;
+
+            return GetAmount(m_product.Product);
+        }
+
+        private long GetAmount(ProductProto m_product)
+        {
+            var stats = m_inspectorContext.AssetsManager
+                .GetAvailableQuantityForRemoval(m_product);
+
+            return stats.Value;
         }
     }
 }

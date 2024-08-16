@@ -36,6 +36,7 @@ namespace MultiplayerContracts
         private int m_demandInt;
         private ContractLists m_list;
         private bool m_tradeActive;
+        private bool m_marketOpen;
 
         private event Action m_wasUpdate;
 
@@ -54,7 +55,7 @@ namespace MultiplayerContracts
             public static readonly string NotCreated = "Contract not created";
         }
 
-        protected override async void AddCustomItems(StackContainer itemContainer)
+        protected override void AddCustomItems(StackContainer itemContainer)
         {
             MakeScrollableWithHeightLimit();
 
@@ -66,16 +67,42 @@ namespace MultiplayerContracts
                 .SetTabCellSize(new UnityEngine.Vector2(130, 40))
                 .AppendTo(itemContainer);
 
-
-            var controls = Builder
-                .NewStackContainer("controls")
-                .SetStackingDirection(StackContainer.Direction.LeftToRight)
-                .SetHeight(40)
+            var allMarketHolder = Builder
+                .NewStackContainer("market_tab")
                 .SetWidth(515)
                 .SetItemSpacing(5)
                 .SetInnerPadding(Offset.All(5))
-                .SetBackground(ColorRgba.DarkDarkGray)
-                .AppendTo(itemContainer);
+                .SetStackingDirection(StackContainer.Direction.TopToBottom)
+                .AppendTo(tabs, "Markets", out var marketsTab);
+
+            var marketSelection = Builder
+                .NewStackContainer("market_entry")
+                .SetWidth(505)
+                .SetItemSpacing(5)
+                .SetStackingDirection(StackContainer.Direction.LeftToRight)
+                .AppendTo(allMarketHolder);
+
+            var marketAddress = Builder
+                .NewTxtField("market_address")
+                .SetPlaceholderText("Market address")
+                .SetWidth(195)
+                .AppendTo(marketSelection);
+
+            var marketName = Builder
+                .NewTxt("market_address")
+                .SetText("Market")
+                .SetWidth(195)
+                .AppendTo(marketSelection);
+
+            var joinMarket = Builder
+                .NewBtnGeneral("market_join")
+                .SetText("Join market")
+                .SetWidth(100)
+                .OnClick(() =>
+                {
+                    Entity.Market = marketAddress.GetText();
+                })
+                .AppendTo(marketSelection);
 
             var refreshButton = Builder
                 .NewBtnGeneral("refresh");
@@ -83,8 +110,23 @@ namespace MultiplayerContracts
                 .SetSize(100, 40)
                 .SetText("Get offers")
                 .OnClick(RefreshList)
-                .AppendTo(controls);
-            m_wasUpdate += () => refreshButton.SetEnabled(!m_tradeActive);
+                .AppendTo(itemContainer);
+            m_wasUpdate += () => refreshButton.SetEnabled(!m_tradeActive && m_marketOpen);
+
+            var marketHolder = Builder
+                .NewStackContainer("market_holder")
+                .SetWidth(515)
+                .SetItemSpacing(5)
+                .SetInnerPadding(Offset.All(5))
+                .SetStackingDirection(StackContainer.Direction.TopToBottom)
+                .AppendTo(allMarketHolder);
+
+            var allMyOffersContainer = Builder
+                .NewStackContainer("new_offer_tab")
+                .SetStackingDirection(StackContainer.Direction.TopToBottom)
+                .SetWidth(515)
+                .SetInnerPadding(Offset.All(5))
+                .AppendTo(tabs, "My offers (0)", out var myOfferTab);
 
             var newOfferContainer = Builder
                 .NewStackContainer("new_offer_info")
@@ -94,7 +136,9 @@ namespace MultiplayerContracts
                 .SetItemSpacing(5)
                 .SetInnerPadding(Offset.All(5))
                 .SetBackground(ColorRgba.DarkDarkGray)
-                .AppendTo(tabs, "Create offer", out _);
+                .AppendTo(allMyOffersContainer);
+
+            allMyOffersContainer.AppendDivider(5, ColorRgba.DarkDarkGray);
 
             m_supplyProduct = new SelectProduct("suply_product", Builder, ValidateContractDefinition, this, m_controller.Context)
                 .AppendTo(newOfferContainer);
@@ -150,7 +194,7 @@ namespace MultiplayerContracts
                 .SetItemSpacing(5)
                 .SetInnerPadding(Offset.All(5))
                 .SetStackingDirection(StackContainer.Direction.TopToBottom)
-                .AppendTo(tabs, "Active (0)", out var myOfferTab);
+                .AppendTo(allMyOffersContainer);
 
             var otherHolder = Builder
                 .NewStackContainer("other_holder")
@@ -173,6 +217,7 @@ namespace MultiplayerContracts
             UpdaterBuilder updaterBuilder = UpdaterBuilder.Start();
             updaterBuilder.Observe(() =>
                     m_isContactDefinitionValid &&
+                    m_marketOpen &&
                     IsEnoughSupply())
                 .Do(enabled => btnCreate.SetEnabled(enabled));
 
@@ -197,6 +242,9 @@ namespace MultiplayerContracts
                 });
 
             updaterBuilder.Observe(() => m_tradeActive)
+                .Do(updated => m_wasUpdate?.Invoke());
+
+            updaterBuilder.Observe(() => m_marketOpen)
                 .Do(updated => m_wasUpdate?.Invoke());
 
             updaterBuilder.Observe(() => m_controller.SelectedEntity?.GetQuantity() ?? Quantity.Zero)
@@ -234,16 +282,31 @@ namespace MultiplayerContracts
                     }
                 });
 
-            SetWidth(525);
+            updaterBuilder.Observe(() => m_controller.SelectedEntity?.Market)
+                .Do(market => marketAddress.SetText(market));
+
+            updaterBuilder.Observe(() => m_controller.SelectedEntity?.MarketName)
+                .Do(market => marketName.SetText(market));
+
+            m_marketChanged = updaterBuilder.CreateSyncer(() => m_controller.SelectedEntity?.Market);
+            m_authorizationChanged = updaterBuilder.CreateSyncer(() => m_controller.SelectedEntity?.Authorization);
 
             AddUpdater(updaterBuilder.Build());
+
+            ExportPriorityPanel customPriorityPanel = new ExportPriorityPanel(this, m_controller.InputScheduler, Builder, () => Entity, "CargoExportPrio");
+            customPriorityPanel.PutToRightMiddleOf(this, customPriorityPanel.GetSize(), Offset.Right(0f - customPriorityPanel.GetWidth() + 1f));
+            AddUpdater(customPriorityPanel.Updater);
+
+            SetWidth(525);
         }
 
         private void RefreshList()
         {
             m_tradeActive = true;
 
-            MultiplayerTradeManager.GetContracts()
+            MultiplayerTradeManager.GetContracts(
+                            m_controller.SelectedEntity.Market,
+                            m_controller.SelectedEntity.Authorization)
                 .ContinueWith(list =>
                 {
                     Log.Debug($"Get contracts status: {list.Status}");
@@ -252,8 +315,8 @@ namespace MultiplayerContracts
                 });
         }
 
-        private void CreateView(StackContainer holder, ContractId contractId, ContractParameters contractParameters,
-            string buttonText, Func<ContractId, ContractParameters, Task<bool>> buttonAction, Func<ContractParameters, bool> buttonActive)
+        private void CreateView(StackContainer holder, long contractId, ContractParameters contractParameters,
+            string buttonText, Func<long, ContractParameters, Task<bool>> buttonAction, Func<ContractParameters, bool> buttonActive)
         {
             var newOfferContainer = Builder
                .NewStackContainer("new_offer_info")
@@ -352,7 +415,7 @@ namespace MultiplayerContracts
                     }
                     else
                     {
-                        btnCreate.SetEnabled(buttonActive(contractParameters) && !m_tradeActive);
+                        btnCreate.SetEnabled(buttonActive(contractParameters) && !m_tradeActive && m_marketOpen);
                         suplyTxt.SetText($"({GetAmount(contractParameters.Supply.Product)})");
                         demandTxt.SetText($"({GetAmount(contractParameters.Demand.Product)})");
                     }
@@ -366,38 +429,44 @@ namespace MultiplayerContracts
 
         private void HandleMyOffers(MyTabContainer itemContainer, Tab tab, StackContainer holder)
         {
-            tab.TabButton.SetText($"Active ({m_list.Owned.Count})");
+            tab.TabButton.SetText($"My offers ({m_list.Claimable.Count + m_list.Owned.Count})");
+            foreach (var owned in m_list.Claimable)
+            {
+                CreateView(holder, owned, m_list.Entries[owned], "Claim", ClaimItem, (cp) => true);
+            }
+            holder.AppendDivider(5, ColorRgba.DarkDarkGray);
             foreach (var owned in m_list.Owned)
             {
-                if (m_list.Claimable.Contains(owned.Key))
-                    CreateView(holder, owned.Key, owned.Value, "Claim", ClaimItem, (cp) => true);
-                else
-                    CreateView(holder, owned.Key, owned.Value, "Remove", RemoveItem, (cp) => true);
+                CreateView(holder, owned, m_list.Entries[owned], "Remove", RemoveItem, (cp) => true);
             }
         }
 
-        private Task<bool> ClaimItem(ContractId contractId, ContractParameters contractParameters)
+        private Task<bool> ClaimItem(long contractId, ContractParameters contractParameters)
         {
             var shop = m_controller.SelectedEntity;
-            return Task.Run(() =>
-            {
-                var task = MultiplayerTradeManager.ClaimContract(contractId);
-                task.RunSynchronously();
-                task.Wait();
-                if (task.Result)
+            return MultiplayerTradeManager.ClaimContract(
+                            m_controller.SelectedEntity.Market,
+                            m_controller.SelectedEntity.Authorization,
+                            contractId)
+                .ContinueWith(task =>
                 {
-                    shop.AddProduct(contractParameters.Demand);
-                    RefreshList();
-                    return true;
-                }
-                return false;
-            });
+                    if (task.Result)
+                    {
+                        shop.AddProduct(contractParameters.Demand);
+                        RefreshList();
+                        return true;
+                    }
+                    return false;
+                });
         }
 
-        private Task<bool> RemoveItem(ContractId contractId, ContractParameters contractParameters)
+        private Task<bool> RemoveItem(long contractId, ContractParameters contractParameters)
         {
             var shop = m_controller.SelectedEntity;
-            return MultiplayerTradeManager.RemoveContract(contractId)
+            return MultiplayerTradeManager.RemoveContract(
+                            m_controller.SelectedEntity.Market,
+                            m_controller.SelectedEntity.Authorization,
+                            contractId)
                 .ContinueWith(task =>
                 {
                     if (task.Result)
@@ -414,19 +483,22 @@ namespace MultiplayerContracts
             tab.TabButton.SetText($"Market ({m_list.Available.Count})");
             foreach (var other in m_list.Available)
             {
-                CreateView(holder, other.Key, other.Value, "Take", TakeItem,
+                CreateView(holder, other, m_list.Entries[other], "Take", TakeItem,
                     (cp) => GetAmount(cp.Demand.Product) >= cp.Demand.Quantity.Value);
             }
         }
 
-        private Task<bool> TakeItem(ContractId contractId, ContractParameters contractParameters)
+        private Task<bool> TakeItem(long contractId, ContractParameters contractParameters)
         {
             var shop = m_controller.SelectedEntity;
 
             var assetManager = shop.Context.ProductsManager.AssetManager;
             if (assetManager.TryRemoveProduct(contractParameters.Demand, DestroyReason.Export))
             {
-                return MultiplayerTradeManager.TakeContract(contractId)
+                return MultiplayerTradeManager.TakeContract(
+                            m_controller.SelectedEntity.Market,
+                            m_controller.SelectedEntity.Authorization,
+                            contractId)
                     .ContinueWith(finished =>
                     {
                         if (finished.Result)
@@ -526,12 +598,16 @@ namespace MultiplayerContracts
                     
                     m_tradeActive = true;
                     MultiplayerTradeManager
-                        .CreateContract(new ContractParameters(
-                            new ProductQuantity(m_supplyProduct.Product, m_supplyInt.Quantity()),
-                            new ProductQuantity(m_demandProduct.Product, m_demandInt.Quantity())
-                        )).ContinueWith(id =>
+                        .CreateContract(
+                            m_controller.SelectedEntity.Market,
+                            m_controller.SelectedEntity.Authorization,
+                            new ContractParameters(
+                                new ProductQuantity(m_supplyProduct.Product, m_supplyInt.Quantity()),
+                                new ProductQuantity(m_demandProduct.Product, m_demandInt.Quantity())
+                            )
+                        ).ContinueWith(id =>
                         {
-                            if (id.Result != null)
+                            if (id.Result)
                             {
                                 RefreshList();
                             }
@@ -544,12 +620,58 @@ namespace MultiplayerContracts
             }
         }
 
+        private int m_connectionTry = 0;
+        private ISyncer<string> m_marketChanged;
+        private ISyncer<string> m_authorizationChanged;
+
         public override void RenderUpdate(GameTime gameTime)
         {
             base.RenderUpdate(gameTime);
 
-            if (m_controller.SelectedEntity == null)
-                return;
+            m_connectionTry++;
+            if (m_connectionTry >= 60 && m_controller.SelectedEntity != null)
+            {
+                var entity = m_controller.SelectedEntity;
+                var market = entity.Market;
+
+                m_connectionTry = int.MinValue;
+                MultiplayerTradeManager.Ping(market)
+                    .ContinueWith((t) =>
+                    {
+                        m_marketOpen = t.Result.Item1;
+                        if (m_marketOpen)
+                            Log.Debug("Market is open");
+                        else
+                            Log.Debug("Market not connected");
+
+                        m_connectionTry = 0;
+                    });
+            }
+
+            if (m_marketChanged.HasChanged && m_marketChanged.GetValueAndReset() != null)
+            {
+                var entity = m_controller.SelectedEntity;
+                var market = entity.Market;
+
+                MultiplayerTradeManager.Register(
+                        market,
+                        entity.MarketAuthentications.Get(market)
+                            .ValueOr($@"{{""EntityId"":{entity.Id.Value}, ""CreationTime"":0}}"),
+                        entity.Id
+                    )
+                    .ContinueWith(t2 =>
+                    {
+                        if (t2.IsCompleted)
+                            entity.MarketAuthentications[market] = t2.Result;
+                        else
+                            Log.Debug("Registration failed");
+                    });
+            }
+
+            if (m_authorizationChanged.HasChanged && m_authorizationChanged.GetValueAndReset() != null)
+            {
+                RefreshList();
+            }
         }
     }
 }

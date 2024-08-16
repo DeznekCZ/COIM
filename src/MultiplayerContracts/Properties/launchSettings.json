@@ -3,7 +3,7 @@
     "Profil 1": {
       "commandName": "Executable",
       "executablePath": "C:\\Program Files\\nodejs\\node.exe",
-      "commandLineArgs": "app.js",
+      "commandLineArgs": "dist/app.js",
       "workingDirectory": "S:\\git\\COIM-Multiplayer\\src\\MPContracts"
     }
   }
