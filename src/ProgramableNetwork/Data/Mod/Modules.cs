@@ -248,6 +248,16 @@ namespace ProgramableNetwork
                         m.Output["b"] = m.Output["a"] > 0 ? 0 : 1;
                     })
                 .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart($"Boolean_Not", $"Boolean: NOT", $"nA", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Boolean)
+                .AddInput("a", "A")
+                .AddOutput("a", "not A")
+                .AddControllerDevice()
+                // dynamic
+                .Action(m => m.Output["a"] = m.Input["a"] > 0 ? 0 : 1)
+                .BuildAndAdd();
         }
 
         private void Decisions(ProtoRegistrator registrator)
@@ -550,6 +560,34 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddOutput("c", "C")
                 .Action(m => { m.Output["c"] = m.Input["a", 0] <= m.Input["b", 0] ? 1 : 0; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Compare_Int_Max", "Maximum: A or B", "MAX", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Boolean)
+                .AddCategory(Category.Arithmetic)
+                .AddCategory(Category.Decision)
+                .AddCategory(Category.Control)
+                .AddInput("a", "A")
+                .AddInput("b", "B")
+                .AddOutput("a", "A")
+                .AddOutput("b", "B")
+                .Action(m => {
+                    int a = m.Input["a", 0];
+                    int b = m.Input["b", 0];
+                    if (a > b)
+                    {
+                        m.Output["a"] = a;
+                        m.Output["b"] = b;
+                    }
+                    else
+                    {
+                        m.Output["a"] = b;
+                        m.Output["b"] = a;
+                    }
+                
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
         }
