@@ -12,18 +12,19 @@ namespace Mafi.Unity
         where TView : ItemDetailWindowView
     {
         private readonly TInspector m_inspector;
+        private readonly string m_id;
         private Txt content;
 
         public TooltipView(TInspector inspector, string id, bool isOnMainCanvas = true)
         {
             m_inspector = inspector;
-            content = m_inspector.Builder.NewTxt(id)
-                .SetText("")
-                .SetSize(0, 0);
+            m_id = id;
         }
 
         public void SetTooltip(string tooltip, Offset? offset, IUiElement parent)
         {
+            content = m_inspector.Builder.NewTxt(m_id);
+            content.SetTextStyle(m_inspector.Builder.Style.Panel.Text.Extend(fontSize: 12));
             content.SetText(tooltip);
             content.SetBackground(ColorRgba.Black);
             content.SetSize(content.GetPreferredSize(250, 600));
@@ -44,8 +45,8 @@ namespace Mafi.Unity
 
         public void ClearTooltip()
         {
-            content.SetText("");
-            content.SetSize(0, 0);
+            content?.Destroy();
+            content = null;
         }
     }
 }
