@@ -6,6 +6,8 @@ using Mafi.Core.Entities.Dynamic;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.Transports;
+using Mafi.Localization;
+using Mafi.Unity;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
@@ -127,6 +129,18 @@ namespace ProgramableNetwork
         public static string ModuleId(this string id)
         {
             return "ProgramableNetwork_Module_" + id;
+        }
+
+        public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, string toolTip, Offset? offset = null, bool attached = false)
+            where TElement : IUiElementWithHover<TElement>
+        {
+            return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
+        }
+
+        public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, LocStr toolTip, Offset? offset = null, bool attached = false)
+            where TElement : IUiElementWithHover<TElement>
+        {
+            return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip.TranslatedString, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
         }
     }
 }

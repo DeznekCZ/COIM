@@ -135,9 +135,8 @@ namespace ProgramableNetwork
                             () => { }
                         )
                         .AppendTo(inputsPanel)
-                        .AddToolTipAndReturn()
-                        .SetText((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' '))
-                        .SetExtraOffsetFromBottom(-65);
+                        .ToolTip(m_computerView.m_controller, (input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' '),
+                            offset: Offset.Top(15), attached: true);
 
                     m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
                         (context) =>
@@ -211,9 +210,8 @@ namespace ProgramableNetwork
                             () => { m_computerView.m_higlighted = null; }
                         )
                         .AppendTo(inputsPanel)
-                        .AddToolTipAndReturn()
-                        .SetText((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' '))
-                        .SetExtraOffsetFromBottom(-5);
+                        .ToolTip(m_computerView.m_controller, (output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' '),
+                            offset: Offset.Top(-10), attached: true);
                 }
             }
 

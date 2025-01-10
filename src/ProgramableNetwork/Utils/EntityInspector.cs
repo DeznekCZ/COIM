@@ -2,6 +2,7 @@
 
 // COIExtended, Version=0.7.9.0, Culture=neutral, PublicKeyToken=null
 // COIExtended.UI.Entities.EntityInspector<TEntity,TView>
+using System;
 using System.Collections.Generic;
 using Mafi;
 using Mafi.Collections;
@@ -20,7 +21,7 @@ using Mafi.Unity.UserInterface;
 namespace Mafi.Unity
 {
 
-	public abstract class EntityInspector<TEntity, TView> : IUnityUi, IEntityInspector<TEntity>, IEntityInspector, IEntityInspectorFactory<TEntity>, IFactory<TEntity, IEntityInspector> where TEntity : class, IEntity where TView : ItemDetailWindowView
+	public abstract class EntityInspector<TEntity, TView> : ITooltipInspector, IUnityUi, IEntityInspector<TEntity>, IEntityInspector, IEntityInspectorFactory<TEntity>, IFactory<TEntity, IEntityInspector> where TEntity : class, IEntity where TView : ItemDetailWindowView
 	{
 		private Option<BuildingsAssigner> m_buildingsAssigner;
 
@@ -31,6 +32,7 @@ namespace Mafi.Unity
 		private readonly Lyst<IRenderedEntity> m_secondaryHighlightedEntities;
 
 		protected TView WindowView;
+		protected TooltipView<EntityInspector<TEntity, TView>, TEntity, TView> TooltipView;
 
 		private TEntity m_selectedEntity;
 
@@ -46,7 +48,9 @@ namespace Mafi.Unity
 
 		public virtual bool DeactivateOnNonUiClick => true;
 
-		protected EntityInspector(InspectorContext context)
+        public UiBuilder Builder { get; private set; }
+
+        protected EntityInspector(InspectorContext context)
 		{
 			m_secondaryHighlightedEntities = new Lyst<IRenderedEntity>();
 			Context = context;
@@ -54,10 +58,13 @@ namespace Mafi.Unity
 
 		public virtual void RegisterUi(UiBuilder builder)
 		{
+			Builder = builder;
+			
 			WindowView = GetView();
 			WindowView.SetOnCloseButtonClickAction(delegate
 			{
 				InputMgr.DeactivateController(Controller);
+				GetTooltipView().ClearTooltip();
 			});
 			WindowView.BuildUi(builder);
 			if (m_buildingsAssigner.HasValue)
@@ -66,7 +73,16 @@ namespace Mafi.Unity
 			}
 		}
 
-		public IEntityInspector Create(TEntity entity)
+        private TooltipView<EntityInspector<TEntity, TView>, TEntity, TView> GetTooltipView()
+        {
+			if (TooltipView == null)
+            {
+				TooltipView = new TooltipView<EntityInspector<TEntity, TView>, TEntity, TView>(this, GetType().Name + "__tooltip");
+			}
+			return TooltipView;
+        }
+
+        public IEntityInspector Create(TEntity entity)
 		{
 			m_selectedEntity = entity.CheckNotNull();
 			return this;
@@ -92,6 +108,7 @@ namespace Mafi.Unity
 				Controller.SetHoverCursorSuppression(isSuppressed: false);
 			}
 			WindowView.Hide();
+			TooltipView?.ClearTooltip();
 			OnDeactivated();
 			if (SelectedEntity is IRenderedEntity rendered)
 				Context.Highlighter.RemoveHighlight(rendered);
@@ -222,7 +239,7 @@ namespace Mafi.Unity
 				.Build(SyncFrequency.MoreThanSec);
 		}
 
-		protected abstract TView GetView();
+		public abstract TView GetView();
 
 		protected virtual void OnActivated()
 		{
@@ -239,5 +256,25 @@ namespace Mafi.Unity
 				m_activatedOverlayEntity = Context.OceanOverlayRenderer.DeactivateForSingleEntity(m_activatedOverlayEntity);
 			}
 		}
-	}
+
+		public void SetTooltip(string tooltip, Offset? offset, IUiElement parent)
+        {
+			(TooltipView ?? (TooltipView = GetTooltipView())).SetTooltip(tooltip, offset, parent);
+        }
+
+		public void ClearTooltip()
+        {
+			TooltipView?.ClearTooltip();
+		}
+
+		public void OnMouseIn(string tooltip, Offset? offset, IUiElement parent)
+		{
+			SetTooltip(tooltip, offset, parent);
+		}
+
+		public void OnMouseOut()
+        {
+            ClearTooltip();
+        }
+    }
 }

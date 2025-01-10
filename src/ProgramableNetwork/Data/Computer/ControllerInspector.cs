@@ -51,7 +51,7 @@ namespace ProgramableNetwork
         public ShortcutsManager ShortcutsManager { get; }
         public EntitySelector EntitySelectionInput { get; set; }
 
-        protected override ControllerView GetView()
+        public override ControllerView GetView()
         {
             return m_windowView;
         }

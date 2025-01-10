@@ -51,7 +51,7 @@ namespace ProgramableNetwork
         public ShortcutsManager ShortcutsManager { get; }
         public AntenaSelector EntitySelectionInput { get; set; }
 
-        protected override AntenaView GetView()
+        public override AntenaView GetView()
         {
             return m_windowView;
         }

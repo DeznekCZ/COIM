@@ -122,14 +122,13 @@ namespace ProgramableNetwork
                     // Add selector
                     for (int i = 0; i < dataBandProtos.Count; i++)
                     {
-                        var tooltip = new Tooltip(Builder).SetText(dataBandProtos[i].Strings.DescShort);
                         var selectionButton = Builder
                             .NewBtnGeneral("band_"+i)
                             .SetText(dataBandProtos[i].Strings.Name)
                             .SetButtonStyle(i == index ? Style.Global.GeneralBtnActive : Style.Global.GeneralBtn)
                             .SetHeight(40)
+                            .ToolTip(m_inspector, dataBandProtos[i].Strings.DescShort)
                             .AppendTo(bandSelector);
-                        tooltip.AttachTo(selectionButton);
                         if (i != index)
                         {
                             var current = dataBandProtos[i];
