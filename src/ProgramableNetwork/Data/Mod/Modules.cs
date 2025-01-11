@@ -38,6 +38,19 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
+            Arithmetic(registrator);
+            Comparation(registrator);
+            Connections(registrator);
+            Stats(registrator);
+            Forks(registrator);
+            Booleans(registrator);
+            Decisions(registrator);
+            Display(registrator);
+            Radio(registrator);
+        }
+
+        private static void Arithmetic(ProtoRegistrator registrator)
+        {
             registrator
                 .ModuleBuilderStart("Sum", "C = A + B", "A+B", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Arithmetic)
@@ -67,14 +80,26 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            Comparation(registrator);
-            Connections(registrator);
-            Stats(registrator);
-            Forks(registrator);
-            Booleans(registrator);
-            Decisions(registrator);
-            Display(registrator);
-            Radio(registrator);
+            registrator
+                .ModuleBuilderStart("Average", "Average", "~A", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddInput("input", "Input")
+                .AddOutput("count", "Average")
+                .AddOutput("average", "Average")
+                .AddInt32Field("count", "Count", "Maximum number of values to be counted in average with default: 10", 10)
+                .Action(m => {
+                    int desiredCount = m.Field["count", 1];
+                    if (desiredCount < 1) desiredCount = 1;
+
+                    Fix32 input = m.Input["input", 0].ToFix32();
+                    Fix32 oldCount = (m.Output["count", 1] - 1).ToFix32();
+                    Fix32 average = (m.Output["average", 0].ToFix32() * oldCount) + input;
+
+                    m.Output["average"] = average.IntegerPart;
+                    m.Output["count"] = Math.Min(desiredCount, m.Output["count", 0] + 1);
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
         }
 
         private void Stats(ProtoRegistrator registrator)
@@ -143,7 +168,8 @@ namespace ProgramableNetwork
             foreach (int i in new int[] { 2, 4 })
             {
                 var builder = registrator
-                    .ModuleBuilderStart($"Fork_{i}", $"Fork: 1 pin to {i}", $"F-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .ModuleBuilderStart($"Fork_{i}", $"Fork: 1 pin to {i}", $"F-{i}", Assets.Base.Products.Icons.Vegetables_svg,
+                        description: "Is used for organizing of pin connection. Is not required to use, output may be connected to multiple inputs")
                     .AddInput("a", "A")
                     .AddControllerDevice()
                     // dynamic
@@ -317,7 +343,7 @@ namespace ProgramableNetwork
                 .AddOutput("b", "B")
                 .AddOutput("c", "C")
                 .AddOutput("d", "D")
-                .AddEntityField<Controller>("controller", "Connection device", 20.ToFix32())
+                .AddEntityField<Controller>("controller", "Connection device", "Name of output module, which must exist in target Controller", 20.ToFix32())
                 .AddStringField("name", "Output Name", "C")
                 .Action(m =>
                 {
@@ -361,7 +387,7 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddInput("c", "C")
                 .AddInput("d", "D")
-                .AddStringField("name", "Name", "C")
+                .AddStringField("name", "Name", "Name of output module, which must be selected in target Controller", "C")
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -370,7 +396,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.Command)
                 .AddInput("pause", "Pause")
-                .AddEntityField<StaticEntity>("entity", "Connection device", 20.ToFix32())
+                .AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", 20.ToFix32())
                 .Action(m =>
                 {
                     int entityId = m.Field["entity", 0];
@@ -395,7 +421,7 @@ namespace ProgramableNetwork
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
                 .AddOutput("product", "Product in #")
-                .AddEntityField<StorageBase>("entity", "Connection device", 20.ToFix32())
+                .AddEntityField<StorageBase>("entity", "Connection device", "Storage connectable by cable 20m from controller", 20.ToFix32())
                 // .AddInt32Field("buffer", "Storage slot (0-based)", 0)
                 // TODO add filter input field
                 .Action(m =>
@@ -430,7 +456,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
 
             registrator
-                .ModuleBuilderStart("Connection_Transport", "Connection: Transport (input)", "TRANS", Assets.Base.Products.Icons.Vegetables_svg)
+                .ModuleBuilderStart("Connection_Transport", "Connection: Transport (input)", "TRANS", Assets.Base.Products.Icons.Vegetables_svg, "Transport connectable by cable 20m from controller")
                 .AddCategory(Category.Connection)
                 .AddOutput("quantity", "Quantity")
                 .AddOutput("capacity", "Capacity")
@@ -438,7 +464,7 @@ namespace ProgramableNetwork
                 .AddOutput("moving", "Is moving")
                 .AddInput("product", "Product filter")
                 .AddEntityField<Transport>("entity", "Connection device", 20.ToFix32())
-                .AddBooleanField("fullstack", "Cap to 100% (full stack = 1)")
+                .AddBooleanField("fullstack", "Cap fullness to 100%", "Bigger tiers of transport may display value over 100%. It's caused by maximum stack size. Activating this option will be the value normalized to 100%.")
                 // TODO add filter input field
                 .Action(m =>
                 {
@@ -655,77 +681,78 @@ namespace ProgramableNetwork
                     .ModuleBuilderStart($"Radio_In_FM_{i}", $"FM receiver ({i} signals)", $"FM\ni-{i}", Assets.Base.Products.Icons.Vegetables_svg)
                     .AddCategory(Category.Antene)
                     .AddCategory(Category.AnteneFM)
-                    .AddCustomField("fm", "FM", () => 20, (UiBuilder builder, StackContainer container, Reference reference, Action refresh) => {
-                        builder.NewTxt("NvaluekHz")
-                            .SetText(((171 + reference.Value).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
+                    .AddCustomField("fm", "FM", "Listening frequency", () => 20, (CustomField field) => {
+                        field.Builder.NewBtnGeneral("NvaluekHz")
+                            .SetText(((171 + field.Reference.Value).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
                             .SetSize(60, 20)
-                            .AppendTo(container);
-                        builder.NewBtnGeneral("NstartkHz")
+                            .ToolTip(field.Inspector, field.ShortDesc, attached: true)
+                            .AppendTo(field.Container);
+                        field.Builder.NewBtnGeneral("NstartkHz")
                             .SetText("|<")
                             .OnClick(() =>
                             {
-                                reference.Value = 0;
-                                refresh();
+                                field.Reference.Value = 0;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
-                        builder.NewBtnGeneral("N-5kHz")
+                            .AppendTo(field.Container);
+                        field.Builder.NewBtnGeneral("N-5kHz")
                             .SetText("<<")
                             .OnClick(() =>
                             {
-                                reference.Value -= 10;
-                                if (reference.Value < 0)
-                                    reference.Value += 45;
-                                refresh();
+                                field.Reference.Value -= 10;
+                                if (field.Reference.Value < 0)
+                                    field.Reference.Value += 45;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
 
-                        builder.NewBtnGeneral("N-0.5kHz")
+                        field.Builder.NewBtnGeneral("N-0.5kHz")
                             .SetText("<")
                             .OnClick(() =>
                             {
-                                reference.Value -= 1;
-                                if (reference.Value < 0)
-                                    reference.Value += 45;
-                                refresh();
+                                field.Reference.Value -= 1;
+                                if (field.Reference.Value < 0)
+                                    field.Reference.Value += 45;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
 
-                        builder.NewBtnGeneral("N+0.5kHz")
+                        field.Builder.NewBtnGeneral("N+0.5kHz")
                             .SetText(">")
                             .OnClick(() =>
                             {
-                                reference.Value += 1;
-                                if (reference.Value > 44)
-                                    reference.Value -= 45;
-                                refresh();
+                                field.Reference.Value += 1;
+                                if (field.Reference.Value > 44)
+                                    field.Reference.Value -= 45;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
 
-                        builder.NewBtnGeneral("N+5kHz")
+                        field.Builder.NewBtnGeneral("N+5kHz")
                             .SetText(">>")
                             .OnClick(() =>
                             {
-                                reference.Value += 10;
-                                if (reference.Value > 44)
-                                    reference.Value -= 45;
-                                refresh();
+                                field.Reference.Value += 10;
+                                if (field.Reference.Value > 44)
+                                    field.Reference.Value -= 45;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
 
-                        builder.NewBtnGeneral("NendkHz")
+                        field.Builder.NewBtnGeneral("NendkHz")
                             .SetText(">|")
                             .OnClick(() =>
                             {
-                                reference.Value = 44;
-                                refresh();
+                                field.Reference.Value = 44;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
                     })
                     .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                     .AddControllerDevice()
@@ -764,77 +791,78 @@ namespace ProgramableNetwork
                     .ModuleBuilderStart($"Radio_Out_FM_{i}", $"FM broadcaster ({i} signals)", $"FM\no-{i}", Assets.Base.Products.Icons.Vegetables_svg)
                     .AddCategory(Category.Antene)
                     .AddCategory(Category.AnteneFM)
-                    .AddCustomField("fm", "FM", () => 20, (UiBuilder builder, StackContainer container, Reference reference, Action refresh) => {
-                        builder.NewTxt("NvaluekHz")
-                            .SetText(((171 + reference.Value).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
+                    .AddCustomField("fm", "FM", "Broadcasting frequency", () => 20, (field) => {
+                        field.Builder.NewBtnGeneral("NvaluekHz")
+                            .SetText(((171 + field.Reference.Value).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
                             .SetSize(60, 20)
-                            .AppendTo(container);
-                        builder.NewBtnGeneral("NstartkHz")
+                            .ToolTip(field.Inspector, field.ShortDesc, attached: true)
+                            .AppendTo(field.Container);
+                        field.Builder.NewBtnGeneral("NstartkHz")
                             .SetText("|<")
                             .OnClick(() =>
                             {
-                                reference.Value = 0;
-                                refresh();
+                                field.Reference.Value = 0;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
-                        builder.NewBtnGeneral("N-5kHz")
+                            .AppendTo(field.Container);
+                        field.Builder.NewBtnGeneral("N-5kHz")
                             .SetText("<<")
                             .OnClick(() =>
                             {
-                                reference.Value -= 10;
-                                if (reference.Value < 0)
-                                    reference.Value += 45;
-                                refresh();
+                                field.Reference.Value -= 10;
+                                if (field.Reference.Value < 0)
+                                    field.Reference.Value += 45;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
 
-                        builder.NewBtnGeneral("N-0.5kHz")
+                        field.Builder.NewBtnGeneral("N-0.5kHz")
                             .SetText("<")
                             .OnClick(() =>
                             {
-                                reference.Value -= 1;
-                                if (reference.Value < 0)
-                                    reference.Value += 45;
-                                refresh();
+                                field.Reference.Value -= 1;
+                                if (field.Reference.Value < 0)
+                                    field.Reference.Value += 45;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
 
-                        builder.NewBtnGeneral("N+0.5kHz")
+                        field.Builder.NewBtnGeneral("N+0.5kHz")
                             .SetText(">")
                             .OnClick(() =>
                             {
-                                reference.Value += 1;
-                                if (reference.Value > 44)
-                                    reference.Value -= 45;
-                                refresh();
+                                field.Reference.Value += 1;
+                                if (field.Reference.Value > 44)
+                                    field.Reference.Value -= 45;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
 
-                        builder.NewBtnGeneral("N+5kHz")
+                        field.Builder.NewBtnGeneral("N+5kHz")
                             .SetText(">>")
                             .OnClick(() =>
                             {
-                                reference.Value += 10;
-                                if (reference.Value > 44)
-                                    reference.Value -= 45;
-                                refresh();
+                                field.Reference.Value += 10;
+                                if (field.Reference.Value > 44)
+                                    field.Reference.Value -= 45;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
 
-                        builder.NewBtnGeneral("NendkHz")
+                        field.Builder.NewBtnGeneral("NendkHz")
                             .SetText(">|")
                             .OnClick(() =>
                             {
-                                reference.Value = 44;
-                                refresh();
+                                field.Reference.Value = 44;
+                                field.Refresh();
                             })
                             .SetSize(20, 20)
-                            .AppendTo(container);
+                            .AppendTo(field.Container);
                     })
                     .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                     .AddControllerDevice()

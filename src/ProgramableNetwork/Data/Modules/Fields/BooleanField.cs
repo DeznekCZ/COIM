@@ -11,12 +11,14 @@ namespace ProgramableNetwork
         public string Id { get; }
         private string name;
         public bool Default { get; }
+        private string shortDesc;
 
-        public BooleanField(string id, string name, bool defaultValue)
+        public BooleanField(string id, string name, string shortDesc, bool defaultValue)
         {
             this.Id = id;
             this.name = name;
             this.Default = defaultValue;
+            this.shortDesc = shortDesc;
         }
 
         public string Name => name;
@@ -28,12 +30,14 @@ namespace ProgramableNetwork
             fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
             fieldContainer.SetHeight(20);
 
-            uiBuilder
-                .NewTxt("name")
+            var txt = uiBuilder
+                .NewBtnGeneral("name")
+                .SettingFieldNameStyle(uiBuilder)
                 .SetParent(fieldContainer, true)
                 .SetWidth(180)
-                .SetHeight(20)
+                .SetHeight(40)
                 .SetText(Name)
+                .ToolTip(inspector, shortDesc, attached: true)
                 .AppendTo(fieldContainer);
 
             bool value = module.Field[Id, Default ? 1 : 0] > 0;

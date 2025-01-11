@@ -15,7 +15,7 @@ namespace Mafi.Unity
         private readonly string m_id;
         private Txt content;
 
-        public TooltipView(TInspector inspector, string id, bool isOnMainCanvas = true)
+        public TooltipView(TInspector inspector, string id)
         {
             m_inspector = inspector;
             m_id = id;
@@ -23,8 +23,14 @@ namespace Mafi.Unity
 
         public void SetTooltip(string tooltip, Offset? offset, IUiElement parent)
         {
+            if (tooltip == null)
+            {
+                ClearTooltip();
+                return;
+            }
+
             content = m_inspector.Builder.NewTxt(m_id);
-            content.SetTextStyle(m_inspector.Builder.Style.Panel.Text.Extend(fontSize: 12));
+            content.SetTextStyle(m_inspector.Builder.Style.Panel.Text.Extend(fontSize: 15));
             content.SetText(tooltip);
             content.SetBackground(ColorRgba.Black);
             content.SetSize(content.GetPreferredSize(250, 600));

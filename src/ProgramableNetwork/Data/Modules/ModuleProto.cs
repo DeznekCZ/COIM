@@ -369,27 +369,51 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddInt32Field(string id, string name, int defaultValue = 0)
+            public Builder AddBooleanField(string id, string name, bool defaultValue = false)
             {
-                m_fields.Add(new NumberField<int>(id, name, defaultValue));
+                m_fields.Add(new BooleanField(id, name, null, defaultValue));
                 return this;
             }
 
-            public Builder AddBooleanField(string id, string name, bool defaultValue = false)
+            public Builder AddBooleanField(string id, string name, string shortDesc, bool defaultValue = false)
             {
-                m_fields.Add(new BooleanField(id, name, defaultValue));
+                m_fields.Add(new BooleanField(id, name, shortDesc, defaultValue));
+                return this;
+            }
+
+            public Builder AddInt32Field(string id, string name, int defaultValue = 0)
+            {
+                m_fields.Add(new NumberField<int>(id, name, null, defaultValue));
+                return this;
+            }
+
+            public Builder AddInt32Field(string id, string name, string shortDesc, int defaultValue = 0)
+            {
+                m_fields.Add(new NumberField<int>(id, name, shortDesc, defaultValue));
                 return this;
             }
 
             public Builder AddInt64Field(string id, string name, long defaultValue = 0)
             {
-                m_fields.Add(new NumberField<long>(id, name, defaultValue));
+                m_fields.Add(new NumberField<long>(id, name, null, defaultValue));
+                return this;
+            }
+
+            public Builder AddInt64Field(string id, string name, string shortDesc, long defaultValue = 0)
+            {
+                m_fields.Add(new NumberField<long>(id, name, shortDesc, defaultValue));
                 return this;
             }
 
             public Builder AddStringField(string id, string name, string defaultValue = "")
             {
-                m_fields.Add(new StringField(id, name, defaultValue));
+                m_fields.Add(new StringField(id, name, null, defaultValue));
+                return this;
+            }
+
+            public Builder AddStringField(string id, string name, string shortDesc, string defaultValue = "")
+            {
+                m_fields.Add(new StringField(id, name, shortDesc, defaultValue));
                 return this;
             }
 
@@ -419,13 +443,13 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddCustomField(string id, string name, Func<int> size, Action<UiBuilder, StackContainer, Reference, Action> ui)
+            public Builder AddCustomField(string id, string name, Func<int> size, Action<CustomField> ui)
             {
                 m_fields.Add(new CustomField(id, name, null, size, ui));
                 return this;
             }
 
-            public Builder AddCustomField(string id, string name, string shortDesc, Func<int> size, Action<UiBuilder, StackContainer, Reference, Action> ui)
+            public Builder AddCustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui)
             {
                 m_fields.Add(new CustomField(id, name, shortDesc, size, ui));
                 return this;

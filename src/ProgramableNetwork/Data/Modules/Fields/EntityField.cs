@@ -71,22 +71,16 @@ namespace ProgramableNetwork
 
             var txt = uiBuilder
                 .NewBtnGeneral("name")
+                .SettingFieldNameStyle(uiBuilder)
                 .SetParent(fieldContainer, true)
                 .SetWidth(180)
                 .SetHeight(40)
                 .SetText(Name)
-                .SetEnabled(false)
+                .ToolTip(inspector, shortDesc, attached: true)
                 .AppendTo(fieldContainer);
 
             new Picker(uiBuilder, module, id, entitySelector, distance, updateDialog, parentWindow, inspector)
                 .AppendTo(fieldContainer);
-
-            if (shortDesc != null)
-            {
-                var tooltip = new Tooltip(uiBuilder);
-                tooltip.SetText(shortDesc);
-                tooltip.AttachTo(txt);
-            }
         }
 
         public class Picker : StackContainer

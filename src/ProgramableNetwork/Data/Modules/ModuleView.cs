@@ -136,7 +136,7 @@ namespace ProgramableNetwork
                         )
                         .AppendTo(inputsPanel)
                         .ToolTip(m_computerView.m_controller, (input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' '),
-                            offset: Offset.Top(15), attached: true);
+                            offset: Offset.Top(-5), attached: true);
 
                     m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
                         (context) =>
@@ -211,7 +211,7 @@ namespace ProgramableNetwork
                         )
                         .AppendTo(inputsPanel)
                         .ToolTip(m_computerView.m_controller, (output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' '),
-                            offset: Offset.Top(-10), attached: true);
+                            offset: Offset.Top(20), attached: true);
                 }
             }
 

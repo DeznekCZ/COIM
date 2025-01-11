@@ -142,5 +142,26 @@ namespace ProgramableNetwork
         {
             return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip.TranslatedString, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
         }
+
+        public static Btn SettingFieldNameStyle(this Btn element, UiBuilder builder)
+        {
+            element.SetButtonStyle(
+                builder.Style.Global.GeneralBtn
+                .Extend(
+                    normalMaskClr: builder.Style.Panel.Background,
+                    backgroundClr: builder.Style.Panel.Background,
+                    hoveredClr: builder.Style.Panel.Background,
+                    disabledMaskClr: builder.Style.Panel.Background,
+                    pressedClr: builder.Style.Panel.Background,
+                    foregroundClrWhenDisabled: ColorRgba.White,
+                    border: new Mafi.Unity.UiFramework.Styles.BorderStyle(
+                        ColorRgba.Black, 0
+                    )
+                )
+                .ExtendText(
+                    color: ColorRgba.White
+                ));
+            return element;
+        }
     }
 }

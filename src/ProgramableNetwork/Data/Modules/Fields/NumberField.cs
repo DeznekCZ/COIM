@@ -1,40 +1,45 @@
 ﻿using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
+using Mafi.Unity.UserInterface.Components;
 using System;
 
 namespace ProgramableNetwork
 {
     public class NumberField<T> : IField
     {
-        public NumberField(string id, string name, T defaultValue)
+        public NumberField(string id, string name, string shortDesc, T defaultValue)
         {
             Id = id;
             Name = name;
             Default = defaultValue;
+            ShortDesc = shortDesc;
         }
 
         public string Id { get; }
         public string Name { get; }
+        public string ShortDesc { get; }
 
         public int Size => 20;
 
         public T Default { get; }
 
-        public void Init(ControllerInspector inspector, WindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuider, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, WindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
         {
             fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
             fieldContainer.SetHeight(20);
 
-            uiBuider
-                .NewTxt("name")
+            var txt = uiBuilder
+                .NewBtnGeneral("name")
+                .SettingFieldNameStyle(uiBuilder)
                 .SetParent(fieldContainer, true)
                 .SetWidth(180)
-                .SetHeight(20)
+                .SetHeight(40)
                 .SetText(Name)
+                .ToolTip(inspector, ShortDesc, attached: true)
                 .AppendTo(fieldContainer);
 
-            var numberEditor = uiBuider
+            var numberEditor = uiBuilder
                 .NewTxtField("value")
                 .SetParent(fieldContainer, true)
                 .SetWidth(200)

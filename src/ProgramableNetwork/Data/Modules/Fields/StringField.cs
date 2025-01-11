@@ -1,6 +1,7 @@
 ﻿using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
+using Mafi.Unity.UserInterface.Components;
 using System;
 
 namespace ProgramableNetwork
@@ -9,12 +10,15 @@ namespace ProgramableNetwork
     {
         public string Id { get; }
         private string name;
+        private string shortDesc;
+
         public string Default { get; }
 
-        public StringField(string id, string name, string defaultValue)
+        public StringField(string id, string name, string shortDesc, string defaultValue)
         {
             this.Id = id;
             this.name = name;
+            this.shortDesc = shortDesc;
             this.Default = defaultValue;
         }
 
@@ -27,12 +31,14 @@ namespace ProgramableNetwork
             fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
             fieldContainer.SetHeight(20);
 
-            uiBuilder
-                .NewTxt("name")
+            var txt = uiBuilder
+                .NewBtnGeneral("name")
+                .SettingFieldNameStyle(uiBuilder)
                 .SetParent(fieldContainer, true)
                 .SetWidth(180)
-                .SetHeight(20)
+                .SetHeight(40)
                 .SetText(Name)
+                .ToolTip(inspector, shortDesc, attached: true)
                 .AppendTo(fieldContainer);
 
             var numberEditor = uiBuilder
