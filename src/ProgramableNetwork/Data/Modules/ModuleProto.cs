@@ -375,6 +375,12 @@ namespace ProgramableNetwork
                 return this;
             }
 
+            public Builder AddBooleanField(string id, string name, bool defaultValue = false)
+            {
+                m_fields.Add(new BooleanField(id, name, defaultValue));
+                return this;
+            }
+
             public Builder AddInt64Field(string id, string name, long defaultValue = 0)
             {
                 m_fields.Add(new NumberField<long>(id, name, defaultValue));

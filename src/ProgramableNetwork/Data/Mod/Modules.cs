@@ -436,14 +436,16 @@ namespace ProgramableNetwork
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
                 .AddOutput("moving", "Is moving")
-                .AddInput("product", "First Product in #")
+                .AddInput("product", "Product filter")
                 .AddEntityField<Transport>("entity", "Connection device", 20.ToFix32())
+                .AddBooleanField("fullstack", "Cap to 100% (full stack = 1)")
                 // TODO add filter input field
                 .Action(m =>
                 {
                     int entityId = m.Field["entity", 0];
                     int buffer = m.Input["buffer", 0];
                     int filterId = m.Input["product", 0];
+                    bool fullstack = m.Field["fullstack", 0] > 0;
 
                     if (m.Context.EntitiesManager
                             .TryGetEntity(new Mafi.Core.EntityId(entityId), out Transport entity))
@@ -451,25 +453,17 @@ namespace ProgramableNetwork
                         m.Output["quantity"] = entity.TransportedProducts
                                             .Where(p => filterId == 0 || p.SlimId.Value == filterId)
                                             .Select(p => p.Quantity.Value).Sum();
-                        m.Output["capacity"] = entity.Trajectory.MaxProducts;
+                        m.Output["capacity"] = entity.Trajectory.MaxProducts
+                                             * (fullstack ? entity.Prototype.MaxQuantityPerTransportedProduct.Value : 1);
                         m.Output["fullness"] = (int)(100f * m.Output["quantity"] / m.Output["capacity"]);
-                        m.Output["moving"] = entity.IsMoving ? 1 : 0;
-
-                        if (entity.FirstProduct.HasValue)
-                        {
-                            m.Output["product"] = (int)(uint)entity.FirstProduct.Value.SlimId.Value;
-                        }
-                        else
-                        {
-                            m.Output["product"] = -1;
-                        }
+                        m.Output["moving"] = entity.GetStatus() == Transport.Status.Moving ? 1 : 0;
                         return;
                     }
 
                     m.Output["quantity"] = 0;
                     m.Output["capacity"] = 0;
                     m.Output["fullness"] = 100;
-                    m.Output["product"] = -1;
+                    m.Output["moving"] = 0;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
