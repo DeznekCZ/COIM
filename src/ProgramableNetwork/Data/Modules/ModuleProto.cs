@@ -430,16 +430,16 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddEntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> entitySelector = null, Fix32? distance = null)
+            public Builder AddEntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, entitySelector, distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, shortDesc, filter, distance ?? 5.ToFix32()));
                 return this;
             }
 
-            public Builder AddEntityField<T>(string id, string name, string shortDesc, Fix32? distance = null)
+            public Builder AddEntityField<T>(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T, distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T && (filter?.Invoke(module, entity) ?? true), distance ?? 5.ToFix32()));
                 return this;
             }
 

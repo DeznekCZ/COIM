@@ -50,12 +50,12 @@ namespace ProgramableNetwork
 
             numberEditor.SetOnValueChangedAction(() =>
             {
-                module.Field[Id] = numberEditor.GetText().ToString();
+                module.Field[Id, ""] = numberEditor.GetText();
             });
 
             string value = module.Field[Id, Default];
             numberEditor.SetText(value);
-            module.Field[Id] = value;
+            module.Field[Id, ""] = value;
         }
 
         public void Validate(Module module)

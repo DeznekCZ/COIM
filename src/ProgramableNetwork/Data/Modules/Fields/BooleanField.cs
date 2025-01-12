@@ -41,7 +41,7 @@ namespace ProgramableNetwork
                 .AppendTo(fieldContainer);
 
             bool value = module.Field[Id, Default ? 1 : 0] > 0;
-            module.Field[Id] = value;
+            module.Field[Id] = value ? 1 : 0;
 
             Btn falseSelector = uiBuilder
                 .NewBtnGeneral("false")

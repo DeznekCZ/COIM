@@ -30,16 +30,14 @@ namespace ProgramableNetwork
             this.sqrDistance = distance.ToFix64() * distance.ToFix64();
         }
 
+        public string Id => id;
         public string Name => name;
 
         public int Size => 40;
 
         public void Validate(Module module)
         {
-            if (module.Context.EntitiesManager.TryGetEntity(
-                    new Mafi.Core.EntityId(module.Field[id, 0]),
-                    out Entity entity
-                    ))
+            if (GetEntity(module, out Entity entity))
             {
                 if (entity is StaticEntity staticEntity)
                 {
@@ -62,6 +60,12 @@ namespace ProgramableNetwork
                     }
                 }
             }
+        }
+
+        private bool GetEntity(Module module, out Entity entity)
+        {
+            entity = module.Field.Entity<Entity>(id);
+            return entity != null;
         }
 
         public void Init(ControllerInspector inspector, WindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
@@ -140,10 +144,8 @@ namespace ProgramableNetwork
                 m_selectionButton.SetButtonStyle(m_builder.Style.Global.GeneralBtn);
                 m_inspector.EntitySelectionInput = null;
 
-                if (m_inspectorContext.EntitiesManager.TryGetEntity(
-                    new Mafi.Core.EntityId(m_module.Field[m_dataName, 0]),
-                    out Entity entity
-                    ))
+                Entity entity = m_module.Field.Entity<Entity>(m_dataName);
+                if (entity != null)
                 {
                     m_btnPreview.SetIcon(entity.GetIcon());
                     m_btnPreview.OnClick(
@@ -194,7 +196,10 @@ namespace ProgramableNetwork
             {
                 m_selectionButton.SetButtonStyle(m_builder.Style.Global.GeneralBtnActive);
                 m_inspector.EntitySelectionInput = new EntitySelector(m_module, m_distance, m_refresh, m_filter,
-                    (entity) => m_module.Field[m_dataName] = entity.Id.Value);
+                    (entity) =>
+                    {
+                        m_module.Field[m_dataName] = Fix32.FromRaw(entity.Id.Value);
+                    });
             }
         }
     }

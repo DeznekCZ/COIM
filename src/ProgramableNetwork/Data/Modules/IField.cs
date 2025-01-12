@@ -6,6 +6,7 @@ namespace ProgramableNetwork
 {
     public interface IField
     {
+        string Id { get; }
         string Name { get; }
         int Size { get; }
 

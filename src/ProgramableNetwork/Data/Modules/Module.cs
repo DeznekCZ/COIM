@@ -1,10 +1,12 @@
-﻿using Mafi.Collections;
+﻿using Mafi;
+using Mafi.Collections;
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Localization;
 using Mafi.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ProgramableNetwork
 {
@@ -39,7 +41,10 @@ namespace ProgramableNetwork
 
         private ModuleProto m_proto;
         private string m_protoId;
+        private int loadedVersion;
         private ModuleLayout m_layout;
+
+        private static readonly int SerializerVersion = 1;
 
         public Module(ModuleProto prototype, EntityContext context, Controller entity)
         {
@@ -105,9 +110,6 @@ namespace ProgramableNetwork
 
         [DoNotSave(0, null)]
         public Dict<string, ModuleConnector> InputModules { get; private set; } // todo get by module id, cached
-
-        [DoNotSave(0, null)]
-        private readonly int SerializerVersion = 0;
         protected void SerializeData(BlobWriter writer)
         {
             if (m_protoId == null)
@@ -126,18 +128,22 @@ namespace ProgramableNetwork
         {
             Id = reader.ReadLong();
             m_protoId = reader.ReadString();
-            int version = reader.ReadInt();
+            loadedVersion = reader.ReadInt();
             IsPaused = reader.ReadBool();
             NumberData = Dict<string, int>.Deserialize(reader);
             StringData = Dict<string, string>.Deserialize(reader);
             InputModules = Dict<string, ModuleConnector>.Deserialize(reader);
+
+            Log.Info($"Instance: {GetHashCode()}({Id}), version: {loadedVersion}");
         }
 
-        [InitAfterLoad(InitPriority.Normal)]
+        [InitAfterLoad(InitPriority.High)]
         [OnlyForSaveCompatibility(null)]
         internal void initContexts(int saveVersion)
         {
             var Prototype = Context.ProtosDb.Get<ModuleProto>(new ModuleProto.ID(m_protoId));
+            Log.Info($"Instance: {GetHashCode()}({Id}), version: {loadedVersion}");
+
             if (Prototype.HasValue)
             {
                 this.Prototype = Prototype.Value;
@@ -146,6 +152,28 @@ namespace ProgramableNetwork
             {
                 var alternative = Deprecation.GetAlternative(new ModuleProto.ID(m_protoId));
                 this.Prototype = Context.ProtosDb.Get<ModuleProto>(alternative).ValueOrThrow("Invalid module proto: " + m_protoId);
+            }
+
+            if (loadedVersion == 0)
+            {
+                loadedVersion = SerializerVersion;
+                foreach (IField item in this.Prototype.Fields)
+                {
+                    if (!(item is EntityField) && NumberData.TryGetValue("field__" + item.Id, out var value))
+                    {
+                        NumberData["field__" + item.Id] = value.ToFix32().RawValue;
+                    }
+                }
+                foreach (ModuleConnectorProto item in this.Prototype.Inputs)
+                {
+                    if (NumberData.TryGetValue("in__" + item.Id, out var value))
+                        Input[item.Id] = value.ToFix32().RawValue;
+                }
+                foreach (ModuleConnectorProto item in this.Prototype.Outputs)
+                {
+                    if (NumberData.TryGetValue("out__" + item.Id, out var value))
+                        Output[item.Id] = value.ToFix32().RawValue;
+                }
             }
         }
 
@@ -208,11 +236,17 @@ namespace ProgramableNetwork
                 this.module = module;
             }
 
-            public int this[string name, int defaultValue = 0]
+            public Fix32 this[string name, int defaultValue = 0]
             {
                 get => module.NumberData.TryGetValue("out__" + name, out int data)
-                    ? data : defaultValue;
-                set => module.NumberData["out__" + name] = value;
+                    ? Fix32.FromRaw(data) : defaultValue.ToFix32();
+                set => module.NumberData["out__" + name] = value.RawValue;
+            }
+
+            public Fix32 this[string name, Fix32 defaultValue]
+            {
+                get => module.NumberData.TryGetValue("out__" + name, out int data)
+                    ? Fix32.FromRaw(data) : defaultValue;
             }
         }
 
@@ -229,11 +263,17 @@ namespace ProgramableNetwork
                 this.module = module;
             }
 
-            public int this[string name, int defaultValue = 0]
+            public Fix32 this[string name, int defaultValue = 0]
             {
                 get => module.NumberData.TryGetValue("in__" + name, out int data)
-                    ? data : defaultValue;
-                set => module.NumberData["in__" + name] = value;
+                    ? Fix32.FromRaw(data) : defaultValue.ToFix32();
+                set => module.NumberData["in__" + name] = value.RawValue;
+            }
+
+            public Fix32 this[string name, Fix32 defaultValue]
+            {
+                get => module.NumberData.TryGetValue("in__" + name, out int data)
+                    ? Fix32.FromRaw(data) : defaultValue;
             }
         }
 
@@ -253,22 +293,34 @@ namespace ProgramableNetwork
             {
                 get => module.StringData.TryGetValue("field__" + name, out string data)
                     ? data : defaultValue;
+                set => module.StringData["field__" + name] = value ?? defaultValue;
             }
 
-            public int this[string name, int defaultValue]
+            public Fix32 this[string name, int defaultValue]
             {
                 get => module.NumberData.TryGetValue("field__" + name, out int data)
-                    ? data : defaultValue;
+                    ? Fix32.FromRaw(data) : defaultValue.ToFix32();
             }
 
-            public object this[string name]
+            public Fix32 this[string name, Fix32 defaultValue]
+            {
+                get => module.NumberData.TryGetValue("field__" + name, out int data)
+                    ? Fix32.FromRaw(data) : defaultValue;
+            }
+
+            public T Entity<T>(string name)
+                where T : class, IEntity
+            {
+                module.NumberData.TryGetValue("field__" + name, out int data);
+                module.Context.EntitiesManager.TryGetEntity(new EntityId(data), out T entity);
+                return entity;
+            }
+
+            public Fix32 this[string name]
             {
                 set
                 {
-                    if (value is int i)
-                        module.NumberData["field__" + name] = i;
-                    if (value is string s)
-                        module.StringData["field__" + name] = s;
+                    module.NumberData["field__" + name] = value.RawValue;
                 }
             }
         }

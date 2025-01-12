@@ -22,6 +22,7 @@ namespace ProgramableNetwork
             this.size = size;
         }
 
+        public string Id => id;
         public string Name => name;
         public string ShortDesc => shortDesc;
 

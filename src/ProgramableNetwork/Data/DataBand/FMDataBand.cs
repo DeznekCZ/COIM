@@ -93,7 +93,7 @@ namespace ProgramableNetwork
             }
             else
             {
-                Mafi.Log.Error($"Prototype not found: {m_protoId}");
+                Log.Error($"Prototype not found: {m_protoId}");
                 Prototype = Context.ProtosDb.Get<DataBandProto>(DataBands.DataBand_Unknown).ValueOrThrow("Unknown signal not found");
             }
         }
@@ -105,7 +105,7 @@ namespace ProgramableNetwork
                 if (item.ValidIterations-- == 0)
                 {
                     // After one second reset signal
-                    item.Value = new int[0];
+                    item.Value = new Fix32[0];
                 }
             }
 
@@ -115,16 +115,16 @@ namespace ProgramableNetwork
             }
         }
 
-        public void Update(int index, int[] value)
+        public void Update(int index, Fix32[] value)
         {
-            m_active[index].Value = new int[value.Length];
+            m_active[index].Value = new Fix32[value.Length];
             Array.Copy(value, m_active[index].Value, value.Length);
             m_active[index].ValidIterations = 60;
         }
 
-        public int[] Read(int index)
+        public Fix32[] Read(int index)
         {
-            int[] ints = new int[m_active[index].Value.Length];
+            Fix32[] ints = new Fix32[m_active[index].Value.Length];
             if (m_active[index].ValidIterations > 0)
                 Array.Copy(m_active[index].Value, ints, ints.Length);
             // else only zeros

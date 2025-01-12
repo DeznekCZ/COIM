@@ -65,18 +65,12 @@ namespace ProgramableNetwork
             {
                 return (m) =>
                 {
-                    long value = 0;
+                    Fix32 value = 0;
                     for (int j = 0; j < i; j++)
                     {
                         value += m.Input[names[j], 0];
                     }
-
-                    if (value > int.MaxValue)
-                        m.Output["sum"] = int.MaxValue;
-                    else if (value < int.MinValue)
-                        m.Output["sum"] = int.MinValue;
-                    else
-                        m.Output["sum"] = (int)value;
+                    m.Output["sum"] = value;
                 };
             }
             foreach (int i in new int[] { 4, 8 })
@@ -121,15 +115,10 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddOutput("c", "C")
                 .Action(m => {
-                    int a = m.Input["a", 0];
-                    int b = m.Input["b", 0];
-                    long c = (long)a * (long)b;
-                    if (c > int.MaxValue)
-                        m.Output["c"] = int.MaxValue;
-                    else if (c < int.MinValue)
-                        m.Output["c"] = int.MinValue;
-                    else
-                        m.Output["c"] = (int)c;
+                    Fix32 a = m.Input["a", 0];
+                    Fix32 b = m.Input["b", 0];
+                    Fix32 c = a * b;
+                    m.Output["c"] = a * b;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -142,12 +131,12 @@ namespace ProgramableNetwork
                 .AddOutput("c", "C")
                 .AddOutput("error", "Error")
                 .Action(m => {
-                    int a = m.Input["a", 0];
-                    int b = m.Input["b", 0];
+                    Fix32 a = m.Input["a", 0];
+                    Fix32 b = m.Input["b", 0];
                     if (b == 0)
                     {
                         m.Output["error"] = 1;
-                        m.Output["c"] = int.MaxValue;
+                        m.Output["c"] = Fix32.MaxValue;
                     }
                     else
                     {
@@ -166,8 +155,8 @@ namespace ProgramableNetwork
                 .AddOutput("c", "C")
                 .AddOutput("error", "Error")
                 .Action(m => {
-                    int a = m.Input["a", 0];
-                    int b = m.Input["b", 0];
+                    Fix32 a = m.Input["a", 0];
+                    Fix32 b = m.Input["b", 0];
                     if (b == 0)
                     {
                         m.Output["error"] = 1;
@@ -190,18 +179,33 @@ namespace ProgramableNetwork
                 .AddOutput("average", "Average")
                 .AddInt32Field("count", "Count", "Maximum number of values to be counted in average with default: 10", 10)
                 .Action(m => {
-                    int desiredCount = m.Field["count", 1];
+                    Fix32 desiredCount = m.Field["count", 1];
                     if (desiredCount < 1) desiredCount = 1;
 
-                    Fix32 input = m.Input["input", 0].ToFix32();
-                    Fix32 oldCount = (m.Output["count", 1] - 1).ToFix32();
-                    Fix32 average = (m.Output["average", 0].ToFix32() * oldCount) + input;
+                    Fix32 input = m.Input["input", 0];
+                    Fix32 oldCount = (m.Output["count", 1] - 1);
+                    Fix32 average = (m.Output["average", 0] * oldCount) + input;
 
-                    m.Output["count"] = Math.Min(desiredCount, m.Output["count", 0] + 1);
-                    m.Output["average"] = (average / m.Output["count"].ToFix32()).IntegerPart;
+                    m.Output["count"] = Min(desiredCount, m.Output["count", 0] + 1.ToFix32());
+                    m.Output["average"] = (average / m.Output["count"]);
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
+        }
+
+        private static Fix32 Min(Fix32 a, Fix32 b)
+        {
+            return a < b ? a : b;
+        }
+
+        private static Fix32 Min(Fix32 a, int b)
+        {
+            return a < b.ToFix32() ? a : b.ToFix32();
+        }
+
+        private static Fix32 Min(int a, Fix32 b)
+        {
+            return a.ToFix32() < b ? a.ToFix32() : b;
         }
 
         private void Stats(ProtoRegistrator registrator)
@@ -394,15 +398,15 @@ namespace ProgramableNetwork
             {
                 return m =>
                 {
-                    int index = m.Input["index", int.MaxValue];
+                    Fix32 index = m.Input["index", Fix32.MaxValue];
                     int digits = count * 2;
-                    string text = index.ToString($"D{digits}");
+                    string text = index.IntegerPart.ToString($"D{digits}");
                     m.Display["index"] = text.Length > digits ? text.Substring(text.Length - digits) : text;
 
                     for (int i = 0; i < count; i++)
                     {
                         string name = names[i];
-                        int value = m.Field[name, 0];
+                        Fix32 value = m.Field[name, 0];
                         if (index <= value)
                         {
                             m.Output["selected"] = m.Input[name, 0];
@@ -445,16 +449,15 @@ namespace ProgramableNetwork
                 .AddOutput("b", "B")
                 .AddOutput("c", "C")
                 .AddOutput("d", "D")
-                .AddEntityField<Controller>("controller", "Connection device", "Name of output module, which must exist in target Controller", 20.ToFix32())
+                .AddEntityField<Controller>("controller", "Connection device", "Name of output module, which must exist in target Controller", distance: 20.ToFix32())
                 .AddStringField("name", "Output Name", "C")
                 .Action(m =>
                 {
                     //Mafi.Log.Info("Update of input");
-                    int entityId = m.Field["controller", 0];
+                    Controller controller = m.Field.Entity<Controller>("controller");
                     string moduleType = "Connection_Controller_Output".ModuleId();
                     string noduleName = m.Field["name", ""];
-                    if (noduleName.Length > 0 && m.Context.EntitiesManager
-                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out Controller controller))
+                    if (noduleName.Length > 0 && controller != null)
                     {
                         //Mafi.Log.Info("Target entity found");
                         Module targetModule = controller.Modules.AsEnumerable()
@@ -498,14 +501,12 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.Command)
                 .AddInput("pause", "Pause")
-                .AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", 20.ToFix32())
+                .AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", distance: 20.ToFix32(), filter: (m,e) => e.CanBePaused)
                 .Action(m =>
                 {
-                    int entityId = m.Field["entity", 0];
-                    int input = m.Input["pause", 0];
-                    if (m.Context.EntitiesManager
-                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out StaticEntity entity)
-                        && entity.CanBePaused)
+                    StaticEntity entity = m.Field.Entity<StaticEntity>("entity");
+                    Fix32 input = m.Input["pause", 0];
+                    if (entity?.CanBePaused ?? false)
                     {
                         entity.SetPaused(input > 0);
                         m.StatusIn["pause"] = ModuleStatus.Running;
@@ -523,16 +524,14 @@ namespace ProgramableNetwork
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
                 .AddOutput("product", "Product in #")
-                .AddEntityField<StorageBase>("entity", "Connection device", "Storage connectable by cable 20m from controller", 20.ToFix32())
+                .AddEntityField<StorageBase>("entity", "Connection device", "Storage connectable by cable 20m from controller", distance: 20.ToFix32())
                 // .AddInt32Field("buffer", "Storage slot (0-based)", 0)
                 // TODO add filter input field
                 .Action(m =>
                 {
-                    int entityId = m.Field["entity", 0];
-                    int buffer = m.Input["buffer", 0];
+                    StorageBase entity = m.Field.Entity<StorageBase>("entity");
 
-                    if (m.Context.EntitiesManager
-                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out StorageBase entity))
+                    if (entity != null)
                     {
                         m.Output["quantity"] = entity.CurrentQuantity.Value;
                         m.Output["capacity"] = entity.Capacity.Value;
@@ -570,20 +569,19 @@ namespace ProgramableNetwork
                 // TODO add filter input field
                 .Action(m =>
                 {
-                    int entityId = m.Field["entity", 0];
-                    int buffer = m.Input["buffer", 0];
-                    int filterId = m.Input["product", 0];
+                    Transport entity = m.Field.Entity<Transport>("entity");
+                    Fix32 buffer = m.Input["buffer", 0];
+                    int filterId = m.Input["product", 0].RawValue;
                     bool fullstack = m.Field["fullstack", 0] > 0;
 
-                    if (m.Context.EntitiesManager
-                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out Transport entity))
+                    if (entity != null)
                     {
                         m.Output["quantity"] = entity.TransportedProducts
                                             .Where(p => filterId == 0 || p.SlimId.Value == filterId)
                                             .Select(p => p.Quantity.Value).Sum();
                         m.Output["capacity"] = entity.Trajectory.MaxProducts
                                              * (fullstack ? entity.Prototype.MaxQuantityPerTransportedProduct.Value : 1);
-                        m.Output["fullness"] = (int)(100f * m.Output["quantity"] / m.Output["capacity"]);
+                        m.Output["fullness"] = (100.ToFix32() * m.Output["quantity"]) / m.Output["capacity"];
                         m.Output["moving"] = entity.GetStatus() == Transport.Status.Moving ? 1 : 0;
                         return;
                     }
@@ -607,22 +605,17 @@ namespace ProgramableNetwork
                 // TODO add filter input field
                 .Action(m =>
                 {
-                    int entityId = m.Field["entity", 0];
-                    int buffer = m.Input["buffer", 0];
-                    int filterId = m.Input["product", 0];
+                    SettlementHousingModule entity = m.Field.Entity<SettlementHousingModule>("entity");
 
-                    if (m.Context.EntitiesManager
-                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out SettlementHousingModule entity))
+                    if (entity != null)
                     {
                         m.Output["pop_this"] = entity.Population;
                         m.Output["pop_nearby"] = entity.Settlement.ValueOrNull?.Population ?? entity.Population;
                         return;
                     }
 
-                    m.Output["quantity"] = 0;
-                    m.Output["capacity"] = 0;
-                    m.Output["fullness"] = 100;
-                    m.Output["product"] = -1;
+                    m.Output["pop_this"] = 0;
+                    m.Output["pop_nearby"] = 0;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -696,8 +689,8 @@ namespace ProgramableNetwork
                 .AddOutput("a", "A")
                 .AddOutput("b", "B")
                 .Action(m => {
-                    int a = m.Input["a", 0];
-                    int b = m.Input["b", 0];
+                    Fix32 a = m.Input["a", 0];
+                    Fix32 b = m.Input["b", 0];
                     if (a > b)
                     {
                         m.Output["a"] = a;
@@ -722,9 +715,15 @@ namespace ProgramableNetwork
             {
                 return (Module m) =>
                 {
-                    int value = m.Input["a"];
-                    string text = value.ToString($"D{digits}");
-                    m.Display["a"] = text.Length > digits ? text.Substring(text.Length - digits) : text;
+                    Fix32 value = m.Input["a"];
+                    int floating = Math.Min(m.Field["float", 0].IntegerPart, digits);
+                    int inting = Math.Max(Math.Min(digits - floating, digits), 0);
+
+                    string full = inting > 0 ? value.IntegerPart.ToString($"D{inting}") : "";
+                    string fract = floating > 0 ? (value.FractionalPart * Math.Pow(10, floating).ToFix32())
+                                            .IntegerPart.ToString($"D{floating}") : "";
+
+                    m.Display["a"] = $"{full}|{fract}";
                 };
             }
             foreach (int i in new int[] { 2, 4, 8, 16 })
@@ -734,6 +733,7 @@ namespace ProgramableNetwork
                     .AddCategory(Category.Display)
                     .AddInput("a", "A")
                     .AddDisplay("a", "A", i)
+                    .AddInt32Field("float", "Floating numbers", "Ammount of numbers displayed from fractional part", defaultValue: 0)
                     .AddControllerDevice()
                     // dynamic
                     .Action(ModuleFunction(i * 2))
@@ -747,45 +747,54 @@ namespace ProgramableNetwork
             {
                 return (Module m) =>
                 {
-                    int entityId = m.Field["antena", 0];
-                    if (!m.Context.EntitiesManager
-                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out Antena entity) ||
-                            !(entity.DataBand is FMDataBand fm))
+                    Antena entity = m.Field.Entity<Antena>("antena");
+                    if (!(entity?.DataBand is FMDataBand fm))
                     // TODO generate noise or read data
                     {
                         for (int i = 0; i < digits; i++)
                         {
                             m.Output[names[i]] = 0;
                         }
+                        m.Display["fm"] = "";
                     }
                     else
                     {
-                        int[] signals = fm.Read(m.Field["fm", 0]);
-                        int minCount = Math.Min(signals.Length, digits);
-                        for (int i = 0; i < minCount; i++)
+                        int value = m.Field["fm", 0].IntegerPart;
+                        Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
+                        m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " kHz" : "");
+
+                        if (entity.IsPaused)
                         {
-                            m.Output[names[i]] = signals[i];
+                            for (int i = 0; i < digits; i++)
+                            {
+                                m.Output[names[i]] = 0;
+                            }
                         }
-                        for (int i = minCount; i < digits; i++)
+                        else
                         {
-                            m.Output[names[i]] = 0;
+                            Fix32[] signals = fm.Read(m.Field["fm", 0].IntegerPart);
+                            int minCount = Math.Min(signals.Length, digits);
+                            for (int i = 0; i < minCount; i++)
+                            {
+                                m.Output[names[i]] = signals[i];
+                            }
+                            for (int i = minCount; i < digits; i++)
+                            {
+                                m.Output[names[i]] = 0;
+                            }
                         }
                     }
-
-                    int value = m.Input["a"];
-                    string text = value.ToString($"D{digits}");
-                    m.Display["a"] = text.Length > digits ? text.Substring(text.Length - digits) : text;
                 };
             }
             foreach (int i in new int[] { 2, 4, 8, 16 })
             {
                 var module = registrator
-                    .ModuleBuilderStart($"Radio_In_FM_{i}", $"FM receiver ({i} signals)", $"FM\ni-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .ModuleBuilderStart($"Radio_In_FM_{i}", $"FM receiver ({i} signals)", $"FM-R", Assets.Base.Products.Icons.Vegetables_svg)
                     .AddCategory(Category.Antene)
                     .AddCategory(Category.AnteneFM)
                     .AddCustomField("fm", "FM", "Listening frequency", () => 20, (CustomField field) => {
                         field.Builder.NewBtnGeneral("NvaluekHz")
-                            .SetText(((171 + field.Reference.Value).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
+                            .SetText(((171 + field.Reference.Value.IntegerPart).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
                             .SetSize(60, 20)
                             .ToolTip(field.Inspector, field.ShortDesc, attached: true)
                             .AppendTo(field.Container);
@@ -857,6 +866,7 @@ namespace ProgramableNetwork
                             .AppendTo(field.Container);
                     })
                     .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
+                    .AddDisplay("fm", "Frequency", i)
                     .AddControllerDevice()
                     // dynamic
                     .Action(ReadSignals(i));
@@ -873,29 +883,34 @@ namespace ProgramableNetwork
             {
                 return (Module m) =>
                 {
-                    int entityId = m.Field["antena", 0];
-                    if (m.Context.EntitiesManager
-                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out Antena entity) &&
-                            (entity.DataBand is FMDataBand fm))
+                    Antena entity = m.Field.Entity<Antena>("antena");
+                    if (entity.DataBand is FMDataBand fm && !entity.IsPaused)
                     {
-                        int[] signals = new int[digits];
-                        for (int i = 0; i < digits; i++)
+                        int value = m.Field["fm", 0].IntegerPart;
+                        Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
+                        m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " kHz" : "");
+
+                        if (!entity.IsPaused)
                         {
-                            signals[i] = m.Input[names[i], 0];
+                            Fix32[] signals = new Fix32[digits];
+                            for (int i = 0; i < digits; i++)
+                            {
+                                signals[i] = m.Input[names[i], 0];
+                            }
+                            fm.Update(m.Field["fm", 0].IntegerPart, signals);
                         }
-                        fm.Update(m.Field["fm", 0], signals);
                     }
                 };
             }
             foreach (int i in new int[] { 2, 4, 8, 16 })
             {
                 var module = registrator
-                    .ModuleBuilderStart($"Radio_Out_FM_{i}", $"FM broadcaster ({i} signals)", $"FM\no-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .ModuleBuilderStart($"Radio_Out_FM_{i}", $"FM broadcaster ({i} signals)", $"FM-B", Assets.Base.Products.Icons.Vegetables_svg)
                     .AddCategory(Category.Antene)
                     .AddCategory(Category.AnteneFM)
                     .AddCustomField("fm", "FM", "Broadcasting frequency", () => 20, (field) => {
                         field.Builder.NewBtnGeneral("NvaluekHz")
-                            .SetText(((171 + field.Reference.Value).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
+                            .SetText(((171 + field.Reference.Value.IntegerPart).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
                             .SetSize(60, 20)
                             .ToolTip(field.Inspector, field.ShortDesc, attached: true)
                             .AppendTo(field.Container);
@@ -967,6 +982,7 @@ namespace ProgramableNetwork
                             .AppendTo(field.Container);
                     })
                     .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
+                    .AddDisplay("fm", "Frequency", i)
                     .AddControllerDevice()
                     // dynamic
                     .Action(WriteSignals(i));
