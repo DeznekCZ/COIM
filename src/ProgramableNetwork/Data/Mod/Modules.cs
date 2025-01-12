@@ -56,10 +56,44 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
-                .AddOutput("c", "C")
+                .AddOutput("c", "Sum")
                 .Action(m => { m.Output["c"] = m.Input["a", 0] + m.Input["b", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
+
+            Action<Module> SumFor(int i)
+            {
+                return (m) =>
+                {
+                    long value = 0;
+                    for (int j = 0; j < i; j++)
+                    {
+                        value += m.Input[names[j], 0];
+                    }
+
+                    if (value > int.MaxValue)
+                        m.Output["sum"] = int.MaxValue;
+                    else if (value < int.MinValue)
+                        m.Output["sum"] = int.MinValue;
+                    else
+                        m.Output["sum"] = (int)value;
+                };
+            }
+            foreach (int i in new int[] { 4, 8 })
+            {
+                var sum = registrator
+                    .ModuleBuilderStart($"Sum_{i}", $"C = A + .. ({i - 1})", $"A+({i - 1})", Assets.Base.Products.Icons.Vegetables_svg)
+                    .AddCategory(Category.Arithmetic)
+                    .AddOutput("sum", "Sum")
+                    .Action(m => { m.Output["c"] = m.Input["a", 0] + m.Input["b", 0]; })
+                    .AddControllerDevice();
+
+                for (int j = 0; j < i; j++)
+                    sum.AddInput(names[j], names[j].ToUpper());
+
+                sum.Action(SumFor(i));
+                sum.BuildAndAdd();
+            }
 
             registrator
                 .ModuleBuilderStart("Sub", "C = A - B", "A-B", Assets.Base.Products.Icons.Vegetables_svg)
@@ -77,6 +111,74 @@ namespace ProgramableNetwork
                 .AddInput("a", "A")
                 .AddOutput("b", "B")
                 .Action(m => { m.Output["b"] = 0 - m.Input["a", 0]; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Multiply", "C = A multiply by B", "A*B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddInput("a", "A")
+                .AddInput("b", "B")
+                .AddOutput("c", "C")
+                .Action(m => {
+                    int a = m.Input["a", 0];
+                    int b = m.Input["b", 0];
+                    long c = (long)a * (long)b;
+                    if (c > int.MaxValue)
+                        m.Output["c"] = int.MaxValue;
+                    else if (c < int.MinValue)
+                        m.Output["c"] = int.MinValue;
+                    else
+                        m.Output["c"] = (int)c;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Divide", "C = A divide by B", "A/B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddInput("a", "A")
+                .AddInput("b", "B")
+                .AddOutput("c", "C")
+                .AddOutput("error", "Error")
+                .Action(m => {
+                    int a = m.Input["a", 0];
+                    int b = m.Input["b", 0];
+                    if (b == 0)
+                    {
+                        m.Output["error"] = 1;
+                        m.Output["c"] = int.MaxValue;
+                    }
+                    else
+                    {
+                        m.Output["error"] = 0;
+                        m.Output["c"] = a / b;
+                    }
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Modulo", "C = A modulo B", "A%B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddInput("a", "A")
+                .AddInput("b", "B")
+                .AddOutput("c", "C")
+                .AddOutput("error", "Error")
+                .Action(m => {
+                    int a = m.Input["a", 0];
+                    int b = m.Input["b", 0];
+                    if (b == 0)
+                    {
+                        m.Output["error"] = 1;
+                        m.Output["c"] = 0;
+                    }
+                    else
+                    {
+                        m.Output["error"] = 0;
+                        m.Output["c"] = a % b;
+                    }
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
