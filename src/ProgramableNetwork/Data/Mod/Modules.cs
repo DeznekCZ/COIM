@@ -95,8 +95,8 @@ namespace ProgramableNetwork
                     Fix32 oldCount = (m.Output["count", 1] - 1).ToFix32();
                     Fix32 average = (m.Output["average", 0].ToFix32() * oldCount) + input;
 
-                    m.Output["average"] = average.IntegerPart;
                     m.Output["count"] = Math.Min(desiredCount, m.Output["count", 0] + 1);
+                    m.Output["average"] = (average / m.Output["count"].ToFix32()).IntegerPart;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
