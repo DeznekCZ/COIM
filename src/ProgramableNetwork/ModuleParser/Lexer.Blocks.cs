@@ -34,7 +34,7 @@ namespace ProgramableNetwork.Python
                 indentation += space.value;
 
             Block block = ParseBlock(tree, indentation);
-            Class @class = new Class(className, baseClasses, block);
+            ClassDefinition @class = new ClassDefinition(className, baseClasses, block);
             tree.Add(@class);
         }
 

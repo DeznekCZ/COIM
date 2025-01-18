@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ProgramableNetwork.Python
 {
@@ -19,5 +20,31 @@ namespace ProgramableNetwork.Python
         public List<IExpression> Arguments => arguments;
 
         public string StringValue => throw new NotImplementedException();
+
+        public int IntValue => throw new NotImplementedException();
+
+        public long LongValue => throw new NotImplementedException();
+
+        public bool BooleanValue => throw new NotImplementedException();
+
+        public Reference<dynamic> GetReference(IDictionary<string, dynamic> context)
+        {
+            throw new System.InvalidCastException("can not be referenced");
+        }
+
+        public dynamic GetValue(IDictionary<string, dynamic> context)
+        {
+            dynamic callable = expression.GetValue(context);
+            dynamic[] args = Arguments.Select(e => e.GetValue(context)).ToArray();
+
+            if (callable is Constructor c)
+            {
+                return c.Invoke(args);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

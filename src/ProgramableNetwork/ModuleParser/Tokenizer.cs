@@ -14,7 +14,7 @@ namespace ProgramableNetwork.Python
         //lang=regex
         private const string oper = @"(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>\\\\)|(?<div>\\)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<and>and)|(?<or>or)";
         //lang=regex
-        private const string data = @"(?<str>""[^""]+""|'[^']+')|(?<number>\d+(?:.\d+)?)";
+        private const string data = @"(?<str>""[^""]+""|'[^']+')|(?<number>\d+(?:.\d+)?)|(?<none>None)|(?<btrue>True)|(?<bfalse>False)";
         //lang=regex
         private const string keywords = @"(?<from>from)|(?<import>import)|(?<def>def)|(?<classp>class)|(?<ifp>if)|(?<elif>elif)|(?<elsep>else)|(?<name>[a-zA-Z_]\w*)";
         //lang=regex

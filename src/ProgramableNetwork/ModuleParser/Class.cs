@@ -1,27 +1,16 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 
 namespace ProgramableNetwork.Python
 {
-    public class Class : IStatement
+    internal class Class
     {
-        public readonly List<QualifiedName> baseClasses;
-        public readonly Block block;
-        private readonly Token className;
+        private string name;
+        private Type[] baseTypes;
 
-        public Class(Token className, List<QualifiedName> baseClasses, Block block)
+        public Class(string name, Type[] baseTypes)
         {
-            this.className = className;
-            this.baseClasses = baseClasses;
-            this.block = block;
+            this.name = name;
+            this.baseTypes = baseTypes;
         }
-
-        public string Name => className.value;
-        public Dictionary<string, Function> Functions => block.functions;
-
-        public Dictionary<string, IExpression> Variables => block.statements
-            .Where(s => s is Assignment)
-            .Select(s => (Assignment)s)
-            .ToDictionary(s => s.Name, s => s.Value);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Mafi.Core.Prototypes;
+using Mafi.Localization;
 
 namespace ProgramableNetwork
 {

@@ -20,4 +20,22 @@ namespace ProgramableNetwork
             this.getter = getter;
         }
     }
+
+    public class Reference<T>
+    {
+        public T Value
+        {
+            get => getter();
+            set => setter(value);
+        }
+
+        private readonly Action<T> setter;
+        private readonly Func<T> getter;
+
+        public Reference(Action<T> setter, Func<T> getter)
+        {
+            this.setter = setter;
+            this.getter = getter;
+        }
+    }
 }

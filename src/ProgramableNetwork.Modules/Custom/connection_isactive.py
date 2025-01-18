@@ -6,6 +6,7 @@ from Core.io import Output
 
 class Connection_IsActive(Module):
     name = "Connection: Status"
+    symbol = "STAT"
     outputs = [
         Output("power", "Has enough power"),
         Output("workers", "Has enough workers"),

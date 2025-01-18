@@ -6,7 +6,7 @@ namespace ProgramableNetwork.Python
     public class Block
     {
         public readonly List<Import> imports = new List<Import>();
-        public readonly Dictionary<string, Class> classes = new Dictionary<string, Class>();
+        public readonly Dictionary<string, ClassDefinition> classes = new Dictionary<string, ClassDefinition>();
         public readonly Dictionary<string, Function> functions = new Dictionary<string, Function>();
         public readonly Block parent;
         public readonly List<IStatement> statements = new List<IStatement>();
@@ -16,7 +16,7 @@ namespace ProgramableNetwork.Python
             this.parent = parent;
         }
 
-        public void Add(Class @class)
+        public void Add(ClassDefinition @class)
         {
             classes.Add(@class.Name, @class);
             statements.Add(@class);

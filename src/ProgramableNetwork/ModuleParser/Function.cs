@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace ProgramableNetwork.Python
 {
@@ -16,5 +17,17 @@ namespace ProgramableNetwork.Python
         }
 
         public string Name => functionName.value;
+
+        public IEnumerable<IStatement> Statements => block.statements;
+
+        public List<string> Arguments => arguments.Select(arguments => arguments.value).ToList();
+
+        public void Execute(IDictionary<string, dynamic> context)
+        {
+            foreach (IStatement statement in Statements)
+            {
+                statement.Execute(context);
+            }
+        }
     }
 }

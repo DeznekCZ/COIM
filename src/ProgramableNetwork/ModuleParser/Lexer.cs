@@ -164,6 +164,20 @@ namespace ProgramableNetwork.Python
                 return DecorateExpression(new ListValue(dictStart, dictEnd, listItems), ignore);
             }
 
+            if (IsNext(PythonTokens.none, out Token none, ignore))
+            {
+                return DecorateExpression(new NoneConst(none), ignore);
+            }
+
+            if (IsNextOf(new PythonTokens[]
+            {
+                PythonTokens.btrue,
+                PythonTokens.bfalse
+            }, out Token boolToken, ignore))
+            {
+                return DecorateExpression(new BooleanConst(boolToken), ignore);
+            }
+
             return DecorateExpression(ParseQualifiedName(ignore), ignore);
         }
 
@@ -187,9 +201,7 @@ namespace ProgramableNetwork.Python
             if (IsNext(PythonTokens.isp, out Token _, ignore))
             {
                 bool not = IsNext(PythonTokens.not, out Token _, PythonTokens.space);
-                QualifiedName qualifiedName = ParseQualifiedName(PythonTokens.space);
-
-                return DecorateExpression(new IsExpression(finalExpression, not, qualifiedName), ignore);
+                return DecorateExpression(new IsExpression(finalExpression, not, ParseExpression(PythonTokens.space)), ignore);
             }
 
             if (IsNextOf(new PythonTokens[] {

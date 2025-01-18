@@ -1,4 +1,8 @@
-﻿namespace ProgramableNetwork.Python
+﻿using Mafi;
+using System;
+using System.Collections.Generic;
+
+namespace ProgramableNetwork.Python
 {
     internal class IfStatement : IStatement
     {
@@ -23,6 +27,28 @@
             this.parent = parent;
             this.condition = condition;
             this.block = block;
+        }
+
+        public void Execute(IDictionary<string, dynamic> context)
+        {
+            if (parent != null && !parent.Executed(context) && !Executed(context))
+            {
+                // skipping all blocks
+            }
+        }
+
+        private bool Executed(IDictionary<string, dynamic> context)
+        {
+            dynamic condition = this.condition?.GetValue(context) ?? null;
+            if ((condition is object o && o == null) || (condition is bool b && b == false) || (condition is Fix32 f && f == Fix32.Zero))
+            {
+                return false;
+            }
+            foreach (var item in block.statements)
+            {
+                item.Execute(context);
+            }
+            return true;
         }
     }
 }

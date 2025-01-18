@@ -1,5 +1,6 @@
 ﻿using Mafi;
 using System;
+using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
@@ -16,5 +17,16 @@ namespace ProgramableNetwork.Python
         public Fix32 Value { get; }
 
         public override string StringValue => Value.ToString();
+
+        public override int IntValue => Value.IntegerPart;
+
+        public override long LongValue => Value.IntegerPart;
+
+        public override bool BooleanValue => Value > 0;
+
+        public override dynamic GetValue(IDictionary<string, dynamic> context)
+        {
+            return Value;
+        }
     }
 }

@@ -4,10 +4,9 @@ using Mafi.Core.Game;
 using Mafi.Core.Mods;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using ProgramableNetwork.Python;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -36,6 +35,12 @@ namespace ProgramableNetwork.ModuleTester
             Block tree = Lexer.Parse(tokens);
             ModuleRegistrator.Register(registrator, tree);
 
+            Dictionary<string, dynamic> context = new Dictionary<string, dynamic>();
+            foreach (IStatement statement in tree.statements)
+            {
+                statement.Execute(context);
+            }
+
             Console.WriteLine("lala");
         }
 
@@ -44,14 +49,5 @@ namespace ProgramableNetwork.ModuleTester
             registrator.PrototypesDb.Add(new ProductProto(new ProductProto.ID("Product_Electronics"), new Proto.Str(), 1.Quantity(), true, true, false, new ProductProto.Gfx(Option.None, Option.Create("text"))));
             registrator.PrototypesDb.Add(new VirtualProductProto(new ProductProto.ID("Product_Virtual_MaintenanceT1"), new Proto.Str(), new ProductProto.Gfx(Option.None, Option.Create("text"))));
         }
-    }
-
-    public class MyHostingProvider : DynamicRuntimeHostingProvider
-    {
-        public override PlatformAdaptationLayer PlatformAdaptationLayer { get; } = new PlatformAdaptationLayer();
-    }
-
-    public class MyErrorSink : ErrorSink
-    {
     }
 }
