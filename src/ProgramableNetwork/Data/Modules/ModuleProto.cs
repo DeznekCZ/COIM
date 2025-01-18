@@ -3,9 +3,6 @@ using Mafi.Core.Prototypes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mafi.Core.Mods;
 using Mafi.Core.Research;
 using Mafi;
@@ -15,7 +12,6 @@ using Mafi.Base;
 using Mafi.Unity.UserInterface.Style;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Core.Entities.Static;
-using Mafi.Unity.UserInterface;
 
 namespace ProgramableNetwork
 {
@@ -190,8 +186,8 @@ namespace ProgramableNetwork
             private readonly List<Tag> m_tags = new List<Tag>();
             private ProtoRegistrator m_registrator;
             private readonly ID m_id;
-            private readonly string m_name;
-            private readonly string m_description;
+            private string m_name;
+            private string m_description;
             private Action<Module> m_action;
             private Action<Module> m_reset;
             private bool m_isOutputModule = false;
@@ -202,8 +198,8 @@ namespace ProgramableNetwork
             private Electricity m_usedPower;
             private Computing m_usedComputing;
             private EntityCostsTpl.Builder m_costs;
-            private readonly Gfx m_gfx;
-            private readonly string m_symbol;
+            private Gfx m_gfx;
+            private string m_symbol;
             private readonly List<IField> m_fields = new List<IField>();
             private readonly List<StaticEntityProto.ID> m_allowedDevices;
             private bool m_customBuild;
@@ -224,6 +220,16 @@ namespace ProgramableNetwork
                 m_costs = new EntityCostsTpl.Builder();
                 m_gfx = gfx;
                 m_symbol = symbol;
+                m_allowedDevices = new List<StaticEntityProto.ID>();
+            }
+
+            public Builder(ProtoRegistrator registrator, string id)
+            {
+                m_registrator = registrator;
+                m_id = new ID(id.ModuleId());
+                m_tags = new List<Tag>();
+                m_usedPower = 1.Kw();
+                m_costs = new EntityCostsTpl.Builder();
                 m_allowedDevices = new List<StaticEntityProto.ID>();
             }
 
@@ -262,6 +268,30 @@ namespace ProgramableNetwork
                     m_allowedDevices,
                     m_categories
                 ));
+            }
+
+            public Builder SetName(string name)
+            {
+                this.m_name = name;
+                return this;
+            }
+
+            public Builder SetDescritpion(string description)
+            {
+                this.m_description = description;
+                return this;
+            }
+
+            public Builder SetSymbol(string symbol)
+            {
+                this.m_symbol = symbol;
+                return this;
+            }
+
+            public Builder SetGfx(string gfx)
+            {
+                this.m_gfx = new Gfx(gfx);
+                return this;
             }
 
             public Builder AddTag(Tag tag)
@@ -462,6 +492,11 @@ namespace ProgramableNetwork
         public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id, string name, string symbol, string gfx, string description = "")
         {
             return new ModuleProto.Builder(registrator, id, name, description, symbol, new ModuleProto.Gfx(gfx));
+        }
+
+        public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id)
+        {
+            return new ModuleProto.Builder(registrator, id);
         }
 
         public static Proto.Str Input(this ModuleProto.ID operation, string name, string text, string description = "")

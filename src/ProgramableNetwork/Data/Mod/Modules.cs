@@ -2,23 +2,16 @@
 using Mafi.Base;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
-using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
-using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
 using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Components;
-using RTG;
+using ProgramableNetwork.Python;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ProgramableNetwork
 {
@@ -47,6 +40,20 @@ namespace ProgramableNetwork
             Decisions(registrator);
             Display(registrator);
             Radio(registrator);
+            LoadPyModules(registrator);
+        }
+
+        private void LoadPyModules(ProtoRegistrator registrator)
+        {
+            DirectoryInfo modules = new DirectoryInfo(typeof(Modules).Assembly.Location + "/../Modules");
+            Log.Info("Location of modules: " + modules.FullName);
+
+            foreach (FileInfo file in modules.EnumerateFiles())
+            {
+                Token[] tokens = Tokenizer.Parse(file.FullName);
+                Block block = Lexer.Parse(tokens);
+                ModuleRegistrator.Register(registrator, block);
+            }
         }
 
         private static void Arithmetic(ProtoRegistrator registrator)
