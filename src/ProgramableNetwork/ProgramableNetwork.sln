@@ -5,6 +5,10 @@ VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProgramableNetwork", "ProgramableNetwork.csproj", "{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "ProgramableNetwork.Modules", "..\ProgramableNetwork.Modules\ProgramableNetwork.Modules.pyproj", "{706D31AF-095D-4A5D-884B-B85A4EDF3A34}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProgramableNetwork.ModuleTester", "..\ProgramableNetwork.ModuleTester\ProgramableNetwork.ModuleTester.csproj", "{6262AECD-D163-4E38-90E3-751FEFA61B20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,12 @@ Global
 		{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{706D31AF-095D-4A5D-884B-B85A4EDF3A34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{706D31AF-095D-4A5D-884B-B85A4EDF3A34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6262AECD-D163-4E38-90E3-751FEFA61B20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6262AECD-D163-4E38-90E3-751FEFA61B20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6262AECD-D163-4E38-90E3-751FEFA61B20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6262AECD-D163-4E38-90E3-751FEFA61B20}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
