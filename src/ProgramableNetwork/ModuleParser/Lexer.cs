@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 
 namespace ProgramableNetwork.Python
 {
+    /// <summary>
+    /// Following grammar, but cutted:
+    /// <br/>https://docs.python.org/3/reference/grammar.html
+    /// </summary>
     public partial class Lexer
     {
         private LinkedList<Token> enumerator;
@@ -75,10 +79,11 @@ namespace ProgramableNetwork.Python
                         IExpression leftExpression = ParseExpression(PythonTokens.space);
                         while (IsNext(PythonTokens.set, out Token _, PythonTokens.space))
                         {
-                            tree.Add(ParseAssignment(leftExpression));
+                            leftExpression = ParseAssignment(leftExpression);
                             break;
                         }
                         IsNext(PythonTokens.newline, out Token _, PythonTokens.space);
+                        tree.Add(leftExpression);
                         break;
 
                     case PythonTokens.newline:

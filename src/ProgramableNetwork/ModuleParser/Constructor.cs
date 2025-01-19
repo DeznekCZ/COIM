@@ -7,9 +7,10 @@ namespace ProgramableNetwork.Python
     {
         private Func<object[], object> value;
 
-        public Constructor(Func<object[], object> value)
+        public Constructor(Func<object[], object> value, string[] arguments = null)
         {
             this.value = value;
+            Arguments = arguments ?? new string[0];
         }
 
         public string StringValue => throw new NotImplementedException();
@@ -19,6 +20,8 @@ namespace ProgramableNetwork.Python
         public long LongValue => throw new NotImplementedException();
 
         public bool BooleanValue => throw new NotImplementedException();
+
+        public string[] Arguments { get; private set; }
 
         public Reference<object> GetReference(IDictionary<string, object> context)
         {

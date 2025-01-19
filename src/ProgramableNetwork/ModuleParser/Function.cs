@@ -3,13 +3,13 @@ using System.Linq;
 
 namespace ProgramableNetwork.Python
 {
-    public class Function : IStatement
+    public class FunctionDefinition : IStatement
     {
         private Token functionName;
         private List<Token> arguments;
         private Block block;
 
-        public Function(Token functionName, List<Token> arguments, Block block)
+        public FunctionDefinition(Token functionName, List<Token> arguments, Block block)
         {
             this.functionName = functionName;
             this.arguments = arguments;

@@ -3,15 +3,15 @@ using System;
 
 namespace ProgramableNetwork.Python
 {
-    internal class ModuleFieldProtoDefinition
+    public class ModuleEntityFieldProtoDefinition : IModuleFieldProtoDefinition
     {
-        private Type type;
-        private string id;
-        private string name;
-        private string desc;
-        private Fix32 distance;
+        public readonly Type type;
+        public readonly string id;
+        public readonly string name;
+        public readonly string desc;
+        public readonly Fix32 distance;
 
-        public ModuleFieldProtoDefinition(Type type, string id, string name, string desc, Fix32 distance)
+        public ModuleEntityFieldProtoDefinition(Type type, string id, string name, string desc, Fix32 distance)
         {
             this.type = type;
             this.id = id;

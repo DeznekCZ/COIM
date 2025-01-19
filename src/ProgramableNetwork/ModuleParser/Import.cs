@@ -68,10 +68,49 @@ namespace ProgramableNetwork.Python
                                 string name1 = (string)(object)args[2];
                                 string desc = (string)(object)args[3];
                                 Fix32 distance = (Fix32?)(object)args[4] ?? Fix32.FromInt(5);
-                                return new ModuleFieldProtoDefinition(
-                                    type, id, name: name1, desc, distance
+                                return new ModuleEntityFieldProtoDefinition(
+                                    type, id, name1, desc, distance
                                 );
-                            }));
+                            }, new string[] { "type", "id", "name", "desc", "defaultValue" }));
+                    }
+                    else if (argument.value == "Int32Field")
+                    {
+                        return (argument.value, new Constructor(
+                            (dynamic[] args) => {
+                                string id = (string)(object)args[0];
+                                string name1 = (string)(object)args[1];
+                                string desc = (string)(object)args[2];
+                                int defaultValue = (int?)(object)args[3] ?? 0;
+                                return new ModuleInt32FieldProtoDefinition(
+                                    id, name1, desc, defaultValue
+                                );
+                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                    }
+                    else if (argument.value == "Int64Field")
+                    {
+                        return (argument.value, new Constructor(
+                            (dynamic[] args) => {
+                                string id = (string)(object)args[0];
+                                string name1 = (string)(object)args[1];
+                                string desc = (string)(object)args[2];
+                                long defaultValue = (int?)(object)args[3] ?? 0;
+                                return new ModuleInt64FieldProtoDefinition(
+                                    id, name1, desc, defaultValue
+                                );
+                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                    }
+                    else if (argument.value == "StringField")
+                    {
+                        return (argument.value, new Constructor(
+                            (dynamic[] args) => {
+                                string id = (string)(object)args[0];
+                                string name1 = (string)(object)args[1];
+                                string desc = (string)(object)args[2];
+                                string defaultValue = (string)(object)args[3] ?? "";
+                                return new ModuleStringFieldProtoDefinition(
+                                    id, name1, desc, defaultValue
+                                );
+                            }, new string[] { "id", "name", "desc", "defaultValue" }));
                     }
                     else
                     {
@@ -90,7 +129,7 @@ namespace ProgramableNetwork.Python
                             (dynamic[] args) => new ModuleConnectorProtoDefinition(
                                 (string)(object)args[0],
                                 (string)(object)args[1]
-                            )));
+                            ), new string[] { "id", "name" }));
                     }
                     else if (argument.value == "Output")
                     {
@@ -98,7 +137,7 @@ namespace ProgramableNetwork.Python
                             (dynamic[] args) => new ModuleConnectorProtoDefinition(
                                 (string)(object)args[0],
                                 (string)(object)args[1]
-                            )));
+                            ), new string[] { "id", "name" }));
                     }
                     else if (argument.value == "Display")
                     {
@@ -108,7 +147,7 @@ namespace ProgramableNetwork.Python
                                 (string)(object)args[1],
                                 (int)(object)args[2],
                                 (string)(object)args[3]
-                            )));
+                            ), new string[] { "id", "name", "digits", "defaultValue" }));
                     }
                     else
                     {

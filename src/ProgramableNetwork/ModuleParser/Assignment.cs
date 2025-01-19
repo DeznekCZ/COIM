@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    public class Assignment : IStatement
+    public class Assignment : IStatement, IExpression
     {
         private IExpression target;
         private IExpression value;
@@ -18,9 +18,27 @@ namespace ProgramableNetwork.Python
 
         public IExpression Value => value;
 
+        public string StringValue => throw new NotImplementedException();
+
+        public int IntValue => throw new NotImplementedException();
+
+        public long LongValue => throw new NotImplementedException();
+
+        public bool BooleanValue => throw new NotImplementedException();
+
         public void Execute(IDictionary<string, dynamic> context)
         {
             target.GetReference(context).Value = value.GetValue(context);
+        }
+
+        public Reference<object> GetReference(IDictionary<string, object> context)
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetValue(IDictionary<string, object> context)
+        {
+            throw new NotImplementedException();
         }
     }
 }

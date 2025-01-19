@@ -7,6 +7,7 @@ using Mafi.Core.Entities.Static;
 using Mafi.Core.Factory.Machines;
 using Mafi.Core.Mods;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,23 +15,33 @@ namespace ProgramableNetwork.Python
 {
     public class ModuleRegistrator
     {
-        public static void Register(ProtoRegistrator registrator, Block block)
+        public static void Register(ProtoRegistrator registrator, string file)
         {
-            foreach (ClassDefinition classEntry in block.classes.Values)
+            Token[] tokens = Tokenizer.Parse(file);
+            Block block = Lexer.Parse(tokens);
+
+            Dictionary<string, object> context = new Dictionary<string, object>();
+            foreach (IStatement statement in block.statements)
             {
-                if (!classEntry.baseClasses.Any(b => b.Concat == "Module"))
-                    continue;
+                statement.Execute(context);
+            }
 
-                var builder = registrator.ModuleBuilderStart(classEntry.Name);
-                var variables = classEntry.Variables;
+            foreach (Class classEntry in context.Values
+                .Where(v => v is Class c && c.baseTypes.Contains(typeof(Module))))
+            {
+                var builder = registrator.ModuleBuilderStart(classEntry.name);
+                builder.SetName(classEntry.classContext["name"] as string);
+                builder.SetSymbol(classEntry.classContext["symbol"] as string);
 
-                builder.SetName(variables["name"].StringValue);
-                builder.SetSymbol(variables["symbol"].StringValue);
-
-                AddIO(builder, variables, "inputs", "Input", builder.AddInput);
-                AddIO(builder, variables, "outputs", "Output", builder.AddOutput);
-                AddFields(builder, variables);
-                AddAction(builder, classEntry);
+                if (classEntry.classContext.TryGetValue("inputs", out object inputs))
+                    AddIO(inputs as IList, builder.AddInput);
+                if (classEntry.classContext.TryGetValue("outputs", out object outputs))
+                    AddIO(outputs as IList, builder.AddOutput);
+                if (classEntry.classContext.TryGetValue("fields", out object fields))
+                    AddFields(builder, fields as IList);
+                if (classEntry.classContext.TryGetValue("action", out object action) ||
+                    classEntry.classContext.TryGetValue("Action", out action))
+                    AddAction(builder, classEntry.classContext, action as Constructor);
 
                 // TODO search for variable of device and categories
                 builder.SetGfx(Assets.Base.Products.Icons.Vegetables_svg);
@@ -40,114 +51,52 @@ namespace ProgramableNetwork.Python
             }
         }
 
-        private static void AddIO(ModuleProto.Builder builder, Dictionary<string, IExpression> variables, string listName, string constructorName, Func<string, string, ModuleProto.Builder> add)
+        private static void AddIO(IList modules, Func<string, string, ModuleProto.Builder> add)
         {
-            if (variables.TryGetValue(listName, out IExpression expression) && expression is ListValue list)
+            foreach (ModuleConnectorProtoDefinition variable in modules ?? new List<ModuleConnectorProtoDefinition>())
             {
-                foreach (IExpression variable in list)
-                {
-                    if (variable is Call call && call.Name == constructorName)
-                    {
-                        List<IExpression> arguments = call.Arguments;
-                        add(arguments[0].StringValue, arguments[1].StringValue);
-                    }
-                }
+                add(variable.id, variable.name);
             }
         }
 
-        private static void AddFields(ModuleProto.Builder builder, Dictionary<string, IExpression> variables)
+        private static void AddFields(ModuleProto.Builder builder, IList list)
         {
-            if (variables.TryGetValue("fields", out IExpression expression) && expression is ListValue list)
+            foreach (IModuleFieldProtoDefinition variable in list)
             {
-                foreach (IExpression variable in list)
+                if (variable is ModuleEntityFieldProtoDefinition entityField)
                 {
-                    if (!(variable is Call call))
-                    {
-                        throw new Exception($"Unexpected expression: {variable}");
-                    }
+                    builder.AddEntityField(entityField.type, entityField.id, entityField.name, entityField.desc);
+                    continue;
+                }
 
-                    if (call.Name == "EntityField")
-                    {
-                        List<IExpression> arguments = call.Arguments;
+                if (variable is ModuleInt32FieldProtoDefinition int32Field)
+                {
+                    builder.AddInt32Field(int32Field.id, int32Field.name, int32Field.defaultValue);
+                    continue;
+                }
 
-                        // TODO fix getting of type name by import
-                        EntityType entityType = (EntityType)Enum.Parse(typeof(EntityType), ((QualifiedName)arguments[0]).Concat);
-                        string id = arguments[1].StringValue;
-                        string name = arguments[2].StringValue;
-                        string desc = arguments[3]?.StringValue ?? null;
+                if (variable is ModuleInt64FieldProtoDefinition int64Field)
+                {
+                    builder.AddInt64Field(int64Field.id, int64Field.name, int64Field.defaultValue);
+                    continue;
+                }
 
-                        switch (entityType)
-                        {
-                            case EntityType.Entity: builder.AddEntityField<Entity>(id, name, desc); break;
-                            case EntityType.StaticEntity: builder.AddEntityField<StaticEntity>(id, name, desc); break;
-                            case EntityType.StorageBase: builder.AddEntityField<StorageBase>(id, name, desc); break;
-                            case EntityType.Controller: builder.AddEntityField<Controller>(id, name, desc); break;
-                            case EntityType.Antena: builder.AddEntityField<Antena>(id, name, desc); break;
-                            case EntityType.Machine: builder.AddEntityField<Machine>(id, name, desc); break;
-                            case EntityType.SettlementHousingModule: builder.AddEntityField<SettlementHousingModule>(id, name, desc); break;
-                            case EntityType.SettlementFoodModule: builder.AddEntityField<SettlementFoodModule>(id, name, desc); break;
-                            case EntityType.SettlementTransformer: builder.AddEntityField<SettlementTransformer>(id, name, desc); break;
-                            case EntityType.SettlementWasteModule: builder.AddEntityField<SettlementWasteModule>(id, name, desc); break;
-                            case EntityType.SettlementServiceModule: builder.AddEntityField<SettlementServiceModule>(id, name, desc); break;
-
-                            default:
-                                throw new NotImplementedException($"Entity type '{entityType}' is not implemented");
-                        }
-                        continue;
-                    }
-
-                    if (call.Name == "Int32Field")
-                    {
-                        List<IExpression> arguments = call.Arguments;
-                        string id = arguments[0].StringValue;
-                        string name = arguments[1].StringValue;
-                        string desc = arguments[2]?.StringValue ?? null;
-                        int value = arguments[3]?.IntValue ?? 0;
-                        builder.AddInt32Field(id, name, value);
-                        continue;
-                    }
-
-                    if (call.Name == "Int64Field")
-                    {
-                        List<IExpression> arguments = call.Arguments;
-                        string id = arguments[0].StringValue;
-                        string name = arguments[1].StringValue;
-                        string desc = arguments[2]?.StringValue ?? null;
-                        long value = arguments[3]?.LongValue ?? 0;
-                        builder.AddInt64Field(id, name, value);
-                        continue;
-                    }
-
-                    if (call.Name == "StringField")
-                    {
-                        List<IExpression> arguments = call.Arguments;
-                        string id = arguments[0].StringValue;
-                        string name = arguments[1].StringValue;
-                        string desc = arguments[2]?.StringValue ?? null;
-                        string value = arguments[3]?.StringValue ?? "";
-                        builder.AddStringField(id, name, value);
-                        continue;
-                    }
+                if (variable is ModuleStringFieldProtoDefinition stringField)
+                {
+                    builder.AddStringField(stringField.id, stringField.name, stringField.defaultValue);
+                    continue;
                 }
             }
         }
 
 
-        private static void AddAction(ModuleProto.Builder builder, ClassDefinition classEntry)
+        private static void AddAction(ModuleProto.Builder builder, IDictionary<string, object> classContext, Constructor action)
         {
-            if (classEntry.Functions.TryGetValue("Action", out Function function)
-                || classEntry.Functions.TryGetValue("action", out function))
+            builder.Action((module) =>
             {
-                builder.Action((module) =>
-                {
-                    ModuleWrapper wrapper = new ModuleWrapper(module);
-                    Dictionary<string, dynamic> context = new Dictionary<string, dynamic>
-                    {
-                        { function.Arguments[0], wrapper }
-                    };
-                    function.Execute(context);
-                });
-            }
+                ModuleWrapper wrapper = new ModuleWrapper(module);
+                action.Invoke(new object[] { wrapper });
+            });
         }
     }
 }

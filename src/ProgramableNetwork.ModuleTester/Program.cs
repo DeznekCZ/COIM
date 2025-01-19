@@ -1,5 +1,6 @@
 ﻿using Mafi;
 using Mafi.Collections.ImmutableCollections;
+using Mafi.Core;
 using Mafi.Core.Game;
 using Mafi.Core.Mods;
 using Mafi.Core.Products;
@@ -31,15 +32,13 @@ namespace ProgramableNetwork.ModuleTester
 
             string file = @"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py";
 
-            Token[] tokens = Tokenizer.Parse(file);
-            Block tree = Lexer.Parse(tokens);
-            ModuleRegistrator.Register(registrator, tree);
+            ModuleRegistrator.Register(registrator, file);
 
-            Dictionary<string, object> context = new Dictionary<string, object>();
-            foreach (IStatement statement in tree.statements)
-            {
-                statement.Execute(context);
-            }
+            protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Connection_IsActive", out ModuleProto proto);
+
+            Mafi.Core.Entities.EntityContext entityContext = new Mafi.Core.Entities.EntityContext(null, new EntityManager(), null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            Module m = new Module(proto, entityContext, null);
+            proto.Action(m);
 
             Console.WriteLine("lala");
         }

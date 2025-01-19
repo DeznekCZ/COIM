@@ -7,7 +7,7 @@ namespace ProgramableNetwork.Python
     {
         public readonly List<Import> imports = new List<Import>();
         public readonly Dictionary<string, ClassDefinition> classes = new Dictionary<string, ClassDefinition>();
-        public readonly Dictionary<string, Function> functions = new Dictionary<string, Function>();
+        public readonly Dictionary<string, FunctionDefinition> functions = new Dictionary<string, FunctionDefinition>();
         public readonly Block parent;
         public readonly List<IStatement> statements = new List<IStatement>();
 
@@ -28,7 +28,7 @@ namespace ProgramableNetwork.Python
             statements.Add(import);
         }
 
-        public void Add(Function function)
+        public void Add(FunctionDefinition function)
         {
             functions.Add(function.Name, function);
             statements.Add(function);

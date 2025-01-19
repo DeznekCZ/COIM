@@ -50,9 +50,7 @@ namespace ProgramableNetwork
 
             foreach (FileInfo file in modules.EnumerateFiles())
             {
-                Token[] tokens = Tokenizer.Parse(file.FullName);
-                Block block = Lexer.Parse(tokens);
-                ModuleRegistrator.Register(registrator, block);
+                ModuleRegistrator.Register(registrator, file.FullName);
             }
         }
 

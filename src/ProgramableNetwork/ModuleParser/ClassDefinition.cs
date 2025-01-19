@@ -20,7 +20,7 @@ namespace ProgramableNetwork.Python
         }
 
         public string Name => className.value;
-        public Dictionary<string, Function> Functions => block.functions;
+        public Dictionary<string, FunctionDefinition> Functions => block.functions;
 
         public Dictionary<string, IExpression> Variables => block.statements
             .Where(s => s is Assignment)
@@ -29,21 +29,27 @@ namespace ProgramableNetwork.Python
 
         public void Execute(IDictionary<string, object> context)
         {
-            Class @class = new Class(Name, baseClasses.Select(b => (Type)(object)b.GetValue(context)).ToArray());
             IDictionary<string, object> classContext = new ChildContext(context);
             foreach (var item in block.statements)
             {
-                if (item is Function f)
+                if (item is FunctionDefinition f)
                     classContext[f.Name] = new Constructor((args) =>
                     {
                         IDictionary<string, object> methodContext = new ChildContext(classContext);
-                        f.Execute(context);
-                        return context.TryGetValue("__return__", out object r) ? r : null;
-                    });
+                        f.Arguments.AsEnumerable()
+                            .Zip(args, (a, b) => (a, b))
+                            .Select(pair => methodContext[pair.a] = pair.b)
+                            .ToList();
+                        f.Execute(methodContext);
+                        return methodContext.TryGetValue("__return__", out object r) ? r : null;
+                    }, f.Arguments.ToArray());
                 else
                     item.Execute(classContext);
             }
-            context[Name] = classContext;
+
+            Type[] types = baseClasses.Select(b => (Type)(object)b.GetValue(context)).ToArray();
+            Class @class = new Class(Name, types, classContext);
+            context[Name] = @class;
         }
     }
 }
