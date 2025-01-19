@@ -5,9 +5,9 @@ namespace ProgramableNetwork.Python
 {
     internal class Constructor : IExpression
     {
-        private Func<dynamic[], dynamic> value;
+        private Func<object[], object> value;
 
-        public Constructor(Func<dynamic[], dynamic> value)
+        public Constructor(Func<object[], object> value)
         {
             this.value = value;
         }
@@ -20,17 +20,17 @@ namespace ProgramableNetwork.Python
 
         public bool BooleanValue => throw new NotImplementedException();
 
-        public Reference<dynamic> GetReference(IDictionary<string, dynamic> context)
+        public Reference<object> GetReference(IDictionary<string, object> context)
         {
             throw new InvalidCastException("Cannot be referenced");
         }
 
-        public dynamic GetValue(IDictionary<string, dynamic> context)
+        public object GetValue(IDictionary<string, object> context)
         {
             throw new NotImplementedException();
         }
 
-        public dynamic Invoke(dynamic[] args)
+        public object Invoke(object[] args)
         {
             return value.Invoke(args);
         }

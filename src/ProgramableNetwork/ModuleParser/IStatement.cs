@@ -4,6 +4,6 @@ namespace ProgramableNetwork.Python
 {
     public interface IStatement
     {
-        void Execute(IDictionary<string, dynamic> context);
+        void Execute(IDictionary<string, object> context);
     }
 }

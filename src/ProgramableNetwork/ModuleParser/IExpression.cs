@@ -9,7 +9,7 @@ namespace ProgramableNetwork.Python
         long LongValue { get; }
         bool BooleanValue { get; }
 
-        Reference<dynamic> GetReference(IDictionary<string, dynamic> context);
-        dynamic GetValue(IDictionary<string, dynamic> context);
+        Reference<object> GetReference(IDictionary<string, object> context);
+        object GetValue(IDictionary<string, object> context);
     }
 }

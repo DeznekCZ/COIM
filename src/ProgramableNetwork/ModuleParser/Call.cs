@@ -32,10 +32,10 @@ namespace ProgramableNetwork.Python
             throw new System.InvalidCastException("can not be referenced");
         }
 
-        public dynamic GetValue(IDictionary<string, dynamic> context)
+        public object GetValue(IDictionary<string, object> context)
         {
-            dynamic callable = expression.GetValue(context);
-            dynamic[] args = Arguments.Select(e => e.GetValue(context)).ToArray();
+            object callable = expression.GetValue(context);
+            object[] args = Arguments.Select(e => e.GetValue(context)).ToArray();
 
             if (callable is Constructor c)
             {

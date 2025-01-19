@@ -15,7 +15,7 @@ namespace ProgramableNetwork
             catch (System.Exception e)
             {
                 Log.Exception(e);
-                throw;
+                throw e;
             }
         }
 

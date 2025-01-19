@@ -21,7 +21,7 @@ class Connection_IsActive(Module):
         20
     ) ]
     categories = [ DefaultCategories.Connection ]
-    controllers = [ DefaultControllers.Basic ]
+    controllers = [ DefaultControllers.Controller ]
 
     def action(self):
         e = self.field.get_ent("entity")

@@ -29,13 +29,13 @@ namespace ProgramableNetwork.ModuleTester
 
             Console.WriteLine(new DirectoryInfo(".").FullName);
 
-            string file = @"S:\git\COIM-Derbis\src\ProgramableNetwork.Modules\Custom\connection_isactive.py";
+            string file = @"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py";
 
             Token[] tokens = Tokenizer.Parse(file);
             Block tree = Lexer.Parse(tokens);
             ModuleRegistrator.Register(registrator, tree);
 
-            Dictionary<string, dynamic> context = new Dictionary<string, dynamic>();
+            Dictionary<string, object> context = new Dictionary<string, object>();
             foreach (IStatement statement in tree.statements)
             {
                 statement.Execute(context);

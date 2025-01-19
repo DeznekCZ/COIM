@@ -27,13 +27,21 @@ namespace ProgramableNetwork.Python
             .Select(s => (Assignment)s)
             .ToDictionary(s => s.Name, s => s.Value);
 
-        public void Execute(IDictionary<string, dynamic> context)
+        public void Execute(IDictionary<string, object> context)
         {
             Class @class = new Class(Name, baseClasses.Select(b => (Type)(object)b.GetValue(context)).ToArray());
-            IDictionary<string, dynamic> classContext = new ChildContext<string, dynamic>(context);
+            IDictionary<string, object> classContext = new ChildContext(context);
             foreach (var item in block.statements)
             {
-                item.Execute(classContext);
+                if (item is Function f)
+                    classContext[f.Name] = new Constructor((args) =>
+                    {
+                        IDictionary<string, object> methodContext = new ChildContext(classContext);
+                        f.Execute(context);
+                        return context.TryGetValue("__return__", out object r) ? r : null;
+                    });
+                else
+                    item.Execute(classContext);
             }
             context[Name] = classContext;
         }

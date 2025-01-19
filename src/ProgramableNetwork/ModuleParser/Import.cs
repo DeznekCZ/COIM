@@ -27,7 +27,7 @@ namespace ProgramableNetwork.Python
             string name = this.name.Concat;
 
             if (name == "Core.categories") // ignore other types
-                context["DefaultCategories"] = Category.Categories();
+                context["DefaultCategories"] = typeof(Category);
 
             else if (name == "Core.entities")
             {
@@ -57,7 +57,27 @@ namespace ProgramableNetwork.Python
 
             else if (name == "Core.fields")
             {
-                // TODO generation by fields
+                exportedItems.Select(argument =>
+                {
+                    if (argument.value == "EntityField")
+                    {
+                        return (argument.value, new Constructor(
+                            (dynamic[] args) => {
+                                Type type = (Type)(object)args[0];
+                                string id = (string)(object)args[1];
+                                string name1 = (string)(object)args[2];
+                                string desc = (string)(object)args[3];
+                                Fix32 distance = (Fix32?)(object)args[4] ?? Fix32.FromInt(5);
+                                return new ModuleFieldProtoDefinition(
+                                    type, id, name: name1, desc, distance
+                                );
+                            }));
+                    }
+                    else
+                    {
+                        throw new NotImplementedException($"IO type '{argument.value}' is not implemented");
+                    }
+                }).Call(p => context[p.value] = p.Item2).ToList();
             }
 
             else if (name == "Core.io")
@@ -86,8 +106,8 @@ namespace ProgramableNetwork.Python
                             (dynamic[] args) => new ModuleConnectorProtoDefinition(
                                 (string)(object)args[0],
                                 (string)(object)args[1],
-                                (int)(object)args[3],
-                                (string)(object)args[4]
+                                (int)(object)args[2],
+                                (string)(object)args[3]
                             )));
                     }
                     else
@@ -100,10 +120,7 @@ namespace ProgramableNetwork.Python
             else if (name == "Core.module")
             {
                 context["Module"] = typeof(Module);
-                context["DefaultControllers"] = new Dictionary<string, StaticEntityProto.ID>()
-                {
-                    { "Controller", NewIds.Controllers.Controller }
-                };
+                context["DefaultControllers"] = typeof(NewIds.Controllers);
             }
 
             else
