@@ -66,3 +66,6 @@ class SettlementTransformer(Entity): pass
 class SettlementWasteModule(Entity): pass
 class SettlementServiceModule(Entity): pass
 class Machine(Entity): pass
+class IEntityWithWorkers(Entity): pass
+class IElectricityConsumingEntity(Entity): pass
+class IUnityConsumingEntity(Entity): pass

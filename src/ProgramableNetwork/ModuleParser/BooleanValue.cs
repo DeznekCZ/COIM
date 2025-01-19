@@ -9,7 +9,7 @@ namespace ProgramableNetwork.Python
         {
             this.token = token;
             this.StringValue = token.value.ToLower();
-            this.BooleanValue = true;
+            this.BooleanValue = bool.Parse(StringValue);
         }
 
         private readonly Token token;

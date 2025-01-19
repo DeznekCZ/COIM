@@ -1,7 +1,7 @@
 from Core.categories import DefaultCategories
 from Core.fields import EntityField
 from Core.module import DefaultControllers, Module
-from Core.entities import StaticEntity
+from Core.entities import StaticEntity, IElectricityConsumingEntity, IWorkerConsumingEntity
 from Core.io import Output
 
 class Connection_IsActive(Module):
@@ -26,8 +26,14 @@ class Connection_IsActive(Module):
     def action(self):
         e = self.field.get_ent("entity")
         if e is not None:
-            self.output.set_bool("power", e.EnergyConsummer.HasEnough)
-            self.output.set_bool("workers", e.WorkerConsummer.HasEnough)
+            if e is IElectricityConsumingEntity:
+                self.output.set_bool("power", e.EnergyConsummer.HasEnough)
+            else:
+                self.output.set_bool("power", True)
+            if e is IEntityWithWorkers:
+                self.output.set("workers", WorkersNeeded == 0)
+            else:
+                self.output.set_bool("workers", True)
             self.output.set_bool("constructed", e.IsConstucted)
             self.output.set_bool("pause", e.IsPaused)
         else:

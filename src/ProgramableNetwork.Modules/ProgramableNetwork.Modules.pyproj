@@ -6,12 +6,14 @@
     <ProjectHome>.</ProjectHome>
     <StartupFile>
     </StartupFile>
-    <SearchPath>
-    </SearchPath>
-    <WorkingDirectory>.</WorkingDirectory>
+    <SearchPath>..\ProgramableNetwork.Modules</SearchPath>
+    <WorkingDirectory>.\Custom</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>ProgramableNetwork.Modules</Name>
     <RootNamespace>ProgramableNetwork.Modules</RootNamespace>
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>

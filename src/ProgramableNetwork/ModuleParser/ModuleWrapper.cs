@@ -1,4 +1,5 @@
-﻿using Mafi.Core.Entities;
+﻿using Mafi;
+using Mafi.Core.Entities;
 
 namespace ProgramableNetwork.Python
 {
@@ -38,6 +39,17 @@ namespace ProgramableNetwork.Python
             {
                 this.module = module;
             }
+
+            public bool get_bool(string name, bool value)
+            {
+                return module.Input[name, (value ? 1 : 0).ToFix32()] > 0;
+            }
+
+            public bool set_bool(string name, bool value)
+            {
+                module.Input[name] = (value ? 1 : 0).ToFix32();
+                return value;
+            }
         }
 
         public OutputSetter output => new OutputSetter(module);
@@ -49,6 +61,17 @@ namespace ProgramableNetwork.Python
             public OutputSetter(Module module)
             {
                 this.module = module;
+            }
+
+            public bool get_bool(string name, bool value)
+            {
+                return module.Output[name, (value ? 1 : 0).ToFix32()] > 0;
+            }
+
+            public bool set_bool(string name, bool value)
+            {
+                module.Output[name] = (value ? 1 : 0).ToFix32();
+                return value;
             }
         }
     }

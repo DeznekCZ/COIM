@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core;
+using Mafi.Core.Entities;
 using Mafi.Core.Game;
 using Mafi.Core.Mods;
 using Mafi.Core.Products;
@@ -36,8 +37,12 @@ namespace ProgramableNetwork.ModuleTester
 
             protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Connection_IsActive", out ModuleProto proto);
 
-            Mafi.Core.Entities.EntityContext entityContext = new Mafi.Core.Entities.EntityContext(null, new EntityManager(), null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            EntityManager manager = new EntityManager();
+            EntityContext entityContext = new EntityContext(null, manager, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            FakeProto fakeProto = new FakeProto(new FakeProto.ID("fake"));
+            manager.AddEntity(0, new FakeEntity(new EntityId(0), fakeProto, entityContext));
             Module m = new Module(proto, entityContext, null);
+            m.NumberData["field__entity"] = 0;
             proto.Action(m);
 
             Console.WriteLine("lala");

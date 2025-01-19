@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mafi.Core.Prototypes;
+using Mafi.Core.Population;
+using Mafi.Core.Factory.ElectricPower;
 
 namespace ProgramableNetwork.Python
 {
@@ -48,6 +50,9 @@ namespace ProgramableNetwork.Python
                         case EntityType.SettlementTransformer: return (argument.value, typeof(SettlementTransformer));
                         case EntityType.SettlementWasteModule: return (argument.value, typeof(SettlementWasteModule));
                         case EntityType.SettlementServiceModule: return (argument.value, typeof(SettlementServiceModule));
+                        case EntityType.IEntityWithWorkers: return (argument.value, typeof(IEntityWithWorkers));
+                        case EntityType.IElectricityConsumingEntity: return (argument.value, typeof(IElectricityConsumingEntity));
+                        case EntityType.IUnityConsumingEntity: return (argument.value, typeof(IUnityConsumingEntity));
 
                         default:
                             throw new NotImplementedException($"Entity type '{entityType}' is not implemented");

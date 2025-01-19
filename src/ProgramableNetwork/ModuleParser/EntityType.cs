@@ -13,6 +13,9 @@
         SettlementTransformer,
         SettlementWasteModule,
         SettlementServiceModule,
-        Machine
+        Machine,
+        IEntityWithWorkers,
+        IElectricityConsumingEntity,
+        IUnityConsumingEntity
     }
 }

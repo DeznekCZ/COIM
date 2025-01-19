@@ -219,9 +219,9 @@ namespace ProgramableNetwork
         }
 
         [DoNotSave(0, null)]
-        protected Dict<string, int> NumberData { get; private set; }
+        public Dict<string, int> NumberData { get; private set; }
         [DoNotSave(0, null)]
-        protected Dict<string, string> StringData { get; private set; }
+        public Dict<string, string> StringData { get; private set; }
 
 
         [DoNotSave(0, null)]

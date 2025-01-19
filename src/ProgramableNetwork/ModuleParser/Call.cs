@@ -46,5 +46,10 @@ namespace ProgramableNetwork.Python
                 throw new NotImplementedException();
             }
         }
+
+        public void Invoke(IDictionary<string, object> context)
+        {
+            GetValue(context);
+        }
     }
 }

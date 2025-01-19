@@ -39,9 +39,9 @@ namespace ProgramableNetwork.Python
             statements.Add(import);
         }
 
-        internal void Add(object v)
+        internal void Add(IExpression v)
         {
-            throw new NotImplementedException();
+            statements.Add(new ExpressionStatement(v));
         }
     }
 }
