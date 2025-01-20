@@ -10,9 +10,9 @@ namespace ProgramableNetwork.Python
         //lang=regex
         private const string paren = @"(?<lparen>\()|(?<rparen>\))|(?<llist>\[)|(?<rlist>\])|(?<ldict>{)|(?<rdict>})";
         //lang=regex
-        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre><=)|(?<lr><)|(?<gr>>)|(?<isp>is)|(?<not>not)";
+        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre><=)|(?<shiftl><<)|(?<shiftr><<)|(?<lr><)|(?<gr>>)|(?<isp>is)|(?<not>not)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
         //lang=regex
-        private const string oper = @"(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>\\\\)|(?<div>\\)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<and>and)|(?<or>or)";
+        private const string oper = @"(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>//)|(?<div>/)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<and>and)|(?<or>or)|(?<ink>in)|(?<invert>~)";
         //lang=regex
         private const string data = @"(?<str>""[^""]+""|'[^']+')|(?<number>\d+(?:.\d+)?)|(?<none>None)|(?<btrue>True)|(?<bfalse>False)";
         //lang=regex
