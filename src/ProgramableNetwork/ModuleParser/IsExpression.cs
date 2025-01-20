@@ -6,13 +6,11 @@ namespace ProgramableNetwork.Python
     public class IsExpression : IExpression
     {
         private IExpression leftValue;
-        private bool not;
         private IExpression rightValue;
 
-        public IsExpression(IExpression finalExpression, bool not, IExpression qualifiedName)
+        public IsExpression(IExpression finalExpression, IExpression qualifiedName)
         {
             this.leftValue = finalExpression;
-            this.not = not;
             this.rightValue = qualifiedName;
         }
 
@@ -36,11 +34,11 @@ namespace ProgramableNetwork.Python
 
             if (right is null)
             {
-                return (left is null) != not;
+                return (left is null);
             }
             if (right is Type type && !(left is null))
             {
-                return type.IsAssignableFrom(((object)left).GetType()) != not;
+                return type.IsAssignableFrom(((object)left).GetType());
             }
             return false;
         }

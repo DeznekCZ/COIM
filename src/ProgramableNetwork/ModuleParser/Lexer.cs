@@ -122,68 +122,288 @@ namespace ProgramableNetwork.Python
 
         private IExpression ParseExpression(params PythonTokens[] ignore)
         {
-            if (IsNext(PythonTokens.lparen, out Token _, ignore))
-            {
-                IExpression expression = ParseExpression(PythonTokens.space, PythonTokens.newline);
-                while (IsNext(PythonTokens.next, out Token _, ignore))
-                { // tuple
-                    throw new NotImplementedException("tuples are not implemented");
-                }
-                RequireNext(PythonTokens.rparen, PythonTokens.space, PythonTokens.newline);
-                return expression;
-            }
+            return disjunct();
+        }
 
-            if (IsNext(PythonTokens.str, out Token str, ignore))
-            {
-                return new StringConstant(str);
-            }
+        private Func<IExpression> And(params Func<IExpression>[] exp)
+        {
+            return ExpressionGraph.And(exp);
+        }
 
-            if (IsNext(PythonTokens.number, out Token num, ignore))
-            {
-                return new NumberConstant(num);
-            }
+        private ExpressionGraph.AndVisitor And(params PythonTokens[] exp)
+        {
+            return ExpressionGraph.And(exp.Select(Token).ToArray());
+        }
 
-            if (IsNext(PythonTokens.llist, out Token listStart, ignore))
+        private ExpressionGraph.OrVisitor Or(params Func<IExpression>[] exp)
+        {
+            return ExpressionGraph.Or(exp);
+        }
+
+        private ExpressionGraph.OrVisitor Or(Func<ExpressionGraph, IExpression> visitor, params Func<ExpressionGraph>[] exp)
+        {
+            return ExpressionGraph.Or(exp);
+        }
+
+        private ExpressionGraph Token(params PythonTokens[] exp)
+        {
+            return ExpressionGraph.Or(exp.Select(Token).ToArray());
+        }
+
+        private ExpressionGraph Multiple(ExpressionGraph exp)
+        {
+            return ExpressionGraph.Multiple(exp);
+        }
+
+        private ExpressionGraph Maybe(ExpressionGraph exp)
+        {
+            return ExpressionGraph.Maybe(exp);
+        }
+
+        private ExpressionGraph.TokenGraph Token(PythonTokens token)
+        {
+            return ExpressionGraph.Token(token);
+        }
+
+        private IExpression disjunct()
+        {
+            IExpression con = conjunct();
+            while (IsNext(PythonTokens.or, out Token _, PythonTokens.space))
             {
-                IExpression argument = ParseExpression(PythonTokens.space, PythonTokens.newline);
-                List<IExpression> listItems = new List<IExpression>() { argument };
-                while (IsNext(PythonTokens.next, out Token _, ignore))
+                con = new OrExpression(con, conjunct());
+            }
+            return con;
+        }
+
+        private IExpression conjunct()
+        {
+            IExpression inv = invert();
+            while (IsNext(PythonTokens.or, out Token _, PythonTokens.space))
+            {
+                inv = new AndExpression(inv, invert());
+            }
+            return inv;
+        }
+
+        private IExpression invert()
+        {
+            bool direction = false;
+            while (IsNext(PythonTokens.not, out Token _, PythonTokens.space))
+            {
+                direction = !direction;
+            }
+            if (direction)
+                return new NotExpression(compare());
+            else
+                return compare();
+        }
+
+        private IExpression compare()
+        {
+            IExpression bitvise = bitviseor();
+            while (IsNextOf(new PythonTokens[]
+            {
+                PythonTokens.eq,
+                PythonTokens.neq,
+                PythonTokens.lre,
+                PythonTokens.lr,
+                PythonTokens.gre,
+                PythonTokens.gr,
+                PythonTokens.not,
+                PythonTokens.ink,
+                PythonTokens.isp
+            }, out Token operat, PythonTokens.space))
+            {
+                if (operat.type == PythonTokens.not)
                 {
-                    listItems.Add(ParseExpression(PythonTokens.space, PythonTokens.newline));
+                    RequireNext(PythonTokens.ink, PythonTokens.space);
+                    bitvise = new NotExpression(new InExpression(bitvise, bitviseor()));
                 }
-                var listEnd = RequireNext(PythonTokens.rlist, PythonTokens.space, PythonTokens.newline);
-                return DecorateExpression(new ListValue(listStart, listEnd, listItems), ignore);
-            }
-
-            if (IsNext(PythonTokens.ldict, out Token dictStart, ignore))
-            {
-                throw new NotImplementedException("dictionary parsiong is not implemented");
-
-                IExpression argument = ParseExpression(PythonTokens.space, PythonTokens.newline);
-                List<IExpression> listItems = new List<IExpression>() { argument };
-                while (IsNext(PythonTokens.next, out Token _, ignore))
+                else if (operat.type == PythonTokens.isp)
                 {
-                    listItems.Add(ParseExpression(PythonTokens.space, PythonTokens.newline));
+                    if (IsNext(PythonTokens.not, out Token _, PythonTokens.space))
+                    {
+                        bitvise = new NotExpression(new IsExpression(bitvise, bitviseor()));
+                    }
                 }
-                var dictEnd = RequireNext(PythonTokens.rdict, PythonTokens.space, PythonTokens.newline);
-                return DecorateExpression(new ListValue(dictStart, dictEnd, listItems), ignore);
+                else
+                {
+                    switch (operat.type)
+                    {
+                        case PythonTokens.eq:
+                            bitvise = new EqualExpression(bitvise, bitvisexor());
+                            break;
+                        case PythonTokens.neq:
+                            bitvise = new NotExpression(new EqualExpression(bitvise, bitvisexor()));
+                            break;
+                        case PythonTokens.lre:
+                            bitvise = new LowerEqualExpression(bitvise, bitvisexor());
+                            break;
+                        case PythonTokens.gre:
+                            bitvise = new GreaterEqualExpression(bitvise, bitvisexor());
+                            break;
+                        case PythonTokens.lr:
+                            bitvise = new LowerExpression(bitvise, bitvisexor());
+                            break;
+                        case PythonTokens.gr:
+                            bitvise = new GreaterExpression(bitvise, bitvisexor());
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
+            return bitvise;
+        }
 
-            if (IsNext(PythonTokens.none, out Token none, ignore))
+        private IExpression bitviseor()
+        {
+            List<IExpression> ors = new List<IExpression>
             {
-                return DecorateExpression(new NoneConst(none), ignore);
+                bitvisexor()
+            };
+            while (IsNext(PythonTokens.bitor, out Token _, PythonTokens.space))
+            {
+                ors.Add(bitviseor());
             }
+            if (ors.Count == 1) return ors[0];
 
-            if (IsNextOf(new PythonTokens[]
+            IExpression f = ors.Last();
+            for (int i = ors.Count - 2; i >= 0; i--)
             {
-                PythonTokens.btrue,
-                PythonTokens.bfalse
-            }, out Token boolToken, ignore))
-            {
-                return DecorateExpression(new BooleanConst(boolToken), ignore);
+                f = new BitOrExpression(ors[i], f);
             }
+            return f;
+        }
 
-            return DecorateExpression(ParseQualifiedName(ignore), ignore);
+        private IExpression bitvisexor()
+        {
+            List<IExpression> ands = new List<IExpression>
+            {
+                bitviseand()
+            };
+            while (IsNext(PythonTokens.bitxor, out Token _, PythonTokens.space))
+            {
+                ands.Add(bitviseand());
+            }
+            if (ands.Count == 1) return ands[0];
+
+            IExpression f = ands.Last();
+            for (int i = ands.Count - 2; i >= 0; i--)
+            {
+                f = new BitXorExpression(ands[i], f);
+            }
+            return f;
+        }
+
+        private IExpression bitviseand()
+        {
+            List<IExpression> shifts = new List<IExpression>
+            {
+                bitviseshift()
+            };
+            while (IsNext(PythonTokens.bitand, out Token _, PythonTokens.space))
+            {
+                shifts.Add(bitviseshift());
+            }
+            if (shifts.Count == 1) return shifts[0];
+
+            IExpression f = shifts.Last();
+            for (int i = shifts.Count - 2; i >= 0; i--)
+            {
+                f = new BitXorExpression(shifts[i], f);
+            }
+            return f;
+            return Or(
+                    And(bitviseor(), Token(PythonTokens.bitand), bitviseshift()),
+                    bitviseshift()
+                );
+        }
+
+        private IExpression bitviseshift()
+        {
+            return Or(
+                    And(bitviseshift(), Token(PythonTokens.shiftl, PythonTokens.shiftr), sum()),
+                    sum()
+                );
+        }
+
+        private IExpression sum()
+        {
+            return Or(
+                    And(sum(), Token(PythonTokens.plus, PythonTokens.minus), term()),
+                    term()
+                );
+        }
+
+        private IExpression term()
+        {
+            return Or(
+                    And(term(), Token(
+                        PythonTokens.mul,
+                        PythonTokens.div,
+                        PythonTokens.divint,
+                        PythonTokens.mod
+                        // what is @
+                    ), factor()),
+                    factor()
+                );
+        }
+
+        private IExpression factor()
+        {
+            return Or(
+                And(
+                    Token(
+                        PythonTokens.plus,
+                        PythonTokens.minus,
+                        PythonTokens.invert
+                    ), factor()
+                ),
+                power()
+            );
+        }
+
+        private IExpression power()
+        {
+            return Or(
+                    And(primary(), Token(PythonTokens.power), factor()),
+                    primary()
+                );
+        }
+
+        private LexerResult primary()
+        {
+            return Or(
+                    And(primary(), Token(PythonTokens.dot), Token(PythonTokens.name)),
+                    And(primary(), Token(PythonTokens.lparen), Token(PythonTokens.name), Token(PythonTokens.rparen)),
+                    And(primary(), Token(PythonTokens.llist), Token(PythonTokens.name), Token(PythonTokens.rlist)),
+                    atom()
+                );
+        }
+
+        private LexerResult atom()
+        {
+            return (new LexerState(this) /
+                PythonTokens.name /
+                PythonTokens.btrue /
+                PythonTokens.bfalse /
+                PythonTokens.none /
+                PythonTokens.str /
+                fstring /
+                (new LexerState(this) + primary + PythonTokens.lparen - arguments + PythonTokens.rparen) /
+                (new LexerState(this) + primary + PythonTokens.llist + PythonTokens.name + PythonTokens.rlist)
+            ).visit();
+        }
+
+        private IExpression arguments()
+        {
+            return And(disjunct(), Maybe(And(Token(PythonTokens.next), disjunct())));
+        }
+
+        private IExpression fstring()
+        {
+            return Token(PythonTokens.str); //TODO
         }
 
         private IExpression DecorateExpression(IExpression finalExpression, PythonTokens[] ignore)
@@ -285,7 +505,7 @@ namespace ProgramableNetwork.Python
         {
             if (enumerator.Count == 0)
             {
-                token = Token.EOF;
+                token = Python.Token.EOF;
                 return false;
             }
 
