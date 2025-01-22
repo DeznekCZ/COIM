@@ -40,9 +40,9 @@ namespace ProgramableNetwork.ModuleTester
             EntityManager manager = new EntityManager();
             EntityContext entityContext = new EntityContext(null, manager, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
             FakeProto fakeProto = new FakeProto(new FakeProto.ID("fake"));
-            manager.AddEntity(0, new FakeEntity(new EntityId(0), fakeProto, entityContext));
+            manager.AddEntity(1, new FakeEntity(new EntityId(1), fakeProto, entityContext));
             Module m = new Module(proto, entityContext, null);
-            m.NumberData["field__entity"] = 0;
+            m.NumberData["field__entity"] = 1;
             proto.Action(m);
 
             Console.WriteLine("lala");

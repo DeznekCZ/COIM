@@ -40,9 +40,9 @@ namespace ProgramableNetwork.Python
                 switch (token.type)
                 {
                     case PythonTokens.from:
-                        QualifiedName p = ParseQualifiedName(PythonTokens.space);
+                        IExpression p = primary();
                         RequireNext(PythonTokens.import, ignore: PythonTokens.space);
-                        Import import = new Import(p, NextList(PythonTokens.name, next: PythonTokens.next, ignore: PythonTokens.space));
+                        ImportStatement import = new ImportStatement(p, NextList(PythonTokens.name, next: PythonTokens.next, ignore: PythonTokens.space));
                         tree.Add(import);
                         RequireNext(PythonTokens.newline, PythonTokens.space);
                         break;
@@ -125,46 +125,6 @@ namespace ProgramableNetwork.Python
             return disjunct();
         }
 
-        private Func<IExpression> And(params Func<IExpression>[] exp)
-        {
-            return ExpressionGraph.And(exp);
-        }
-
-        private ExpressionGraph.AndVisitor And(params PythonTokens[] exp)
-        {
-            return ExpressionGraph.And(exp.Select(Token).ToArray());
-        }
-
-        private ExpressionGraph.OrVisitor Or(params Func<IExpression>[] exp)
-        {
-            return ExpressionGraph.Or(exp);
-        }
-
-        private ExpressionGraph.OrVisitor Or(Func<ExpressionGraph, IExpression> visitor, params Func<ExpressionGraph>[] exp)
-        {
-            return ExpressionGraph.Or(exp);
-        }
-
-        private ExpressionGraph Token(params PythonTokens[] exp)
-        {
-            return ExpressionGraph.Or(exp.Select(Token).ToArray());
-        }
-
-        private ExpressionGraph Multiple(ExpressionGraph exp)
-        {
-            return ExpressionGraph.Multiple(exp);
-        }
-
-        private ExpressionGraph Maybe(ExpressionGraph exp)
-        {
-            return ExpressionGraph.Maybe(exp);
-        }
-
-        private ExpressionGraph.TokenGraph Token(PythonTokens token)
-        {
-            return ExpressionGraph.Token(token);
-        }
-
         private IExpression disjunct()
         {
             IExpression con = conjunct();
@@ -187,15 +147,17 @@ namespace ProgramableNetwork.Python
 
         private IExpression invert()
         {
-            bool direction = false;
+            int direction = 0;
             while (IsNext(PythonTokens.not, out Token _, PythonTokens.space))
             {
-                direction = !direction;
+                direction++;
             }
-            if (direction)
-                return new NotExpression(compare());
-            else
-                return compare();
+            IExpression expression = compare();
+            for (int i = 0; i < direction; i++)
+            {
+                expression = new NotExpression(expression);
+            }
+            return expression;
         }
 
         private IExpression compare()
@@ -318,145 +280,296 @@ namespace ProgramableNetwork.Python
 
         private IExpression bitviseshift()
         {
-            return Or(
-                    And(bitviseshift(), Token(PythonTokens.shiftl, PythonTokens.shiftr), sum()),
-                    sum()
-                );
+            List<(PythonTokens, IExpression) > shifts = new List<(PythonTokens, IExpression)>
+            {
+                (0, sum())
+            };
+            while (IsNextOf(new PythonTokens[]{ PythonTokens.shiftl, PythonTokens.shiftr }, out Token shift, PythonTokens.space))
+            {
+                shifts.Add((shift.type, sum()));
+            }
+            if (shifts.Count == 1) return shifts[0].Item2;
+
+            IExpression f = shifts.Last().Item2;
+            for (int i = shifts.Count - 2; i >= 0; i--)
+            {
+                var shiftDrirection = shifts[i+1].Item1;
+                if (shiftDrirection == PythonTokens.shiftl)
+                {
+                    f = new ShiftLeftExpression(shifts[i].Item2, f);
+                }
+                else
+                {
+                    f = new ModExpression(shifts[i].Item2, f);
+                }
+            }
+            return f;
         }
 
         private IExpression sum()
         {
-            return Or(
-                    And(sum(), Token(PythonTokens.plus, PythonTokens.minus), term()),
-                    term()
-                );
+            List<(PythonTokens, IExpression)> sums = new List<(PythonTokens, IExpression)>
+            {
+                (0, term())
+            };
+            while (IsNextOf(new PythonTokens[] { PythonTokens.plus, PythonTokens.minus }, out Token shift, PythonTokens.space))
+            {
+                sums.Add((shift.type, term()));
+            }
+            if (sums.Count == 1) return sums[0].Item2;
+
+            IExpression f = sums.Last().Item2;
+            for (int i = sums.Count - 2; i >= 0; i--)
+            {
+                var shiftDrirection = sums[i + 1].Item1;
+                if (shiftDrirection == PythonTokens.plus)
+                {
+                    f = new SumExpression(sums[i].Item2, f);
+                }
+                else
+                {
+                    f = new ModExpression(sums[i].Item2, f);
+                }
+            }
+            return f;
         }
 
         private IExpression term()
         {
-            return Or(
-                    And(term(), Token(
-                        PythonTokens.mul,
-                        PythonTokens.div,
-                        PythonTokens.divint,
-                        PythonTokens.mod
-                        // what is @
-                    ), factor()),
-                    factor()
-                );
+            List<(PythonTokens, IExpression)> sums = new List<(PythonTokens, IExpression)>
+            {
+                (0, factor())
+            };
+            while (IsNextOf(new PythonTokens[] { PythonTokens.mul, PythonTokens.div, PythonTokens.divint , PythonTokens.mod }, out Token operToken, PythonTokens.space))
+            {
+                sums.Add((operToken.type, factor()));
+            }
+            if (sums.Count == 1) return sums[0].Item2;
+
+            IExpression f = sums.Last().Item2;
+            for (int i = sums.Count - 2; i >= 0; i--)
+            {
+                var oper = sums[i + 1].Item1;
+                if (oper == PythonTokens.mul)
+                {
+                    f = new MulExpression(sums[i].Item2, f);
+                }
+                else if (oper == PythonTokens.div)
+                {
+                    f = new DivExpression(sums[i].Item2, f);
+                }
+                else if (oper == PythonTokens.divint)
+                {
+                    f = new DivIntExpression(sums[i].Item2, f);
+                }
+                else
+                {
+                    f = new ModExpression(sums[i].Item2, f);
+                }
+            }
+            return f;
         }
 
         private IExpression factor()
         {
-            return Or(
-                And(
-                    Token(
+            Stack<PythonTokens> operators = new Stack<PythonTokens>();
+            while (IsNextOf(new PythonTokens[] {
                         PythonTokens.plus,
                         PythonTokens.minus,
                         PythonTokens.invert
-                    ), factor()
-                ),
-                power()
-            );
+            }, out Token token, PythonTokens.space)) {
+                operators.Push(PythonTokens.plus);
+            }
+            IExpression expression = power();
+            while (operators.Count > 0) {
+                switch (operators.Pop())
+                {
+                    case PythonTokens.plus:
+                        expression = new PositiveExpression(expression);
+                        break;
+                    case PythonTokens.minus:
+                        expression = new NegativeExpression(expression);
+                        break;
+                    case PythonTokens.invert:
+                        expression = new InvertExpression(expression);
+                        break;
+                    default: throw new NotImplementedException();
+                };
+            }
+            return expression;
         }
 
         private IExpression power()
         {
-            return Or(
-                    And(primary(), Token(PythonTokens.power), factor()),
-                    primary()
-                );
+            IExpression expression = primary();
+            while (IsNext(PythonTokens.power, out Token _, PythonTokens.space))
+            {
+                expression = new PowerExpression(expression, factor());
+            }
+            return expression;
         }
 
-        private LexerResult primary()
+        private IExpression primary()
         {
-            return Or(
-                    And(primary(), Token(PythonTokens.dot), Token(PythonTokens.name)),
-                    And(primary(), Token(PythonTokens.lparen), Token(PythonTokens.name), Token(PythonTokens.rparen)),
-                    And(primary(), Token(PythonTokens.llist), Token(PythonTokens.name), Token(PythonTokens.rlist)),
-                    atom()
-                );
+            IExpression expression = atom();
+            while(IsNextOf(new PythonTokens[]
+            {
+                PythonTokens.dot,
+                PythonTokens.lparen,
+                PythonTokens.llist,
+            }, out Token member, PythonTokens.space))
+            {
+                if (member.type == PythonTokens.dot)
+                {
+                    var nameToken = RequireNext(PythonTokens.name, PythonTokens.space);
+                    expression = new PropertyExpression(expression, nameToken.value);
+                }
+                else if (member.type == PythonTokens.lparen)
+                {
+                    expression = new CallExpression(expression, arguments());
+                }
+                else if (member.type == PythonTokens.rparen)
+                {
+                    expression = new IndexExpression(expression, range());
+                }
+            }
+            return expression;
         }
 
-        private LexerResult atom()
+        private IExpression atom()
         {
-            return (new LexerState(this) /
-                PythonTokens.name /
-                PythonTokens.btrue /
-                PythonTokens.bfalse /
-                PythonTokens.none /
-                PythonTokens.str /
-                fstring /
-                (new LexerState(this) + primary + PythonTokens.lparen - arguments + PythonTokens.rparen) /
-                (new LexerState(this) + primary + PythonTokens.llist + PythonTokens.name + PythonTokens.rlist)
-            ).visit();
+            Token decide = AnyNext(PythonTokens.space);
+            switch (decide.type)
+            {
+                case PythonTokens.name:
+                    return new VariableExpression(decide.value);
+                case PythonTokens.btrue:
+                    return new BooleanConst(decide);
+                case PythonTokens.bfalse:
+                    return new BooleanConst(decide);
+                case PythonTokens.none:
+                    return new NoneConst(decide);
+                case PythonTokens.number:
+                    return new NumberConstant(decide);
+                case PythonTokens.str:
+                case PythonTokens.mstr:
+                    return new StringConstant(decide);
+                case PythonTokens.fstrbegin:
+                    Revert(decide);
+                    return fstring();
+                case PythonTokens.lparen:
+                    // TODO tuple
+                    IExpression expression = ParseExpression(PythonTokens.space);
+                    RequireNext(PythonTokens.rparen, PythonTokens.space);
+                    return expression;
+                case PythonTokens.llist:
+                    // TODO tuple
+                    var listItems = list();
+                    IsNext(PythonTokens.next, out Token _, PythonTokens.space);
+                    RequireNext(PythonTokens.rlist, PythonTokens.space);
+                    return new ListExpression(listItems);
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
-        private IExpression arguments()
+        private Token AnyNext(params PythonTokens[] ignore)
         {
-            return And(disjunct(), Maybe(And(Token(PythonTokens.next), disjunct())));
+            return Dequeue();
+        }
+
+        private List<IExpression> list()
+        {
+            if (IsNext(PythonTokens.rlist, out Token end, PythonTokens.space))
+            {
+                return new List<IExpression>();
+            }
+
+            List<IExpression> arguments = new List<IExpression>();
+            arguments.Add(ParseExpression(PythonTokens.space));
+
+            while (IsNext(PythonTokens.next, out Token next, PythonTokens.space))
+            {
+                arguments.Add(ParseExpression(PythonTokens.space));
+            }
+
+            return arguments;
+        }
+
+        private List<IArgument> arguments()
+        {
+            if (IsNext(PythonTokens.rparen, out Token end, PythonTokens.space))
+            {
+                return new List<IArgument>();
+            }
+
+            List<IArgument> arguments = new List<IArgument>();
+
+            if (IsNext(PythonTokens.name, out Token name, PythonTokens.space))
+            {
+                if (!IsNext(PythonTokens.set, out Token _, PythonTokens.space))
+                {
+                    Revert(name);
+                    arguments.Add(new OrderedArgument(ParseExpression(PythonTokens.space)));
+                }
+                else
+                {
+                    arguments.Add(new NamedArgument(name, ParseExpression(PythonTokens.space)));
+                }
+            }
+            else
+            {
+                arguments.Add(new OrderedArgument(ParseExpression(PythonTokens.space)));
+            }
+
+            while (IsNext(PythonTokens.next, out Token next, PythonTokens.space))
+            {
+                if (IsNext(PythonTokens.name, out name, PythonTokens.space))
+                {
+                    if (!IsNext(PythonTokens.set, out Token _, PythonTokens.space))
+                    {
+                        Revert(name);
+                        arguments.Add(new OrderedArgument(ParseExpression(PythonTokens.space)));
+                    }
+                    else
+                    {
+                        arguments.Add(new NamedArgument(name, ParseExpression(PythonTokens.space)));
+                    }
+                }
+                else
+                {
+                    arguments.Add(new OrderedArgument(ParseExpression(PythonTokens.space)));
+                }
+            }
+
+            RequireNext(PythonTokens.rparen, PythonTokens.space);
+
+            return arguments;
+        }
+
+        private IRange range()
+        {
+            bool skipStart = IsNext(PythonTokens.block, out Token _, PythonTokens.space);
+            bool skipEnd = IsNext(PythonTokens.block, out Token _, PythonTokens.space);
+            bool skipStep = IsNext(PythonTokens.rlist, out Token _, PythonTokens.space);
+
+            if (skipStart)
+                throw new NotImplementedException("List slices are not implemeted");
+
+            IExpression start = ParseExpression(PythonTokens.space);
+            skipStart = IsNext(PythonTokens.block, out Token _, PythonTokens.space);
+            skipEnd = IsNext(PythonTokens.block, out Token _, PythonTokens.space);
+            skipStep = IsNext(PythonTokens.rlist, out Token _, PythonTokens.space);
+
+            if (skipStart && !skipStep)
+                throw new NotImplementedException("List slices are not implemeted");
+
+            return new SingleItem(start);
         }
 
         private IExpression fstring()
         {
-            return Token(PythonTokens.str); //TODO
-        }
-
-        private IExpression DecorateExpression(IExpression finalExpression, PythonTokens[] ignore)
-        {
-            if (IsNext(PythonTokens.lparen, out Token _, PythonTokens.space))
-            {
-                if (IsNext(PythonTokens.rparen, out Token _, PythonTokens.space))
-                    return new Call(finalExpression, new List<IExpression>());
-
-                IExpression argument = ParseExpression(PythonTokens.space, PythonTokens.newline);
-                List<IExpression> arguments = new List<IExpression>() { argument };
-                while (IsNext(PythonTokens.next, out Token _, ignore))
-                {
-                    arguments.Add(ParseExpression(PythonTokens.space, PythonTokens.newline));
-                }
-                RequireNext(PythonTokens.rparen, PythonTokens.space, PythonTokens.newline);
-                return DecorateExpression(new Call(finalExpression, arguments), ignore);
-            }
-
-            if (IsNext(PythonTokens.isp, out Token _, ignore))
-            {
-                bool not = IsNext(PythonTokens.not, out Token _, PythonTokens.space);
-                return DecorateExpression(new IsExpression(finalExpression, not, ParseExpression(PythonTokens.space)), ignore);
-            }
-
-            if (IsNextOf(new PythonTokens[] {
-                PythonTokens.plus,
-                PythonTokens.minus,
-                PythonTokens.mul,
-                PythonTokens.div,
-                PythonTokens.divint
-            }, out Token arith, ignore))
-            {
-                return DecorateExpression(new ArithmeticExpression(finalExpression, arith), ignore);
-            }
-
-            if (IsNextOf(new PythonTokens[] {
-                PythonTokens.eq,
-                PythonTokens.neq,
-                PythonTokens.gr,
-                PythonTokens.gre,
-                PythonTokens.lr,
-                PythonTokens.lre
-            }, out Token comp, ignore))
-            {
-                return DecorateExpression(new CompareExpression(finalExpression, comp), ignore);
-            }
-
-            if (IsNextOf(new PythonTokens[] {
-                PythonTokens.and,
-                PythonTokens.or,
-            }, out Token boolean, ignore))
-            {
-                return DecorateExpression(new BooleanExpression(finalExpression, boolean), ignore);
-            }
-
-            return finalExpression;
+            throw new NotImplementedException();
         }
 
         private List<Token> NextList(PythonTokens type, PythonTokens next, params PythonTokens[] ignore)

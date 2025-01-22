@@ -34,7 +34,7 @@ namespace ProgramableNetwork.Python
                 indentation += space.value;
 
             Block block = ParseBlock(tree, indentation);
-            ClassDefinition @class = new ClassDefinition(className, baseClasses, block);
+            ClasssStatement @class = new ClassDefinition(className, baseClasses, block);
             tree.Add(@class);
         }
 
@@ -55,7 +55,7 @@ namespace ProgramableNetwork.Python
                 indentation += space.value;
 
             Block block = ParseBlock(tree, indentation);
-            FunctionDefinition @class = new FunctionDefinition(className, arguments, block);
+            Function @class = new Function(className, arguments, block);
             tree.Add(@class);
         }
 
