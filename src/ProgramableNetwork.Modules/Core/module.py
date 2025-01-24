@@ -1,16 +1,17 @@
+from Core.categories import Category
 from Core.fields import Field, FieldValue
 from Core.entities import Entity
 from Core.io import Input, Output, InputValue, OutputValue
 
 class DefaultControllers:
-    Basic = "ProgramableNetwork_Controller"
+    Controller = "ProgramableNetwork_Controller"
 
 class Module:
     name: str = "module display name"
     inputs: list[Input] = []
     outputs: list[Output] = []
     fields: list[Field] = []
-    categories: list[str] = []
+    categories: list[Category] = []
     controllers: list[str] = []
 
     def __init__(self):

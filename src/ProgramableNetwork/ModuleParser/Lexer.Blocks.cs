@@ -13,7 +13,7 @@ namespace ProgramableNetwork.Python
         private void ParseClass(Block tree)
         {
             Token className = RequireNext(PythonTokens.name, PythonTokens.space);
-            List<QualifiedName> baseClasses = new List<QualifiedName>();
+            List<IExpression> baseClasses = new List<IExpression>();
             if (IsNext(PythonTokens.lparen, out Token _, PythonTokens.space))
             {
                 baseClasses.Add(ParseQualifiedName(PythonTokens.space));
@@ -34,7 +34,7 @@ namespace ProgramableNetwork.Python
                 indentation += space.value;
 
             Block block = ParseBlock(tree, indentation);
-            ClasssStatement @class = new ClassDefinition(className, baseClasses, block);
+            ClasssStatement @class = new ClasssStatement(className, baseClasses, block);
             tree.Add(@class);
         }
 
@@ -55,7 +55,7 @@ namespace ProgramableNetwork.Python
                 indentation += space.value;
 
             Block block = ParseBlock(tree, indentation);
-            Function @class = new Function(className, arguments, block);
+            FunctionStatement @class = new FunctionStatement(className, arguments, block);
             tree.Add(@class);
         }
 

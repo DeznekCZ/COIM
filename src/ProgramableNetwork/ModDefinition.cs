@@ -2,6 +2,7 @@
 using Mafi.Base;
 using Mafi.Core;
 using Mafi.Core.Mods;
+using ProgramableNetwork.Data.Mod;
 using System;
 
 namespace ProgramableNetwork
@@ -39,6 +40,7 @@ namespace ProgramableNetwork
 
 			// Use data class registration to register other protos such as machines, recipes, etc.
 			registrator.RegisterData<Modules>();
+			registrator.RegisterData<PyModules>();
 			registrator.RegisterData<DataBands>();
 			registrator.RegisterData<Entities>();
 

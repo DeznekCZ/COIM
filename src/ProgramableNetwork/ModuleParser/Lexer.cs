@@ -15,6 +15,8 @@ namespace ProgramableNetwork.Python
     public partial class Lexer
     {
         private LinkedList<Token> enumerator;
+        private readonly PythonTokens[] newLineIgnore = new PythonTokens[] { PythonTokens.space, PythonTokens.newline, PythonTokens.comment };
+        private readonly PythonTokens[] defaultIgnore = new PythonTokens[] { PythonTokens.space, PythonTokens.comment };
 
         public static Block Parse(Token[] tokens)
         {
@@ -79,11 +81,11 @@ namespace ProgramableNetwork.Python
                         IExpression leftExpression = ParseExpression(PythonTokens.space);
                         while (IsNext(PythonTokens.set, out Token _, PythonTokens.space))
                         {
-                            leftExpression = ParseAssignment(leftExpression);
+                            tree.Add(ParseAssignment(leftExpression));
                             break;
                         }
                         IsNext(PythonTokens.newline, out Token _, PythonTokens.space);
-                        tree.Add(leftExpression);
+                        tree.Add(new EvaluateStatement(leftExpression));
                         break;
 
                     case PythonTokens.newline:
@@ -102,6 +104,21 @@ namespace ProgramableNetwork.Python
                         }
                         break;
 
+                    case PythonTokens.returnp:
+                        if (IsNext(PythonTokens.newline, out Token _, defaultIgnore))
+                        {
+                            tree.Add(new ReturnStatement(null));
+                        }
+                        else
+                        {
+                            tree.Add(new ReturnStatement(ParseExpression(defaultIgnore)));
+                        }
+                        break;
+
+                    case PythonTokens.comment:
+                    case PythonTokens.semicolon:
+                        break;
+
                     case PythonTokens.undefined:
                     default:
                         throw new NotImplementedException($"undefined: {token}");
@@ -115,44 +132,44 @@ namespace ProgramableNetwork.Python
             enumerator.AddFirst(token);
         }
 
-        private Assignment ParseAssignment(IExpression qualifiedName)
+        private AssignmentStatement ParseAssignment(IExpression qualifiedName)
         {
-            return new Assignment(qualifiedName, ParseExpression(PythonTokens.space));
+            return new AssignmentStatement(qualifiedName, ParseExpression(PythonTokens.space));
         }
 
         private IExpression ParseExpression(params PythonTokens[] ignore)
         {
-            return disjunct();
+            return disjunct(ignore);
         }
 
-        private IExpression disjunct()
+        private IExpression disjunct(PythonTokens[] ignore = null)
         {
-            IExpression con = conjunct();
-            while (IsNext(PythonTokens.or, out Token _, PythonTokens.space))
+            IExpression con = conjunct(ignore ?? defaultIgnore);
+            while (IsNext(PythonTokens.or, out Token _, defaultIgnore))
             {
                 con = new OrExpression(con, conjunct());
             }
             return con;
         }
 
-        private IExpression conjunct()
+        private IExpression conjunct(PythonTokens[] ignore = null)
         {
-            IExpression inv = invert();
-            while (IsNext(PythonTokens.or, out Token _, PythonTokens.space))
+            IExpression inv = invert(ignore ?? defaultIgnore);
+            while (IsNext(PythonTokens.and, out Token _, defaultIgnore))
             {
                 inv = new AndExpression(inv, invert());
             }
             return inv;
         }
 
-        private IExpression invert()
+        private IExpression invert(PythonTokens[] ignore = null)
         {
             int direction = 0;
-            while (IsNext(PythonTokens.not, out Token _, PythonTokens.space))
+            while (IsNext(PythonTokens.not, out Token _, ignore ?? defaultIgnore))
             {
                 direction++;
             }
-            IExpression expression = compare();
+            IExpression expression = compare(direction == 0 ? ignore ?? defaultIgnore : defaultIgnore);
             for (int i = 0; i < direction; i++)
             {
                 expression = new NotExpression(expression);
@@ -160,9 +177,9 @@ namespace ProgramableNetwork.Python
             return expression;
         }
 
-        private IExpression compare()
+        private IExpression compare(PythonTokens[] ignore = null)
         {
-            IExpression bitvise = bitviseor();
+            IExpression bitvise = bitviseor(ignore ?? defaultIgnore);
             while (IsNextOf(new PythonTokens[]
             {
                 PythonTokens.eq,
@@ -174,18 +191,22 @@ namespace ProgramableNetwork.Python
                 PythonTokens.not,
                 PythonTokens.ink,
                 PythonTokens.isp
-            }, out Token operat, PythonTokens.space))
+            }, out Token operat, defaultIgnore))
             {
                 if (operat.type == PythonTokens.not)
                 {
-                    RequireNext(PythonTokens.ink, PythonTokens.space);
+                    RequireNext(PythonTokens.ink, defaultIgnore);
                     bitvise = new NotExpression(new InExpression(bitvise, bitviseor()));
                 }
                 else if (operat.type == PythonTokens.isp)
                 {
-                    if (IsNext(PythonTokens.not, out Token _, PythonTokens.space))
+                    if (IsNext(PythonTokens.not, out Token _, defaultIgnore))
                     {
                         bitvise = new NotExpression(new IsExpression(bitvise, bitviseor()));
+                    }
+                    else
+                    {
+                        bitvise = new IsExpression(bitvise, bitviseor());
                     }
                 }
                 else
@@ -218,13 +239,13 @@ namespace ProgramableNetwork.Python
             return bitvise;
         }
 
-        private IExpression bitviseor()
+        private IExpression bitviseor(PythonTokens[] ignore = null)
         {
             List<IExpression> ors = new List<IExpression>
             {
-                bitvisexor()
+                bitvisexor(ignore ?? defaultIgnore)
             };
-            while (IsNext(PythonTokens.bitor, out Token _, PythonTokens.space))
+            while (IsNext(PythonTokens.bitor, out Token _, defaultIgnore))
             {
                 ors.Add(bitviseor());
             }
@@ -238,13 +259,13 @@ namespace ProgramableNetwork.Python
             return f;
         }
 
-        private IExpression bitvisexor()
+        private IExpression bitvisexor(PythonTokens[] ignore = null)
         {
             List<IExpression> ands = new List<IExpression>
             {
-                bitviseand()
+                bitviseand(ignore ?? defaultIgnore)
             };
-            while (IsNext(PythonTokens.bitxor, out Token _, PythonTokens.space))
+            while (IsNext(PythonTokens.bitxor, out Token _, defaultIgnore))
             {
                 ands.Add(bitviseand());
             }
@@ -258,13 +279,13 @@ namespace ProgramableNetwork.Python
             return f;
         }
 
-        private IExpression bitviseand()
+        private IExpression bitviseand(PythonTokens[] ignore = null)
         {
             List<IExpression> shifts = new List<IExpression>
             {
-                bitviseshift()
+                bitviseshift(ignore ?? defaultIgnore)
             };
-            while (IsNext(PythonTokens.bitand, out Token _, PythonTokens.space))
+            while (IsNext(PythonTokens.bitand, out Token _, defaultIgnore))
             {
                 shifts.Add(bitviseshift());
             }
@@ -278,13 +299,13 @@ namespace ProgramableNetwork.Python
             return f;
         }
 
-        private IExpression bitviseshift()
+        private IExpression bitviseshift(PythonTokens[] ignore = null)
         {
             List<(PythonTokens, IExpression) > shifts = new List<(PythonTokens, IExpression)>
             {
-                (0, sum())
+                (0, sum(ignore ?? defaultIgnore))
             };
-            while (IsNextOf(new PythonTokens[]{ PythonTokens.shiftl, PythonTokens.shiftr }, out Token shift, PythonTokens.space))
+            while (IsNextOf(new PythonTokens[]{ PythonTokens.shiftl, PythonTokens.shiftr }, out Token shift, defaultIgnore))
             {
                 shifts.Add((shift.type, sum()));
             }
@@ -300,19 +321,19 @@ namespace ProgramableNetwork.Python
                 }
                 else
                 {
-                    f = new ModExpression(shifts[i].Item2, f);
+                    f = new ShiftRightExpression(shifts[i].Item2, f);
                 }
             }
             return f;
         }
 
-        private IExpression sum()
+        private IExpression sum(PythonTokens[] ignore = null)
         {
             List<(PythonTokens, IExpression)> sums = new List<(PythonTokens, IExpression)>
             {
-                (0, term())
+                (0, term(ignore ?? defaultIgnore))
             };
-            while (IsNextOf(new PythonTokens[] { PythonTokens.plus, PythonTokens.minus }, out Token shift, PythonTokens.space))
+            while (IsNextOf(new PythonTokens[] { PythonTokens.plus, PythonTokens.minus }, out Token shift, defaultIgnore))
             {
                 sums.Add((shift.type, term()));
             }
@@ -324,7 +345,7 @@ namespace ProgramableNetwork.Python
                 var shiftDrirection = sums[i + 1].Item1;
                 if (shiftDrirection == PythonTokens.plus)
                 {
-                    f = new SumExpression(sums[i].Item2, f);
+                    f = new AddExpression(sums[i].Item2, f);
                 }
                 else
                 {
@@ -334,13 +355,13 @@ namespace ProgramableNetwork.Python
             return f;
         }
 
-        private IExpression term()
+        private IExpression term(PythonTokens[] ignore = null)
         {
             List<(PythonTokens, IExpression)> sums = new List<(PythonTokens, IExpression)>
             {
-                (0, factor())
+                (0, factor(ignore ?? defaultIgnore))
             };
-            while (IsNextOf(new PythonTokens[] { PythonTokens.mul, PythonTokens.div, PythonTokens.divint , PythonTokens.mod }, out Token operToken, PythonTokens.space))
+            while (IsNextOf(new PythonTokens[] { PythonTokens.mul, PythonTokens.div, PythonTokens.divint , PythonTokens.mod }, out Token operToken, defaultIgnore))
             {
                 sums.Add((operToken.type, factor()));
             }
@@ -370,17 +391,17 @@ namespace ProgramableNetwork.Python
             return f;
         }
 
-        private IExpression factor()
+        private IExpression factor(PythonTokens[] ignore = null)
         {
             Stack<PythonTokens> operators = new Stack<PythonTokens>();
             while (IsNextOf(new PythonTokens[] {
                         PythonTokens.plus,
                         PythonTokens.minus,
                         PythonTokens.invert
-            }, out Token token, PythonTokens.space)) {
+            }, out Token token, ignore ?? defaultIgnore)) {
                 operators.Push(PythonTokens.plus);
             }
-            IExpression expression = power();
+            IExpression expression = power(operators.Count == 0 ? ignore ?? defaultIgnore : defaultIgnore);
             while (operators.Count > 0) {
                 switch (operators.Pop())
                 {
@@ -399,29 +420,29 @@ namespace ProgramableNetwork.Python
             return expression;
         }
 
-        private IExpression power()
+        private IExpression power(PythonTokens[] ignore = null)
         {
-            IExpression expression = primary();
-            while (IsNext(PythonTokens.power, out Token _, PythonTokens.space))
+            IExpression expression = primary(ignore ?? defaultIgnore);
+            while (IsNext(PythonTokens.power, out Token _, defaultIgnore))
             {
                 expression = new PowerExpression(expression, factor());
             }
             return expression;
         }
 
-        private IExpression primary()
+        private IExpression primary(PythonTokens[] ignore = null)
         {
-            IExpression expression = atom();
+            IExpression expression = atom(ignore ?? defaultIgnore);
             while(IsNextOf(new PythonTokens[]
             {
                 PythonTokens.dot,
                 PythonTokens.lparen,
                 PythonTokens.llist,
-            }, out Token member, PythonTokens.space))
+            }, out Token member, defaultIgnore))
             {
                 if (member.type == PythonTokens.dot)
                 {
-                    var nameToken = RequireNext(PythonTokens.name, PythonTokens.space);
+                    var nameToken = RequireNext(PythonTokens.name, defaultIgnore);
                     expression = new PropertyExpression(expression, nameToken.value);
                 }
                 else if (member.type == PythonTokens.lparen)
@@ -436,9 +457,9 @@ namespace ProgramableNetwork.Python
             return expression;
         }
 
-        private IExpression atom()
+        private IExpression atom(PythonTokens[] ignore = null)
         {
-            Token decide = AnyNext(PythonTokens.space);
+            Token decide = AnyNext(ignore ?? defaultIgnore);
             switch (decide.type)
             {
                 case PythonTokens.name:
@@ -465,8 +486,8 @@ namespace ProgramableNetwork.Python
                 case PythonTokens.llist:
                     // TODO tuple
                     var listItems = list();
-                    IsNext(PythonTokens.next, out Token _, PythonTokens.space);
-                    RequireNext(PythonTokens.rlist, PythonTokens.space);
+                    IsNext(PythonTokens.next, out Token _, PythonTokens.space, PythonTokens.newline);
+                    RequireNext(PythonTokens.rlist, PythonTokens.space, PythonTokens.newline);
                     return new ListExpression(listItems);
                 default:
                     throw new NotImplementedException();
@@ -475,22 +496,24 @@ namespace ProgramableNetwork.Python
 
         private Token AnyNext(params PythonTokens[] ignore)
         {
+            while (IsNextOf(ignore, out Token _))
+                continue;
             return Dequeue();
         }
 
         private List<IExpression> list()
         {
-            if (IsNext(PythonTokens.rlist, out Token end, PythonTokens.space))
+            if (IsNext(PythonTokens.rlist, out Token end, PythonTokens.space, PythonTokens.newline))
             {
                 return new List<IExpression>();
             }
 
             List<IExpression> arguments = new List<IExpression>();
-            arguments.Add(ParseExpression(PythonTokens.space));
+            arguments.Add(ParseExpression(PythonTokens.space, PythonTokens.newline));
 
-            while (IsNext(PythonTokens.next, out Token next, PythonTokens.space))
+            while (IsNext(PythonTokens.next, out Token next, PythonTokens.space, PythonTokens.newline))
             {
-                arguments.Add(ParseExpression(PythonTokens.space));
+                arguments.Add(ParseExpression(PythonTokens.space, PythonTokens.newline));
             }
 
             return arguments;
@@ -498,51 +521,51 @@ namespace ProgramableNetwork.Python
 
         private List<IArgument> arguments()
         {
-            if (IsNext(PythonTokens.rparen, out Token end, PythonTokens.space))
+            if (IsNext(PythonTokens.rparen, out Token end, newLineIgnore))
             {
                 return new List<IArgument>();
             }
 
             List<IArgument> arguments = new List<IArgument>();
 
-            if (IsNext(PythonTokens.name, out Token name, PythonTokens.space))
+            if (IsNext(PythonTokens.name, out Token name, newLineIgnore))
             {
-                if (!IsNext(PythonTokens.set, out Token _, PythonTokens.space))
+                if (!IsNext(PythonTokens.set, out Token _, newLineIgnore))
                 {
                     Revert(name);
-                    arguments.Add(new OrderedArgument(ParseExpression(PythonTokens.space)));
+                    arguments.Add(new OrderedArgument(ParseExpression(newLineIgnore)));
                 }
                 else
                 {
-                    arguments.Add(new NamedArgument(name, ParseExpression(PythonTokens.space)));
+                    arguments.Add(new NamedArgument(name, ParseExpression(newLineIgnore)));
                 }
             }
             else
             {
-                arguments.Add(new OrderedArgument(ParseExpression(PythonTokens.space)));
+                arguments.Add(new OrderedArgument(ParseExpression(newLineIgnore)));
             }
 
-            while (IsNext(PythonTokens.next, out Token next, PythonTokens.space))
+            while (IsNext(PythonTokens.next, out Token next, newLineIgnore))
             {
-                if (IsNext(PythonTokens.name, out name, PythonTokens.space))
+                if (IsNext(PythonTokens.name, out name, newLineIgnore))
                 {
-                    if (!IsNext(PythonTokens.set, out Token _, PythonTokens.space))
+                    if (!IsNext(PythonTokens.set, out Token _, newLineIgnore))
                     {
                         Revert(name);
-                        arguments.Add(new OrderedArgument(ParseExpression(PythonTokens.space)));
+                        arguments.Add(new OrderedArgument(ParseExpression(newLineIgnore)));
                     }
                     else
                     {
-                        arguments.Add(new NamedArgument(name, ParseExpression(PythonTokens.space)));
+                        arguments.Add(new NamedArgument(name, ParseExpression(newLineIgnore)));
                     }
                 }
                 else
                 {
-                    arguments.Add(new OrderedArgument(ParseExpression(PythonTokens.space)));
+                    arguments.Add(new OrderedArgument(ParseExpression(newLineIgnore)));
                 }
             }
 
-            RequireNext(PythonTokens.rparen, PythonTokens.space);
+            RequireNext(PythonTokens.rparen, newLineIgnore);
 
             return arguments;
         }
@@ -666,18 +689,9 @@ namespace ProgramableNetwork.Python
             return true;
         }
 
-        private QualifiedName ParseQualifiedName(params PythonTokens[] ignore)
+        private IExpression ParseQualifiedName(params PythonTokens[] ignore)
         {
-            QualifiedName path = new QualifiedName();
-            Token name = RequireNext(PythonTokens.name, ignore);
-            path.names.Add(name);
-
-            while (IsNext(PythonTokens.dot, out Token _, ignore))
-            {
-                Token nextname = RequireNext(PythonTokens.name, ignore);
-                path.names.Add(nextname);
-            }
-            return path;
+            return primary();
         }
 
         private Token Dequeue()

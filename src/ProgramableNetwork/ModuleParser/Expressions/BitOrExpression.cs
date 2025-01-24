@@ -2,25 +2,15 @@
 
 namespace ProgramableNetwork.Python
 {
-    internal class BitOrExpression : IExpression
+    internal class BitOrExpression : ABinaryOperatorExpression
     {
-        private IExpression left;
-        private IExpression right;
-
-        public BitOrExpression(IExpression left, IExpression right)
+        public BitOrExpression(IExpression left, IExpression right) : base(left, right)
         {
-            this.left = left;
-            this.right = right;
         }
 
-        public Reference<object> GetReference(IDictionary<string, object> context)
+        protected override object Evaluate(object left, object right)
         {
-            throw new System.NotImplementedException();
-        }
-
-        public object GetValue(IDictionary<string, object> context)
-        {
-            return Expressions.__or__(left.GetValue(context), right.GetValue(context));
+            return Expressions.__or__(left, right);
         }
     }
 }

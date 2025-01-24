@@ -1,7 +1,8 @@
 from Core.categories import DefaultCategories
 from Core.fields import EntityField
+from Core.mafi import fix
 from Core.module import DefaultControllers, Module
-from Core.entities import IEntityWithWorkers, StaticEntity, IElectricityConsumingEntity, IWorkerConsumingEntity
+from Core.entities import IEntityWithWorkers, StaticEntity, IElectricityConsumingEntity
 from Core.io import Output
 
 class Connection_IsActive(Module):
@@ -26,18 +27,19 @@ class Connection_IsActive(Module):
     def action(self):
         e = self.field.get_ent("entity")
         if e is not None:
-            if e is IElectricityConsumingEntity:
-                self.output.set_bool("power", e.EnergyConsummer.HasEnough)
+            if e is IElectricityConsumingEntity and e.ElectricityConsumer.Value is not None:
+                self.output.set_bool("power", not e.ElectricityConsumer.Value.NotEnoughPower)
             else:
                 self.output.set_bool("power", True)
             if e is IEntityWithWorkers:
-                self.output.set("workers", e.WorkersNeeded == 0)
+                self.output.set_bool("workers", e.WorkersNeeded == 0)
             else:
                 self.output.set_bool("workers", True)
-            self.output.set_bool("constructed", e.IsConstucted)
-            self.output.set_bool("pause", e.IsPaused)
+            #presumption is StaticEntity by field restriction
+            self.output.set_bool("constructed", e.IsConstructed)
+            self.output.set_bool("pause", e.CanBePaused and e.IsPaused)
         else:
-            self.output.set_bool("power", True)
-            self.output.set_bool("workers", True)
-            self.output.set_bool("constructed", False)
+            self.output.set_bool("power", False)
+            self.output.set_bool("workers", False)
+            self.output.set_bool("constructed", True)
             self.output.set_bool("pause", True)

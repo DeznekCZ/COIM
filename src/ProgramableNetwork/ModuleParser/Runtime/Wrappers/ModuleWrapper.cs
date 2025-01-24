@@ -5,11 +5,13 @@ namespace ProgramableNetwork.Python
 {
     public class ModuleWrapper
     {
-        private Module module;
+        public readonly Module module;
+        public readonly Class @class;
 
-        public ModuleWrapper(Module module)
+        public ModuleWrapper(Module module, Class @class)
         {
             this.module = module;
+            this.@class = @class;
         }
 
         public FieldSetter field => new FieldSetter(module);
@@ -26,6 +28,26 @@ namespace ProgramableNetwork.Python
             public Entity get_ent(string fieldName)
             {
                 return module.Field.Entity<Entity>(fieldName);
+            }
+
+            public bool get_bool(string name, bool value)
+            {
+                return module.Field[name, (value ? 1 : 0).ToFix32()] > 0;
+            }
+
+            public void set_bool(string name, bool value)
+            {
+                module.Field[name] = (value ? 1 : 0).ToFix32();
+            }
+
+            public Fix32 get(string name, Fix32 value)
+            {
+                return module.Field[name, value];
+            }
+
+            public void set(string name, Fix32 value)
+            {
+                module.Field[name] = value;
             }
         }
 
@@ -45,10 +67,19 @@ namespace ProgramableNetwork.Python
                 return module.Input[name, (value ? 1 : 0).ToFix32()] > 0;
             }
 
-            public bool set_bool(string name, bool value)
+            public void set_bool(string name, bool value)
             {
                 module.Input[name] = (value ? 1 : 0).ToFix32();
-                return value;
+            }
+
+            public Fix32 get(string name, Fix32 value)
+            {
+                return module.Input[name, value];
+            }
+
+            public void set(string name, Fix32 value)
+            {
+                module.Input[name] = value;
             }
         }
 
@@ -68,10 +99,19 @@ namespace ProgramableNetwork.Python
                 return module.Output[name, (value ? 1 : 0).ToFix32()] > 0;
             }
 
-            public bool set_bool(string name, bool value)
+            public void set_bool(string name, bool value)
             {
                 module.Output[name] = (value ? 1 : 0).ToFix32();
-                return value;
+            }
+
+            public Fix32 get(string name, Fix32 value)
+            {
+                return module.Output[name, value];
+            }
+
+            public void set(string name, Fix32 value)
+            {
+                module.Output[name] = value;
             }
         }
     }

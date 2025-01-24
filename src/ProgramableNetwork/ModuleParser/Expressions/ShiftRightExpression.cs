@@ -1,14 +1,14 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class ModExpression : IExpression
+    internal class ShiftRightExpression : ABinaryOperatorExpression
     {
-        private IExpression item2;
-        private IExpression f;
-
-        public ModExpression(IExpression item2, IExpression f)
+        public ShiftRightExpression(IExpression left, IExpression right) : base(left, right)
         {
-            this.item2 = item2;
-            this.f = f;
+        }
+
+        protected override object Evaluate(object left, object right)
+        {
+            return Expressions.__rshift__(left, right);
         }
     }
 }

@@ -9,6 +9,6 @@
             this.expression = expression;
         }
 
-        public IExpression Expression => throw new System.NotImplementedException();
+        public IExpression Expression => expression;
     }
 }

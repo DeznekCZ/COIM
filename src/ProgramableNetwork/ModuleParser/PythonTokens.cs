@@ -56,6 +56,9 @@
         block,
         name,
         space,
+        comment,
+        semicolon,
+        returnp,
         eof
     }
 }

@@ -6,6 +6,7 @@ namespace ProgramableNetwork.Python
     public abstract class ConstantExpression : IExpression
     {
         private Type type;
+        public string Path => throw new NotImplementedException($"Cannot get path from constant {GetType()}");
 
         public ConstantExpression(Type type)
         {

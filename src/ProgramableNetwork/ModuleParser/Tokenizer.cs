@@ -10,19 +10,21 @@ namespace ProgramableNetwork.Python
         //lang=regex
         private const string paren = @"(?<lparen>\()|(?<rparen>\))|(?<llist>\[)|(?<rlist>\])|(?<ldict>{)|(?<rdict>})";
         //lang=regex
-        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre><=)|(?<shiftl><<)|(?<shiftr><<)|(?<lr><)|(?<gr>>)|(?<isp>is)|(?<not>not)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
+        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre>>=)|(?<shiftl><<)|(?<shiftr>>>)|(?<lr><)|(?<gr>>)|(?<isp>is)|(?<not>not)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
         //lang=regex
-        private const string oper = @"(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>//)|(?<div>/)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<and>and)|(?<or>or)|(?<ink>in)|(?<invert>~)";
+        private const string oper = @"(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>//)|(?<div>/)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<invert>~)|(?<semicolon>;)";
         //lang=regex
-        private const string data = @"(?<str>""[^""]+""|'[^']+')|(?<number>\d+(?:.\d+)?)|(?<none>None)|(?<btrue>True)|(?<bfalse>False)";
+        private const string data = @"(?<str>""[^""]+""|'[^']+')|(?<number>\d+(?:.\d+)?)|(?<name>[a-zA-Z_]\w*)";
         //lang=regex
-        private const string keywords = @"(?<from>from)|(?<import>import)|(?<def>def)|(?<classp>class)|(?<ifp>if)|(?<elif>elif)|(?<elsep>else)|(?<name>[a-zA-Z_]\w*)";
+        private const string keywordsList = @"^(?:(?<none>None)|(?<btrue>True)|(?<bfalse>False)|(?<and>and)|(?<or>or)|(?<ink>in)|(?<from>from)|(?<import>import)|(?<def>def)|(?<classp>class)|(?<ifp>if)|(?<elif>elif)|(?<elsep>else)|(?<returnp>return))$";
         //lang=regex
-        private const string indentation = @"(?<block>:)|(?<space>\t| )|(?<rest>.)";
+        private const string indentation = @"(?<block>:)|(?<space>[\t ]+)|(?<comment>#[^\n]+)|(?<rest>.)";
 
         private static readonly Regex combined = new Regex(
-            string.Join("|", paren, comp, oper, data, keywords, indentation)
+            string.Join("|", paren, comp, oper, data, indentation)
             , RegexOptions.Compiled);
+
+        private static readonly Regex keywords = new Regex(keywordsList, RegexOptions.Compiled);
 
         public static Token[] Parse(string file)
         {
@@ -41,8 +43,32 @@ namespace ProgramableNetwork.Python
                     {
                         if (token.Name == "0") continue;
                         if (token.Name == "rest") continue;
-                        if (found = token.Success)
+                        if (token.Name == "name" && token.Success)
+                        { // search for keyword
+                            found = true;
+                            Match kw = keywords.Match(token.Value);
+                            if (kw.Success)
+                            {
+                                foreach (Group kwg in kw.Groups)
+                                {
+                                    if (kwg.Name == "0") continue;
+                                    if (!kwg.Success) continue;
+
+                                    tokens.Add(new Token(fileInfo, i + 1, token.Index + 1, token.Length, (PythonTokens)Enum.Parse(typeof(PythonTokens), kwg.Name), token.Value));
+                                    end = token.Index + token.Length;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                tokens.Add(new Token(fileInfo, i + 1, token.Index + 1, token.Length, PythonTokens.name, token.Value));
+                                end = token.Index + token.Length;
+                            }
+                            break;
+                        }
+                        else if (token.Success && token.Length == match.Length)
                         {
+                            found = true;
                             tokens.Add(new Token(fileInfo, i + 1, token.Index+1, token.Length, (PythonTokens)Enum.Parse(typeof(PythonTokens), token.Name), token.Value));
                             end = token.Index + token.Length;
                             break;

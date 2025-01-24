@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,13 +18,7 @@ namespace ProgramableNetwork.Python
             this.listItems = listItems;
         }
 
-        public string StringValue => "[" + string.Join(",", listItems.Select(i => i.StringValue)) + "]";
-
-        public int IntValue => throw new System.NotImplementedException();
-
-        public long LongValue => throw new System.NotImplementedException();
-
-        public bool BooleanValue => throw new System.NotImplementedException();
+        public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
 
         public IEnumerator<IExpression> GetEnumerator()
         {

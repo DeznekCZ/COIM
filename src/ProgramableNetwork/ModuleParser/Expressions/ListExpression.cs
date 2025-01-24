@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ProgramableNetwork.Python
@@ -6,6 +7,7 @@ namespace ProgramableNetwork.Python
     internal class ListExpression : IExpression
     {
         private List<IExpression> listItems;
+        public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
 
         public ListExpression(List<IExpression> listItems)
         {

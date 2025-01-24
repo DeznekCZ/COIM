@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class Constructor : IExpression
+    internal class Function : IExpression
     {
         private Func<IArgumentValue[], object> value;
 
-        public Constructor(Func<IArgumentValue[], object> value, string[] arguments = null)
+        public Function(Func<IArgumentValue[], object> value, string[] arguments = null)
         {
             this.value = value;
             Arguments = arguments ?? new string[0];
@@ -16,6 +16,8 @@ namespace ProgramableNetwork.Python
         public string[] Arguments { get; private set; }
 
         public string Path => throw new NotImplementedException();
+
+        public object Self { get; set; }
 
         public Reference<object> GetReference(IDictionary<string, object> context)
         {

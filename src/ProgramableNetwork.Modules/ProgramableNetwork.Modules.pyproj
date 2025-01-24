@@ -24,9 +24,12 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Core\mafi.py" />
     <Compile Include="Custom\connection_isactive.py" />
     <Compile Include="Core\fields.py" />
     <Compile Include="Core\module.py" />
+    <Compile Include="Custom\example_with_function.py" />
+    <Compile Include="Custom\randomizer.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Custom\" />

@@ -40,18 +40,6 @@ namespace ProgramableNetwork
             Decisions(registrator);
             Display(registrator);
             Radio(registrator);
-            LoadPyModules(registrator);
-        }
-
-        private void LoadPyModules(ProtoRegistrator registrator)
-        {
-            DirectoryInfo modules = new DirectoryInfo(typeof(Modules).Assembly.Location + "/../Modules");
-            Log.Info("Location of modules: " + modules.FullName);
-
-            foreach (FileInfo file in modules.EnumerateFiles())
-            {
-                ModuleRegistrator.Register(registrator, file.FullName);
-            }
         }
 
         private static void Arithmetic(ProtoRegistrator registrator)

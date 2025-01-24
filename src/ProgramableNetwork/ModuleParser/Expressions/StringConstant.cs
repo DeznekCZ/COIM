@@ -20,14 +20,6 @@ namespace ProgramableNetwork.Python
 
         public string Value { get; }
 
-        public override string StringValue => Value;
-
-        public override int IntValue => int.Parse(StringValue);
-
-        public override long LongValue => long.Parse(StringValue);
-
-        public override bool BooleanValue => bool.Parse(StringValue);
-
         public override object GetValue(IDictionary<string, object> context)
         {
             return Value;

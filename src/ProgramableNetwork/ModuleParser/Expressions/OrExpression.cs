@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
@@ -6,6 +7,7 @@ namespace ProgramableNetwork.Python
     {
         private IExpression left;
         private IExpression right;
+        public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
 
         public OrExpression(IExpression left, IExpression right)
         {

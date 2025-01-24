@@ -108,6 +108,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EntityManager.cs" />
+    <Compile Include="FakeElecticityConsumer.cs" />
     <Compile Include="FakeEntity.cs" />
     <Compile Include="FakeProto.cs" />
     <Compile Include="Program.cs" />

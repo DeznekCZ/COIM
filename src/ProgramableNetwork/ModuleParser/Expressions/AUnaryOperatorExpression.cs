@@ -8,6 +8,8 @@ namespace ProgramableNetwork.Python
         protected readonly IExpression expression;
         private object expressionValue;
 
+        public virtual string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
+
         protected AUnaryOperatorExpression(IExpression expression)
         {
             this.expression = expression;
@@ -21,7 +23,7 @@ namespace ProgramableNetwork.Python
         public object GetValue(IDictionary<string, object> context)
         {
             expressionValue = this.expression.GetValue(context);
-            return Evaluate(expression);
+            return Evaluate(expressionValue);
         }
 
         protected abstract object Evaluate(object value);

@@ -12,6 +12,8 @@ namespace ProgramableNetwork.Python
 
         public bool BooleanValue => throw new System.NotImplementedException("could not evaluate");
 
+        public string Path => throw new System.NotImplementedException();
+
         public Reference<dynamic> GetReference(IDictionary<string, dynamic> context)
         {
             throw new System.NotImplementedException();

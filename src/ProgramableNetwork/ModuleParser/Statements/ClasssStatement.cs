@@ -23,8 +23,8 @@ namespace ProgramableNetwork.Python
         public Dictionary<string, FunctionStatement> Functions => block.functions;
 
         public Dictionary<string, IExpression> Variables => block.statements
-            .Where(s => s is Assignment)
-            .Select(s => (Assignment)s)
+            .Where(s => s is AssignmentStatement)
+            .Select(s => (AssignmentStatement)s)
             .ToDictionary(s => s.Name, s => s.Value);
 
         public void Execute(IDictionary<string, object> context)
@@ -33,12 +33,12 @@ namespace ProgramableNetwork.Python
             foreach (var item in block.statements)
             {
                 if (item is FunctionStatement f)
-                    classContext[f.Name] = new Constructor((args) =>
+                    classContext[f.Name] = new Function((args) =>
                     {
                         IDictionary<string, object> methodContext = new ChildContext(classContext);
                         f.Arguments.AsEnumerable()
-                            .Zip(args, (a, b) => (a, b))
-                            .Select(pair => methodContext[pair.a] = pair.b)
+                            .Zip(args, (a, b) => (a, b.Value))
+                            .Select(pair => methodContext[pair.a] = pair.Value)
                             .ToList();
                         f.Execute(methodContext);
                         return methodContext.TryGetValue("__return__", out object r) ? r : null;

@@ -1,14 +1,14 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class ShiftLeftExpression : IExpression
+    internal class ShiftLeftExpression : ABinaryOperatorExpression
     {
-        private IExpression item2;
-        private IExpression f;
-
-        public ShiftLeftExpression(IExpression item2, IExpression f)
+        public ShiftLeftExpression(IExpression left, IExpression right) : base(left, right)
         {
-            this.item2 = item2;
-            this.f = f;
+        }
+
+        protected override object Evaluate(object left, object right)
+        {
+            return Expressions.__lshift__(left, right);
         }
     }
 }

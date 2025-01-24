@@ -41,7 +41,9 @@ namespace ProgramableNetwork.Python
                     AddFields(builder, fields as IList);
                 if (classEntry.classContext.TryGetValue("action", out object action) ||
                     classEntry.classContext.TryGetValue("Action", out action))
-                    AddAction(builder, classEntry.classContext, action as Constructor);
+                    AddAction(builder, classEntry, action as Function);
+                if (classEntry.classContext.TryGetValue("categroies", out object categories))
+                    AddCategories(builder, categories as List<object>);
 
                 // TODO search for variable of device and categories
                 builder.SetGfx(Assets.Base.Products.Icons.Vegetables_svg);
@@ -90,13 +92,22 @@ namespace ProgramableNetwork.Python
         }
 
 
-        private static void AddAction(ModuleProto.Builder builder, IDictionary<string, object> classContext, Constructor action)
+        private static void AddAction(ModuleProto.Builder builder, Class classContext, Function action)
         {
             builder.Action((module) =>
             {
-                ModuleWrapper wrapper = new ModuleWrapper(module);
-                action.Invoke(new object[] { wrapper });
+                ModuleWrapper wrapper = new ModuleWrapper(module, classContext);
+                action.Self = wrapper;
+                Expressions.__call__(action, new List<(string name, object value)>());
             });
+        }
+
+        private static void AddCategories(ModuleProto.Builder builder, List<object> list)
+        {
+            foreach (object item in list)
+            {
+                builder.AddCategory(item as Category);
+            }
         }
     }
 }

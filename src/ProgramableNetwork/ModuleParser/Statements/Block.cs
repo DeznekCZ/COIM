@@ -38,10 +38,5 @@ namespace ProgramableNetwork.Python
         {
             statements.Add(import);
         }
-
-        internal void Add(object v)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

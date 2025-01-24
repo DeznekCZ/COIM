@@ -8,6 +8,8 @@ namespace ProgramableNetwork.Python
         private IExpression expression;
         private List<IArgument> arguments;
 
+        public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
+
         public CallExpression(IExpression expression, List<IArgument> expressions)
         {
             this.expression = expression;
@@ -32,7 +34,7 @@ namespace ProgramableNetwork.Python
                 if (argument is NamedArgument named)
                     arguments.Add((named.Name, named.Expression.GetValue(context)));
                 else
-                    arguments.Add(((string name, object value))(null, argument));
+                    arguments.Add(((string name, object value))(null, argument.Expression.GetValue(context)));
             }
 
             return Expressions.__call__(executable, arguments);

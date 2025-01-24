@@ -7,6 +7,8 @@ namespace ProgramableNetwork.Python
     {
         private IExpression expression;
 
+        public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
+
         public InvertExpression(IExpression expression)
         {
             this.expression = expression;

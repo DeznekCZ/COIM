@@ -1,4 +1,5 @@
 
+from Core.mafi import Fix32
 
 class Output:
     def __init__(self, output_id: str, name: str):
@@ -14,10 +15,10 @@ class InputValue:
     def __init__(self, module):
         self.module = module
 
-    def set(self, name: str, value: float) -> None:
+    def set(self, name: str, value: Fix32) -> None:
         self.module.number_data["in__" + name] = value
 
-    def get(self, name: str, default: float) -> float:
+    def get(self, name: str, default: float) -> Fix32:
         return self.module.number_data["in__" + name] or default
 
     def set_bool(self, name: str, value: bool) -> None:
@@ -33,10 +34,10 @@ class OutputValue:
     def __init__(self, module):
         self.module = module
 
-    def set(self, name: str, value: float) -> None:
+    def set(self, name: str, value: Fix32) -> None:
         self.module.number_data["out__" + name] = value
 
-    def get(self, name: str, default: float) -> float:
+    def get(self, name: str, default: Fix32) -> Fix32:
         return self.module.number_data["out__" + name] or default
 
     def set_bool(self, name: str, value: bool) -> None:

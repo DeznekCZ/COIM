@@ -20,7 +20,7 @@ namespace ProgramableNetwork.ModuleTester
 
         public Electricity PowerRequired => throw new System.NotImplementedException();
 
-        public Option<IElectricityConsumerReadonly> ElectricityConsumer => throw new System.NotImplementedException();
+        public Option<IElectricityConsumerReadonly> ElectricityConsumer => Option<IElectricityConsumerReadonly>.Create(new FakeElecticityConsumer(this));
 
         public int GeneralPriority => throw new System.NotImplementedException();
 
@@ -36,7 +36,7 @@ namespace ProgramableNetwork.ModuleTester
 
         public Option<UnityConsumer> UnityConsumer => throw new System.NotImplementedException();
 
-        public int WorkersNeeded => throw new System.NotImplementedException();
+        public int WorkersNeeded => 5;
 
         public bool HasWorkersCached { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
     }
