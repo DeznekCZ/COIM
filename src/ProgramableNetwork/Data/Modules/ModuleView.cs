@@ -6,6 +6,8 @@ using Mafi.Unity.UserInterface.Components;
 using System.Linq;
 using Mafi;
 using System;
+using UnityEngine;
+using UnityEngine.Windows;
 
 namespace ProgramableNetwork
 {
@@ -126,7 +128,6 @@ namespace ProgramableNetwork
                             else
                             {
                                 module.InputModules[input.Id] = m_computerView.OutputConnection;
-                                m_computerView.OutputConnection = null;
                                 refresh();
                             }
                         })
@@ -176,7 +177,7 @@ namespace ProgramableNetwork
                         .FirstOrDefault(c => c.ModuleId == module.Id
                                           && c.OutputId == output.Id) != null;
 
-                    builder.NewBtnGeneral($"{module.Id}_output_{i}")
+                    var btn = builder.NewBtnGeneral($"{module.Id}_output_{i}")
                         .SetText("O")
                         .SetButtonStyle((
                                 isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
@@ -204,7 +205,18 @@ namespace ProgramableNetwork
                                 }
                             }
                         })
-                        .OnClick(() => m_computerView.OutputConnection = new ModuleConnector(module.Id, output.Id))
+                        .OnClick(() => {
+                            if (m_computerView.OutputConnection != null
+                                && m_computerView.OutputConnection.ModuleId == module.Id
+                                && m_computerView.OutputConnection.OutputId == output.Id)
+                            {
+                                m_computerView.OutputConnection = null;
+                            }
+                            else
+                            {
+                                m_computerView.OutputConnection = new ModuleConnector(module.Id, output.Id);
+                            }
+                        })
                         .SetOnMouseEnterLeaveActions(
                             () => { m_computerView.m_higlighted = new ModuleConnector(module.Id, output.Id); },
                             () => { m_computerView.m_higlighted = null; }
@@ -212,6 +224,26 @@ namespace ProgramableNetwork
                         .AppendTo(inputsPanel)
                         .ToolTip(m_computerView.m_controller, (output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' '),
                             offset: Offset.Top(20), attached: true);
+
+                    m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
+                        (context) =>
+                        {
+                            var baseStyle = (
+                                isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
+                            ).Extend(backgroundClr: ColorRgba.DarkRed);
+
+                            if (m_computerView.OutputConnection != null
+                                && m_computerView.OutputConnection.ModuleId == module.Id
+                                && m_computerView.OutputConnection.OutputId == output.Id)
+                                return baseStyle.Extend(
+                                    text: baseStyle.Text.Extend(ColorRgba.Green));
+
+                            return baseStyle;
+                        },
+                        (context, style) => btn.SetButtonStyle(style),
+                        (styleA, styleB) => styleA.Equals(styleB),
+                        0
+                    ));
                 }
             }
 

@@ -210,7 +210,7 @@ namespace ProgramableNetwork
                 // ADD behind settings
                 .Action(m =>
                 {
-                    m.Output["v"] = m.Context.UpointsManager.Quantity.Value;
+                    m.Output["v"] = Fix32.FromRaw(m.Context.UpointsManager.Quantity.Value);
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -713,7 +713,7 @@ namespace ProgramableNetwork
                     int inting = Math.Max(Math.Min(digits - floating, digits), 0);
 
                     string full = inting > 0 ? value.IntegerPart.ToString($"D{inting}") : "";
-                    string fract = floating > 0 ? (value.FractionalPart * Math.Pow(10, floating).ToFix32())
+                    string fract = floating > 0 ? (value.FractionalPartNonNegative * Math.Pow(10, floating).ToFix32())
                                             .IntegerPart.ToString($"D{floating}") : "";
 
                     m.Display["a"] = $"{full}|{fract}";

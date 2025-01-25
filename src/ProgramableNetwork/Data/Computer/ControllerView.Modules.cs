@@ -64,7 +64,6 @@ namespace ProgramableNetwork
                 CloseDialogs();
                 m_targetRow = -1;
                 m_targetColumn = -1;
-                m_newModule = null;
                 m_editModule = null;
                 m_decription = null;
                 OutputConnection = null;
@@ -181,9 +180,13 @@ namespace ProgramableNetwork
                     : Entity.Context.ProtosDb.All<ModuleProto>()
                           .Where(module => module.Categories.Contains(category)))
                 .Where(Entity.Prototype.AllowedModule)
+                .OrderBy(t => t.Categories.FirstOrDefault()?.Name ?? "all")
+                .OrderBy(t => t.Strings.Name.TranslatedString)
                 .ToList();
 
-            var typeStrings = types.Select(t => t.Strings.Name.TranslatedString).ToList();
+            var typeStrings = types
+                .Select(t => t.Strings.Name.TranslatedString)
+                .ToList();
             var selected = types.SelectIndicesWhere(t => t.Id == m_newModule?.Id).FirstOrDefault();
             picker.AddOptions(typeStrings);
             picker.OnValueChange(index =>
