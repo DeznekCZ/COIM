@@ -157,6 +157,28 @@ namespace ProgramableNetwork
         public string Symbol { get; }
         public List<StaticEntityProto.ID> AllowedDevices { get; }
 
+        public static readonly ModuleProto Phantom;
+        protected static readonly ID PHANTOM_PRODUCT_ID;
+
+        static ModuleProto() {
+            try
+            {
+                PHANTOM_PRODUCT_ID = new ID("__PHANTOM__MODULE__");
+                Phantom = new Builder(null, PHANTOM_PRODUCT_ID)
+                .SetDescritpion("Module replacement for already nonexsiting module")
+                .SetGfx(Assets.Base.Products.Icons.Vegetables_svg)
+                .SetSymbol("[]")
+                .SetName("[Removed module]")
+                .Build();
+                Proto.RegisterPhantom(Phantom);
+            }
+            catch (Exception e)
+            {
+                Log.Exception(e);
+                throw;
+            }
+        }
+
         public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Action<Module> action, Action<Module> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, Computing usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
             Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
@@ -223,6 +245,16 @@ namespace ProgramableNetwork
                 m_allowedDevices = new List<StaticEntityProto.ID>();
             }
 
+            public Builder(ProtoRegistrator registrator, ID id)
+            {
+                m_registrator = registrator;
+                m_id = id;
+                m_tags = new List<Tag>();
+                m_usedPower = 1.Kw();
+                m_costs = new EntityCostsTpl.Builder();
+                m_allowedDevices = new List<StaticEntityProto.ID>();
+            }
+
             public Builder(ProtoRegistrator registrator, string id)
             {
                 m_registrator = registrator;
@@ -233,23 +265,17 @@ namespace ProgramableNetwork
                 m_allowedDevices = new List<StaticEntityProto.ID>();
             }
 
-            public ModuleProto BuildAndAdd()
-            {
-                return BuildAndAdd(NewIds.Research.ProgramableNetwork_Stage1);
-            }
-
-            public ModuleProto BuildAndAdd(ResearchNodeProto.ID researchStage)
+            public ModuleProto Build()
             {
                 if (!m_customMaintenance)
                     UseDefaultMaintenance();
                 if (!m_customBuild)
                     BuildDefault();
 
-                Research.AddModule(m_id, researchStage);
-                return m_registrator.PrototypesDb.Add(new ModuleProto(
+                return new ModuleProto(
                     m_id,
                     CreateStr(m_id, m_name, m_description),
-                    ((EntityCostsTpl)m_costs).MapToEntityCosts(m_registrator),
+                    m_registrator == null ? new EntityCosts() : ((EntityCostsTpl)m_costs).MapToEntityCosts(m_registrator),
                     m_gfx,
                     m_tags,
                     m_action ?? (m => { }),
@@ -267,7 +293,18 @@ namespace ProgramableNetwork
                     m_symbol,
                     m_allowedDevices,
                     m_categories
-                ));
+                );
+            }
+
+            public ModuleProto BuildAndAdd()
+            {
+                return BuildAndAdd(NewIds.Research.ProgramableNetwork_Stage1);
+            }
+
+            public ModuleProto BuildAndAdd(ResearchNodeProto.ID researchStage)
+            {
+                Research.AddModule(m_id, researchStage);
+                return m_registrator.PrototypesDb.Add(Build());
             }
 
             public Builder SetName(string name)

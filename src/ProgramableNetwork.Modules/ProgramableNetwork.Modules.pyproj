@@ -28,7 +28,6 @@
     <Compile Include="Custom\connection_isactive.py" />
     <Compile Include="Core\fields.py" />
     <Compile Include="Core\module.py" />
-    <Compile Include="Custom\example_with_function.py" />
     <Compile Include="Custom\randomizer.py" />
   </ItemGroup>
   <ItemGroup>

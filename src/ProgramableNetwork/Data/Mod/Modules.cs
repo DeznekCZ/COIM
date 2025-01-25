@@ -24,7 +24,6 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Constant", "Constant", "#", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Arithmetic)
-                .AddCategory(Category.Boolean)
                 .AddOutput("value", "Value")
                 .AddInt32Field("number", "Number")
                 .Action(m => { m.Output["value"] = m.Field["number", 0]; })
