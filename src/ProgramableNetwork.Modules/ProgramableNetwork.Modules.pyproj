@@ -24,6 +24,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Core\errors.py" />
     <Compile Include="Core\mafi.py" />
     <Compile Include="Custom\connection_isactive.py" />
     <Compile Include="Core\fields.py" />

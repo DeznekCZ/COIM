@@ -65,6 +65,7 @@ namespace ProgramableNetwork.Python
                         if (!(tree.statements.Last() is IfStatement ifs1))
                             throw new InvalidOperationException($"elif is allowed only after if or elif statement: {token}");
 
+                        tree.statements.Remove(ifs1);
                         ParseElIf(ifs1, tree);
                         break;
 
@@ -72,6 +73,7 @@ namespace ProgramableNetwork.Python
                         if (!(tree.statements.Last() is IfStatement ifs2))
                             throw new InvalidOperationException($"else is allowed only after if or elif statement: {token}");
 
+                        tree.statements.Remove(ifs2);
                         ParseElse(ifs2, tree);
                         break;
 

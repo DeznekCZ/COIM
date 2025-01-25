@@ -59,7 +59,7 @@ namespace ProgramableNetwork
                         {
                             dataBand.Index -= 10;
                             if (dataBand.Index < 0)
-                                dataBand.Index += 45;
+                                dataBand.Index += 46;
                             refresh();
                         })
                         .SetSize(20, 20)
@@ -71,7 +71,7 @@ namespace ProgramableNetwork
                         {
                             dataBand.Index -= 1;
                             if (dataBand.Index < 0)
-                                dataBand.Index += 45;
+                                dataBand.Index += 46;
                             refresh();
                         })
                         .SetSize(20, 20)
@@ -82,8 +82,8 @@ namespace ProgramableNetwork
                         .OnClick(() =>
                         {
                             dataBand.Index += 1;
-                            if (dataBand.Index > 44)
-                                dataBand.Index -= 45;
+                            if (dataBand.Index > 45)
+                                dataBand.Index -= 46;
                             refresh();
                         })
                         .SetSize(20, 20)
@@ -94,8 +94,8 @@ namespace ProgramableNetwork
                         .OnClick(() =>
                         {
                             dataBand.Index += 10;
-                            if (dataBand.Index > 44)
-                                dataBand.Index -= 45;
+                            if (dataBand.Index > 45)
+                                dataBand.Index -= 46;
                             refresh();
                         })
                         .SetSize(20, 20)
@@ -105,7 +105,7 @@ namespace ProgramableNetwork
                         .SetText(">|")
                         .OnClick(() =>
                         {
-                            dataBand.Index = 44;
+                            dataBand.Index = 45;
                             refresh();
                         })
                         .SetSize(20, 20)

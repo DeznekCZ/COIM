@@ -22,18 +22,18 @@ class Randomizer(Module):
     controllers = [ DefaultControllers.Controller ]
 
     def action(self):
-        seed = self.field.get("seed", fix(0))
-        old_seed = self.output.get("seed", fix(0))
-        addition = self.input.get("addition", fix(256))
+        seed = self.Field.get("seed", fix(0))
+        old_seed = self.Output.get("seed", fix(0))
+        addition = self.Input.get("addition", fix(256))
 
         if addition.RawValue == 0:
             addition = fix(256)
 
         if old_seed != seed:
             raw = (seed + addition).RawValue
-            self.output.set("seed", seed)
-            self.output.set("value", Fix32.FromRaw((raw >> 4) ^ (raw << 4)))
+            self.Output.set("seed", seed)
+            self.Output.set("value", Fix32.FromRaw((raw >> 4) ^ (raw << 4)))
         else:
-            seed = self.output.get("value", seed)
+            seed = self.Output.get("value", seed)
             raw = (seed + addition).RawValue
-            self.output.set("value", Fix32.FromRaw((raw >> 4) ^ (raw << 4)))
+            self.Output.set("value", Fix32.FromRaw((raw >> 4) ^ (raw << 4)))

@@ -33,7 +33,7 @@ namespace ProgramableNetwork.Python
             foreach (var item in block.statements)
             {
                 if (item is FunctionStatement f)
-                    classContext[f.Name] = new Function((args) =>
+                    classContext[f.Name] = new Method((args) =>
                     {
                         IDictionary<string, object> methodContext = new ChildContext(classContext);
                         f.Arguments.AsEnumerable()

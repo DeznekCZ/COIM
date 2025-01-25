@@ -501,10 +501,9 @@ namespace ProgramableNetwork
                     if (entity?.CanBePaused ?? false)
                     {
                         entity.SetPaused(input > 0);
-                        m.StatusIn["pause"] = ModuleStatus.Running;
-                        return;
+                        return ModuleStatus.Running;
                     }
-                    m.StatusIn["pause"] = ModuleStatus.Error;
+                    return ModuleStatus.Error;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -537,13 +536,14 @@ namespace ProgramableNetwork
                         {
                             m.Output["product"] = -1;
                         }
-                        return;
+                        return ModuleStatus.Running;
                     }
 
                     m.Output["quantity"] = 0;
                     m.Output["capacity"] = 0;
                     m.Output["fullness"] = 100;
                     m.Output["product"] = -1;
+                    return ModuleStatus.Error;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -582,6 +582,7 @@ namespace ProgramableNetwork
                     m.Output["capacity"] = 0;
                     m.Output["fullness"] = 100;
                     m.Output["moving"] = 0;
+                    throw new Exception("Entity can not be read");
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -805,7 +806,7 @@ namespace ProgramableNetwork
                             {
                                 field.Reference.Value -= 10;
                                 if (field.Reference.Value < 0)
-                                    field.Reference.Value += 45;
+                                    field.Reference.Value += 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -817,7 +818,7 @@ namespace ProgramableNetwork
                             {
                                 field.Reference.Value -= 1;
                                 if (field.Reference.Value < 0)
-                                    field.Reference.Value += 45;
+                                    field.Reference.Value += 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -828,8 +829,8 @@ namespace ProgramableNetwork
                             .OnClick(() =>
                             {
                                 field.Reference.Value += 1;
-                                if (field.Reference.Value > 44)
-                                    field.Reference.Value -= 45;
+                                if (field.Reference.Value > 45)
+                                    field.Reference.Value -= 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -840,8 +841,8 @@ namespace ProgramableNetwork
                             .OnClick(() =>
                             {
                                 field.Reference.Value += 10;
-                                if (field.Reference.Value > 44)
-                                    field.Reference.Value -= 45;
+                                if (field.Reference.Value > 45)
+                                    field.Reference.Value -= 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -851,7 +852,7 @@ namespace ProgramableNetwork
                             .SetText(">|")
                             .OnClick(() =>
                             {
-                                field.Reference.Value = 44;
+                                field.Reference.Value = 45;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)

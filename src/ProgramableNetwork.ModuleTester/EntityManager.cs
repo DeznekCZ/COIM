@@ -13,7 +13,7 @@ namespace ProgramableNetwork.ModuleTester
 {
     internal class EntityManager : IEntitiesManager
     {
-        private object fake;
+        private Dictionary<int, object> fake = new Dictionary<int, object>();
 
         public IEvent<IEntity> EntityAdded => throw new NotImplementedException();
 
@@ -71,7 +71,7 @@ namespace ProgramableNetwork.ModuleTester
 
         internal void AddEntity<T>(int v, T entity)
         {
-            fake = entity;
+            fake[v] = entity;
         }
 
         IEnumerable<T> IEntitiesManager.GetAllEntitiesOfType<T>()
@@ -86,7 +86,10 @@ namespace ProgramableNetwork.ModuleTester
 
         bool IEntitiesManager.TryGetEntity<T>(EntityId id, out T entity)
         {
-            entity = (T)this.fake;
+            if (fake.TryGetValue(id.Value, out object oEntity) && oEntity is T t)
+                entity = t;
+            else
+                entity = default;
             return false;
         }
     }

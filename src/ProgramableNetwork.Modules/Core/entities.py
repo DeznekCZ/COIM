@@ -41,6 +41,20 @@ class IUnityConsumingEntity:
         self.MaxMonthlyUnityConsumed = Upoints()
         self.UpointsCategoryId       = ProtoID()
 
+class StaticEntity: pass
+class StorageBase: pass
+class Controller: pass
+class Antena: pass
+class SettlementHousingModule: pass
+class SettlementFoodModule: pass
+class SettlementTransformer: pass
+class SettlementWasteModule: pass
+class SettlementServiceModule: pass
+class Machine: pass
+class IEntityWithWorkers: pass
+class IElectricityConsumingEntity: pass
+class IUnityConsumingEntity: pass
+
 class Entity(IElectricityConsumingEntity, IUnityConsumingEntity):
     """Represents: Mafi.Core.Entities.Entity"""
     def __init__(self, entity_id: EntityId):
@@ -55,17 +69,3 @@ class Entity(IElectricityConsumingEntity, IUnityConsumingEntity):
 class StaticEntity(Entity):
     """Represents: Mafi.Core.Entities.Static.StaticEntity"""
     pass
-
-class StaticEntity(Entity): pass
-class StorageBase(Entity): pass
-class Controller(Entity): pass
-class Antena(Entity): pass
-class SettlementHousingModule(Entity): pass
-class SettlementFoodModule(Entity): pass
-class SettlementTransformer(Entity): pass
-class SettlementWasteModule(Entity): pass
-class SettlementServiceModule(Entity): pass
-class Machine(Entity): pass
-class IEntityWithWorkers(Entity): pass
-class IElectricityConsumingEntity(Entity): pass
-class IUnityConsumingEntity(Entity): pass

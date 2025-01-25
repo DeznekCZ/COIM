@@ -107,7 +107,7 @@ namespace ProgramableNetwork.Python
                     .ToArray();
                 return member.Type[0].Invoke(member.Target, values);
             }
-            if (executable is Function function)
+            if (executable is Method function)
             {
                 return function.Invoke(
                     new IArgumentValue[] {
@@ -164,6 +164,16 @@ namespace ProgramableNetwork.Python
             if (left is Fix32 left32_ && right is float rightF)
             {
                 result = left32_ == rightF.ToFix32();
+                return true;
+            }
+            if (left is float leftF_ && right is int rightI_)
+            {
+                result = leftF_ == rightI_;
+                return true;
+            }
+            if (left is int leftI_ && right is float rightF_)
+            {
+                result = leftI_ == rightF_;
                 return true;
             }
             result = false;

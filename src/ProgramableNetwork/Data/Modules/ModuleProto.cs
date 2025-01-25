@@ -135,8 +135,8 @@ namespace ProgramableNetwork
         }
 
         public new ID Id { get; }
-        public Action<Module> Action { get; }
-        public Action<Module> Reset { get; }
+        public Func<Module, ModuleStatus> Action { get; }
+        public Func<Module, ModuleStatus> Reset { get; }
         public bool IsInputModule { get; }
         public bool IsOutputModule { get; }
         public List<ModuleConnectorProto> Inputs { get; }
@@ -179,7 +179,7 @@ namespace ProgramableNetwork
             }
         }
 
-        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Action<Module> action, Action<Module> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, Computing usedComputing,
+        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, Computing usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
             Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
         {
@@ -210,8 +210,8 @@ namespace ProgramableNetwork
             private readonly ID m_id;
             private string m_name;
             private string m_description;
-            private Action<Module> m_action;
-            private Action<Module> m_reset;
+            private Func<Module, ModuleStatus> m_action;
+            private Func<Module, ModuleStatus> m_reset;
             private bool m_isOutputModule = false;
             private bool m_isInputModule = false;
             private readonly List<ModuleConnectorProto> m_inputs = new List<ModuleConnectorProto>();
@@ -278,8 +278,8 @@ namespace ProgramableNetwork
                     m_registrator == null ? new EntityCosts() : ((EntityCostsTpl)m_costs).MapToEntityCosts(m_registrator),
                     m_gfx,
                     m_tags,
-                    m_action ?? (m => { }),
-                    m_reset ?? (m => { }),
+                    m_action ?? (m => ModuleStatus.Running),
+                    m_reset ?? (m => ModuleStatus.Init),
                     m_isInputModule,
                     m_isOutputModule,
                     m_usedPower,
@@ -420,6 +420,16 @@ namespace ProgramableNetwork
 
             public Builder Action(Action<Module> action)
             {
+                m_action = (m) =>
+                {
+                    action(m);
+                    return ModuleStatus.Running;
+                };
+                return this;
+            }
+
+            public Builder Action(Func<Module, ModuleStatus> action)
+            {
                 m_action = action;
                 return this;
             }
@@ -431,6 +441,12 @@ namespace ProgramableNetwork
             }
 
             public Builder Reset(Action<Module> reset)
+            {
+                m_reset = (m) => { reset(m); return ModuleStatus.Init; };
+                return this;
+            }
+
+            public Builder Reset(Func<Module, ModuleStatus> reset)
             {
                 m_reset = reset;
                 return this;

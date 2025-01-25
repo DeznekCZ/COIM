@@ -8,6 +8,7 @@ using Mafi;
 using System;
 using UnityEngine;
 using UnityEngine.Windows;
+using RTG;
 
 namespace ProgramableNetwork
 {
@@ -58,6 +59,37 @@ namespace ProgramableNetwork
                     {
                         m_computerView.CreateEditDialog(module);
                     });
+
+                m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
+                    (context) =>
+                    {
+                        var baseStyle = (selected ? uiBuilder.Style.Global.GeneralBtnActive : uiBuilder.Style.Global.GeneralBtn)
+                            .Extend(backgroundClr: ColorRgba.DarkGreen);
+
+                        if (module.Status == ModuleStatus.Running)
+                            return baseStyle.Extend(
+                                backgroundClr: ColorRgba.DarkGreen);
+
+                        else if (module.Status == ModuleStatus.Error)
+                            return baseStyle.Extend(
+                                backgroundClr: ColorRgba.DarkRed);
+
+                        return baseStyle;
+                    },
+                    (context, style) => fieldsPanel.SetButtonStyle(style),
+                    (styleA, styleB) => styleA.Equals(styleB),
+                    0
+                ));
+
+                DataUpdater<string, int> tooltipUpdater;
+                m_computerView.m_updaters.Add(tooltipUpdater = new DataUpdater<string, int>(
+                    (context) => module.Error,
+                    (context, style) => { },
+                    (oldError, newError) => oldError != newError,
+                    0
+                ));
+
+                fieldsPanel.ToolTip(controller, tooltipUpdater.GetValue, attached: true);
 
                 fieldsPanel.AppendTo(this);
 

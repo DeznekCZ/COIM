@@ -59,5 +59,9 @@ namespace ProgramableNetwork
             //    Log.Info("Update failed: " + e);
             //}
         }
+
+        public T GetValue() {
+            return value;
+        }
     }
 }

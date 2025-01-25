@@ -20,7 +20,7 @@ class StringField(Field):
         self.default_value = default_value
 
 class EntityField(Field):
-    def __init__(self, entity_type: type[Entity], field_id: str, name: str, short_desc: str = None, distance: float = 5, entity_filter=lambda module, entity: True):
+    def __init__(self, entity_type: type[Entity] | list[type[Entity]], field_id: str, name: str, short_desc: str = None, distance: float = 5, entity_filter=lambda module, entity: True):
         super().__init__(field_id, name, short_desc)
         self.type = entity_type;
         self.distance = distance

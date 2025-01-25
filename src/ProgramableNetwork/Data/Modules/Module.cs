@@ -80,8 +80,7 @@ namespace ProgramableNetwork
             try
             {
                 Error = "";
-                Prototype.Action(this);
-                Status = ModuleStatus.Running;
+                Status = Prototype.Action(this);
             }
             catch (System.Exception e)
             {
@@ -216,6 +215,16 @@ namespace ProgramableNetwork
         public void RemoveObserver(IEntityObserver observer)
         {
             //throw new NotImplementedException();
+        }
+
+        public void SetStatus(ModuleStatus status)
+        {
+            Status = status;
+        }
+
+        public void SetError(string message)
+        {
+            Error = message;
         }
 
         [DoNotSave(0, null)]

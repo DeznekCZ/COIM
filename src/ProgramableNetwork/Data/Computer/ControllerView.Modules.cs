@@ -181,7 +181,6 @@ namespace ProgramableNetwork
                           .Where(module => module.Categories.Contains(category)))
                 .Where(Entity.Prototype.AllowedModule)
                 .OrderBy(t => t.Strings.Name.TranslatedString)
-                .OrderBy(t => t.Categories.FirstOrDefault()?.Name ?? "all")
                 .ToList();
 
             var typeStrings = types

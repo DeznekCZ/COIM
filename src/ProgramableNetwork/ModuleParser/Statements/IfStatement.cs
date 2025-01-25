@@ -29,18 +29,18 @@ namespace ProgramableNetwork.Python
             this.block = block;
         }
 
-        public void Execute(IDictionary<string, dynamic> context)
+        public void Execute(IDictionary<string, object> context)
         {
-            if (parent != null && !parent.Executed(context) && !Executed(context))
+            if (parent == null || !parent.Executed(context))
             {
-                // skipping all blocks
+                Executed(context);
             }
         }
 
-        private bool Executed(IDictionary<string, dynamic> context)
+        private bool Executed(IDictionary<string, object> context)
         {
-            dynamic condition = this.condition?.GetValue(context) ?? null;
-            if ((condition is object o && o == null) || (condition is bool b && b == false) || (condition is Fix32 f && f == Fix32.Zero))
+            object condition = this.condition == null ? true : this.condition.GetValue(context);
+            if ((condition is null) || (condition is bool b && !b) || (Expressions.__fix__(condition) == Fix32.Zero))
             {
                 return false;
             }

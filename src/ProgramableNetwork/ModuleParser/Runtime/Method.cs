@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class Function : IExpression
+    internal class Method : IExpression
     {
         private Func<IArgumentValue[], object> value;
 
-        public Function(Func<IArgumentValue[], object> value, string[] arguments = null)
+        public Method(Func<IArgumentValue[], object> value, string[] arguments = null)
         {
             this.value = value;
             Arguments = arguments ?? new string[0];

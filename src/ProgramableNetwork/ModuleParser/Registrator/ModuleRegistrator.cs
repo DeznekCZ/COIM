@@ -41,7 +41,7 @@ namespace ProgramableNetwork.Python
                     AddFields(builder, fields as IList);
                 if (classEntry.classContext.TryGetValue("action", out object action) ||
                     classEntry.classContext.TryGetValue("Action", out action))
-                    AddAction(builder, classEntry, action as Function);
+                    AddAction(builder, classEntry, action as Method);
                 if (classEntry.classContext.TryGetValue("categroies", out object categories))
                     AddCategories(builder, categories as List<object>);
 
@@ -92,13 +92,14 @@ namespace ProgramableNetwork.Python
         }
 
 
-        private static void AddAction(ModuleProto.Builder builder, Class classContext, Function action)
+        private static void AddAction(ModuleProto.Builder builder, Class classContext, Method action)
         {
             builder.Action((module) =>
             {
                 ModuleWrapper wrapper = new ModuleWrapper(module, classContext);
                 action.Self = wrapper;
-                Expressions.__call__(action, new List<(string name, object value)>());
+                object ret = Expressions.__call__(action, new List<(string name, object value)>());
+                return ret is ModuleStatus status ? status : ModuleStatus.Running;
             });
         }
 

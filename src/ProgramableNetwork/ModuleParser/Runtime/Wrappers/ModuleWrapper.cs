@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using Mafi.Collections;
 using Mafi.Core.Entities;
 
 namespace ProgramableNetwork.Python
@@ -14,7 +15,7 @@ namespace ProgramableNetwork.Python
             this.@class = @class;
         }
 
-        public FieldSetter field => new FieldSetter(module);
+        public FieldSetter Field => new FieldSetter(module);
 
         public class FieldSetter
         {
@@ -51,7 +52,7 @@ namespace ProgramableNetwork.Python
             }
         }
 
-        public InputSetter input => new InputSetter(module);
+        public InputSetter Input => new InputSetter(module);
 
         public class InputSetter
         {
@@ -83,7 +84,7 @@ namespace ProgramableNetwork.Python
             }
         }
 
-        public OutputSetter output => new OutputSetter(module);
+        public OutputSetter Output => new OutputSetter(module);
 
         public class OutputSetter
         {
@@ -114,5 +115,21 @@ namespace ProgramableNetwork.Python
                 module.Output[name] = value;
             }
         }
+
+        public ModuleStatus Status
+        {
+            get => module.Status;
+            set => module.SetStatus(value);
+        }
+
+        public string Error
+        {
+            get => module.Error;
+            set => module.SetError(value);
+        }
+
+        public Dict<string, int> NumberData => module.NumberData;
+
+        public Dict<string, string> StringData => module.StringData;
     }
 }

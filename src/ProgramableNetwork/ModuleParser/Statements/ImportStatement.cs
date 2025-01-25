@@ -174,12 +174,18 @@ namespace ProgramableNetwork.Python
             {
                 context["Module"] = typeof(Module);
                 context["DefaultControllers"] = typeof(NewIds.Controllers);
+                context["ModuleStatus"] = typeof(ModuleStatus);
             }
 
             else if (name == "Core.mafi")
             {
                 context["fix"] = new Constructor((args) => Expressions.__fix__(args[0].Value), new string[] { "value" });
                 context["Fix32"] = typeof(Fix32);
+            }
+
+            else if (name == "Core.errors")
+            {
+                context["Exception"] = new Constructor((args) => new Exception(args[0].Value as string), new string[] { "value" });
             }
 
             else

@@ -31,21 +31,20 @@ namespace ProgramableNetwork.ModuleTester
 
             Console.WriteLine(new DirectoryInfo(".").FullName);
 
-            string file = @"..\..\..\ProgramableNetwork.Modules\Custom\example_with_function.py";
+            string file = @"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py";
 
             ModuleRegistrator.Register(registrator, file);
 
-            protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_FunctionBased", out ModuleProto proto);
+            protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Connection_IsActive", out ModuleProto proto);
 
             EntityManager manager = new EntityManager();
             EntityContext entityContext = new EntityContext(null, manager, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
             FakeProto fakeProto = new FakeProto(new FakeProto.ID("fake"));
             manager.AddEntity(1, new FakeEntity(new EntityId(1), fakeProto, entityContext));
             Module m = new Module(proto, entityContext, null);
-            m.NumberData["field__seed"] = 200000;
             while(true)
             {
-                proto.Action(m);
+                m.Execute();
                 Console.WriteLine("lala");
             }
         }

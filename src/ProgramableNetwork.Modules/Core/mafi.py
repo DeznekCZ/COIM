@@ -1,7 +1,7 @@
 
 class Fix32:
-    def __init__(self) -> None:
-        self.RawValue = int(0)
+    def __init__(self, value: int) -> None:
+        self.RawValue = value
 
     def FromRaw(value):
         return Fix32(value)
