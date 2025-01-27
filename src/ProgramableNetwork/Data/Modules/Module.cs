@@ -80,8 +80,7 @@ namespace ProgramableNetwork
             try
             {
                 Error = "";
-                Prototype.Action(this);
-                Status = ModuleStatus.Running;
+                Status = Prototype.Action(this);
             }
             catch (System.Exception e)
             {
@@ -218,10 +217,20 @@ namespace ProgramableNetwork
             //throw new NotImplementedException();
         }
 
+        public void SetStatus(ModuleStatus status)
+        {
+            Status = status;
+        }
+
+        public void SetError(string message)
+        {
+            Error = message;
+        }
+
         [DoNotSave(0, null)]
-        protected Dict<string, int> NumberData { get; private set; }
+        public Dict<string, int> NumberData { get; private set; }
         [DoNotSave(0, null)]
-        protected Dict<string, string> StringData { get; private set; }
+        public Dict<string, string> StringData { get; private set; }
 
 
         [DoNotSave(0, null)]

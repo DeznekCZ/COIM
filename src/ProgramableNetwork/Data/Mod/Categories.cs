@@ -1,4 +1,5 @@
 ﻿using Mafi.Core.Prototypes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.AccessControl;
@@ -39,6 +40,22 @@ namespace ProgramableNetwork
         public override string ToString()
         {
             return $"Category(Id:{Id}, Name:{Name})";
+        }
+
+        public static Dictionary<string, Category> Categories()
+        {
+            Dictionary<string, Category> categories = new Dictionary<string, Category>();
+
+            System.Reflection.PropertyInfo[] properties = typeof(Category).GetProperties();
+            foreach (System.Reflection.PropertyInfo item in properties)
+            {
+                if (item.PropertyType == typeof(Category))
+                {
+                    categories.Add(item.Name, (Category)item.GetValue(null));
+                }
+            }
+
+            return categories;
         }
 
         //// known types

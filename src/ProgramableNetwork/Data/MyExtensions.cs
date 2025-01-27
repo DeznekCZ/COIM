@@ -137,10 +137,22 @@ namespace ProgramableNetwork
             return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
         }
 
+        public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, Func<string> toolTip, Offset? offset = null, bool attached = false)
+            where TElement : IUiElementWithHover<TElement>
+        {
+            return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip(), offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
+        }
+
         public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, LocStr toolTip, Offset? offset = null, bool attached = false)
             where TElement : IUiElementWithHover<TElement>
         {
             return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip.TranslatedString, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
+        }
+
+        public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, Func<LocStr> toolTip, Offset? offset = null, bool attached = false)
+            where TElement : IUiElementWithHover<TElement>
+        {
+            return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip().TranslatedString, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
         }
 
         public static Btn SettingFieldNameStyle(this Btn element, UiBuilder builder)

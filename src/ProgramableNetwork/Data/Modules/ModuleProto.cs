@@ -3,9 +3,6 @@ using Mafi.Core.Prototypes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mafi.Core.Mods;
 using Mafi.Core.Research;
 using Mafi;
@@ -15,7 +12,6 @@ using Mafi.Base;
 using Mafi.Unity.UserInterface.Style;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Core.Entities.Static;
-using Mafi.Unity.UserInterface;
 
 namespace ProgramableNetwork
 {
@@ -139,8 +135,8 @@ namespace ProgramableNetwork
         }
 
         public new ID Id { get; }
-        public Action<Module> Action { get; }
-        public Action<Module> Reset { get; }
+        public Func<Module, ModuleStatus> Action { get; }
+        public Func<Module, ModuleStatus> Reset { get; }
         public bool IsInputModule { get; }
         public bool IsOutputModule { get; }
         public List<ModuleConnectorProto> Inputs { get; }
@@ -161,7 +157,29 @@ namespace ProgramableNetwork
         public string Symbol { get; }
         public List<StaticEntityProto.ID> AllowedDevices { get; }
 
-        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Action<Module> action, Action<Module> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, Computing usedComputing,
+        public static readonly ModuleProto Phantom;
+        protected static readonly ID PHANTOM_PRODUCT_ID;
+
+        static ModuleProto() {
+            try
+            {
+                PHANTOM_PRODUCT_ID = new ID("__PHANTOM__MODULE__");
+                Phantom = new Builder(null, PHANTOM_PRODUCT_ID)
+                .SetDescritpion("Module replacement for already nonexsiting module")
+                .SetGfx(Assets.Base.Products.Icons.Vegetables_svg)
+                .SetSymbol("[]")
+                .SetName("[Removed module]")
+                .Build();
+                Proto.RegisterPhantom(Phantom);
+            }
+            catch (Exception e)
+            {
+                Log.Exception(e);
+                throw;
+            }
+        }
+
+        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, Computing usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
             Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
         {
@@ -190,10 +208,10 @@ namespace ProgramableNetwork
             private readonly List<Tag> m_tags = new List<Tag>();
             private ProtoRegistrator m_registrator;
             private readonly ID m_id;
-            private readonly string m_name;
-            private readonly string m_description;
-            private Action<Module> m_action;
-            private Action<Module> m_reset;
+            private string m_name;
+            private string m_description;
+            private Func<Module, ModuleStatus> m_action;
+            private Func<Module, ModuleStatus> m_reset;
             private bool m_isOutputModule = false;
             private bool m_isInputModule = false;
             private readonly List<ModuleConnectorProto> m_inputs = new List<ModuleConnectorProto>();
@@ -202,8 +220,8 @@ namespace ProgramableNetwork
             private Electricity m_usedPower;
             private Computing m_usedComputing;
             private EntityCostsTpl.Builder m_costs;
-            private readonly Gfx m_gfx;
-            private readonly string m_symbol;
+            private Gfx m_gfx;
+            private string m_symbol;
             private readonly List<IField> m_fields = new List<IField>();
             private readonly List<StaticEntityProto.ID> m_allowedDevices;
             private bool m_customBuild;
@@ -227,27 +245,41 @@ namespace ProgramableNetwork
                 m_allowedDevices = new List<StaticEntityProto.ID>();
             }
 
-            public ModuleProto BuildAndAdd()
+            public Builder(ProtoRegistrator registrator, ID id)
             {
-                return BuildAndAdd(NewIds.Research.ProgramableNetwork_Stage1);
+                m_registrator = registrator;
+                m_id = id;
+                m_tags = new List<Tag>();
+                m_usedPower = 1.Kw();
+                m_costs = new EntityCostsTpl.Builder();
+                m_allowedDevices = new List<StaticEntityProto.ID>();
             }
 
-            public ModuleProto BuildAndAdd(ResearchNodeProto.ID researchStage)
+            public Builder(ProtoRegistrator registrator, string id)
+            {
+                m_registrator = registrator;
+                m_id = new ID(id.ModuleId());
+                m_tags = new List<Tag>();
+                m_usedPower = 1.Kw();
+                m_costs = new EntityCostsTpl.Builder();
+                m_allowedDevices = new List<StaticEntityProto.ID>();
+            }
+
+            public ModuleProto Build()
             {
                 if (!m_customMaintenance)
                     UseDefaultMaintenance();
                 if (!m_customBuild)
                     BuildDefault();
 
-                Research.AddModule(m_id, researchStage);
-                return m_registrator.PrototypesDb.Add(new ModuleProto(
+                return new ModuleProto(
                     m_id,
                     CreateStr(m_id, m_name, m_description),
-                    ((EntityCostsTpl)m_costs).MapToEntityCosts(m_registrator),
+                    m_registrator == null ? new EntityCosts() : ((EntityCostsTpl)m_costs).MapToEntityCosts(m_registrator),
                     m_gfx,
                     m_tags,
-                    m_action ?? (m => { }),
-                    m_reset ?? (m => { }),
+                    m_action ?? (m => ModuleStatus.Running),
+                    m_reset ?? (m => ModuleStatus.Init),
                     m_isInputModule,
                     m_isOutputModule,
                     m_usedPower,
@@ -261,7 +293,42 @@ namespace ProgramableNetwork
                     m_symbol,
                     m_allowedDevices,
                     m_categories
-                ));
+                );
+            }
+
+            public ModuleProto BuildAndAdd()
+            {
+                return BuildAndAdd(NewIds.Research.ProgramableNetwork_Stage1);
+            }
+
+            public ModuleProto BuildAndAdd(ResearchNodeProto.ID researchStage)
+            {
+                Research.AddModule(m_id, researchStage);
+                return m_registrator.PrototypesDb.Add(Build());
+            }
+
+            public Builder SetName(string name)
+            {
+                this.m_name = name;
+                return this;
+            }
+
+            public Builder SetDescritpion(string description)
+            {
+                this.m_description = description;
+                return this;
+            }
+
+            public Builder SetSymbol(string symbol)
+            {
+                this.m_symbol = symbol;
+                return this;
+            }
+
+            public Builder SetGfx(string gfx)
+            {
+                this.m_gfx = new Gfx(gfx);
+                return this;
             }
 
             public Builder AddTag(Tag tag)
@@ -353,6 +420,16 @@ namespace ProgramableNetwork
 
             public Builder Action(Action<Module> action)
             {
+                m_action = (m) =>
+                {
+                    action(m);
+                    return ModuleStatus.Running;
+                };
+                return this;
+            }
+
+            public Builder Action(Func<Module, ModuleStatus> action)
+            {
                 m_action = action;
                 return this;
             }
@@ -364,6 +441,12 @@ namespace ProgramableNetwork
             }
 
             public Builder Reset(Action<Module> reset)
+            {
+                m_reset = (m) => { reset(m); return ModuleStatus.Init; };
+                return this;
+            }
+
+            public Builder Reset(Func<Module, ModuleStatus> reset)
             {
                 m_reset = reset;
                 return this;
@@ -443,6 +526,12 @@ namespace ProgramableNetwork
                 return this;
             }
 
+            public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
+            {
+                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity.GetType().IsAssignableTo(t) && (filter?.Invoke(module, entity) ?? true), distance ?? 5.ToFix32()));
+                return this;
+            }
+
             public Builder AddCustomField(string id, string name, Func<int> size, Action<CustomField> ui)
             {
                 m_fields.Add(new CustomField(id, name, null, size, ui));
@@ -462,6 +551,11 @@ namespace ProgramableNetwork
         public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id, string name, string symbol, string gfx, string description = "")
         {
             return new ModuleProto.Builder(registrator, id, name, description, symbol, new ModuleProto.Gfx(gfx));
+        }
+
+        public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id)
+        {
+            return new ModuleProto.Builder(registrator, id);
         }
 
         public static Proto.Str Input(this ModuleProto.ID operation, string name, string text, string description = "")

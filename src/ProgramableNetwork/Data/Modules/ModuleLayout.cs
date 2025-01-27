@@ -39,7 +39,7 @@ namespace ProgramableNetwork
             if (DynamicWidth != null)
                 return DynamicWidth.Invoke(module);
             else
-                return Math.Max(Math.Max(Inputs, Outputs), Math.Max(Displays, Fields));
+                return Math.Max(1, Math.Max(Math.Max(Inputs, Outputs), Math.Max(Displays, Fields)));
         }
     }
 }

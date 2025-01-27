@@ -2,23 +2,16 @@
 using Mafi.Base;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
-using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
-using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
 using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Components;
-using RTG;
+using ProgramableNetwork.Python;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ProgramableNetwork
 {
@@ -31,7 +24,6 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Constant", "Constant", "#", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Arithmetic)
-                .AddCategory(Category.Boolean)
                 .AddOutput("value", "Value")
                 .AddInt32Field("number", "Number")
                 .Action(m => { m.Output["value"] = m.Field["number", 0]; })
@@ -217,7 +209,7 @@ namespace ProgramableNetwork
                 // ADD behind settings
                 .Action(m =>
                 {
-                    m.Output["v"] = m.Context.UpointsManager.Quantity.Value;
+                    m.Output["v"] = Fix32.FromRaw(m.Context.UpointsManager.Quantity.Value);
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -509,10 +501,9 @@ namespace ProgramableNetwork
                     if (entity?.CanBePaused ?? false)
                     {
                         entity.SetPaused(input > 0);
-                        m.StatusIn["pause"] = ModuleStatus.Running;
-                        return;
+                        return ModuleStatus.Running;
                     }
-                    m.StatusIn["pause"] = ModuleStatus.Error;
+                    return ModuleStatus.Error;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -545,13 +536,14 @@ namespace ProgramableNetwork
                         {
                             m.Output["product"] = -1;
                         }
-                        return;
+                        return ModuleStatus.Running;
                     }
 
                     m.Output["quantity"] = 0;
                     m.Output["capacity"] = 0;
                     m.Output["fullness"] = 100;
                     m.Output["product"] = -1;
+                    return ModuleStatus.Error;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -590,6 +582,7 @@ namespace ProgramableNetwork
                     m.Output["capacity"] = 0;
                     m.Output["fullness"] = 100;
                     m.Output["moving"] = 0;
+                    throw new Exception("Entity can not be read");
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -720,7 +713,7 @@ namespace ProgramableNetwork
                     int inting = Math.Max(Math.Min(digits - floating, digits), 0);
 
                     string full = inting > 0 ? value.IntegerPart.ToString($"D{inting}") : "";
-                    string fract = floating > 0 ? (value.FractionalPart * Math.Pow(10, floating).ToFix32())
+                    string fract = floating > 0 ? (value.FractionalPartNonNegative * Math.Pow(10, floating).ToFix32())
                                             .IntegerPart.ToString($"D{floating}") : "";
 
                     m.Display["a"] = $"{full}|{fract}";
@@ -813,7 +806,7 @@ namespace ProgramableNetwork
                             {
                                 field.Reference.Value -= 10;
                                 if (field.Reference.Value < 0)
-                                    field.Reference.Value += 45;
+                                    field.Reference.Value += 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -825,7 +818,7 @@ namespace ProgramableNetwork
                             {
                                 field.Reference.Value -= 1;
                                 if (field.Reference.Value < 0)
-                                    field.Reference.Value += 45;
+                                    field.Reference.Value += 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -836,8 +829,8 @@ namespace ProgramableNetwork
                             .OnClick(() =>
                             {
                                 field.Reference.Value += 1;
-                                if (field.Reference.Value > 44)
-                                    field.Reference.Value -= 45;
+                                if (field.Reference.Value > 45)
+                                    field.Reference.Value -= 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -848,8 +841,8 @@ namespace ProgramableNetwork
                             .OnClick(() =>
                             {
                                 field.Reference.Value += 10;
-                                if (field.Reference.Value > 44)
-                                    field.Reference.Value -= 45;
+                                if (field.Reference.Value > 45)
+                                    field.Reference.Value -= 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -859,7 +852,7 @@ namespace ProgramableNetwork
                             .SetText(">|")
                             .OnClick(() =>
                             {
-                                field.Reference.Value = 44;
+                                field.Reference.Value = 45;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
