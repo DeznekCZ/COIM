@@ -238,6 +238,16 @@ namespace ProgramableNetwork.Python
                     }
                 }
             }
+            if (bitvise is IComparison cRight && cRight.Left is IComparison cLeft)
+            {
+                bitvise = CompareRangeExpression.CreateFrom(
+                    left: cLeft.Left,
+                    leftOperator: cLeft.GetType(),
+                    middle: cLeft.Right,
+                    rightOperator: cRight.GetType(),
+                    right: cRight.Right
+                );
+            }
             return bitvise;
         }
 

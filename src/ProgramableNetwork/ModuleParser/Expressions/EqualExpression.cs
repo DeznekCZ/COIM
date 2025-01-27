@@ -4,11 +4,15 @@ using UnityEngine;
 
 namespace ProgramableNetwork.Python
 {
-    internal class EqualExpression : ABinaryOperatorExpression
+    internal class EqualExpression : ABinaryOperatorExpression, IComparison
     {
         public EqualExpression(IExpression left, IExpression right) : base(left, right)
         {
         }
+
+        public IExpression Left => left;
+
+        public IExpression Right => right;
 
         protected override object Evaluate(object left, object right)
         {
