@@ -3,12 +3,15 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class CallExpression : IExpression
+    public class CallExpression : IExpression
     {
         private IExpression expression;
         private List<IArgument> arguments;
 
         public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
+
+        public IExpression Calle => expression;
+        public List<IArgument> Arguments => arguments;
 
         public CallExpression(IExpression expression, List<IArgument> expressions)
         {

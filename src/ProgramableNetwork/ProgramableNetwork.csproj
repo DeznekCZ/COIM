@@ -97,6 +97,7 @@
 
   <ItemGroup>
     <Folder Include="Data\Instructions\Types\" />
+    <Folder Include="Translate\" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

@@ -2,6 +2,7 @@ from Core.categories import Category
 from Core.fields import Field, FieldValue
 from Core.entities import Entity
 from Core.io import Input, Output, InputValue, OutputValue
+from Core.translate import LocStr, LocStr1, LocStrFormatted
 
 class DefaultControllers:
     Controller = "ProgramableNetwork_Controller"
@@ -38,9 +39,13 @@ class Module:
         self.Status = ModuleStatus.Init
         # defines an Tooltip/Error info
         self.Error = ""
+    
+    def Tr(key: str, default: str) -> LocStr | LocStr1 | LocStrFormatted:
+      """Creates and translation string for modules"""
+      pass
 
-    def init(self, prototype):
+    def Init(self, prototype):
         pass
 
-    def action(self):
+    def Action(self):
         pass

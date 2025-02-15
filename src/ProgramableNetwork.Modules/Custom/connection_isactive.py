@@ -43,5 +43,5 @@ class Connection_IsActive(Module):
             self.Output.set_bool("workers", False)
             self.Output.set_bool("constructed", True)
             self.Output.set_bool("pause", True)
-            self.Error = "No building is connected"
+            self.Error = self.Tr("NoSelection", "No building is connected")
             return ModuleStatus.Error

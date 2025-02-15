@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal interface IArgument
+    public interface IArgument
     {
         IExpression Expression { get; }
     }

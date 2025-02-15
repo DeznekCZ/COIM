@@ -2,7 +2,7 @@
 
 namespace ProgramableNetwork.Python
 {
-    internal class VariableExpression : IExpression
+    public class VariableExpression : IExpression
     {
         private string value;
 
