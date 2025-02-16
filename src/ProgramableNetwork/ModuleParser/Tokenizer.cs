@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace ProgramableNetwork.Python
@@ -25,6 +26,7 @@ namespace ProgramableNetwork.Python
             , RegexOptions.Compiled);
 
         private static readonly Regex keywords = new Regex(keywordsList, RegexOptions.Compiled);
+        private static readonly Regex indent = new Regex(@"^(?<block>[\t ]*)(?<rest>.*)$");
 
         public static Token[] Parse(string file)
         {
@@ -32,10 +34,28 @@ namespace ProgramableNetwork.Python
             string[] lines = File.ReadAllLines(file);
             FileInfo fileInfo = new FileInfo(file);
 
+            Stack<string> indentaion = new Stack<string>();
             for (int i = 0; i < lines.Length; i++)
             {
+                if (string.IsNullOrWhiteSpace(lines[i]))
+                    continue; // skip empty lines
+
+                Match indentMatch = Tokenizer.indent.Match(lines[i]);
+                string indent = indentMatch.Groups["block"].Value;
+                string rest = indentMatch.Groups["rest"].Value;
+                while (indentaion.Count > 0 && indentaion.Peek().Length > indent.Length)
+                {
+                    tokens.Add(new Token(fileInfo, i + 1, 0, indent.Length, PythonTokens.dedent, indent));
+                    indentaion.Pop();
+                }
+                if (indent.Length > 0 && (indentaion.Count == 0 || indentaion.Peek().Length < indent.Length))
+                {
+                    tokens.Add(new Token(fileInfo, i + 1, 0, indent.Length, PythonTokens.indent, indent));
+                    indentaion.Push(indent);
+                }
+
                 MatchCollection matchCollection = combined.Matches(lines[i]);
-                int end = 0;
+                int end = indent.Length;
                 foreach (Match match in matchCollection)
                 {
                     bool found = false;
@@ -43,6 +63,19 @@ namespace ProgramableNetwork.Python
                     {
                         if (token.Name == "0") continue;
                         if (token.Name == "rest") continue;
+                        if (token.Name == "space")
+                        { // skip whitespaces
+                            found = true;
+                            end = token.Index + token.Length;
+                            break;
+                        }
+                        if (token.Name == "comment")
+                        { // skip whitespaces
+                            found = true;
+                            tokens.Add(new Token(fileInfo, i, end, 1, PythonTokens.newline, "\n"));
+                            end = token.Index + token.Length;
+                            break;
+                        }
                         if (token.Name == "name" && token.Success)
                         { // search for keyword
                             found = true;
@@ -82,6 +115,13 @@ namespace ProgramableNetwork.Python
                 if ((i + 1) < lines.Length)
                     tokens.Add(new Token(fileInfo, i, end, 1, PythonTokens.newline, "\n"));
             }
+
+            while (indentaion.Count > 0)
+            {
+                tokens.Add(new Token(fileInfo, lines.Length, lines.Last().Length, 0, PythonTokens.dedent, ""));
+                indentaion.Pop();
+            }
+            tokens.Add(new Token(fileInfo, lines.Length, lines.Last().Length, 0, PythonTokens.eof, ""));
 
             return tokens.ToArray();
         }

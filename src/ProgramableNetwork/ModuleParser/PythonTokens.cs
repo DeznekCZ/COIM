@@ -4,6 +4,8 @@
     {
         undefined = 0,
         newline,
+        indent,
+        dedent,
         lparen,
         rparen,
         llist,
@@ -55,7 +57,6 @@
         elsep,
         block,
         name,
-        space,
         comment,
         semicolon,
         returnp,

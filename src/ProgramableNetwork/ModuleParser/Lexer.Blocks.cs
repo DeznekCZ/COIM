@@ -1,10 +1,4 @@
-﻿using Mafi.Core.Mods;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
@@ -12,104 +6,109 @@ namespace ProgramableNetwork.Python
     {
         private void ParseClass(Block tree)
         {
-            Token className = RequireNext(PythonTokens.name, PythonTokens.space);
+            Token className = RequireNext(PythonTokens.name);
             List<IExpression> baseClasses = new List<IExpression>();
-            if (IsNext(PythonTokens.lparen, out Token _, PythonTokens.space))
+            if (IsNext(PythonTokens.lparen, out Token _))
             {
-                baseClasses.Add(ParseQualifiedName(PythonTokens.space));
-                while (IsNext(PythonTokens.next, out Token _, PythonTokens.space))
+                baseClasses.Add(ParseQualifiedName());
+                while (IsNext(PythonTokens.next, out Token _))
                 {
-                    baseClasses.Add(ParseQualifiedName(PythonTokens.space));
+                    baseClasses.Add(ParseQualifiedName());
                 }
-                RequireNext(PythonTokens.rparen, PythonTokens.space);
+                RequireNext(PythonTokens.rparen);
             }
-            RequireNext(PythonTokens.block, PythonTokens.space);
-            RequireNext(PythonTokens.newline, PythonTokens.space);
+            RequireNext(PythonTokens.block);
+            RequireNext(PythonTokens.newline);
+            RequireNext(PythonTokens.indent);
 
-            while (IsNext(PythonTokens.newline, out Token _, PythonTokens.space))
-                continue;// read non empty lines
-
-            var indentation = RequireNext(PythonTokens.space).value;
-            while (IsNext(PythonTokens.space, out Token space))
-                indentation += space.value;
-
-            Block block = ParseBlock(tree, indentation);
+            Block block = ParseBlock(tree, PythonTokens.dedent);
             ClasssStatement @class = new ClasssStatement(className, baseClasses, block);
             tree.Add(@class);
+
+            RequireNext(PythonTokens.dedent);
         }
 
         private void ParseFunction(Block tree)
         {
-            Token className = RequireNext(PythonTokens.name, PythonTokens.space);
-            RequireNext(PythonTokens.lparen, PythonTokens.space);
-            List<Token> arguments = NextList0(PythonTokens.name, PythonTokens.next, PythonTokens.space);
-            RequireNext(PythonTokens.rparen, PythonTokens.space);
-            RequireNext(PythonTokens.block, PythonTokens.space);
-            RequireNext(PythonTokens.newline, PythonTokens.space);
+            Token className = RequireNext(PythonTokens.name);
+            RequireNext(PythonTokens.lparen);
+            List<Token> arguments = NextList0(PythonTokens.name, PythonTokens.next);
+            RequireNext(PythonTokens.rparen);
+            RequireNext(PythonTokens.block);
 
-            while (IsNext(PythonTokens.newline, out Token _, PythonTokens.space))
-                continue;// read non empty lines
+            // is function definable as single statement?
+            RequireNext(PythonTokens.newline);
+            RequireNext(PythonTokens.indent);
 
-            var indentation = RequireNext(PythonTokens.space).value;
-            while (IsNext(PythonTokens.space, out Token space))
-                indentation += space.value;
-
-            Block block = ParseBlock(tree, indentation);
+            Block block = ParseBlock(tree, PythonTokens.dedent);
             FunctionStatement @class = new FunctionStatement(className, arguments, block);
             tree.Add(@class);
+
+            RequireNext(PythonTokens.dedent);
         }
 
         private void ParseIf(Block tree)
         {
-            IExpression condition = ParseExpression(PythonTokens.space);
-            RequireNext(PythonTokens.block, PythonTokens.space);
-            RequireNext(PythonTokens.newline, PythonTokens.space);
+            IExpression condition = ParseExpression();
 
-            while (IsNext(PythonTokens.newline, out Token _, PythonTokens.space))
-                continue;// read non empty lines
+            if (IsNext(PythonTokens.newline, out Token _))
+            {
+                RequireNext(PythonTokens.indent);
 
-            var indentation = RequireNext(PythonTokens.space).value;
-            while (IsNext(PythonTokens.space, out Token space))
-                indentation += space.value;
+                Block block = ParseBlock(tree, PythonTokens.dedent);
+                IfStatement @class = new IfStatement(condition, block);
+                tree.Add(@class);
 
-            Block block = ParseBlock(tree, indentation);
-            IfStatement @class = new IfStatement(condition, block);
-            tree.Add(@class);
+                RequireNext(PythonTokens.dedent);
+            }
+            else
+            {
+                Block block = ParseBlock(tree, PythonTokens.newline);
+                tree.Add(new IfStatement(condition, block));
+            }
         }
 
         private void ParseElIf(IfStatement ifs, Block tree)
         {
-            IExpression condition = ParseExpression(PythonTokens.space);
-            RequireNext(PythonTokens.block, PythonTokens.space);
-            RequireNext(PythonTokens.newline, PythonTokens.space);
+            IExpression condition = ParseExpression();
+            RequireNext(PythonTokens.block);
 
-            while (IsNext(PythonTokens.newline, out Token _, PythonTokens.space))
-                continue;// read non empty lines
+            if (IsNext(PythonTokens.newline, out Token _))
+            {
+                RequireNext(PythonTokens.indent);
 
-            var indentation = RequireNext(PythonTokens.space).value;
-            while (IsNext(PythonTokens.space, out Token space))
-                indentation += space.value;
+                Block block = ParseBlock(tree, PythonTokens.dedent);
+                IfStatement @class = new IfStatement(ifs, condition, block);
+                tree.Add(@class);
 
-            Block block = ParseBlock(tree, indentation);
-            IfStatement @class = new IfStatement(ifs, condition, block);
-            tree.Add(@class);
+                RequireNext(PythonTokens.dedent);
+            }
+            else
+            {
+                var block = ParseBlock(tree, PythonTokens.newline);
+                tree.Add(new IfStatement(ifs, condition, block));
+            }
         }
 
         private void ParseElse(IfStatement ifs, Block tree)
         {
-            RequireNext(PythonTokens.block, PythonTokens.space);
-            RequireNext(PythonTokens.newline, PythonTokens.space);
+            RequireNext(PythonTokens.block);
 
-            while (IsNext(PythonTokens.newline, out Token _, PythonTokens.space))
-                continue;// read non empty lines
+            if (IsNext(PythonTokens.newline, out Token _))
+            {
+                RequireNext(PythonTokens.indent);
 
-            var indentation = RequireNext(PythonTokens.space).value;
-            while (IsNext(PythonTokens.space, out Token space))
-                indentation += space.value;
+                Block block = ParseBlock(tree, PythonTokens.dedent);
+                IfStatement @class = new IfStatement(ifs, block);
+                tree.Add(@class);
 
-            Block block = ParseBlock(tree, indentation);
-            IfStatement @class = new IfStatement(ifs, block);
-            tree.Add(@class);
+                RequireNext(PythonTokens.dedent);
+            }
+            else
+            {
+                Block block = ParseBlock(tree, PythonTokens.newline);
+                tree.Add(new IfStatement(ifs, block));
+            }
         }
     }
 }

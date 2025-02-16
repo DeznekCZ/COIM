@@ -7,3 +7,5 @@ class DefaultCategories:
     Connection = Category("Connection")
     Arithmetic = Category("Arithmetic")
     Display = Category("Display")
+    Control = Category("Control")
+    Boolean = Category("Boolean")

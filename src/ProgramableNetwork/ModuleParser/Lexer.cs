@@ -1,10 +1,6 @@
-﻿using Mafi.Core.Mods;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ProgramableNetwork.Python
 {
@@ -15,8 +11,8 @@ namespace ProgramableNetwork.Python
     public partial class Lexer
     {
         private LinkedList<Token> enumerator;
-        private readonly PythonTokens[] newLineIgnore = new PythonTokens[] { PythonTokens.space, PythonTokens.newline, PythonTokens.comment };
-        private readonly PythonTokens[] defaultIgnore = new PythonTokens[] { PythonTokens.space, PythonTokens.comment };
+        private readonly PythonTokens[] newLineIgnore = new PythonTokens[] { PythonTokens.newline, PythonTokens.indent, PythonTokens.dedent, PythonTokens.comment };
+        private readonly PythonTokens[] defaultIgnore = new PythonTokens[] { PythonTokens.comment };
 
         public static Block Parse(Token[] tokens)
         {
@@ -30,23 +26,23 @@ namespace ProgramableNetwork.Python
 
         private Block ParseTree()
         {
-            return ParseBlock(null, "");
+            return ParseBlock(null, PythonTokens.eof);
         }
 
-        private Block ParseBlock(Block parentTree, string indentation)
+        private Block ParseBlock(Block parentTree, PythonTokens blockEnd)
         {
             Block tree = new Block(parentTree);
-            while (enumerator.Count > 0)
+            while (enumerator.Count > 0 && enumerator.First.Value.type != blockEnd)
             {
                 Token token = Dequeue();
                 switch (token.type)
                 {
                     case PythonTokens.from:
                         IExpression p = primary();
-                        RequireNext(PythonTokens.import, ignore: PythonTokens.space);
-                        ImportStatement import = new ImportStatement(p, NextList(PythonTokens.name, next: PythonTokens.next, ignore: PythonTokens.space));
+                        RequireNext(PythonTokens.import);
+                        ImportStatement import = new ImportStatement(p, NextList(PythonTokens.name, next: PythonTokens.next));
                         tree.Add(import);
-                        RequireNext(PythonTokens.newline, PythonTokens.space);
+                        RequireNext(PythonTokens.newline);
                         break;
 
                     case PythonTokens.classp:
@@ -80,30 +76,17 @@ namespace ProgramableNetwork.Python
                     case PythonTokens.name:
                         // Assignment
                         Revert(token);
-                        IExpression leftExpression = ParseExpression(PythonTokens.space);
-                        while (IsNext(PythonTokens.set, out Token _, PythonTokens.space))
+                        IExpression leftExpression = ParseExpression();
+                        while (IsNext(PythonTokens.set, out Token _))
                         {
                             tree.Add(ParseAssignment(leftExpression));
                             break;
                         }
-                        IsNext(PythonTokens.newline, out Token _, PythonTokens.space);
+                        IsNext(PythonTokens.newline, out Token _);
                         tree.Add(new EvaluateStatement(leftExpression));
                         break;
 
                     case PythonTokens.newline:
-                        break;
-
-                    case PythonTokens.space:
-                        Revert(token);
-
-                        var nextIndentation = RequireNext(PythonTokens.space).value;
-                        while (IsNext(PythonTokens.space, out Token space))
-                            nextIndentation += space.value;
-
-                        if (nextIndentation != indentation)
-                        {
-                            return tree;
-                        }
                         break;
 
                     case PythonTokens.returnp:
@@ -136,7 +119,7 @@ namespace ProgramableNetwork.Python
 
         private AssignmentStatement ParseAssignment(IExpression qualifiedName)
         {
-            return new AssignmentStatement(qualifiedName, ParseExpression(PythonTokens.space));
+            return new AssignmentStatement(qualifiedName, ParseExpression());
         }
 
         private IExpression ParseExpression(params PythonTokens[] ignore)
@@ -492,16 +475,17 @@ namespace ProgramableNetwork.Python
                     return fstring();
                 case PythonTokens.lparen:
                     // TODO tuple
-                    IExpression expression = ParseExpression(PythonTokens.space);
-                    RequireNext(PythonTokens.rparen, PythonTokens.space);
+                    IExpression expression = ParseExpression(newLineIgnore);
+                    RequireNext(PythonTokens.rparen);
                     return expression;
                 case PythonTokens.llist:
                     // TODO tuple
                     var listItems = list();
-                    IsNext(PythonTokens.next, out Token _, PythonTokens.space, PythonTokens.newline);
-                    RequireNext(PythonTokens.rlist, PythonTokens.space, PythonTokens.newline);
+                    IsNext(PythonTokens.next, out Token _, PythonTokens.newline);
+                    RequireNext(PythonTokens.rlist, newLineIgnore);
                     return new ListExpression(listItems);
                 default:
+                    Revert(decide);
                     throw new NotImplementedException();
             }
         }
@@ -515,17 +499,17 @@ namespace ProgramableNetwork.Python
 
         private List<IExpression> list()
         {
-            if (IsNext(PythonTokens.rlist, out Token end, PythonTokens.space, PythonTokens.newline))
+            if (IsNext(PythonTokens.rlist, out Token end, newLineIgnore))
             {
                 return new List<IExpression>();
             }
 
             List<IExpression> arguments = new List<IExpression>();
-            arguments.Add(ParseExpression(PythonTokens.space, PythonTokens.newline));
+            arguments.Add(ParseExpression(newLineIgnore));
 
-            while (IsNext(PythonTokens.next, out Token next, PythonTokens.space, PythonTokens.newline))
+            while (IsNext(PythonTokens.next, out Token next, newLineIgnore))
             {
-                arguments.Add(ParseExpression(PythonTokens.space, PythonTokens.newline));
+                arguments.Add(ParseExpression(newLineIgnore));
             }
 
             return arguments;
@@ -584,17 +568,17 @@ namespace ProgramableNetwork.Python
 
         private IRange range()
         {
-            bool skipStart = IsNext(PythonTokens.block, out Token _, PythonTokens.space);
-            bool skipEnd = IsNext(PythonTokens.block, out Token _, PythonTokens.space);
-            bool skipStep = IsNext(PythonTokens.rlist, out Token _, PythonTokens.space);
+            bool skipStart = IsNext(PythonTokens.block, out Token _);
+            bool skipEnd = IsNext(PythonTokens.block, out Token _);
+            bool skipStep = IsNext(PythonTokens.rlist, out Token _);
 
             if (skipStart)
                 throw new NotImplementedException("List slices are not implemeted");
 
-            IExpression start = ParseExpression(PythonTokens.space);
-            skipStart = IsNext(PythonTokens.block, out Token _, PythonTokens.space);
-            skipEnd = IsNext(PythonTokens.block, out Token _, PythonTokens.space);
-            skipStep = IsNext(PythonTokens.rlist, out Token _, PythonTokens.space);
+            IExpression start = ParseExpression();
+            skipStart = IsNext(PythonTokens.block, out Token _);
+            skipEnd = IsNext(PythonTokens.block, out Token _);
+            skipStep = IsNext(PythonTokens.rlist, out Token _);
 
             if (skipStart && !skipStep)
                 throw new NotImplementedException("List slices are not implemeted");

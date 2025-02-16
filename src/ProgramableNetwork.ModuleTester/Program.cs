@@ -31,20 +31,29 @@ namespace ProgramableNetwork.ModuleTester
 
             Console.WriteLine(new DirectoryInfo(".").FullName);
 
-            string file = @"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py";
+            string file = @"..\..\..\ProgramableNetwork.Modules\Custom\delay.py";
 
             ModuleRegistrator.Register(registrator, file);
 
-            protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Connection_IsActive", out ModuleProto proto);
+            protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Runtime_Delay_8", out ModuleProto proto);
 
             EntityManager manager = new EntityManager();
             EntityContext entityContext = new EntityContext(null, manager, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
             FakeProto fakeProto = new FakeProto(new FakeProto.ID("fake"));
             manager.AddEntity(1, new FakeEntity(new EntityId(1), fakeProto, entityContext));
             Module m = new Module(proto, entityContext, null);
+
+            Fix32 i = new Fix32();
+            int[] outputs = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
             while(true)
             {
+                i += 1;
+                m.Input["0"] = i;
                 m.Execute();
+
+                IEnumerable<string> converted = outputs.Select(o => m.Output[o.ToString(), Fix32.Zero].ToString());
+                Console.WriteLine($"{i}, {string.Join(", ", converted)} [{m.Status}]");
+
                 Console.WriteLine("lala");
             }
         }
