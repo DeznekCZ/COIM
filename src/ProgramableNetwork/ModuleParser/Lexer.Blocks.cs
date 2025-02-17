@@ -50,6 +50,7 @@ namespace ProgramableNetwork.Python
         private void ParseIf(Block tree)
         {
             IExpression condition = ParseExpression();
+            RequireNext(PythonTokens.block);
 
             if (IsNext(PythonTokens.newline, out Token _))
             {

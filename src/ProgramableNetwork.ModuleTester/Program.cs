@@ -31,9 +31,17 @@ namespace ProgramableNetwork.ModuleTester
 
             Console.WriteLine(new DirectoryInfo(".").FullName);
 
-            string file = @"..\..\..\ProgramableNetwork.Modules\Custom\delay.py";
+            string[] files = new string[]
+            {
+                @"..\..\..\ProgramableNetwork.Modules\Custom\delay.py",
+                @"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py",
+                @"..\..\..\ProgramableNetwork.Modules\Custom\randomizer.py",
+            };
 
-            ModuleRegistrator.Register(registrator, file);
+            foreach (var file in files)
+            {
+                ModuleRegistrator.Register(registrator, file);
+            }
 
             protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Runtime_Delay_8", out ModuleProto proto);
 
