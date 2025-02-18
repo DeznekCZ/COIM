@@ -444,7 +444,7 @@ namespace ProgramableNetwork.Python
                 {
                     expression = new CallExpression(expression, arguments());
                 }
-                else if (member.type == PythonTokens.rparen)
+                else if (member.type == PythonTokens.llist)
                 {
                     expression = new IndexExpression(expression, range());
                 }
