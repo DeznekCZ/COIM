@@ -30,6 +30,13 @@ class InputValue:
     def get_bool(self, name: str, default: bool) -> bool:
         return (self.module.number_data["in__" + name] or default) > 0
 
+    def __getitem__(self, name: str) -> Fix32:
+        return self.get(name, Fix32.Zero)
+
+    def __setitem__(self, name: str, value: Fix32) -> Fix32:
+        self.set(name, value)
+        return value
+
 class OutputValue:
     def __init__(self, module):
         self.module = module
@@ -48,3 +55,10 @@ class OutputValue:
 
     def get_bool(self, name: str, default: bool) -> bool:
         return (self.module.number_data["out__" + name] or default) > 0
+
+    def __getitem__(self, name: str) -> Fix32:
+        return self.get(name, Fix32.Zero)
+
+    def __setitem__(self, name: str, value: Fix32) -> Fix32:
+        self.set(name, value)
+        return value
