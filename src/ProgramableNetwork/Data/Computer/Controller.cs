@@ -10,16 +10,12 @@ using Mafi.Core.Population;
 using Mafi.Core.Prototypes;
 using Mafi.Base;
 using Mafi.Core.Factory.ElectricPower;
-using Mafi.Collections.ImmutableCollections;
-using Mafi.Core.Ports;
 using System.Linq;
 using Mafi.Collections;
 using Mafi.Core.Factory.ComputingPower;
-using Mafi.Core.Economy;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Products;
 using Mafi.Core.Entities.Static;
-using Mafi.Unity.UserInterface;
 
 namespace ProgramableNetwork
 {
@@ -286,22 +282,18 @@ namespace ProgramableNetwork
                 return;
             }
 
-            if (!m_electricConsumer.TryConsume())
-            {
-                return;
-            }
-
             if (IsPaused)
             {
                 CurrentInstruction = 0;
                 PowerRequired = Electricity.Zero;
+                m_electricConsumer.OnPowerRequiredChanged();
                 return;
             }
 
             if (Modules.Count == 0)
             {
-                CurrentInstruction = 0;
                 PowerRequired = Prototype.IddlePower;
+                m_electricConsumer.OnPowerRequiredChanged();
                 return;
             }
 
@@ -325,6 +317,7 @@ namespace ProgramableNetwork
                 .Sum() );
 
             PowerRequired = Prototype.IddlePower + requiredRunningPower;
+            m_electricConsumer.OnPowerRequiredChanged();
 
             ComputingRequired = requiredComputingPower;
 
