@@ -41,27 +41,12 @@ class IUnityConsumingEntity:
         self.MaxMonthlyUnityConsumed = Upoints()
         self.UpointsCategoryId       = ProtoID()
 
-class StaticEntity: pass
-class StorageBase: pass
-class Controller: pass
-class Antena: pass
-class SettlementHousingModule: pass
-class SettlementFoodModule: pass
-class SettlementTransformer: pass
-class SettlementWasteModule: pass
-class SettlementServiceModule: pass
-class Machine: pass
-class IEntityWithWorkers: pass
-class IElectricityConsumingEntity: pass
-class IUnityConsumingEntity: pass
-
-class Entity(IElectricityConsumingEntity, IUnityConsumingEntity):
+class Entity:
     """Represents: Mafi.Core.Entities.Entity"""
     def __init__(self, entity_id: EntityId):
         self.IsPaused = False
         self.Id = entity_id
         self.CanBePaused = True
-        self.UnityConsumer = UnityConsumer()
 
     def SetPause(self, pause: bool):
         self.IsPaused = pause
@@ -69,3 +54,16 @@ class Entity(IElectricityConsumingEntity, IUnityConsumingEntity):
 class StaticEntity(Entity):
     """Represents: Mafi.Core.Entities.Static.StaticEntity"""
     pass
+
+class StorageBase(StaticEntity): pass
+class Controller(StaticEntity): pass
+class Antena(StaticEntity): pass
+class SettlementHousingModule(StaticEntity): pass
+class SettlementFoodModule(StaticEntity): pass
+class SettlementTransformer(StaticEntity): pass
+class SettlementWasteModule(StaticEntity): pass
+class SettlementServiceModule(StaticEntity): pass
+class Machine(StaticEntity): pass
+class IEntityWithWorkers(Entity): pass
+class IElectricityConsumingEntity(Entity): pass
+class IUnityConsumingEntity(Entity): pass
