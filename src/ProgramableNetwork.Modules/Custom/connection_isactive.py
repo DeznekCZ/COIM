@@ -1,6 +1,5 @@
 from Core.categories import DefaultCategories
 from Core.fields import EntityField
-from Core.mafi import fix
 from Core.module import DefaultControllers, Module, ModuleStatus
 from Core.entities import IEntityWithWorkers, StaticEntity, IElectricityConsumingEntity
 from Core.io import Output
