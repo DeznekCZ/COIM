@@ -1,5 +1,6 @@
 
 class Fix32:
+    """Represents type Mafi.Fix32"""
     def __init__(self, value: int) -> None:
         self.RawValue = value
 
@@ -8,4 +9,5 @@ class Fix32:
         
 
 def fix(value) -> Fix32:
+    """Built in function to convert any number value to Mafi.Fix32"""
     pass
