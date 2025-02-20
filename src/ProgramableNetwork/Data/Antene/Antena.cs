@@ -216,6 +216,7 @@ namespace ProgramableNetwork
 
         public void SimUpdate()
         {
+            m_electricConsumer.OnPowerRequiredChanged();
             if (IsNotEnabled && IsNotPaused)
             {
                 return;
