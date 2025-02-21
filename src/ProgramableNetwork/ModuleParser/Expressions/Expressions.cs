@@ -15,7 +15,9 @@ namespace ProgramableNetwork.Python
                 : v is int i ? i != 0
                 : v is float f ? f != 0
                 : v is Fix32 fix ? fix.RawValue != 0
-                : throw new NotImplementedException();
+                : v is byte by ? by != 0
+                : v is short sh ? sh != 0
+                : throw new NotImplementedException("Can not convert to __bool__");
         }
 
         internal static int __int__(object v)
@@ -24,7 +26,9 @@ namespace ProgramableNetwork.Python
                 : v is float f ? (int)f
                 : v is Fix32 fix ? fix.IntegerPart
                 : v is bool b ? (b ? 1 : 0)
-                : throw new NotImplementedException();
+                : v is byte by ? by
+                : v is short sh ? sh
+                : throw new NotImplementedException("Can not convert to __int__");
         }
 
         internal static float __float__(object v)
@@ -33,7 +37,9 @@ namespace ProgramableNetwork.Python
                 : v is Fix32 fix ? fix.ToFloat()
                 : v is int i ? i
                 : v is bool b ? (b ? 1 : 0)
-                : throw new NotImplementedException();
+                : v is byte by ? by
+                : v is short sh ? sh
+                : throw new NotImplementedException("Can not convert to __float__");
         }
 
         internal static Fix32 __fix__(object v)
@@ -42,7 +48,9 @@ namespace ProgramableNetwork.Python
                 : v is float f ? f.ToFix32()
                 : v is int i ? i.ToFix32()
                 : v is bool b ? (b ? 1.ToFix32() : 0.ToFix32())
-                : throw new NotImplementedException();
+                : v is byte by ? ((int)by).ToFix32()
+                : v is short sh ? ((int)sh).ToFix32()
+                : throw new NotImplementedException("Can not convert to __fix__");
         }
 
         internal static string __str__(object v)
@@ -52,6 +60,8 @@ namespace ProgramableNetwork.Python
             if (v is int i) return i.ToString();
             if (v is float f) return f.ToString();
             if (v is Fix32 fix) return fix.ToString();
+            if (v is byte by) return by.ToString();
+            if (v is short sh) return sh.ToString();
             System.Reflection.MethodInfo m;
             if ((m = v.GetType().GetMethod("__str__")) != null) return (string)m.Invoke(v, null);
             return v.ToString(); // nouzovka
@@ -63,7 +73,9 @@ namespace ProgramableNetwork.Python
                 : v is Fix32 fix ? (object)(-fix)
                 : v is int i ? -i
                 : v is bool b ? (b ? -1 : 0)
-                : throw new NotImplementedException();
+                : v is byte by ? -by
+                : v is short sh ? -sh
+                : throw new NotImplementedException("Can not call __neg__");
         }
 
         internal static object __pos__(object v)
@@ -72,7 +84,9 @@ namespace ProgramableNetwork.Python
                 : v is Fix32 fix ? (object)(fix)
                 : v is int i ? i
                 : v is bool b ? (b ? 1 : 0)
-                : throw new NotImplementedException();
+                : v is byte by ? by
+                : v is short sh ? sh
+                : throw new NotImplementedException("Can not call __pos__");
         }
 
         internal static object __or__(object v1, object v2)
@@ -118,7 +132,7 @@ namespace ProgramableNetwork.Python
                             : (IArgumentValue)new NamedValue(a.name, a.value))
                     ).ToArray());
             }
-            throw new NotImplementedException();
+            throw new NotImplementedException("Invocation is not defined");
         }
 
         internal static bool __eq__(object left, object right)
@@ -419,12 +433,12 @@ namespace ProgramableNetwork.Python
 
         internal static object __range__(object left, Range range)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Range operator is not defined");
         }
 
         internal static object __index__(object left, object right)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Index operator is not defined");
         }
 
         internal static void __setitem__(object target, object index, object value)
@@ -438,7 +452,7 @@ namespace ProgramableNetwork.Python
             {
                 dict[__str__(index)] = value;
             }
-            throw new NotImplementedException();
+            throw new NotImplementedException("__setitem__");
         }
 
         internal static object __getitem__(object target, object index)
@@ -451,7 +465,7 @@ namespace ProgramableNetwork.Python
             {
                 return dict.TryGetValue(__str__(index), out object value) ? value : null;
             }
-            throw new NotImplementedException();
+            throw new NotImplementedException("__getitem__");
         }
 
         internal static bool __contains__(object target, object key)
@@ -461,12 +475,12 @@ namespace ProgramableNetwork.Python
                 return dict.ContainsKey(__str__(key));
             if (target is List<object> list)
                 return list.Contains(key);
-            throw new NotImplementedException();
+            throw new NotImplementedException("__contains__");
         }
 
         internal static object __invert__(object v)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("__invert__");
         }
 
         internal static object __mul__(object left, object right)
@@ -533,7 +547,7 @@ namespace ProgramableNetwork.Python
         {
             if (v is bool b)
                 return !b;
-            throw new NotImplementedException();
+            throw new NotImplementedException("__not__");
         }
 
         internal static Fix32 __pow__(object left, object right)
