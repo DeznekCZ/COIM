@@ -64,6 +64,9 @@ class SettlementTransformer(StaticEntity): pass
 class SettlementWasteModule(StaticEntity): pass
 class SettlementServiceModule(StaticEntity): pass
 class Machine(StaticEntity): pass
+class ThermalStorage(StaticEntity):
+    """Represents: Mafi.Base.Prototypes.Buildings.ThermalStorages.ThermalStorage"""
+    pass
 class IEntityWithWorkers(Entity): pass
 class IElectricityConsumingEntity(Entity): pass
 class IUnityConsumingEntity(Entity): pass

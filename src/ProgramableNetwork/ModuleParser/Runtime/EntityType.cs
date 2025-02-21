@@ -16,6 +16,7 @@
         Machine,
         IEntityWithWorkers,
         IElectricityConsumingEntity,
-        IUnityConsumingEntity
+        IUnityConsumingEntity,
+        ThermalStorage
     }
 }

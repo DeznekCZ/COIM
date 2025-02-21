@@ -7,9 +7,9 @@ using Mafi.Core.Factory.Machines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Mafi.Core.Prototypes;
 using Mafi.Core.Population;
 using Mafi.Core.Factory.ElectricPower;
+using Mafi.Base.Prototypes.Buildings.ThermalStorages;
 
 namespace ProgramableNetwork.Python
 {
@@ -45,6 +45,7 @@ namespace ProgramableNetwork.Python
                         case EntityType.Controller: return (argument.value, typeof(Controller));
                         case EntityType.Antena: return (argument.value, typeof(Antena));
                         case EntityType.Machine: return (argument.value, typeof(Machine));
+                        case EntityType.ThermalStorage: return (argument.value, typeof(ThermalStorage));
                         case EntityType.SettlementHousingModule: return (argument.value, typeof(SettlementHousingModule));
                         case EntityType.SettlementFoodModule: return (argument.value, typeof(SettlementFoodModule));
                         case EntityType.SettlementTransformer: return (argument.value, typeof(SettlementTransformer));

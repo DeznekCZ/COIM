@@ -1,10 +1,5 @@
 ﻿using Mafi;
 using Mafi.Base;
-using Mafi.Core.Buildings.Settlements;
-using Mafi.Core.Buildings.Storages;
-using Mafi.Core.Entities;
-using Mafi.Core.Entities.Static;
-using Mafi.Core.Factory.Machines;
 using Mafi.Core.Mods;
 using System;
 using System.Collections;
