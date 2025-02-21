@@ -23,6 +23,7 @@ class Module:
     fields: list[Field] = []
     categories: list[Category] = []
     controllers: list[str] = []
+    width: int = 0
 
     def __init__(self):
         # defines an interface to data of input inside module

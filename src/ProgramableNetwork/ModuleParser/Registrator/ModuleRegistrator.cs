@@ -44,6 +44,8 @@ namespace ProgramableNetwork.Python
                     AddAction(builder, classEntry, action as Method);
                 if (classEntry.classContext.TryGetValue("categroies", out object categories))
                     AddCategories(builder, categories as List<object>);
+                if (classEntry.classContext.TryGetValue("width", out object width))
+                    builder.Width(Expressions.__int__(width));
 
                 // TODO search for variable of device and categories
                 builder.SetGfx(Assets.Base.Products.Icons.Vegetables_svg);

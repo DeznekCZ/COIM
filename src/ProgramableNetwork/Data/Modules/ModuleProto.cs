@@ -229,7 +229,7 @@ namespace ProgramableNetwork
             private List<Category> m_categories = new List<Category>();
 
             public Action<Module, StackContainer> m_displayFunction { get; }
-            public Func<Module, int> m_widthFunction { get; }
+            public Func<Module, int> m_widthFunction { get; private set; }
 
             public Builder(ProtoRegistrator registrator, string id, string name, string description, string symbol, Gfx gfx)
             {
@@ -437,6 +437,12 @@ namespace ProgramableNetwork
             public Builder AddCategory(Category category)
             {
                 m_categories.Add(category);
+                return this;
+            }
+
+            public Builder Width(int slots)
+            {
+                m_widthFunction = (m) => slots;
                 return this;
             }
 
