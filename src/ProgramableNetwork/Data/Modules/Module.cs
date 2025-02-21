@@ -7,6 +7,7 @@ using Mafi.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace ProgramableNetwork
 {
@@ -86,6 +87,8 @@ namespace ProgramableNetwork
             {
                 Error = e.Message;
                 Status = ModuleStatus.Error;
+                if (IsDebugging)
+                    Debug.LogError(e);
             }
         }
 
@@ -382,6 +385,8 @@ namespace ProgramableNetwork
         public bool CanBePaused => false;
 
         public bool IsDestroyed => false;
+
+        public bool IsDebugging { get; set; } = false;
 
         public class StatusData
         {

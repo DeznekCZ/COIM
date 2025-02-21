@@ -64,6 +64,8 @@ namespace ProgramableNetwork
                 CloseDialogs();
                 m_targetRow = -1;
                 m_targetColumn = -1;
+                if (m_editModule != null)
+                    m_editModule.IsDebugging = false;
                 m_editModule = null;
                 m_decription = null;
                 OutputConnection = null;
@@ -205,6 +207,11 @@ namespace ProgramableNetwork
         private void CreateEditDialog(Module module)
         {
             CloseDialogs();
+
+            if (m_editModule != null)
+                m_editModule.IsDebugging = false;
+            if (module != null)
+                module.IsDebugging = m_debugging;
 
             m_editModule = module;
             m_targetRow = -1;

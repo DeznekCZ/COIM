@@ -11,6 +11,7 @@ using Mafi.Unity.UiToolkit;
 using Mafi.Core.Syncers;
 using System.Linq;
 using Mafi.Unity.UserInterface;
+using System.Reflection;
 
 namespace ProgramableNetwork
 {
@@ -20,6 +21,7 @@ namespace ProgramableNetwork
         private readonly Dictionary<IUiElement, Action> m_displayChanges;
         private ISyncer<Controller> selectionchanged;
         private bool m_repaintInstructions;
+        private bool m_debugging;
         public ControllerView(ControllerInspector controller)
             : base(controller)
         {
@@ -56,6 +58,16 @@ namespace ProgramableNetwork
                     else
                         status.SetStatusWorking();
                 });
+
+            FieldInfo field = typeof(ItemDetailWindowView).GetField("m_leftButtonsContainer", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field.GetValue(this) is StackContainer stack)
+            {
+                Builder.NewSwitchBtn()
+                    .SetText("Log output")
+                    .SetIsOn(m_debugging)
+                    .SetOnToggleAction(b => m_debugging = b)
+                    .AppendTo(stack);
+            }
 
             AddGeneralPriorityPanel(m_controller.Context, () => m_controller.SelectedEntity);
 
