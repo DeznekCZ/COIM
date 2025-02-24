@@ -16,6 +16,9 @@ using Mafi.Core.Factory.ComputingPower;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Products;
 using Mafi.Core.Entities.Static;
+using Mafi.Core.Notifications;
+using ProgramableNetwork.Data.Mod;
+using System.Reflection;
 
 namespace ProgramableNetwork
 {
@@ -43,6 +46,9 @@ namespace ProgramableNetwork
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
             m_maintenanceConsumer = maintenanceProvidersFactory.CreateFor(this);
+            m_notificationInfoManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.InfoNotification);
+            m_notificationWarningManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.WarningNotification);
+            m_notificationErrorManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.ErrorNotification);
             Modules = new Lyst<Module>();
             Rows = new Lyst<Lyst<ModulePlacement>>();
             for (int i = 0; i < Prototype.Rows; i++)
@@ -152,6 +158,10 @@ namespace ProgramableNetwork
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
 
+            m_notificationInfoManager = WithId(ControllerNotification.InfoNotification, m_notificationInfoManager);
+            m_notificationWarningManager = WithId(ControllerNotification.WarningNotification, m_notificationWarningManager);
+            m_notificationErrorManager = WithId(ControllerNotification.ErrorNotification, m_notificationErrorManager);
+
             if (Modules == null)
             {
                 Modules = new Lyst<Module>();
@@ -188,8 +198,20 @@ namespace ProgramableNetwork
             }
         }
 
-        [DoNotSave(0, null)]
-        private readonly int SerializerVersion = 0;
+        private EntityNotificator WithId(EntityNotificationProto.ID newNotification, EntityNotificator notification)
+        {
+            if (!m_reninitNotification)
+            {
+                return Context.NotificationsManager.CreateNotificatorFor(newNotification);
+            }
+
+            PropertyInfo field = typeof(EntityNotificator).GetProperty("NotificationId");
+            object v = Context.NotificationsManager.CreateNotificatorFor(newNotification);
+            field.SetValue(v, notification.NotificationId);
+            return (EntityNotificator)v;
+        }
+
+        private static readonly int SerializerVersion = 1;
         protected override void SerializeData(BlobWriter writer)
         {
             base.SerializeData(writer);
@@ -201,6 +223,11 @@ namespace ProgramableNetwork
 
             writer.WriteInt(GeneralPriority);
             writer.WriteGeneric(m_maintenanceConsumer);
+
+            writer.WriteUInt(m_notificationInfoManager.NotificationId.Value);
+            writer.WriteUInt(m_notificationWarningManager.NotificationId.Value);
+            writer.WriteUInt(m_notificationErrorManager.NotificationId.Value);
+
             Lyst<Module>.Serialize(Modules, writer);
             Lyst<Lyst<ModulePlacement>>.Serialize(Rows, writer);
         }
@@ -218,6 +245,24 @@ namespace ProgramableNetwork
 
             GeneralPriority = reader.ReadInt();
             m_maintenanceConsumer = reader.ReadGenericAs<IEntityMaintenanceProvider>();
+
+            if (version >= 1)
+            {
+                m_reninitNotification = true;
+
+                object v = m_notificationInfoManager = new EntityNotificator();
+                typeof(EntityNotificator).GetProperty("NotificationId").SetValue(v, new NotificationId(reader.ReadUInt()));
+                m_notificationInfoManager = (EntityNotificator)v;
+
+                v = m_notificationWarningManager = new EntityNotificator();
+                typeof(EntityNotificator).GetProperty("NotificationId").SetValue(v, new NotificationId(reader.ReadUInt()));
+                m_notificationWarningManager = (EntityNotificator)v;
+
+                v = m_notificationErrorManager = new EntityNotificator();
+                typeof(EntityNotificator).GetProperty("NotificationId").SetValue(v, new NotificationId(reader.ReadUInt()));
+                m_notificationErrorManager = (EntityNotificator)v;
+            }
+
             Modules = Lyst<Module>.Deserialize(reader);
             Rows = Lyst<Lyst<ModulePlacement>>.Deserialize(reader);
 
@@ -254,8 +299,14 @@ namespace ProgramableNetwork
         [DoNotSave(0, null)]
         public Option<IComputingConsumerReadonly> ComputingConsumer => ((IComputingConsumerReadonly)m_computingConsumer).SomeOption();
 
-        [DoNotSave(0, null)] 
+        [DoNotSave(0, null)]
         private IComputingConsumer m_computingConsumer;
+        [DoNotSave(0, null)]
+        private EntityNotificator m_notificationInfoManager;
+        [DoNotSave(0, null)]
+        private EntityNotificator m_notificationErrorManager;
+        [DoNotSave(0, null)]
+        private EntityNotificator m_notificationWarningManager;
 
         public MaintenanceCosts MaintenanceCosts { get; private set; }
 
@@ -263,6 +314,9 @@ namespace ProgramableNetwork
         public IEntityMaintenanceProvider Maintenance => m_maintenanceConsumer;
         [DoNotSave(0, null)]
         private IEntityMaintenanceProvider m_maintenanceConsumer;
+        [DoNotSave(0, null)]
+        private bool m_reninitNotification;
+
         [DoNotSave(0, null)]
         public bool IsIdleForMaintenance => m_maintenanceConsumer.Status.IsBroken;
 
@@ -349,6 +403,9 @@ namespace ProgramableNetwork
             }
 
             // Execute all modules
+            bool anyError = false;
+            bool anyWarning = false;
+            bool anyInfo = false;
             foreach (Module module in Modules)
             {
                 try
@@ -357,8 +414,36 @@ namespace ProgramableNetwork
                 }
                 catch (Exception)
                 {
+                    anyError = true;
                     // ignore exception
                 }
+                anyInfo = anyInfo || module.Info;
+                anyWarning = anyWarning || module.Warning;
+                anyError = anyError || module.Status == ModuleStatus.Error;
+            }
+            if (anyError)
+            {
+                m_notificationErrorManager.Activate(this);
+                m_notificationWarningManager.Deactivate(this);
+                m_notificationInfoManager.Deactivate(this);
+            }
+            else if (anyWarning)
+            {
+                m_notificationErrorManager.Deactivate(this);
+                m_notificationWarningManager.Activate(this);
+                m_notificationInfoManager.Deactivate(this);
+            }
+            else if (anyInfo)
+            {
+                m_notificationErrorManager.Deactivate(this);
+                m_notificationWarningManager.Deactivate(this);
+                m_notificationInfoManager.Activate(this);
+            }
+            else
+            {
+                m_notificationErrorManager.Deactivate(this);
+                m_notificationWarningManager.Deactivate(this);
+                m_notificationInfoManager.Deactivate(this);
             }
         }
 

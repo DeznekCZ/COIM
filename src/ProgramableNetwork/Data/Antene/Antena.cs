@@ -130,8 +130,7 @@ namespace ProgramableNetwork
             }
         }
 
-        [DoNotSave(0, null)]
-        private readonly int SerializerVersion = 0;
+        private static readonly int SerializerVersion = 0;
         protected override void SerializeData(BlobWriter writer)
         {
             base.SerializeData(writer);

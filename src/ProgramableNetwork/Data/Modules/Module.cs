@@ -388,6 +388,16 @@ namespace ProgramableNetwork
 
         public bool IsDebugging { get; set; } = false;
 
+        public bool Info {
+            get => NumberData.TryGetValue("__info", out int value) && value > 0;
+            set => NumberData["__info"] = value ? 1 : 0;
+        }
+
+        public bool Warning {
+            get => NumberData.TryGetValue("__warning", out int value) && value > 0;
+            set => NumberData["__warning"] = value ? 1 : 0;
+        }
+
         public class StatusData
         {
             private readonly Module module;

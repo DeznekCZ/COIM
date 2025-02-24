@@ -40,6 +40,10 @@ class Module:
         self.Status = ModuleStatus.Init
         # defines an Tooltip/Error info
         self.Error = ""
+        # set an display state to info
+        self.Info = False
+        # set an display state to warning
+        self.Warning = False
     
     def Tr(key: str, default: str) -> LocStr | LocStr1 | LocStrFormatted:
       """Creates and translation string for modules"""

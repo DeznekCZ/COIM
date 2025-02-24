@@ -15,6 +15,10 @@ namespace ProgramableNetwork.Python
             char b = value.value[0];
             v = v.Substring(1, v.Length - 2);
             v = v.Replace($"\\{b}", b.ToString());
+            v = v.Replace($"\\n", "\n");
+            v = v.Replace($"\\t", "\t");
+            v = v.Replace($"\\a", "\a");
+            v = v.Replace($"\\r", "\r");
             this.Value = v;
         }
 

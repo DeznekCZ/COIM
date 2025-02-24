@@ -128,6 +128,18 @@ namespace ProgramableNetwork.Python
             set => module.SetError(value);
         }
 
+        public bool Info
+        {
+            get => module.Info;
+            set => module.Info = value;
+        }
+
+        public bool Warning
+        {
+            get => module.Warning;
+            set => module.Warning = value;
+        }
+
         public Dict<string, int> NumberData => module.NumberData;
 
         public Dict<string, string> StringData => module.StringData;

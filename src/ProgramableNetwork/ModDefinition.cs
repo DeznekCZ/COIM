@@ -43,6 +43,7 @@ namespace ProgramableNetwork
 			registrator.RegisterData<PyModules>();
 			registrator.RegisterData<DataBands>();
 			registrator.RegisterData<Entities>();
+			registrator.RegisterData<ControllerNotification>();
 
 			// Registers all research from this assembly. See ExampleResearchData.cs for examples.
 			registrator.RegisterDataWithInterface<IResearchNodesData>();
