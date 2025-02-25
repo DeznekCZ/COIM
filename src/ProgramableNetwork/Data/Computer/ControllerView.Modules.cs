@@ -13,6 +13,7 @@ using Mafi;
 using Mafi.Core.Entities.Dynamic;
 using Mafi.Localization;
 using System;
+using ProtoID = Mafi.Core.Prototypes.Proto.ID;
 
 namespace ProgramableNetwork
 {
@@ -98,13 +99,12 @@ namespace ProgramableNetwork
                 item.Update();
         }
 
-        private void CreateNewDialog(int targetRow, int targetColumn)
+        private void CreateNewDialog(int targetRow, int targetColumn, bool templates)
         {
             CloseDialogs();
 
             m_targetRow = targetRow;
             m_targetColumn = targetColumn;
-            Action refresh = () => CreateNewDialog(targetRow, targetColumn);
 
             m_newDialog = Builder.NewStackContainer("dialogNew")
                 .SetItemSpacing(5)
@@ -112,39 +112,91 @@ namespace ProgramableNetwork
                 .SetSizeMode(StackContainer.SizeMode.Dynamic)
                 .SetWidth(400);
 
-            Builder.NewTxt("dialogNewPick")
-                .SetText(NewTr.Tools.Pick)
-                .SetParent(m_newDialog, true)
-                .SetHeight(20)
-                .AppendTo(m_newDialog);
+            if (templates)
+            {
+                // TODO add template browser in Update 3
 
-            Dropdwn catPicker = Builder.NewDropdown("dialogNewCatPicker")
-                .SetParent(m_newDialog, true)
-                .SetHeight(20)
-                .AppendTo(m_newDialog);
+                var protos = new (string id, string display, Action<Module> settings)[] {
+                    ("Constant", "[1]", (m) => m.Field["number"] = 1),
+                    ("Constant", "[100]", (m) => m.Field["number"] = 100),
+                    ("Display_Int_2", "[100|0]", (m) => m.Field["float"] = 1),
+                    ("Boolean_And", null, (m) => { }),
+                    ("Boolean_Or", null, (m) => { }),
+                    ("Compare_Int_Greater", null, (m) => { }),
+                    ("Connection_Storage", null, (m) => { }),
+                    ("Connection_Transport", "Cap 100%", (m) => m.Field["fullstack"] = 1),
+                };
 
-            FillCategoryPicker(catPicker, refresh);
-
-            Dropdwn typePicker = Builder.NewDropdown("dialogNewTypePicker")
-                .SetParent(m_newDialog, true)
-                .SetHeight(20)
-                .AppendTo(m_newDialog);
-
-            FillModulePicker(typePicker, m_category, refresh);
-
-            Builder.NewBtnGeneral("dialogNewCreate")
-                .SetText(NewTr.Tools.Add)
-                .SetParent(m_newDialog, true)
-                .SetHeight(20)
-                .SetEnabled(m_newModule != null)
-                .OnClick(() =>
+                Builder.NewTxt("dialogNewTemplates")
+                    .SetText(NewTr.Tools.Templates)
+                    .SetParent(m_newDialog, true)
+                    .SetHeight(20)
+                    .AppendTo(m_newDialog);
+                foreach (var item in protos)
                 {
-                    if (TryPlaceAt(m_newModule, m_targetRow, m_targetColumn))
+                    Option<ModuleProto> proto = m_controller.Context.ProtosDb.Get<ModuleProto>(new ProtoID(item.id.ModuleId())).Value;
+                    if (!proto.HasValue)
+                        continue; // skip missing templates
+
+                    string text = proto.Value.Strings.Name.TranslatedString;
+                    if (item.display != null)
+                        text += ": " + item.display;
+
+                    Builder.NewBtnGeneral($"dialogNewCreateTemplate_{item.id}")
+                        .SetText(text)
+                        .SetParent(m_newDialog, true)
+                        .SetHeight(20)
+                        .SetEnabled(m_newModule != null)
+                        .OnClick(() =>
+                        {
+                            if (TryPlaceAt(proto.Value, m_targetRow, m_targetColumn))
+                            {
+                                item.settings(m_editModule);
+                                CreateEditDialog(m_editModule);
+                            }
+                        })
+                        .AppendTo(m_newDialog);
+                }
+            }
+            else
+            {
+                Action refresh = () => CreateNewDialog(targetRow, targetColumn, templates);
+
+                Builder.NewTxt("dialogNewPick")
+                    .SetText(NewTr.Tools.Pick)
+                    .SetParent(m_newDialog, true)
+                    .SetHeight(20)
+                    .AppendTo(m_newDialog);
+
+                Dropdwn catPicker = Builder.NewDropdown("dialogNewCatPicker")
+                    .SetParent(m_newDialog, true)
+                    .SetHeight(20)
+                    .AppendTo(m_newDialog);
+
+                FillCategoryPicker(catPicker, refresh);
+
+                Dropdwn typePicker = Builder.NewDropdown("dialogNewTypePicker")
+                    .SetParent(m_newDialog, true)
+                    .SetHeight(20)
+                    .AppendTo(m_newDialog);
+
+                FillModulePicker(typePicker, m_category, refresh);
+
+                Builder.NewBtnGeneral("dialogNewCreate")
+                    .SetText(NewTr.Tools.Add)
+                    .SetParent(m_newDialog, true)
+                    .SetHeight(20)
+                    .SetEnabled(m_newModule != null)
+                    .OnClick(() =>
                     {
-                        CreateEditDialog(m_editModule);
-                    }
-                })
-                .AppendTo(m_newDialog);
+                        if (TryPlaceAt(m_newModule, m_targetRow, m_targetColumn))
+                        {
+                            CreateEditDialog(m_editModule);
+                        }
+                    })
+                    .AppendTo(m_newDialog);
+
+            }
 
             m_newDialog.AppendTo(m_moduleDialog);
             m_newDialog.SetParent(m_moduleDialog, true);
@@ -320,17 +372,36 @@ namespace ProgramableNetwork
 
         private void AddFreeSlot(StackContainer rowElement, int targetRow, int targetColumn, bool selected)
         {
-            var toggle = Builder.NewBtnGeneral($"addModule_{targetRow}_{targetColumn}")
+            var stack = Builder.NewStackContainer($"addModule_{targetRow}_{targetColumn}_layout")
+                .SetStackingDirection(StackContainer.Direction.TopToBottom)
                 .SetSize(20, 80)
                 .SetParent(rowElement, true)
-                .SetText("+")
                 .AppendTo(rowElement);
+
+            var toggle = Builder.NewBtnGeneral($"addModule_{targetRow}_{targetColumn}_new")
+                .SetSize(20, 60)
+                .SetParent(stack, true)
+                .SetText("+")
+                .AppendTo(stack);
 
             if (selected)
                 toggle.SetButtonStyle(Builder.Style.Global.GeneralBtnActive);
 
             toggle.OnClick(() => {
-                CreateNewDialog(targetRow, targetColumn);
+                CreateNewDialog(targetRow, targetColumn, templates: false);
+            });
+
+            var toggleT = Builder.NewBtnGeneral($"addModule_{targetRow}_{targetColumn}_template")
+                .SetSize(20, 20)
+                .SetParent(stack, true)
+                .SetText("T")
+                .AppendTo(stack);
+
+            if (selected)
+                toggleT.SetButtonStyle(Builder.Style.Global.GeneralBtnActive);
+
+            toggleT.OnClick(() => {
+                CreateNewDialog(targetRow, targetColumn, templates: true);
             });
         }
 

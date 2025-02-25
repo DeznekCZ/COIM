@@ -99,6 +99,8 @@ namespace ProgramableNetwork
                 "Down", "");
             public static readonly LocStr Pick = Loc.Str("ProgramableNetwork_Tool_Pick",
                 "Pick", "");
+            public static readonly LocStr Templates = Loc.Str("ProgramableNetwork_Tool_Templates",
+                "Templates", "");
             public static readonly LocStr Apply = Loc.Str("ProgramableNetwork_Tool_Apply",
                 "Apply", "");
             public static readonly LocStr Edit = Loc.Str("ProgramableNetwork_Tool_Edit",
