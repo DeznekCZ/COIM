@@ -113,8 +113,8 @@ namespace ProgramableNetwork
             Log.Info($"Initialize context after load");
 
             Prototype = Context.ProtosDb.Get<AntenaProto>(m_protoId).ValueOrThrow("Invalid antene proto: " + m_protoId);
-            m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
-            m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
+            m_electricConsumer = m_electricConsumer ?? Context.ElectricityConsumerFactory.CreateConsumer(this);
+            m_computingConsumer = m_computingConsumer ?? Context.ComputingConsumerFactory.CreateConsumer(this);
 
             if (DataBand == null)
             {
@@ -130,7 +130,7 @@ namespace ProgramableNetwork
             }
         }
 
-        private static readonly int SerializerVersion = 0;
+        private static readonly int SerializerVersion = 1;
         protected override void SerializeData(BlobWriter writer)
         {
             base.SerializeData(writer);
@@ -142,6 +142,8 @@ namespace ProgramableNetwork
 
             writer.WriteInt(GeneralPriority);
             writer.WriteGeneric(m_maintenanceConsumer);
+            writer.WriteGeneric(m_electricConsumer);
+            writer.WriteGeneric(m_computingConsumer);
 
             DataBand.Serialize(writer);
         }
@@ -157,6 +159,12 @@ namespace ProgramableNetwork
 
             GeneralPriority = reader.ReadInt();
             m_maintenanceConsumer = reader.ReadGenericAs<IEntityMaintenanceProvider>();
+
+            if (version >= 1)
+            {
+                m_electricConsumer = reader.ReadGenericAs<IElectricityConsumer>();
+                m_computingConsumer = reader.ReadGenericAs<IComputingConsumer>();
+            }
 
             DataBand = reader.ReadDataBand();
 
