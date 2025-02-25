@@ -155,8 +155,8 @@ namespace ProgramableNetwork
             Log.Info($"Initialize context after load");
 
             Prototype = Context.ProtosDb.Get<ControllerProto>(m_protoId).ValueOrThrow("Invalid controller proto: " + m_protoId);
-            m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
-            m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
+            m_electricConsumer = m_electricConsumer ?? Context.ElectricityConsumerFactory.CreateConsumer(this);
+            m_computingConsumer = m_computingConsumer ?? Context.ComputingConsumerFactory.CreateConsumer(this);
 
             m_notificationInfoManager = WithId(ControllerNotification.InfoNotification, m_notificationInfoManager);
             m_notificationWarningManager = WithId(ControllerNotification.WarningNotification, m_notificationWarningManager);
@@ -223,6 +223,8 @@ namespace ProgramableNetwork
 
             writer.WriteInt(GeneralPriority);
             writer.WriteGeneric(m_maintenanceConsumer);
+            writer.WriteGeneric(m_electricConsumer);
+            writer.WriteGeneric(m_computingConsumer);
 
             writer.WriteUInt(m_notificationInfoManager.NotificationId.Value);
             writer.WriteUInt(m_notificationWarningManager.NotificationId.Value);
@@ -248,6 +250,9 @@ namespace ProgramableNetwork
 
             if (version >= 1)
             {
+                m_electricConsumer = reader.ReadGenericAs<IElectricityConsumer>();
+                m_computingConsumer = reader.ReadGenericAs<IComputingConsumer>();
+
                 m_reninitNotification = true;
 
                 object v = m_notificationInfoManager = new EntityNotificator();
