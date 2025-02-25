@@ -25,7 +25,7 @@ namespace ProgramableNetwork.Data.Mod
                 .Description("Controller requires action")
                 .SetType(NotificationType.Continuous)
                 .SetStyle(NotificationStyle.Success)
-                .AddEntityIcon(EntityIcons.Broken_png, ColorRgba.White)
+                .AddEntityIcon(EntityIcons.Broken_png, ColorRgba.Green)
                 .AddIcon(EntityIcons.Broken_png)
                 .BuildAndAdd();
 
@@ -34,7 +34,7 @@ namespace ProgramableNetwork.Data.Mod
                 .Description("Controller may require action or has minor issue")
                 .SetType(NotificationType.Continuous)
                 .SetStyle(NotificationStyle.Warning)
-                .AddEntityIcon(EntityIcons.Broken_png, ColorRgba.Yellow)
+                .AddEntityIcon(EntityIcons.Broken_png, ColorRgba.Orange)
                 .AddIcon(EntityIcons.Broken_png)
                 .BuildAndAdd();
 
