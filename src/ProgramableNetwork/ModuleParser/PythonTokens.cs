@@ -60,6 +60,7 @@
         comment,
         semicolon,
         returnp,
+        pass,
         eof
     }
 }

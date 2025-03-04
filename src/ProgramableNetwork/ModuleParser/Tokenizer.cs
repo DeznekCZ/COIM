@@ -17,7 +17,7 @@ namespace ProgramableNetwork.Python
         //lang=regex
         private const string data = @"(?<str>""[^""]*""|'[^']*')|(?<number>\d+(?:.\d+)?)|(?<name>[a-zA-Z_]\w*)";
         //lang=regex
-        private const string keywordsList = @"^(?:(?<none>None)|(?<btrue>True)|(?<bfalse>False)|(?<and>and)|(?<or>or)|(?<ink>in)|(?<from>from)|(?<import>import)|(?<def>def)|(?<classp>class)|(?<ifp>if)|(?<elif>elif)|(?<elsep>else)|(?<returnp>return))$";
+        private const string keywordsList = @"^(?:(?<none>None)|(?<btrue>True)|(?<bfalse>False)|(?<and>and)|(?<or>or)|(?<ink>in)|(?<from>from)|(?<import>import)|(?<def>def)|(?<classp>class)|(?<ifp>if)|(?<elif>elif)|(?<elsep>else)|(?<returnp>return)|(?<pass>pass))$";
         //lang=regex
         private const string indentation = @"(?<block>:)|(?<space>[\t ]+)|(?<comment>#[^\n]+)|(?<rest>.)";
 

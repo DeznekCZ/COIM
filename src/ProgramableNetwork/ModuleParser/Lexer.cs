@@ -102,6 +102,7 @@ namespace ProgramableNetwork.Python
 
                     case PythonTokens.comment:
                     case PythonTokens.semicolon:
+                    case PythonTokens.pass:
                         break;
 
                     case PythonTokens.undefined:
