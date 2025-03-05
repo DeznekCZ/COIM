@@ -3,6 +3,7 @@ using Mafi.Base;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities.Static;
+using Mafi.Core.Factory.NuclearReactors;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
@@ -609,6 +610,31 @@ namespace ProgramableNetwork
 
                     m.Output["pop_this"] = 0;
                     m.Output["pop_nearby"] = 0;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_NuclearReactor", "Connection: Nuclear Reactor", "NR", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddInput("target", "Target power level")
+                .AddOutput("heat", "Stored Heat")
+                .AddOutput("meltdown", "Is in melt down")
+                .AddOutput("power", "Actual power")
+                .Width(4)
+                .AddEntityField<NuclearReactor>("reactor", "Connection reactor", 2.ToFix32())
+                .Action(m => {
+                    var reactor = m.Field.Entity<NuclearReactor>("reactor");
+
+                    m.Output["heat"] = reactor.HeatAmount.ToFix32();
+                    m.Output["meltdown"] = reactor.IsInMeltdown ? 1.ToFix32() : 2.ToFix32();
+                    m.Output["power"] = reactor.CurrentPowerLevel.ToFix32();
+
+                    Percent target = m.Input["target", Fix32.Zero].ToPercent();
+                    if (!reactor.IsInMeltdown && reactor.TargetPowerLevel != target)
+                    {
+                        reactor.SetTargetPowerLevel(target);
+                    }
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();

@@ -17,6 +17,7 @@
         IEntityWithWorkers,
         IElectricityConsumingEntity,
         IUnityConsumingEntity,
-        ThermalStorage
+        ThermalStorage,
+        NuclearReactor
     }
 }

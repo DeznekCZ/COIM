@@ -10,6 +10,7 @@ using System.Linq;
 using Mafi.Core.Population;
 using Mafi.Core.Factory.ElectricPower;
 using Mafi.Base.Prototypes.Buildings.ThermalStorages;
+using Mafi.Core.Factory.NuclearReactors;
 
 namespace ProgramableNetwork.Python
 {
@@ -54,6 +55,7 @@ namespace ProgramableNetwork.Python
                         case EntityType.IEntityWithWorkers: return (argument.value, typeof(IEntityWithWorkers));
                         case EntityType.IElectricityConsumingEntity: return (argument.value, typeof(IElectricityConsumingEntity));
                         case EntityType.IUnityConsumingEntity: return (argument.value, typeof(IUnityConsumingEntity));
+                        case EntityType.NuclearReactor: return (argument.value, typeof(NuclearReactor));
 
                         default:
                             throw new NotImplementedException($"Entity type '{entityType}' is not implemented");

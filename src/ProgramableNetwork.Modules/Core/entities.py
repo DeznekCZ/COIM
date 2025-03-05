@@ -55,6 +55,8 @@ class StaticEntity(Entity):
     """Represents: Mafi.Core.Entities.Static.StaticEntity"""
     pass
 
+class IComputingConsumingEntity(Entity): pass
+
 class StorageBase(StaticEntity): pass
 class Controller(StaticEntity): pass
 class Antena(StaticEntity): pass
@@ -63,10 +65,12 @@ class SettlementFoodModule(StaticEntity): pass
 class SettlementTransformer(StaticEntity): pass
 class SettlementWasteModule(StaticEntity): pass
 class SettlementServiceModule(StaticEntity): pass
-class Machine(StaticEntity): pass
-class ThermalStorage(StaticEntity):
+class Machine(StaticEntity, IEntityWithWorkers, IElectricityConsumingEntity, IComputingConsumingEntity): pass
+
+class ThermalStorage(StaticEntity, IEntityWithWorkers, IElectricityConsumingEntity):
     """Represents: Mafi.Base.Prototypes.Buildings.ThermalStorages.ThermalStorage"""
     pass
-class IEntityWithWorkers(Entity): pass
-class IElectricityConsumingEntity(Entity): pass
-class IUnityConsumingEntity(Entity): pass
+
+class NuclearReactor(StaticEntity, IEntityWithWorkers, IComputingConsumingEntity):
+    """Represent: Mafi.Core.Factory.NuclearReactors.NuclearReactor"""
+    pass
