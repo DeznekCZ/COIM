@@ -705,8 +705,8 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Control)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
-                .AddOutput("a", "A")
-                .AddOutput("b", "B")
+                .AddOutput("b", "Low")
+                .AddOutput("a", "High")
                 .Action(m => {
                     Fix32 a = m.Input["a", 0];
                     Fix32 b = m.Input["b", 0];
