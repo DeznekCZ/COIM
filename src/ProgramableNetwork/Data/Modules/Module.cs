@@ -2,11 +2,10 @@
 using Mafi.Collections;
 using Mafi.Core;
 using Mafi.Core.Entities;
+using Mafi.Core.Products;
 using Mafi.Localization;
 using Mafi.Serialization;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace ProgramableNetwork
@@ -329,6 +328,39 @@ namespace ProgramableNetwork
                 module.NumberData.TryGetValue("field__" + name, out int data);
                 module.Context.EntitiesManager.TryGetEntity(new EntityId(data), out T entity);
                 return entity;
+            }
+
+            public ProductProto Product(string name)
+            {
+                module.NumberData.TryGetValue("field__" + name, out int slimId);
+
+                if (slimId == 0)
+                {
+                    return null;
+                }
+
+                module.StringData.TryGetValue("field__" + name, out string cache);
+                if (!string.IsNullOrEmpty(cache))
+                { // try get entity by name and check slimId
+                    Option<ProductProto> product = module.Context.ProtosDb.Get<ProductProto>(new Mafi.Core.Prototypes.Proto.ID(cache));
+                    if (product.HasValue && product.Value.SlimId.Value == slimId)
+                    {
+                        return product.Value;
+                    }
+                }
+                // else
+                { // try get entity by slimId
+                    Option<ProductProto> product = module.Context.ProtosDb.First<ProductProto>(p => p.SlimId.Value == slimId);
+                    if (product.HasValue && product.Value.SlimId.Value == slimId)
+                    {
+                        module.StringData["field__" + name] = product.Value.Id.Value;
+                        return product.Value;
+                    }
+                }
+
+                module.NumberData.TryRemove("field__" + name, out slimId);
+                module.StringData.TryRemove("field__" + name, out cache);
+                return null;
             }
 
             public Fix32 this[string name]
