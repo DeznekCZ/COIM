@@ -58,6 +58,9 @@ namespace ProgramableNetwork
             return categories;
         }
 
+        public static bool operator ==(Category a, Category b) => a?.Id == b?.Id;
+        public static bool operator !=(Category a, Category b) => a?.Id != b?.Id;
+
         //// known types
         public static Category Display { get; } = new Category(id: "display", name: "Display modules");
         public static Category Connection { get; } = new Category(id: "connection", name: "Connection modules");
