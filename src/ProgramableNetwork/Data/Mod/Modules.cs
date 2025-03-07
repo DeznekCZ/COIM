@@ -725,18 +725,18 @@ namespace ProgramableNetwork
                         else
                         {
                             m.SetError("Invalid crop");
-                            farm.AssignCropToSlot(Option.None, nextSlot);
+                            farm.AssignCropToSlot(m.Context.ProtosDb.Get<CropProto>(Ids.Crops.NoCrop), nextSlot);
                             return ModuleStatus.Error;
                         }
                     }
-                    else if (m.Input["crop", Fix32.Zero] == 0 && m.Input["fertilizing", Fix32.Zero] > Fix32.Zero)
+                    else if (m.Input["crop", Fix32.Zero] == 0 && m.Input["fertilize", Fix32.Zero] > Fix32.Zero)
                     {
                         farm.AssignCropToSlot(m.Context.ProtosDb.Get<CropProto>(Ids.Crops.GreenManure), nextSlot);
                         return ModuleStatus.Running;
                     }
                     else
                     {
-                        farm.AssignCropToSlot(Option.None, nextSlot);
+                        farm.AssignCropToSlot(m.Context.ProtosDb.Get<CropProto>(Ids.Crops.NoCrop), nextSlot);
                         return ModuleStatus.Running;
                     }
                 })
