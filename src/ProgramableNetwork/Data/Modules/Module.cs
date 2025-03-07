@@ -80,8 +80,11 @@ namespace ProgramableNetwork
         {
             try
             {
-                Error = "";
                 Status = Prototype.Action(this);
+                if (Status != ModuleStatus.Error)
+                {
+                    Error = "";
+                }
             }
             catch (System.Exception e)
             {
