@@ -1,5 +1,6 @@
 ﻿using Mafi;
 using Mafi.Base;
+using Mafi.Core.Buildings.Farms;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities.Static;
@@ -669,6 +670,74 @@ namespace ProgramableNetwork
                     if (!reactor.IsInMeltdown && reactor.TargetPowerLevel != target)
                     {
                         reactor.SetTargetPowerLevel(target);
+                    }
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Farm", "Connection: Farm", "FARM", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddInput("crop", "Next growing crop")
+                .AddInput("fertility", "Target fertility (default: 100)")
+                .AddInput("fertilize", "Assign nature fertilizing (0/1)")
+                .AddOutput("crop", "Actual growing crop")
+                .AddOutput("water", "Actual water level (including tank)")
+                .AddOutput("fertility", "Actual fertility")
+                .AddOutput("fertilizer", "Actual fertilizer level")
+                .Width(4)
+                .AddEntityField<Farm>("farm", "Managed farm", "Farm placed next to controller (2 metres)", 2.ToFix32())
+                .Action(m => {
+                    var farm = m.Field.Entity<Farm>("farm");
+                    if (farm is null)
+                    {
+                        m.SetError("Farm is not set");
+                        return ModuleStatus.Error;
+                    }
+
+                    if (farm.CurrentCrop.ValueOrNull is null || farm.CurrentCrop.Value.ProductProduced.IsEmpty)
+                        m.Output["crop"] = Fix32.Zero;
+                    else
+                        m.Output["crop"] = Fix32.FromRaw(farm.CurrentCrop.Value.Prototype.ProductProduced.Product.SlimId.Value);
+                    m.Output["water"] = farm.ImportedWaterBuffer.Quantity.Value.ToFix32() + farm.SoilWaterBuffer.Quantity.Value.ToFix32();
+                    m.Output["fertility"] = farm.Fertility.ToFix32() * 100;
+                    if (farm.StoredFertilizerCapacity.Value > 0)
+                        m.Output["fertilizer"] = (100f * farm.StoredFertilizerCount.Value / farm.StoredFertilizerCapacity.Value).ToFix32();
+                    else
+                        m.Output["fertilizer"] = Fix32.Zero;
+
+                    farm.SetFertilityTarget((m.Input["fertility", Fix32.One * 100] / 100).ToPercent());
+
+                    int nextSlot = (farm.ActiveScheduleIndex + 1) % 4;
+                    if (m.Input["crop", Fix32.Zero] > Fix32.Zero)
+                    { // try get crop type by output product
+                        int slimId = m.Input["crop", Fix32.Zero].RawValue;
+                        CropProto foundCrop = m.Context.ProtosDb
+                            .Filter<CropProto>(crop => crop.ProductProduced.Product.SlimId.Value == slimId)
+                            .FirstOrDefault();
+
+                        if (foundCrop != null)
+                        {
+                            m.SetError("");
+                            farm.AssignCropToSlot(foundCrop.CreateOption(), nextSlot);
+                            return ModuleStatus.Running;
+                        }
+                        else
+                        {
+                            m.SetError("Invalid crop");
+                            farm.AssignCropToSlot(Option.None, nextSlot);
+                            return ModuleStatus.Error;
+                        }
+                    }
+                    else if (m.Input["crop", Fix32.Zero] == 0 && m.Input["fertilizing", Fix32.Zero] > Fix32.Zero)
+                    {
+                        farm.AssignCropToSlot(m.Context.ProtosDb.Get<CropProto>(Ids.Crops.GreenManure), nextSlot);
+                        return ModuleStatus.Running;
+                    }
+                    else
+                    {
+                        farm.AssignCropToSlot(Option.None, nextSlot);
+                        return ModuleStatus.Running;
                     }
                 })
                 .AddControllerDevice()
