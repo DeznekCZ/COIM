@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Base;
 using Mafi.Core.Buildings.Farms;
+using Mafi.Core.Buildings.Offices;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities.Static;
@@ -243,10 +244,14 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart("Stats_Unity", "Statistic: Unity", "UNI", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Stats)
                 .AddOutput("v", "Unity value")
-                // ADD behind settings
+                .AddEntityField<CaptainOffice>("office", "Captains office", "Must be placest next to Captains office", 2.ToFix32())
                 .Action(m =>
                 {
+                    if (m.Field.Entity<CaptainOffice>("office") is null)
+                        return ModuleStatus.Error;
+
                     m.Output["v"] = Fix32.FromRaw(m.Context.UpointsManager.Quantity.Value);
+                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -258,13 +263,17 @@ namespace ProgramableNetwork
                 .AddOutput("a", "Available workers")
                 .AddOutput("m", "Missing workers")
                 .AddOutput("t", "Total workers")
-                // ADD behind settings
+                .AddEntityField<CaptainOffice>("office", "Captains office", "Must be placest next to Captains office", 2.ToFix32())
                 .Action(m =>
                 {
+                    if (m.Field.Entity<CaptainOffice>("office") is null)
+                        return ModuleStatus.Error;
+
                     m.Output["a"] = Math.Max(0, m.Context.WorkersManager.AmountOfFreeWorkersOrMissing);
                     m.Output["t"] = (int)(m.Context.WorkersManager as WorkersManager).TotalWorkersNeededStats.ThisYear + m.Output["a"];
                     m.Output["m"] = 0-Math.Min(0, m.Context.WorkersManager.AmountOfFreeWorkersOrMissing);
                     m.Output["u"] = m.Output["t", 0] - m.Output["a", 0];
+                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
