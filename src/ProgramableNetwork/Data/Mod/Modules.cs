@@ -426,7 +426,7 @@ namespace ProgramableNetwork
                     builder.AddInput(names[j], names[j].ToUpper());
 
                 for (int j = 0; j < i - 2; j++)
-                    builder.AddInt32Field(names[j], names[j].ToUpper() + ": Index ≤", j);
+                    builder.AddInt32Field(names[j], names[j].ToUpper() + ": Index ≤", defaultValue: j);
 
                 builder.AddInput("else", "Else");
                 builder.BuildAndAdd();

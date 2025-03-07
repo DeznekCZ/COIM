@@ -458,49 +458,31 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddBooleanField(string id, string name, bool defaultValue = false)
-            {
-                m_fields.Add(new BooleanField(id, name, null, defaultValue));
-                return this;
-            }
-
-            public Builder AddBooleanField(string id, string name, string shortDesc, bool defaultValue = false)
+            public Builder AddBooleanField(string id, string name, string shortDesc = "", bool defaultValue = false)
             {
                 m_fields.Add(new BooleanField(id, name, shortDesc, defaultValue));
                 return this;
             }
 
-            public Builder AddInt32Field(string id, string name, int defaultValue = 0)
-            {
-                m_fields.Add(new NumberField<int>(id, name, null, defaultValue));
-                return this;
-            }
-
-            public Builder AddInt32Field(string id, string name, string shortDesc, int defaultValue = 0)
+            public Builder AddInt32Field(string id, string name, string shortDesc = "", int defaultValue = 0)
             {
                 m_fields.Add(new NumberField<int>(id, name, shortDesc, defaultValue));
                 return this;
             }
 
-            public Builder AddInt64Field(string id, string name, long defaultValue = 0)
-            {
-                m_fields.Add(new NumberField<long>(id, name, null, defaultValue));
-                return this;
-            }
-
-            public Builder AddInt64Field(string id, string name, string shortDesc, long defaultValue = 0)
+            public Builder AddInt64Field(string id, string name, string shortDesc = "", long defaultValue = 0)
             {
                 m_fields.Add(new NumberField<long>(id, name, shortDesc, defaultValue));
                 return this;
             }
 
-            public Builder AddStringField(string id, string name, string defaultValue = "")
+            public Builder AddFix32Field(string id, string name, string shortDesc = "", Fix32? defaultValue = null)
             {
-                m_fields.Add(new StringField(id, name, null, defaultValue));
+                m_fields.Add(new NumberField<Fix32>(id, name, shortDesc, defaultValue ?? Fix32.Zero));
                 return this;
             }
 
-            public Builder AddStringField(string id, string name, string shortDesc, string defaultValue = "")
+            public Builder AddStringField(string id, string name, string shortDesc = "", string defaultValue = "")
             {
                 m_fields.Add(new StringField(id, name, shortDesc, defaultValue));
                 return this;
@@ -516,6 +498,13 @@ namespace ProgramableNetwork
                 where T : IEntity
             {
                 m_fields.Add(new EntityField(id, name, null, (module, entity) => entity is T, distance ?? 5.ToFix32()));
+                return this;
+            }
+
+            public Builder AddEntityField<T>(string id, string name, string shortDesc, Fix32? distance = null)
+                where T : IEntity
+            {
+                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T, distance ?? 5.ToFix32()));
                 return this;
             }
 
@@ -535,6 +524,12 @@ namespace ProgramableNetwork
             public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
             {
                 m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity.GetType().IsAssignableTo(t) && (filter?.Invoke(module, entity) ?? true), distance ?? 5.ToFix32()));
+                return this;
+            }
+
+            public Builder AddProductField(string id, string name, string shortDesc = null, Func<Module, ProductProto, bool> filter = null)
+            {
+                m_fields.Add(new ProductField(id, name, shortDesc ?? "", filter ?? ((m, proto) => true)));
                 return this;
             }
 

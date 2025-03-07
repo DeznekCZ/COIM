@@ -34,7 +34,7 @@ namespace ProgramableNetwork
         public Action Refresh { get; private set; }
         public Reference Reference { get; private set; }
 
-        public void Init(ControllerInspector inspector, WindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
         {
             Inspector = inspector;
             Builder = uiBuilder;

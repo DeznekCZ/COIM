@@ -11,6 +11,6 @@ namespace ProgramableNetwork
         int Size { get; }
 
         void Validate(Module module);
-        void Init(ControllerInspector inspector, WindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, System.Action updateDialog);
+        void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, System.Action updateDialog);
     }
 }

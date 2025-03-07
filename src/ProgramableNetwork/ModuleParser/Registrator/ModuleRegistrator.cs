@@ -70,19 +70,19 @@ namespace ProgramableNetwork.Python
 
                 if (variable is ModuleInt32FieldProtoDefinition int32Field)
                 {
-                    builder.AddInt32Field(int32Field.id, int32Field.name, int32Field.defaultValue);
+                    builder.AddInt32Field(int32Field.id, int32Field.name, int32Field.desc, int32Field.defaultValue);
                     continue;
                 }
 
                 if (variable is ModuleInt64FieldProtoDefinition int64Field)
                 {
-                    builder.AddInt64Field(int64Field.id, int64Field.name, int64Field.defaultValue);
+                    builder.AddInt64Field(int64Field.id, int64Field.name, int64Field.desc, int64Field.defaultValue);
                     continue;
                 }
 
                 if (variable is ModuleStringFieldProtoDefinition stringField)
                 {
-                    builder.AddStringField(stringField.id, stringField.name, stringField.defaultValue);
+                    builder.AddStringField(stringField.id, stringField.name, stringField.desc, stringField.defaultValue);
                     continue;
                 }
             }
