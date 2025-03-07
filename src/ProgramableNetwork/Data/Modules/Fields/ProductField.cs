@@ -42,7 +42,6 @@ namespace ProgramableNetwork
                 .AppendTo(fieldContainer);
 
             ProductTab productTab = new ProductTab(uiBuilder, module, Id, filter, updateDialog, parentWindow, inspector.Context);
-            productTab.SetSize(40, 40);
             productTab.AppendTo(fieldContainer);
         }
 

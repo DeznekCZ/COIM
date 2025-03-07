@@ -7,11 +7,10 @@ using Mafi.Core.Factory.NuclearReactors;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
+using Mafi.Core.Products;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UserInterface.Components;
-using ProgramableNetwork.Python;
 using System;
-using System.IO;
 using System.Linq;
 
 namespace ProgramableNetwork
@@ -23,11 +22,47 @@ namespace ProgramableNetwork
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
             registrator
-                .ModuleBuilderStart("Constant", "Constant", "#", Assets.Base.Products.Icons.Vegetables_svg)
+                .ModuleBuilderStart("Constant", "Constant (integer)", "#I", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Arithmetic)
                 .AddOutput("value", "Value")
                 .AddInt32Field("number", "Number")
                 .Action(m => { m.Output["value"] = m.Field["number", 0]; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Constant_Product", "Constant (product)", "#P", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddOutput("value", "Value")
+                .AddProductField("product", "Product")
+                .Action(m => { m.Output["value"] = m.Field["product", 0]; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Constant_Crop", "Constant (crop)", "#C", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddOutput("value", "Value")
+                .AddProductField("crop", "Crop", filter: FarmProductFilter)
+                .Action(m => { m.Output["value"] = m.Field["crop", 0]; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Constant_Boolean", "Constant (boolean)", "#B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddOutput("value", "Value")
+                .AddBooleanField("boolean", "Boolean")
+                .Action(m => { m.Output["value"] = m.Field["boolean", 0]; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Constant_Float", "Constant (float)", "#F", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddOutput("value", "Value")
+                .AddFix32Field("float", "Float")
+                .Action(m => { m.Output["value"] = m.Field["float", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -638,6 +673,11 @@ namespace ProgramableNetwork
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
+        }
+
+        private static bool FarmProductFilter(Module m, ProductProto product)
+        {
+            return m.Context.ProtosDb.First<CropProto>(crop => !crop.IsEmptyCrop && crop.ProductProduced.Product.SlimId == product.SlimId).HasValue;
         }
 
         private void Comparation(ProtoRegistrator registrator)

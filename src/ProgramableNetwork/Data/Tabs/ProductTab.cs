@@ -22,6 +22,7 @@ namespace ProgramableNetwork
         private readonly InspectorContext m_inspectorContext;
         private readonly StackContainer m_btnPreviewHolder;
         private Btn m_btnPreview;
+        private Btn m_btnClear;
         private ProtoPicker<ProductProto> m_protoPicker;
 
         public ProductTab(UiBuilder builder, Module module, string fieldId, Func<Module, ProductProto, bool> filter,
@@ -49,8 +50,19 @@ namespace ProgramableNetwork
                 .OnClick(FindProduct)
                 .AppendTo(m_btnPreviewHolder);
 
+            m_btnClear = m_builder
+                .NewBtnGeneral("clear_" + DateTime.Now.Ticks)
+                .SetSize(20, 40)
+                .SetText("X")
+                .OnClick(() => {
+                    m_module.Field[m_fieldId] = Fix32.Zero;
+                    m_refresh();
+                })
+                .AppendTo(m_btnPreviewHolder);
+
             SetSizeMode(SizeMode.Dynamic);
             this.SetHeight(40);
+            this.SetWidth(64);
 
             Refresh();
         }
@@ -62,7 +74,7 @@ namespace ProgramableNetwork
                 m_protoPicker = new ProtoPicker<ProductProto>(
                     (product) =>
                     {
-                        m_module.Field[m_fieldId] = Fix32.FromRaw(product.SlimId.Value);
+                        m_module.Field[m_fieldId] = product is null ? Fix32.Zero : Fix32.FromRaw(product.SlimId.Value);
                         m_window.OnHide -= protoPicker_Hide;
                         m_protoPicker.Hide();
                         try
@@ -138,6 +150,7 @@ namespace ProgramableNetwork
             if (slimId == 0)
             {
                 m_btnPreview.SetIcon(m_builder.Style.Icons.Empty);
+                m_btnClear.SetVisibility(false);
                 return;
             }
 
@@ -149,10 +162,12 @@ namespace ProgramableNetwork
             {
                 m_module.Field[m_fieldId] = Fix32.Zero;
                 m_btnPreview.SetIcon(m_builder.Style.Icons.Empty);
+                m_btnClear.SetVisibility(false);
                 return;
             }
 
             m_btnPreview.SetIcon(foundProduct.IconPath);
+            m_btnClear.SetVisibility(true);
         }
     }
 }
