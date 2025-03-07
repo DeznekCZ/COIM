@@ -8,6 +8,7 @@ using Mafi.Core.Entities.Static;
 using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.NuclearReactors;
 using Mafi.Core.Factory.Transports;
+using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
 using Mafi.Core.Products;
@@ -302,6 +303,49 @@ namespace ProgramableNetwork
                     m.Output["production"] = production.LastDay.Value.ToFix32();
                     m.Output["capacity"] = capacity.LastDay.Value.ToFix32();
                     m.Output["usage"] = 100.ToFix32() * (consumption.LastDay.Value.ToFix32() / capacity.LastDay.Value.ToFix32());
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Stats_Maintenance", "Statistic: Maintenance", "MAINT", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Stats)
+                .AddOutput("a", "Amount")
+                .AddOutput("c", "Capacity")
+                .AddOutput("p", "Percentage (0-100)")
+                .AddOutput("u", "Use (monthly +surplus / -deficit)")
+                .Width(4)
+                .AddEntityField<MaintenanceDepot>("depot", "Maintenance depot", distance: 2.ToFix32())
+                .AddProductField("m", "Maintenance tier", filter: (m, p) => p.Id.Value.StartsWith("Product_Virtual_MaintenanceT"))
+                .Action(m =>
+                {
+                    MaintenanceDepot maintenanceDepot = m.Field.Entity<MaintenanceDepot>("depot");
+                    if (maintenanceDepot == null)
+                    {
+                        m.SetError("Invalid maintenance product");
+                        return ModuleStatus.Error;
+                    }
+
+                    ProductProto product = m.Field.Product("m");
+                    if (product == null)
+                    {
+                        product = m.Context.ProtosDb.Get<ProductProto>(Ids.Products.MaintenanceT1).Value;
+                        m.Field["m"] = Fix32.FromRaw(product.SlimId.Value);
+                    }
+
+                    ProductStats productStats = m.Context.ProductsManager.GetStatsFor(product);
+                    IMaintenanceBufferReadonly buffer = ((MaintenanceManager)maintenanceDepot.GetType()
+                        .GetField("m_maintenanceManager", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .GetValue(maintenanceDepot))
+                        .MaintenanceBuffers.First(b => b.Product == product);
+
+                    //m.Output["a"] = productStats.GlobalQuantity.ToQuantity().Value.Value.ToFix32();
+                    m.Output["a"] = buffer.Quantity.Value.ToFix32();
+                    m.Output["c"] = buffer.Capacity.Value.ToFix32();
+                    m.Output["p"] = 100.ToFix32() * (buffer.Quantity.Value.ToFix32() / buffer.Capacity.Value.ToFix32());
+                    m.Output["u"] = (productStats.CreatedByProduction.LastMonth - productStats.UsedTotalStats.LastMonth)
+                                        .ToQuantity().Value.Value.ToFix32();
+                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
