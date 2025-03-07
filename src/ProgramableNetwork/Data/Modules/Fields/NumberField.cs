@@ -4,6 +4,7 @@ using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Components;
 using System;
+using System.Globalization;
 
 namespace ProgramableNetwork
 {
@@ -83,6 +84,13 @@ namespace ProgramableNetwork
                         setter = () => module.Field[Id, ""] = value.ToString();
                     }
                 }
+                else if (typeof(T) == typeof(Fix32))
+                {
+                    if (double.TryParse(numberEditor.GetText(), NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+                    {
+                        setter = () => module.Field[Id] = value.ToFix32();
+                    }
+                }
                 setButton.SetEnabled(setter != null);
             });
 
@@ -100,7 +108,7 @@ namespace ProgramableNetwork
             }
             else if (typeof(T) == typeof(Fix32))
             {
-                Fix32 value = module.Field[Id, (int)(object)Default];
+                Fix32 value = module.Field[Id, (Fix32)(object)Default];
                 numberEditor.SetText(value.ToString());
                 module.Field[Name] = value;
             }
