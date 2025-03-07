@@ -5,6 +5,7 @@ using Mafi.Core.Buildings.Offices;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities.Static;
+using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.NuclearReactors;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
@@ -14,6 +15,7 @@ using Mafi.Unity.UiFramework;
 using Mafi.Unity.UserInterface.Components;
 using System;
 using System.Linq;
+using System.Reflection;
 
 namespace ProgramableNetwork
 {
@@ -278,21 +280,31 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            // TODO: read electricity
-            //registrator
-            //    .ModuleBuilderStart("Stats_Electricity", "Statistic: Electricity", "PWR", Assets.Base.Products.Icons.Vegetables_svg)
-            //    .AddCategory(Category.Stats)
-            //    .AddOutput("u", "Used workers")
-            //    .AddOutput("a", "Available workers")
-            //    .AddOutput("m", "Missing workers")
-            //    .AddOutput("t", "Total workers")
-            //    // ADD behind settings or connect to power network
-            //    .Action(m =>
-            //    {
-            //        new ElectricityManager(m, m, m, m, m, m);
-            //    })
-            //    .AddControllerDevice()
-            //    .BuildAndAdd();
+            registrator
+                .ModuleBuilderStart("Stats_Electricity", "Statistic: Electricity", "PWR", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Stats)
+                .AddOutput("consumption", "Consumption")
+                .AddOutput("production", "Production")
+                .AddOutput("capacity", "Power capacity")
+                .AddOutput("usage", "Power usage (0-100)")
+                .Width(4)
+                .Action(m =>
+                {
+                    ElectricityManager electricity = m.Controller.ElectricityConsumer.Value.GetType()
+                        .GetField("m_electricityManager", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .GetValue(m.Controller.ElectricityConsumer.Value) as ElectricityManager;
+
+                    Mafi.Core.Stats.ElectricityAvgStats consumption = electricity.ConsumptionStats;
+                    Mafi.Core.Stats.ElectricityAvgStats production = electricity.ProductionStats;
+                    Mafi.Core.Stats.ElectricityAvgStats capacity = electricity.GenerationCapacityStats;
+
+                    m.Output["consumption"] = consumption.LastDay.Value.ToFix32();
+                    m.Output["production"] = production.LastDay.Value.ToFix32();
+                    m.Output["capacity"] = capacity.LastDay.Value.ToFix32();
+                    m.Output["usage"] = 100.ToFix32() * (consumption.LastDay.Value.ToFix32() / capacity.LastDay.Value.ToFix32());
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
         }
 
         private void Forks(ProtoRegistrator registrator)
