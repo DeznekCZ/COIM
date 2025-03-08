@@ -27,6 +27,7 @@ namespace ProgramableNetwork
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
             Constants(registrator);
+            Buttons(registrator);
             Arithmetic(registrator);
             Comparation(registrator);
             Connections(registrator);
@@ -86,15 +87,28 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
         }
 
-            Arithmetic(registrator);
-            Comparation(registrator);
-            Connections(registrator);
-            Stats(registrator);
-            Forks(registrator);
-            Booleans(registrator);
-            Decisions(registrator);
-            Display(registrator);
-            Radio(registrator);
+        private void Buttons(ProtoRegistrator registrator)
+        {
+            registrator
+                .ModuleBuilderStart("Button_1", "Button (on/off)", "0/I", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Control)
+                .AddOutput("value", "On - 1, Off - 0")
+                .AddDisplay("toggle", "Toggle", 1, toggle: new [] { "( | )" })
+                .AddFix32Field("float", "Float")
+                .Action(m => m.Output["value"] = (m.Display["toggle", ""].Length > 0) ? Fix32.One : Fix32.Zero)
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Button_Pass", "Button (pass value)", "0/I", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Control)
+                .AddInput("value", "Value")
+                .AddOutput("value", "Value")
+                .AddDisplay("toggle", "Toggle", 1, toggle: new string[] { "⬇" })
+                .AddFix32Field("float", "Float")
+                .Action(m => m.Output["value"] = (m.Display["toggle", ""].Length > 0) ? m.Input["value"] : Fix32.Zero)
+                .AddControllerDevice()
+                .BuildAndAdd();
         }
 
         private static void Arithmetic(ProtoRegistrator registrator)
