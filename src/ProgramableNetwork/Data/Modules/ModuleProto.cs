@@ -12,6 +12,7 @@ using Mafi.Base;
 using Mafi.Unity.UserInterface.Style;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Core.Entities.Static;
+using System.Linq;
 
 namespace ProgramableNetwork
 {
@@ -412,10 +413,20 @@ namespace ProgramableNetwork
             /// <param name="name">Displayerd tooltip value</param>
             /// <param name="width">taken module width</param>
             /// <returns></returns>
-            public Builder AddDisplay(string id, string name, int width)
+            public Builder AddDisplay(string id, string name, int width, bool image = false, string[] toggle = null)
             {
-                m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width, new string('0', width * 2)));
+                m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width,
+                    image ? "[image]" :
+                    toggle != null ? "[toggle]" + WriteToggleArray(toggle) :
+                    (new string('0', width * 2) + "|")
+                    ));
                 return this;
+            }
+
+            private string WriteToggleArray(string[] toggle)
+            {
+                char separator = "|`#,".AsEnumerable().Where(c => !toggle.SelectMany(t => t).Any(t => t == c)).First();
+                return separator + string.Join("" + separator, toggle);
             }
 
             public Builder Action(Action<Module> action)

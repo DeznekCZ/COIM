@@ -289,6 +289,38 @@ namespace ProgramableNetwork
                 get => module.NumberData.TryGetValue("in__" + name, out int data)
                     ? Fix32.FromRaw(data) : defaultValue;
             }
+            public ProductProto Product(string name)
+            {
+                module.NumberData.TryGetValue("in__" + name, out int slimId);
+
+                if (slimId == 0)
+                {
+                    return null;
+                }
+
+                module.StringData.TryGetValue("in__" + name, out string cache);
+                if (!string.IsNullOrEmpty(cache))
+                { // try get entity by name and check slimId
+                    Option<ProductProto> product = module.Context.ProtosDb.Get<ProductProto>(new Mafi.Core.Prototypes.Proto.ID(cache));
+                    if (product.HasValue && product.Value.SlimId.Value == slimId)
+                    {
+                        return product.Value;
+                    }
+                }
+                // else
+                { // try get entity by slimId
+                    Option<ProductProto> product = module.Context.ProtosDb.First<ProductProto>(p => p.SlimId.Value == slimId);
+                    if (product.HasValue && product.Value.SlimId.Value == slimId)
+                    {
+                        module.StringData["in__" + name] = product.Value.Id.Value;
+                        return product.Value;
+                    }
+                }
+
+                module.NumberData.TryRemove("in__" + name, out slimId);
+                module.StringData.TryRemove("in__" + name, out cache);
+                return null;
+            }
         }
 
         [DoNotSave(0, null)]
@@ -387,7 +419,7 @@ namespace ProgramableNetwork
             public string this[string name, string defaultValue]
             {
                 get => module.StringData.TryGetValue("display__" + name, out string data)
-                    ? data : defaultValue;
+                    ? data ?? defaultValue : defaultValue;
             }
 
             public string this[string name]

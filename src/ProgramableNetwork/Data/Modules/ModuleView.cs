@@ -6,9 +6,6 @@ using Mafi.Unity.UserInterface.Components;
 using System.Linq;
 using Mafi;
 using System;
-using UnityEngine;
-using UnityEngine.Windows;
-using RTG;
 
 namespace ProgramableNetwork
 {
@@ -287,10 +284,78 @@ namespace ProgramableNetwork
                     var display = displays[i];
 
                     var text = builder.NewBtnGeneral($"{module.Id}_display_{i}")
-                        .SetText(module.Display[display.Id, display.DefaultText])
-                        .SetButtonStyle(builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White))
                         .SetSize(20 * display.Width, 20)
                         .AppendTo(displaysPanel);
+
+                    if (display.DefaultText == "[image]")
+                    {
+                        ImageDisplay(builder, module, display, text);
+                    }
+                    else if (display.DefaultText.StartsWith("[toggle]"))
+                    {
+                        ToggleDisplay(builder, module, display, text);
+                    }
+                    else
+                    {
+                        TextDisplay(builder, module, display, text);
+                    }
+                }
+            }
+
+            private void TextDisplay(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text)
+            {
+                text.SetButtonStyle(builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White));
+                text.SetText(module.Display[display.Id, display.DefaultText]);
+
+                m_computerView.m_updaters.Add(new DataUpdater<
+                        string,
+                        (Module module, Btn text, ModuleConnectorProto display)
+                    >(
+                    getter: (c) => c.module.Display[c.display.Id, c.display.DefaultText],
+                    setter: (c, t) => c.text.SetText(t),
+                    comparator: string.Equals,
+                    context: (module, text, display)
+                ));
+            }
+
+            private void ImageDisplay(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text)
+            {
+                text.SetButtonStyle(builder.Style.Global.ImageBtn);
+                text.SetIcon(module.Display[display.Id, builder.Style.Icons.Empty]);
+                string imagePath = display.DefaultText.Replace("[image]", "") + builder.Style.Icons.Empty;
+
+                m_computerView.m_updaters.Add(new DataUpdater<
+                        string,
+                        (Module module, Btn text, ModuleConnectorProto display)
+                    >(
+                    getter: (c) => c.module.Display[c.display.Id, builder.Style.Icons.Empty],
+                    setter: (c, t) => c.text.SetIcon(t),
+                    comparator: string.Equals,
+                    context: (module, text, display)
+                ));
+            }
+
+            private void ToggleDisplay(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text)
+            {
+                char separator = display.DefaultText["[toggle]".Length];
+                string[] options = display.DefaultText.Replace($"[toggle]{separator}", "").Split(separator);
+
+                if (options.Length == 1 && options[0].Length == 0)
+                {
+                    ToggleDisplay_LED(builder, module, display, text);
+                }
+                else if (options.Length == 1)
+                {
+                    ToggleDisplay_Symbol(builder, module, display, text, options[0]);
+                }
+                else if (options.Length == 2)
+                {
+                    ToggleDisplay_DoubleText(builder, module, display, text, options);
+                }
+                else
+                {
+                    text.SetButtonStyle(builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White));
+                    text.SetText(module.Display[display.Id, display.DefaultText]);
 
                     m_computerView.m_updaters.Add(new DataUpdater<
                             string,
@@ -302,6 +367,66 @@ namespace ProgramableNetwork
                         context: (module, text, display)
                     ));
                 }
+            }
+
+            private void ToggleDisplay_DoubleText(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text, string[] options)
+            {
+                text.SetButtonStyle(builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White));
+                text.SetText(module.Display[display.Id, options[0]]);
+
+                m_computerView.m_updaters.Add(new DataUpdater<
+                        string,
+                        (Module module, Btn text, ModuleConnectorProto display)
+                    >(
+                    getter: (c) => c.module.Display[display.Id, options[0]],
+                    setter: (c, t) => c.text.SetText(t),
+                    comparator: string.Equals,
+                    context: (module, text, display)
+                ));
+
+                text.OnClick(() =>
+                {
+                    if (module.Display[display.Id, options[0]] == options[0])
+                        module.Display[display.Id] = options[1];
+                    else
+                        module.Display[display.Id] = options[0];
+                });
+            }
+
+            private void ToggleDisplay_Symbol(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text, string symbol)
+            {
+                text.SetText(symbol);
+                if (module.Display[display.Id, ""].Length > 0)
+                {
+                    text.SetButtonStyle(builder.Style.Global.GeneralBtnActive.ExtendText(color: ColorRgba.Green));
+                }
+                else
+                {
+                    text.SetButtonStyle(builder.Style.Global.GeneralBtnActive.ExtendText(color: ColorRgba.Red));
+                }
+
+                m_computerView.m_updaters.Add(new DataUpdater<
+                        ColorRgba,
+                        (Module module, Btn text, ModuleConnectorProto display)
+                    >(
+                    getter: (c) => c.module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red,
+                    setter: (c, t) => c.text.SetButtonStyle(builder.Style.Global.GeneralBtnActive.ExtendText(color: t)),
+                    comparator: (a, b) => a == b,
+                    context: (module, text, display)
+                ));
+
+                text.OnClick(() =>
+                {
+                    if (module.Display[display.Id, ""].Length > 0)
+                        module.Display[display.Id] = "";
+                    else
+                        module.Display[display.Id] = "1";
+                });
+            }
+
+            private void ToggleDisplay_LED(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text)
+            {
+                ToggleDisplay_Symbol(builder, module, display, text, "●");
             }
         }
     }

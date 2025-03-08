@@ -947,6 +947,24 @@ namespace ProgramableNetwork
                     .Action(ModuleFunction(i * 2))
                     .BuildAndAdd();
             }
+
+            registrator
+                .ModuleBuilderStart($"Display_Product", $"Display: product", $"F-P", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Display)
+                .AddInput("a", "Product")
+                .AddDisplay("a", "Product", 1, image: true)
+                .AddControllerDevice()
+                .Action(m => m.Display["a"] = m.Input.Product("a")?.IconPath)
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart($"Display_Bool", $"Display: LED", $"F-B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Display)
+                .AddInput("a", "Product")
+                .AddDisplay("a", "Product", 1, toggle: new string[0])
+                .AddControllerDevice()
+                .Action(m => m.Display["a"] = m.Input["a", 0] > 0 ? "1" : "")
+                .BuildAndAdd();
         }
 
         private void Radio(ProtoRegistrator registrator)
