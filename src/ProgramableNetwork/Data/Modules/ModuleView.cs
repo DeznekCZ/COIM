@@ -131,11 +131,11 @@ namespace ProgramableNetwork
                     var input = inputs[i];
                     bool isConnected = module.InputModules.ContainsKey(input.Id);
 
-                    Btn btn = builder.NewBtnGeneral($"{module.Id}_input_{i}");
-                    btn.SetText("O")
-                        .SetButtonStyle((
-                                isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
-                            ).Extend(backgroundClr: ColorRgba.DarkGreen))
+                    Btn btn = builder.NewBtnGeneral($"{module.Id}_input_{i}")
+                        .SetText(isConnected ? "◎" : "○")
+                        .SetButtonStyle(builder.Style.Global.GeneralBtn
+                                            .Extend(backgroundClr: ColorRgba.DarkRed)
+                                            .ExtendText(color: ColorRgba.Gold))
                         .SetSize(20, 20)
                         .OnRightClick(() =>
                         {
@@ -171,8 +171,9 @@ namespace ProgramableNetwork
                     m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
                         (context) =>
                         {
-                            var baseStyle = (isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn)
-                                .Extend(backgroundClr: ColorRgba.DarkGreen);
+                            var baseStyle = builder.Style.Global.GeneralBtn
+                                .Extend(backgroundClr: ColorRgba.DarkGreen)
+                                .ExtendText(color: ColorRgba.Gold);
 
                             if (isConnected && m_computerView.m_higlighted != null &&
                                 module.InputModules
@@ -207,10 +208,10 @@ namespace ProgramableNetwork
                                           && c.OutputId == output.Id) != null;
 
                     var btn = builder.NewBtnGeneral($"{module.Id}_output_{i}")
-                        .SetText("O")
-                        .SetButtonStyle((
-                                isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
-                            ).Extend(backgroundClr: ColorRgba.DarkRed))
+                        .SetText(isConnected ? "◎" : "○")
+                        .SetButtonStyle(builder.Style.Global.GeneralBtn
+                                            .Extend(backgroundClr: ColorRgba.DarkRed)
+                                            .ExtendText(color: ColorRgba.Gold))
                         .SetSize(20, 20)
                         .OnRightClick(() =>
                         {
@@ -257,9 +258,9 @@ namespace ProgramableNetwork
                     m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
                         (context) =>
                         {
-                            var baseStyle = (
-                                isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
-                            ).Extend(backgroundClr: ColorRgba.DarkRed);
+                            var baseStyle = builder.Style.Global.GeneralBtn
+                                .Extend(backgroundClr: ColorRgba.DarkRed)
+                                .ExtendText(color: ColorRgba.Gold);
 
                             if (m_computerView.OutputConnection != null
                                 && m_computerView.OutputConnection.ModuleId == module.Id
