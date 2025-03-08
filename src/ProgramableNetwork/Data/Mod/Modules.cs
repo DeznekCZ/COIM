@@ -26,6 +26,20 @@ namespace ProgramableNetwork
 
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
+            Constants(registrator);
+            Arithmetic(registrator);
+            Comparation(registrator);
+            Connections(registrator);
+            Stats(registrator);
+            Forks(registrator);
+            Booleans(registrator);
+            Decisions(registrator);
+            Display(registrator);
+            Radio(registrator);
+        }
+
+        private static void Constants(ProtoRegistrator registrator)
+        {
             registrator
                 .ModuleBuilderStart("Constant", "Constant (integer)", "#I", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Arithmetic)
@@ -70,6 +84,7 @@ namespace ProgramableNetwork
                 .Action(m => { m.Output["value"] = m.Field["float", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
+        }
 
             Arithmetic(registrator);
             Comparation(registrator);
