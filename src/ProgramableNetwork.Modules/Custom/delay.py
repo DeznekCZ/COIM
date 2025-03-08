@@ -5,7 +5,7 @@ from Core.module import DefaultControllers, Module
 
 class Runtime_Delay_2(Module):
     name = "Control: Delay (2 ticks)"
-    symbol = "STAT"
+    symbol = "DLY"
     inputs = [
         Input("0", "Signal input")
     ]
@@ -23,7 +23,7 @@ class Runtime_Delay_2(Module):
 
 class Runtime_Delay_4(Module):
     name = "Control: Delay (4 ticks)"
-    symbol = "STAT"
+    symbol = "DELAY"
     inputs = [
         Input("0", "Signal input")
     ]
@@ -45,7 +45,7 @@ class Runtime_Delay_4(Module):
 
 class Runtime_Delay_6(Module):
     name = "Control: Delay (6 ticks)"
-    symbol = "STAT"
+    symbol = "DELAY"
     inputs = [
         Input("0", "Signal input")
     ]
@@ -71,7 +71,7 @@ class Runtime_Delay_6(Module):
 
 class Runtime_Delay_8(Module):
     name = "Control: Delay (8 ticks)"
-    symbol = "STAT"
+    symbol = "DELAY"
     inputs = [
         Input("0", "Signal input")
     ]
