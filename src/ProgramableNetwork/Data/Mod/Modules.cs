@@ -94,7 +94,6 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Control)
                 .AddOutput("value", "On - 1, Off - 0")
                 .AddDisplay("toggle", "Toggle", 1, toggle: new [] { "( | )" })
-                .AddFix32Field("float", "Float")
                 .Action(m => m.Output["value"] = (m.Display["toggle", ""].Length > 0) ? Fix32.One : Fix32.Zero)
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -105,7 +104,6 @@ namespace ProgramableNetwork
                 .AddInput("value", "Value")
                 .AddOutput("value", "Value")
                 .AddDisplay("toggle", "Toggle", 1, toggle: new string[] { "⬇" })
-                .AddFix32Field("float", "Float")
                 .Action(m => m.Output["value"] = (m.Display["toggle", ""].Length > 0) ? m.Input["value"] : Fix32.Zero)
                 .AddControllerDevice()
                 .BuildAndAdd();
