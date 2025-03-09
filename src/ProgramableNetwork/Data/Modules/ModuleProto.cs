@@ -166,11 +166,28 @@ namespace ProgramableNetwork
             {
                 PHANTOM_PRODUCT_ID = new ID("__PHANTOM__MODULE__");
                 Phantom = new Builder(null, PHANTOM_PRODUCT_ID)
-                .SetDescritpion("Module replacement for already nonexsiting module")
-                .SetGfx(Assets.Base.Products.Icons.Vegetables_svg)
-                .SetSymbol("[]")
-                .SetName("[Removed module]")
-                .Build();
+                    .SetDescritpion("Module replacement for already nonexsiting module")
+                    .SetGfx(Assets.Base.Products.Icons.Vegetables_svg)
+                    .SetSymbol("!!")
+                    .SetName("[Removed module]")
+                    .Action(m => ModuleStatus.Error)
+                    //.AddDisplay("__display__", "Index", 1)
+                    //.AddDisplay("__display__", "Display of keys", 5)
+                    //.Action((module) =>
+                    //{
+                    //    if (module.IsDebugging)
+                    //    {
+                    //        var stringKeys = module.StringData
+                    //            .Where(k => k != "display____display__")
+                    //            .ToArray();
+                    //
+                    //        var intKeys = module.NumberData
+                    //            .Where(k => k != "display____display__")
+                    //            .ToArray();
+                    //    }
+                    //    return ModuleStatus.Error;
+                    //})
+                    .Build();
                 Proto.RegisterPhantom(Phantom);
             }
             catch (Exception e)
