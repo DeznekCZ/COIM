@@ -690,7 +690,7 @@ namespace ProgramableNetwork
                     }
 
                     if (entity is SettlementFoodModule foodModule)
-                        {
+                    {
                         if (m.Input["product", Fix32.Zero] == Fix32.Zero)
                         {
                             m.SetError("Product is not selected");
@@ -703,7 +703,7 @@ namespace ProgramableNetwork
                     }
 
                     if (entity is Hospital hospital)
-                        {
+                    {
                         ProductProto product = m.Input.Product("product");
                         if (product is null)
                         {
@@ -900,6 +900,120 @@ namespace ProgramableNetwork
                         farm.AssignCropToSlot(m.Context.ProtosDb.Get<CropProto>(Ids.Crops.NoCrop), nextSlot);
                         return ModuleStatus.Running;
                     }
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Import_Set", "Connection: Import (set)", "IMS", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddInput("mode", "Import mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
+                .AddEntityField<IEntityWithLogisticsControl>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .Action(m => {
+                    var logistic = m.Field.Entity<IEntityWithLogisticsControl>("logistic");
+                    if (logistic is null)
+                    {
+                        m.SetError("Building is not connected");
+                        return ModuleStatus.Error;
+                    }
+                    logistic.SetLogisticsInputMode((EntityLogisticsMode)m.Input["mode", 0].IntegerPart);
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Import_Get", "Connection: Import (get)", "IMG", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .AddOutput("mode", "Import mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
+                .AddEntityField<IEntityWithLogisticsControl>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .Action(m => {
+                    var logistic = m.Field.Entity<IEntityWithLogisticsControl>("logistic");
+                    if (logistic is null)
+                    {
+                        m.SetError("Building is not connected");
+                        return ModuleStatus.Error;
+                    }
+                    m.Output["mode"] = ((int)logistic.LogisticsInputMode).ToFix32();
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Export_Set", "Connection: Export (set)", "EXS", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddInput("mode", "Export mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
+                .AddEntityField<IEntityWithLogisticsControl>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .Action(m => {
+                    var logistic = m.Field.Entity<IEntityWithLogisticsControl>("logistic");
+                    if (logistic is null)
+                    {
+                        m.SetError("Building is not connected");
+                        return ModuleStatus.Error;
+                    }
+                    logistic.SetLogisticsOutputMode((EntityLogisticsMode)m.Input["mode", 0].IntegerPart);
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Export_Get", "Connection: Export (get)", "EXG", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .AddOutput("mode", "Export mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
+                .AddEntityField<IEntityWithLogisticsControl>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .Action(m => {
+                    var logistic = m.Field.Entity<IEntityWithLogisticsControl>("logistic");
+                    if (logistic is null)
+                    {
+                        m.SetError("Building is not connected");
+                        return ModuleStatus.Error;
+                    }
+                    m.Output["mode"] = ((int)logistic.LogisticsOutputMode).ToFix32();
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Priority_Set", "Connection: Priority (set)", "P-S", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddInput("priority", "Priority: 1 - 15")
+                .AddEntityField<IEntityWithGeneralPriority>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .Action(m => {
+                    var logistic = m.Field.Entity<IEntityWithGeneralPriority>("logistic");
+                    if (logistic is null)
+                    {
+                        m.SetError("Building is not connected");
+                        return ModuleStatus.Error;
+                    }
+                    logistic.SetGeneralPriority(m.Input["priority", 8.ToFix32()].IntegerPart);
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Priority_Get", "Connection: Priority (get)", "P-G", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .AddOutput("priority", "Priority: 1 - 15")
+                .AddEntityField<IEntityWithGeneralPriority>("building", "Building", "Any building with configurable priority (20 metres)", 20.ToFix32())
+                .Action(m => {
+                    var logistic = m.Field.Entity<IEntityWithGeneralPriority>("logistic");
+                    if (logistic is null)
+                    {
+                        m.SetError("Building is not connected");
+                        return ModuleStatus.Error;
+                    }
+                    m.Output["priority"] = logistic.GeneralPriority;
+                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
