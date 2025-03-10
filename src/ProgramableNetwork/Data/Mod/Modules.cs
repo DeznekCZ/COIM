@@ -1,10 +1,14 @@
 ﻿using Mafi;
 using Mafi.Base;
+using Mafi.Core.Buildings.Cargo;
 using Mafi.Core.Buildings.Farms;
 using Mafi.Core.Buildings.Offices;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
+using Mafi.Core.Entities;
+using Mafi.Core.Entities.Priorities;
 using Mafi.Core.Entities.Static;
+using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.NuclearReactors;
 using Mafi.Core.Factory.Transports;
@@ -271,7 +275,7 @@ namespace ProgramableNetwork
         private void Stats(ProtoRegistrator registrator)
         {
             registrator
-                .ModuleBuilderStart("Stats_Unity", "Statistic: Unity", "UNI", Assets.Base.Products.Icons.Vegetables_svg)
+                .ModuleBuilderStart("Stats_Unity", "Connection: Office - Unity", "UNI", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionRead)
                 .AddCategory(Category.Stats)
@@ -289,7 +293,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
 
             registrator
-                .ModuleBuilderStart("Stats_Workers", "Statistic: Workers", "WRK", Assets.Base.Products.Icons.Vegetables_svg)
+                .ModuleBuilderStart("Stats_Workers", "Connection: Office - Workers", "WRK", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionRead)
                 .AddCategory(Category.Stats)
@@ -339,7 +343,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
 
             registrator
-                .ModuleBuilderStart("Stats_Maintenance", "Statistic: Maintenance", "MAINT", Assets.Base.Products.Icons.Vegetables_svg)
+                .ModuleBuilderStart("Stats_Maintenance", "Connection: Maintenance", "MAINT", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionRead)
                 .AddCategory(Category.Stats)
@@ -630,7 +634,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionWrite)
                 .AddInput("pause", "Pause")
-                .AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", distance: 20.ToFix32(), filter: (m,e) => e.CanBePaused)
+                .AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", distance: 20.ToFix32(), filter: (m,e) => e.CanBePaused || e is CargoDepot)
                 .Action(m =>
                 {
                     StaticEntity entity = m.Field.Entity<StaticEntity>("entity");
@@ -640,40 +644,91 @@ namespace ProgramableNetwork
                         entity.SetPaused(input > 0);
                         return ModuleStatus.Running;
                     }
+                    if (entity is CargoDepot cargo)
+                    {
+                        m.Warning = !cargo.CargoShip.HasValue;
+                        if (cargo.CargoShip.HasValue)
+                            cargo.CargoShip.Value.SetPaused(input > 0);
+                        return ModuleStatus.Running;
+                    }
                     return ModuleStatus.Error;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
             registrator
-                .ModuleBuilderStart("Connection_Storage", "Connection: Storage (input)", "STOCK", Assets.Base.Products.Icons.Vegetables_svg)
+                .ModuleBuilderStart("Connection_Storage", "Connection: Storage", "STOCK", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .AddInput("product", "Product")
                 .AddOutput("quantity", "Quantity")
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
                 .AddOutput("product", "Product in #")
-                .AddEntityField<StorageBase>("entity", "Connection device", "Storage connectable by cable 20m from controller", distance: 20.ToFix32())
-                // .AddInt32Field("buffer", "Storage slot (0-based)", 0)
-                // TODO add filter input field
+                .AddEntityField<LayoutEntity>("entity", "Connection device", "Storage connectable by cable 20m from controller", distance: 20.ToFix32(),
+                    filter: (m, e) => e is StorageBase || // e is SettlementWasteModule
+                                      e is SettlementFoodModule ||
+                                      e is Hospital ||
+                                      e is SettlementModuleProto
+                    )
                 .Action(m =>
                 {
-                    StorageBase entity = m.Field.Entity<StorageBase>("entity");
+                    LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
 
-                    if (entity != null)
+                    if (entity is StorageBase storage)
+                    // entity is SettlementWasteModule
                     {
-                        m.Output["quantity"] = entity.CurrentQuantity.Value;
-                        m.Output["capacity"] = entity.Capacity.Value;
-                        m.Output["fullness"] = (int)(100f * entity.CurrentQuantity.Value / entity.Capacity.Value);
+                        m.Output["quantity"] = storage.CurrentQuantity.Value;
+                        m.Output["capacity"] = storage.Capacity.Value;
+                        m.Output["fullness"] = (int)(100f * storage.CurrentQuantity.Value / storage.Capacity.Value);
 
-                        if (entity.StoredProduct.HasValue)
-                        {
-                            m.Output["product"] = (int)(uint)entity.StoredProduct.Value.SlimId.Value;
-                        }
+                        if (storage.StoredProduct.HasValue)
+                            m.Output["product"] = Fix32.FromRaw((int)(uint)storage.StoredProduct.Value.SlimId.Value);
                         else
-                        {
-                            m.Output["product"] = -1;
-                        }
+                            m.Output["product"] = Fix32.Zero;
                         return ModuleStatus.Running;
+                    }
+
+                    if (entity is SettlementFoodModule foodModule)
+                        {
+                        if (m.Input["product", Fix32.Zero] == Fix32.Zero)
+                        {
+                            m.SetError("Product is not selected");
+                            return ModuleStatus.Error;
+                        }
+
+                        ProductProto product = m.Input.Product("product");
+                        var buffers = new[] { foodModule.GetBuffer(0).ValueOrNull, foodModule.GetBuffer(1).ValueOrNull };
+                        return GetValueFromBuffers(m, product, buffers);
+                    }
+
+                    if (entity is Hospital hospital)
+                        {
+                        ProductProto product = m.Input.Product("product");
+                        if (product is null)
+                        {
+                            m.SetError("Product is not selected");
+                            return ModuleStatus.Error;
+                        }
+
+                        var buffers = new[] { hospital.GetBuffer(0).ValueOrNull, hospital.GetBuffer(1).ValueOrNull };
+                        return GetValueFromBuffers(m, product, buffers);
+                    }
+
+                    if (entity is SettlementServiceModule module)
+                    {
+                        ProductProto product = m.Input.Product("product");
+                        if (product is null)
+                        {
+                            m.SetError("Product is not selected");
+                            return ModuleStatus.Error;
+                        }
+
+                        var buffers = new[] {
+                            (IProductBuffer)module.GetType().GetField("m_inputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(module),
+                            ((Option<IProductBuffer>)module.GetType().GetField("m_inputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(module)).ValueOrNull
+                        };
+                        return GetValueFromBuffers(m, product, buffers);
                     }
 
                     m.Output["quantity"] = 0;
@@ -686,7 +741,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
 
             registrator
-                .ModuleBuilderStart("Connection_Transport", "Connection: Transport (input)", "TRANS", Assets.Base.Products.Icons.Vegetables_svg, "Transport connectable by cable 20m from controller")
+                .ModuleBuilderStart("Connection_Transport", "Connection: Transport", "TRANS", Assets.Base.Products.Icons.Vegetables_svg, "Transport connectable by cable 20m from controller")
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionRead)
                 .AddOutput("quantity", "Quantity")
@@ -848,6 +903,29 @@ namespace ProgramableNetwork
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
+        }
+
+        private static ModuleStatus GetValueFromBuffers(Module m, ProductProto product, IProductBuffer[] buffers)
+        {
+            foreach (var buffer in buffers)
+            {
+                if (buffer is null) continue;
+                if (buffer.Product.Id != product.Id) continue;
+
+                return StorageValueFromBuffer(m, product, buffer);
+            }
+
+            m.SetError("Invalid product");
+            return ModuleStatus.Error;
+        }
+
+        private static ModuleStatus StorageValueFromBuffer(Module m, ProductProto product, IProductBuffer buffer)
+        {
+            m.Output["quantity"] = buffer.Quantity.Value;
+            m.Output["capacity"] = buffer.Capacity.Value;
+            m.Output["fullness"] = (int)(100f * buffer.Quantity.Value / buffer.Capacity.Value);
+            m.Output["product"] = Fix32.FromRaw(product.SlimId.Value);
+            return ModuleStatus.Running;
         }
 
         private static bool FarmProductFilter(Module m, ProductProto product)
