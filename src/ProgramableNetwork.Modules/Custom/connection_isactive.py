@@ -20,7 +20,7 @@ class Connection_IsActive(Module):
         "Any pausable building connectable by cable 20m from controller",
         20
     ) ]
-    categories = [ DefaultCategories.Connection ]
+    categories = [ DefaultCategories.Connection, DefaultCategories.ConnectionRead ]
     controllers = [ DefaultControllers.Controller ]
 
     def action(self):

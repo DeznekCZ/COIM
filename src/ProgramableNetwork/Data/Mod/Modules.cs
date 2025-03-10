@@ -272,6 +272,8 @@ namespace ProgramableNetwork
         {
             registrator
                 .ModuleBuilderStart("Stats_Unity", "Statistic: Unity", "UNI", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
                 .AddCategory(Category.Stats)
                 .AddOutput("v", "Unity value")
                 .AddEntityField<CaptainOffice>("office", "Captains office", "Must be placest next to Captains office", 2.ToFix32())
@@ -288,6 +290,8 @@ namespace ProgramableNetwork
 
             registrator
                 .ModuleBuilderStart("Stats_Workers", "Statistic: Workers", "WRK", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
                 .AddCategory(Category.Stats)
                 .AddOutput("u", "Used workers")
                 .AddOutput("a", "Available workers")
@@ -336,6 +340,8 @@ namespace ProgramableNetwork
 
             registrator
                 .ModuleBuilderStart("Stats_Maintenance", "Statistic: Maintenance", "MAINT", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
                 .AddCategory(Category.Stats)
                 .AddOutput("a", "Amount")
                 .AddOutput("c", "Capacity")
@@ -566,6 +572,7 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (4 pin, input)", "C-IN", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
                 .AddOutput("a", "A")
                 .AddOutput("b", "B")
                 .AddOutput("c", "C")
@@ -609,6 +616,7 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Connection_Controller_Output", "Connection: Controller (4 pin, output)", "C-OUT", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddInput("c", "C")
@@ -620,7 +628,7 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Connection_SwitchOff", "Connection: Switch Off", "S", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
-                .AddCategory(Category.Command)
+                .AddCategory(Category.ConnectionWrite)
                 .AddInput("pause", "Pause")
                 .AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", distance: 20.ToFix32(), filter: (m,e) => e.CanBePaused)
                 .Action(m =>
@@ -680,6 +688,7 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Connection_Transport", "Connection: Transport (input)", "TRANS", Assets.Base.Products.Icons.Vegetables_svg, "Transport connectable by cable 20m from controller")
                 .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
                 .AddOutput("quantity", "Quantity")
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
@@ -719,6 +728,7 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Connection_Settlement", "Connection: Settlement (population)", "SETTLE", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
                 .AddCategory(Category.Stats)
                 .AddOutput("pop_this", "Population (settlement module)")
                 .AddOutput("pop_nearby", "Population (settlement total)")
@@ -745,6 +755,8 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Connection_NuclearReactor", "Connection: Nuclear Reactor", "NR", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .AddCategory(Category.ConnectionWrite)
                 .AddInput("target", "Target power level")
                 .AddOutput("heat", "Stored Heat")
                 .AddOutput("meltdown", "Is in melt down")
@@ -770,6 +782,8 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Connection_Farm", "Connection: Farm", "FARM", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddCategory(Category.ConnectionRead)
                 .AddInput("crop", "Next growing crop")
                 .AddInput("fertility", "Target fertility (default: 100)")
                 .AddInput("fertilize", "Assign nature fertilizing (0/1)")
