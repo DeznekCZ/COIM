@@ -3,6 +3,7 @@ using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
 using ProgramableNetwork;
+using System.Linq;
 
 namespace Mafi.Unity
 {
@@ -32,7 +33,7 @@ namespace Mafi.Unity
             content = m_inspector.Builder.NewTxt(m_id);
             content.SetTextStyle(m_inspector.Builder.Style.Panel.Text.Extend(fontSize: 15));
             content.SetText(tooltip);
-            content.SetBackground(ColorRgba.Black);
+            content.SetBackground(ColorRgba.Black.SetA(127));
             content.SetSize(content.GetPreferredSize(250, 600));
             content.PutToLeftTopOf(parent ?? m_inspector.GetView(), content.GetSize());
             if (offset != null)
@@ -42,9 +43,9 @@ namespace Mafi.Unity
                         : offset.Value.LeftOffset,
                     offset.Value.TopOffset < 0
                         ? offset.Value.TopOffset - content.GetHeight()
-                        : offset.Value.TopOffset);
+                        : offset.Value.TopOffset + 20 * tooltip.Count(c => c == '\n'));
             else
-                content.RectTransform.position -= new UnityEngine.Vector3(content.GetWidth() + 20, 0);
+                content.RectTransform.position -= new UnityEngine.Vector3(content.GetWidth() + 20, 20 * tooltip.Count(c => c=='\n'));
             content.SendToFront();
             content.SetParent(m_inspector.Builder.MainCanvas, true);
         }
