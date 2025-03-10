@@ -64,7 +64,8 @@ namespace ProgramableNetwork
         //// known types
         public static Category Display { get; } = new Category(id: "display", name: "Display modules");
         public static Category Connection { get; } = new Category(id: "connection", name: "Connection modules");
-        public static Category Command { get; } = new Category(id: "command", name: "Command modules (write)");
+        public static Category ConnectionRead { get; } = new Category(id: "connection", name: "Connection modules (read)");
+        public static Category ConnectionWrite { get; } = new Category(id: "connection", name: "Connection modules (write)");
         public static Category Arithmetic { get; } = new Category(id: "arithmetic", name: "Arithmetic modules");
         public static Category Boolean { get; } = new Category(id: "boolean", name: "Boolean modules");
         public static Category Decision { get; } = new Category(id: "decision", name: "Decision modules");
