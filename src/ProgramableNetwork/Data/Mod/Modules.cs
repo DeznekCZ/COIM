@@ -24,7 +24,7 @@ using System.Reflection;
 
 namespace ProgramableNetwork
 {
-    internal class Modules : AValidatedData
+    internal partial class Modules : AValidatedData
     {
         static readonly string[] names = new string[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "m", "n", "o", "p", "q" };
 
@@ -1373,7 +1373,7 @@ namespace ProgramableNetwork
                             {
                                 field.Reference.Value -= 10;
                                 if (field.Reference.Value < 0)
-                                    field.Reference.Value += 45;
+                                    field.Reference.Value += 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -1385,7 +1385,7 @@ namespace ProgramableNetwork
                             {
                                 field.Reference.Value -= 1;
                                 if (field.Reference.Value < 0)
-                                    field.Reference.Value += 45;
+                                    field.Reference.Value += 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -1396,8 +1396,8 @@ namespace ProgramableNetwork
                             .OnClick(() =>
                             {
                                 field.Reference.Value += 1;
-                                if (field.Reference.Value > 44)
-                                    field.Reference.Value -= 45;
+                                if (field.Reference.Value > 45)
+                                    field.Reference.Value -= 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -1408,8 +1408,8 @@ namespace ProgramableNetwork
                             .OnClick(() =>
                             {
                                 field.Reference.Value += 10;
-                                if (field.Reference.Value > 44)
-                                    field.Reference.Value -= 45;
+                                if (field.Reference.Value > 45)
+                                    field.Reference.Value -= 46;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)
@@ -1419,7 +1419,7 @@ namespace ProgramableNetwork
                             .SetText(">|")
                             .OnClick(() =>
                             {
-                                field.Reference.Value = 44;
+                                field.Reference.Value = 45;
                                 field.Refresh();
                             })
                             .SetSize(20, 20)

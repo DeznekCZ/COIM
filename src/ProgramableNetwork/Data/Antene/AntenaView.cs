@@ -160,18 +160,7 @@ namespace ProgramableNetwork
                             .SetStackingDirection(StackContainer.Direction.LeftToRight)
                             .SetHeight(40);
 
-                        new AntenaPicker(Builder, Entity.Prototype, item, value => item.Antena = value, proto.Distance, () => { }, this, m_inspector)
-                            .AppendTo(row);
-
-                        var text = Builder.NewTxt("band_channel_value_" + i)
-                            .SetHeight(40)
-                            .SetText(proto.Display(Entity.Context, item))
-                            .SetAlignment(UnityEngine.TextAnchor.MiddleLeft)
-                            .AppendTo(row);
-
-                        proto.Buttons(Builder, row, item, () => {
-                            text.SetText(proto.Display(Entity.Context, item));
-                        });
+                        proto.Buttons(Entity, m_inspector, this, Builder, row, item, proto);
 
                         Builder.NewBtnGeneral("band_channel_remove_" + i)
                             .SetSize(20, 20)

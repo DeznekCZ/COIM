@@ -20,7 +20,7 @@ namespace ProgramableNetwork
             Func<BlobReader, TDataBand> deserializer,
             Fix32? distance = null,
             Func<EntityContext, TDataBandChannel, string> channelDisplay = null,
-            Action<UiBuilder, StackContainer, TDataBandChannel, Action> buttons = null,
+            Action<Antena, AntenaInspector, AntenaView, UiBuilder, StackContainer, TDataBandChannel, DataBandProto> buttons = null,
             IEnumerable<Tag> tags = null
         )
             where TDataBand : IDataBandTyped<TDataBandChannel>
@@ -35,7 +35,7 @@ namespace ProgramableNetwork
                 deserializer: (reader) => deserializer(reader),
                 distance ?? 1000.ToFix32(),
                 channelDisplay: (context, channel) => channelDisplay?.Invoke(context, (TDataBandChannel)channel),
-                buttons: (builder, container, channel, refresh) => buttons?.Invoke(builder, container, (TDataBandChannel)channel, refresh),
+                buttons: (antena, inspector, view, builder, container, channel, proto) => buttons?.Invoke(antena, inspector, view, builder, container, (TDataBandChannel)channel, proto),
                 tags);
         }
 
@@ -47,7 +47,7 @@ namespace ProgramableNetwork
             Func<BlobReader, IDataBand> deserializer,
             Fix32 distance,
             Func<EntityContext, IDataBandChannel, string> channelDisplay,
-            Action<UiBuilder, StackContainer, IDataBandChannel, Action> buttons,
+            Action<Antena, AntenaInspector, AntenaView, UiBuilder, StackContainer, IDataBandChannel, DataBandProto> buttons,
             IEnumerable<Tag> tags) : base(id, strings, tags)
         {
             Constructor = constructor;
@@ -63,7 +63,7 @@ namespace ProgramableNetwork
         public Func<EntityContext, DataBandProto, IDataBand> Constructor { get; }
         public int Channels { get; }
         public Func<EntityContext, IDataBandChannel, string> Display { get; }
-        public Action<UiBuilder, StackContainer, IDataBandChannel, Action> Buttons { get; }
+        public Action<Antena, AntenaInspector, AntenaView, UiBuilder, StackContainer, IDataBandChannel, DataBandProto> Buttons { get; }
         public Fix32 Distance { get; }
         public Func<IDataBandChannel, IDataBandChannel, bool> Comparator { get; }
         public Action<IDataBand, BlobWriter> Serializer { get; }

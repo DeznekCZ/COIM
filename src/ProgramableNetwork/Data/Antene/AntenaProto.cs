@@ -12,8 +12,10 @@ namespace ProgramableNetwork
         public override Type EntityType { get; } = typeof(Antena);
         public Electricity WorkingPower { get; }
         public Electricity IddlePower { get; }
+        public Fix32 DistanceBoost { get; set; }
 
         public AntenaProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics,
+            Fix32? distanceBoost = null,
             Upoints? boostCost = null,
             Electricity? workingPower = null,
             Electricity? iddlePower = null,
@@ -22,6 +24,7 @@ namespace ProgramableNetwork
         {
             this.WorkingPower = workingPower ?? Electricity.FromKw(5);
             this.IddlePower = iddlePower ?? Electricity.FromKw(2);
+            this.DistanceBoost = distanceBoost ?? Fix32.One;
         }
     }
 }
