@@ -12,7 +12,7 @@ namespace ProgramableNetwork
 {
     public class AMDataBand : IDataBandTyped<AMDataBandChannel>
     {
-        private static readonly int SerializerVersion = 0;
+        private static readonly int SerializerVersion = 1;
         private DataBandProto m_proto;
         private Proto.ID m_protoId;
 
@@ -105,7 +105,7 @@ namespace ProgramableNetwork
                 if (item.ValidIterations-- == 0)
                 {
                     // After one second reset signal
-                    item.Value = new Fix32[0];
+                    item.Value = Fix32.Zero;
                 }
             }
 
@@ -115,20 +115,15 @@ namespace ProgramableNetwork
             }
         }
 
-        public void Update(int index, Fix32[] value)
+        public void Update(int index, Fix32 value)
         {
-            m_active[index].Value = new Fix32[value.Length];
-            Array.Copy(value, m_active[index].Value, value.Length);
+            m_active[index].Value = value;
             m_active[index].ValidIterations = 60;
         }
 
-        public Fix32[] Read(int index)
+        public Fix32 Read(int index, Fix32 def)
         {
-            Fix32[] ints = new Fix32[m_active[index].Value.Length];
-            if (m_active[index].ValidIterations > 0)
-                Array.Copy(m_active[index].Value, ints, ints.Length);
-            // else only zeros
-            return ints;
+            return m_active[index].Value ?? def;
         }
 
         public void CreateChannel()
