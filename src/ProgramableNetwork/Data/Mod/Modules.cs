@@ -16,6 +16,7 @@ using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
 using Mafi.Core.Products;
+using Mafi.Unity.InputControl.TopStatusBar;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UserInterface.Components;
 using System;
@@ -41,6 +42,19 @@ namespace ProgramableNetwork
             Decisions(registrator);
             Display(registrator);
             Radio(registrator);
+
+            // SPECIAL
+            registrator
+                .AddCategory(Category.Control)
+                .AddInput("pause", "Pause")
+                .Action(m => {
+                    if (m.Input["pause", 0] > Fix32.Zero)
+                    {
+                        GlobalDependencyResolver.Get<GameSpeedController>().RequestPause();
+                    }
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
         }
 
         private static void Constants(ProtoRegistrator registrator)
