@@ -62,6 +62,7 @@
     <None Include="Assets\DLLs\Mafi.Unity.dll" />
     <None Include="Assets\DLLs\Mafi.Core.dll" />
     <None Include="Assets\DLLs\Mafi.Base.dll" />
+    <None Include="Assets\DLLs\Mafi.Unity.dll" />
     <None Include="Assets\DLLs\Mafi.dll" />
     <None Include="Assets\DLLs\Mafi.ModsAuthoringSupport.dll" />
   </ItemGroup>
@@ -309,14 +310,17 @@
     <Reference Include="UnityEditor.UnityConnectModule">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\Managed\UnityEngine\UnityEditor.UnityConnectModule.dll</HintPath>
     </Reference>
-    <Reference Include="Mafi">
-      <HintPath>Assets\DLLs\Mafi.dll</HintPath>
+    <Reference Include="Mafi.Base">
+      <HintPath>Assets\DLLs\Mafi.Base.dll</HintPath>
     </Reference>
     <Reference Include="Mafi.ModsAuthoringSupport">
       <HintPath>Assets\DLLs\Mafi.ModsAuthoringSupport.dll</HintPath>
     </Reference>
-    <Reference Include="Mafi.Base">
-      <HintPath>Assets\DLLs\Mafi.Base.dll</HintPath>
+    <Reference Include="Mafi.Unity">
+      <HintPath>Assets\DLLs\Mafi.Unity.dll</HintPath>
+    </Reference>
+    <Reference Include="Mafi">
+      <HintPath>Assets\DLLs\Mafi.dll</HintPath>
     </Reference>
     <Reference Include="Mafi.Core">
       <HintPath>Assets\DLLs\Mafi.Core.dll</HintPath>

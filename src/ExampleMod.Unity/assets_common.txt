@@ -16,6 +16,9 @@ antena_1406
 antena_35ee
     Assets/ProgramableNetwork/Antena/Antena.prefab
 
+antenat2_b2ea
+    Assets/ProgramableNetwork/Antena/AntenaT2.prefab
+
 computer_1324
     Assets/ProgramableNetwork/Computer/box_back.mat
     Assets/ProgramableNetwork/Computer/box_back.png
