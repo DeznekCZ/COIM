@@ -11,11 +11,18 @@ namespace ProgramableNetwork
         {
             Mine = mine;
             IconPath = mine.Prototype.IconPath;
-            Strings = mine.CustomTitle.HasValue
-                ? new Proto.Str(LocalizationManager.GetLocalizedString0Arg("name_" + mine.CustomTitle.Value, mine.CustomTitle.Value, "", true, true))
-                : new Proto.Str(mine.Prototype.Strings.Name);
+            Strings = GetStrings(mine);
             Id = new Proto.ID(mine.Prototype.Id.Value + "_" + mine.Id.Value);
         }
+
+        public static Proto.Str GetStrings(WorldMapMine mine)
+        {
+            if (mine is null) return new Proto.Str(LocalizationManager.GetLocalizedString0Arg("name_empty", "No selection", "", true, true));
+            return mine.CustomTitle.HasValue
+                ? new Proto.Str(LocalizationManager.GetLocalizedString0Arg("name_" + mine.CustomTitle.Value, mine.CustomTitle.Value, "", true, true))
+                : new Proto.Str(mine.Prototype.Strings.Name);
+        }
+
         public WorldMapMine Mine { get; internal set; }
 
         public string IconPath { get; }

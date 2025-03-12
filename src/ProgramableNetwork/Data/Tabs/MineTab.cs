@@ -19,6 +19,7 @@ namespace ProgramableNetwork
         private readonly Antena m_module;
         private readonly Func<WorldMapMine, bool> m_filter;
         private readonly ItemDetailWindowView m_window;
+        private readonly AntenaInspector m_inspector;
         private readonly Action m_refresh;
         private readonly StackContainer m_btnPreviewHolder;
         private Btn m_btnPreview;
@@ -26,7 +27,7 @@ namespace ProgramableNetwork
         private ProtoPicker<MineInstanceProto> m_protoPicker;
 
         public MineTab(UiBuilder builder, Antena module, AMDataBandChannel fieldId, Func<Antena, WorldMapMine, bool> filter,
-            ItemDetailWindowView parentWindow, Action refresh)
+            ItemDetailWindowView parentWindow, AntenaInspector inspector, Action refresh)
             : base(builder, "product_" + DateTime.Now.Ticks)
         {
             m_builder = builder;
@@ -34,6 +35,7 @@ namespace ProgramableNetwork
             m_module = module;
             m_filter = (proto) => filter.Invoke(m_module, proto);
             m_window = parentWindow;
+            m_inspector = inspector;
             m_refresh = refresh;
 
             m_btnPreviewHolder = m_builder
@@ -47,6 +49,7 @@ namespace ProgramableNetwork
                 .SetSize(40, 40)
                 .SetIcon(m_builder.Style.Icons.Empty)
                 .OnClick(FindProduct)
+                .ToolTip(m_inspector, () => MineInstanceProto.GetStrings(m_fieldId.WorldMapMine).Name.TranslatedString)
                 .AppendTo(m_btnPreviewHolder);
 
             m_btnClear = m_builder
@@ -63,7 +66,7 @@ namespace ProgramableNetwork
 
             SetSizeMode(SizeMode.Dynamic);
             this.SetHeight(40);
-            this.SetWidth(64);
+            this.SetWidth(60);
 
             Refresh();
         }
@@ -85,6 +88,7 @@ namespace ProgramableNetwork
                                 .SetButtonStyle(m_builder.Style.Global.ImageBtn)
                                 .SetSize(40, 40)
                                 .SetIcon(m_fieldId.WorldMapMine.Prototype.IconPath)
+                                .ToolTip(m_inspector, () => MineInstanceProto.GetStrings(m_fieldId.WorldMapMine).Name.TranslatedString)
                                 .OnClick(FindProduct)
                                 .AppendTo(m_btnPreviewHolder);
 

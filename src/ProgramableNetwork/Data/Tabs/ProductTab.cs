@@ -62,7 +62,7 @@ namespace ProgramableNetwork
 
             SetSizeMode(SizeMode.Dynamic);
             this.SetHeight(40);
-            this.SetWidth(64);
+            this.SetWidth(60);
 
             Refresh();
         }

@@ -19,7 +19,7 @@ namespace ProgramableNetwork
 
         public AMDataBand OriginalDataBand { get; set; }
 
-        public AMOperation Operation => m_operation;
+        public AMOperation Operation { get => m_operation; set => m_operation = value; }
 
         private Antena m_antena;
         private EntityId m_antenaId;
@@ -85,37 +85,41 @@ namespace ProgramableNetwork
         public enum AMOperation
         {
             // ALTERNATE
-            None = 0,
+            [AMName("No action")] None = 0,
 
             // READS
             [AMName("Read quantity")] ReadQuantity = 1,
             [AMName("Read capacity")] ReadCapacity = 2,
             [AMName("Read usage (0-100%)")] ReadUsage = 3,
             [AMName("Read product")] ReadProduct = 4,
+            [AMName("Read pause")] ReadPause = 5,
 
             // WRITES
-            [AMName("Read pause")] WritePause = 24,
-            [AMName("Read production")] WriteProduction = 25,
+            [AMName("Set pause")] WritePause = 24,
+            [AMName("Set production")] WriteProduction = 25,
         }
 
         public void Update()
         {
-            if (!(WorldMapMine is null))
+            if (!(WorldMapMine is null) && (!WorldMapMine.IsPaused || m_operation == AMOperation.WritePause || m_operation == AMOperation.ReadPause))
             {
                 switch (m_operation)
                 {
                     // READS
                     case AMOperation.ReadQuantity:
-                        Value = WorldMapMine.Buffer.Quantity.Value.ToFix32();
+                        OriginalDataBand.Update(Index, WorldMapMine.Buffer.Quantity.Value.ToFix32());
                         break;
                     case AMOperation.ReadCapacity:
-                        Value = WorldMapMine.Buffer.Capacity.Value.ToFix32();
+                        OriginalDataBand.Update(Index, WorldMapMine.Buffer.Capacity.Value.ToFix32());
                         break;
                     case AMOperation.ReadUsage:
-                        Value = WorldMapMine.Buffer.Quantity.Value.ToFix32() / WorldMapMine.Buffer.Capacity.Value.ToFix32();
+                        OriginalDataBand.Update(Index, 100 * WorldMapMine.Buffer.Quantity.Value.ToFix32() / WorldMapMine.Buffer.Capacity.Value.ToFix32());
                         break;
                     case AMOperation.ReadProduct:
-                        Value = Fix32.FromRaw(WorldMapMine.Buffer.Product.SlimId.Value);
+                        OriginalDataBand.Update(Index, Fix32.FromRaw(WorldMapMine.Buffer.Product.SlimId.Value));
+                        break;
+                    case AMOperation.ReadPause:
+                        OriginalDataBand.Update(Index, Fix32.FromRaw(WorldMapMine.IsPaused ? 1 : 0));
                         break;
 
                     // WRITES

@@ -134,35 +134,33 @@ namespace ProgramableNetwork
                 id: DataBand_AM,
                 strings: Proto.CreateStr(DataBand_AM, "AM", "Standard Amplitude Modulated signal used in long range radios. The channels are from 530 to 1700 kHz and steping by 10 kHz (total 118 channels), default redirection distance is 500 km, Antena tower may extend it", "Commonly known radio signal description"),
                 (context, proto) => new AMDataBand(context, proto),
-                channels: 117,
+                channels: 118,
                 (c0, c1) => c0.Index != c1.Index,
                 AMDataBand.Serialize,
                 AMDataBand.Deserialize,
-                channelDisplay: (c, i) => ((53 + i.Index).ToFix32() * 10.ToFix32()).IntegerPart + " kHz ("+
-                    (
-                    i.WorldMapMine is null
-                        ? "-"
-                        : i.WorldMapMine.CustomTitle.HasValue
-                        ? i.WorldMapMine.CustomTitle.Value
-                        : i.WorldMapMine.Prototype.Strings.Name.TranslatedString
-                    )+ ")",
+                channelDisplay: (c, i) => ((53 + i.Index).ToFix32() * 10.ToFix32()).IntegerPart + " kHz",
                 buttons: (entity, inspector, view, builder, container, dataBand, proto) =>
                 {
                     var text = builder.NewTxt("band_channel_value")
                         .SetHeight(20)
                         .SetText(proto.Display(entity.Context, dataBand))
+                        .SetWidth(180)
                         .SetAlignment(UnityEngine.TextAnchor.MiddleLeft);
 
-                    new MineTab(builder, entity, dataBand, (a, m) =>
-                    {
-                        var entityDistance = entity.Prototype.DistanceBoost * proto.Distance;
-                        return m.Location.Position.DistanceTo(new Vector2i(1860, 2717)) < entityDistance.IntegerPart;
-                    }, view, () => {
-                        text.SetText(proto.Display(entity.Context, dataBand));
-                    })
+                    var action = new MineActionTab(builder, entity, dataBand, (a, m) => true, view, inspector)
                         .AppendTo(container);
 
-                    // TODO add something to pick operation type for read
+                    new MineTab(builder, entity, dataBand,
+                        (a, m) => {
+                            var entityDistance = entity.Prototype.DistanceBoost * proto.Distance;
+                            return m.Location.Position.DistanceTo(new Vector2i(1860, 2717)) < entityDistance.IntegerPart;
+                        },
+                        view, inspector,
+                        () => {
+                            text.SetText(proto.Display(entity.Context, dataBand));
+                            action.Refresh(); // for update of product
+                        })
+                        .AppendTo(container);
 
                     text.AppendTo(container);
 

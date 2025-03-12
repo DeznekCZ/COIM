@@ -73,5 +73,6 @@ namespace ProgramableNetwork
         public static Category Stats { get; } = new Category(id: "stats", name: "Stats modules");
         public static Category Antene { get; } = new Category(id: "antene", name: "Antena modules");
         public static Category AnteneFM { get; } = new Category(id: "antene_fm", name: "FM modules");
+        public static Category AnteneAM { get; } = new Category(id: "antene_am", name: "AM modules");
     }
 }
