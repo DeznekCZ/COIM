@@ -35,14 +35,14 @@ namespace ProgramableNetwork
 				.BuildAndAdd();
 
 			ResearchNodeProto antenaT2Proto = registrator.ResearchNodeProtoBuilder
-				.Start("Long range signal", NewIds.Research.ProgramableNetwork_AntenaStage2)
-				.Description("Unlocks controlled input by condition")
+				.Start("Long range antena", NewIds.Research.ProgramableNetwork_AntenaStage2)
+				.Description("Unlocks higher antena for better signal spreading (100% bonus of distance)")
 				.SetCosts(ResearchCostsTpl.Build.SetDifficulty(8))
 				.AddLayoutEntityToUnlock(NewIds.Controllers.AntenaT2)
 				.BuildAndAdd();
 			
-			nodeProto.GridPosition = new Vector2i(36, 8);
-			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.MaintenanceDepot));
+			nodeProto.GridPosition = new Vector2i(32, 1);
+			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.ResearchLab2));
 
             antenaT2Proto.GridPosition = new Vector2i(48, 0);
             antenaT2Proto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(NewIds.Research.ProgramableNetwork_Stage1));
