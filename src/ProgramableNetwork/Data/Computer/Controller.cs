@@ -398,11 +398,17 @@ namespace ProgramableNetwork
             // Copy all outputs to inputs
             foreach (Module module in Modules)
             {
-                foreach (KeyValuePair<string, ModuleConnector> item in module.InputModules)
+                foreach (KeyValuePair<string, ModuleConnector> item in module.InputModules.ToArray())
                 {
                     if (cache.TryGetValue(item.Value.ModuleId, out Module connected))
                     {
                         module.Input[item.Key] = connected.Output[item.Value.OutputId, 0];
+                    }
+                    else
+                    {
+                        // Remove disconnected module
+                        module.InputModules.Remove(item.Key);
+                        module.Input[item.Key] = Fix32.Zero;
                     }
                 }
             }
