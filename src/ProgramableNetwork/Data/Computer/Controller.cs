@@ -379,17 +379,18 @@ namespace ProgramableNetwork
             m_electricConsumer.OnPowerRequiredChanged();
 
             ComputingRequired = requiredComputingPower;
+            m_computingConsumer.OnComputingRequiredChanged();
 
             if (m_electricConsumer.TryConsume())
             {
                 if (m_maintenanceConsumer.Status.CurrentBreakdownChance < new Random().Next(100).Percent())
                 {
-                    UpdateModules();
+                    UpdateModules(m_computingConsumer.TryConsume());
                 }
             }
         }
 
-        private void UpdateModules()
+        private void UpdateModules(bool computingConsumed)
         {
             // This will run the "compiled tree" per tick
             // the tree is recompiled when edited only or when construct
@@ -419,6 +420,8 @@ namespace ProgramableNetwork
             bool anyInfo = false;
             foreach (Module module in Modules)
             {
+                if (module.Prototype.UsedComputing > Computing.Zero && !computingConsumed)
+                    continue;
                 try
                 {
                     module.Execute();
