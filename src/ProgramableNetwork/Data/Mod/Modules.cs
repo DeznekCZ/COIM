@@ -50,9 +50,15 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Control)
                 .AddInput("pause", "Pause")
                 .Action(m => {
+                    m.Info = false;
                     if (m.Input["pause", 0] > Fix32.Zero)
                     {
                         GlobalDependencyResolver.Get<GameSpeedController>().RequestPause();
+                        m.Info = true;
+                    }
+                    else
+                    {
+                        m.Info = false;
                     }
                 })
                 .AddControllerDevice()
