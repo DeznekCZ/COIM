@@ -598,13 +598,13 @@ namespace ProgramableNetwork
                 .AddOutput("c", "C")
                 .AddOutput("d", "D")
                 .AddEntityField<Controller>("controller", "Connection device", "Name of output module, which must exist in target Controller", distance: 20.ToFix32())
-                .AddStringField("name", "Output Name", "C")
+                .AddStringField("name", "Output Name", defaultValue: "C")
                 .Action(m =>
                 {
                     //Mafi.Log.Info("Update of input");
                     Controller controller = m.Field.Entity<Controller>("controller");
                     string moduleType = "Connection_Controller_Output".ModuleId();
-                    string noduleName = m.Field["name", ""];
+                    string noduleName = m.Field["name", "C"];
                     if (noduleName.Length > 0 && controller != null)
                     {
                         //Mafi.Log.Info("Target entity found");
@@ -641,7 +641,7 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddInput("c", "C")
                 .AddInput("d", "D")
-                .AddStringField("name", "Name", "Name of output module, which must be selected in target Controller", "C")
+                .AddStringField("name", "Name", "Name of output module, which must be selected in target Controller", defaultValue: "C")
                 .AddControllerDevice()
                 .BuildAndAdd();
 
