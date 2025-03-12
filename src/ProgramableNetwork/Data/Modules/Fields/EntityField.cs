@@ -1,13 +1,15 @@
 ﻿using Mafi;
+using Mafi.Core;
 using Mafi.Core.Entities;
-using Mafi.Core.Entities.Static;
 using Mafi.Unity.InputControl.Inspectors;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Components;
 using System;
-using static Mafi.Unity.UiFramework.Components.StackContainer;
+using Newtonsoft.Json;
+using Mafi.Core.Entities.Static;
+using System.Linq;
 
 namespace ProgramableNetwork
 {
@@ -37,35 +39,58 @@ namespace ProgramableNetwork
 
         public void Validate(Module module)
         {
-            if (GetEntity(module, out Entity entity))
+            // FOR ONLY NEWLY CONSTRUCTED
+            if (module.StringData.TryGetValue("field__" + Id, out var value))
             {
-                if (entity is StaticEntity staticEntity)
+                Log.Info("Searching for entity in module by config: " + module.Id + " with key: " + Id);
+                EntityInfo entityData = JsonConvert.DeserializeObject<EntityInfo>(value);
+
+                foreach (IEntity entity in module.Controller.Context.EntitiesManager.Entities)
                 {
-                    Tile3f controllerPosition = module.Controller.Position3f;
-                    bool inRange = false;
-                    foreach (var item in staticEntity.OccupiedTiles)
+                    if (entity.Prototype.Id.Value == entityData.Prototype)
                     {
-                        Tile3f tilePosition = staticEntity.Position3f
-                            .AddX(item.RelativeX)
-                            .AddY(item.RelativeY);
-                        if ((controllerPosition - tilePosition).LengthSqr <= sqrDistance)
+                        entity.HasPosition(out Tile2f entityTile);
+
+                        if (module.Controller.Position2f - entityTile == entityData.Relative)
                         {
-                            inRange = true;
-                            break;
+                            Log.Info("Found by definition");
+                            module.Field.Entity(Id, entity); // set by position
+                            return; // BUT position changed
                         }
                     }
-                    if (!inRange)
+                }
+                Log.Info("Not found");
+                module.Field.Entity<IEntity>(Id, null); // update string representation
+            }
+            // BACKWARD COMPATIBILITY
+            else if (module.NumberData.TryGetValue("field__" + Id, out var id))
+            {
+                Log.Info("Searching for entity in module by id: " + module.Id + " with key: " + Id);
+                if (module.Controller.Context.EntitiesManager.TryGetEntity(new EntityId(id), out IEntity anyEntity))
+                {
+                    if (anyEntity is IStaticEntity entity && entity.OccupiedTiles
+                        .Select(t => entity.Position3f.AddX(t.RelativeX).AddY(t.RelativeY))
+                        .FirstOrDefault(t => (module.Controller.Position3f - t).Length <= distance) != Tile3f.Zero)
                     {
-                        module.Field[id] = 0;
+                        Log.Info("Reassigning for reference");
+                        module.Field.Entity(Id, entity);
+                    }
+                    else
+                    {
+                        Log.Info("Removing - out of range");
+                        module.Field.Entity<IEntity>(Id, null);
                     }
                 }
+                else
+                {
+                    Log.Info("Removing - missing entity");
+                    module.Field.Entity<IEntity>(Id, null);
+                }
             }
-        }
-
-        private bool GetEntity(Module module, out Entity entity)
-        {
-            entity = module.Field.Entity<Entity>(id);
-            return entity != null;
+            else
+            {
+                Log.Info("Entity is not set: " + Id + " with key: " + Id);
+            }
         }
 
         public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
@@ -198,7 +223,7 @@ namespace ProgramableNetwork
                 m_inspector.EntitySelectionInput = new EntitySelector(m_module, m_distance, m_refresh, m_filter,
                     (entity) =>
                     {
-                        m_module.Field[m_dataName] = Fix32.FromRaw(entity.Id.Value);
+                        m_module.Field.Entity(m_dataName, entity);
                     });
             }
         }

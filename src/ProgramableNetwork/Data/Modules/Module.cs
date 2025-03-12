@@ -5,7 +5,9 @@ using Mafi.Core.Entities;
 using Mafi.Core.Products;
 using Mafi.Localization;
 using Mafi.Serialization;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProgramableNetwork
@@ -357,9 +359,33 @@ namespace ProgramableNetwork
             public T Entity<T>(string name)
                 where T : class, IEntity
             {
-                module.NumberData.TryGetValue("field__" + name, out int data);
-                module.Context.EntitiesManager.TryGetEntity(new EntityId(data), out T entity);
-                return entity;
+                if (module.NumberData.TryGetValue("field__" + name, out int data))
+                {
+                    module.Context.EntitiesManager.TryGetEntity(new EntityId(data), out T entity);
+                    if (!module.StringData.ContainsKey("field__" + name))
+                    {
+                        Entity(name, entity);
+                    }
+                    return entity;
+                }
+                return default;
+            }
+
+            public void Entity<T>(string name, T entity)
+                where T : class, IEntity
+            {
+                if (entity is null)
+                {
+                    module.NumberData.TryRemove("field__" + name, out _);
+                    module.StringData.TryRemove("field__" + name, out _);
+                    return;
+                }
+
+                entity.HasPosition(out Tile2f posA);
+                var relativePosition = module.Controller.Position2f - posA;
+
+                module.NumberData["field__" + name] = entity.Id.Value;
+                module.StringData["field__" + name] = JsonConvert.SerializeObject(new EntityInfo(entity, relativePosition));
             }
 
             public ProductProto Product(string name)
@@ -482,6 +508,46 @@ namespace ProgramableNetwork
                     ? (ModuleStatus)data : ModuleStatus.Init;
                 set => module.NumberData["status__" + direction + name] = (int)value;
             }
+        }
+    }
+
+    public class EntityInfo
+    {
+        public int Id { get; set; }
+        public string Prototype { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+
+        [JsonIgnore]
+        public RelTile2f Relative => new RelTile2f(Fix32.FromRaw(X), Fix32.FromRaw(Y));
+
+        public EntityInfo() { } // serializer constructor
+
+        public EntityInfo(IEntity entity, RelTile2f position)
+        {
+            Id = entity.Id.Value;
+            Prototype = entity.Prototype.Id.Value;
+            X = position.X.RawValue;
+            Y = position.Y.RawValue;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is EntityInfo other &&
+                   Id == other.Id &&
+                   Prototype == other.Prototype &&
+                   X == other.X &&
+                   Y == other.Y;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = -1866251748;
+            hashCode = hashCode * -1521134295 + Id.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Prototype);
+            hashCode = hashCode * -1521134295 + X.GetHashCode();
+            hashCode = hashCode * -1521134295 + Y.GetHashCode();
+            return hashCode;
         }
     }
 }
