@@ -47,7 +47,7 @@ namespace ProgramableNetwork
             return dataBand;
         }
 
-        public void initContext()
+        public void initContext(Antena antena)
         {
             // nothing to do
         }

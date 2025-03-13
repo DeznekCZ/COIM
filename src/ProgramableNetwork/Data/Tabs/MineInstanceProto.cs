@@ -7,20 +7,23 @@ namespace ProgramableNetwork
 {
     internal class MineInstanceProto : IProtoWithIcon
     {
-        public MineInstanceProto(WorldMapMine mine)
+        public MineInstanceProto(WorldMapMine mine, AMDataBandChannel dataBandChannel)
         {
             Mine = mine;
             IconPath = mine.Prototype.IconPath;
-            Strings = GetStrings(mine);
+            Strings = GetStrings(mine, dataBandChannel);
             Id = new Proto.ID(mine.Prototype.Id.Value + "_" + mine.Id.Value);
         }
 
-        public static Proto.Str GetStrings(WorldMapMine mine)
+        public static Proto.Str GetStrings(WorldMapMine mine, AMDataBandChannel dataBandChannel)
         {
             if (mine is null) return new Proto.Str(LocalizationManager.GetLocalizedString0Arg("name_empty", "No selection", "", true, true));
-            return mine.CustomTitle.HasValue
-                ? new Proto.Str(LocalizationManager.GetLocalizedString0Arg("name_" + mine.CustomTitle.Value, mine.CustomTitle.Value, "", true, true))
-                : new Proto.Str(mine.Prototype.Strings.Name);
+            return new Proto.Str(LocalizationManager.GetLocalizedString0Arg(
+                "name_" + mine.CustomTitle.Value,
+                (mine.CustomTitle.HasValue ? mine.CustomTitle.Value : mine.Prototype.Strings.Name.TranslatedString) +
+                "\n(distance: " + dataBandChannel.Distance(mine).IntegerPart + " km," +
+                " error: " + dataBandChannel.ErrorPossibility(mine).ToFix32().IntegerPart + "%)" ,
+                "", true, true));
         }
 
         public WorldMapMine Mine { get; internal set; }

@@ -29,7 +29,7 @@ namespace ProgramableNetwork
             registrator.PrototypesDb.Add(DataBandProto.Create<UnkownnDataBandType, IDataBandChannel>(
                 id: DataBand_Unknown,
                 strings: Proto.CreateStr(DataBand_Unknown, "Unknown", "Received signal is unrecognizable", "unkonwn band description"),
-                (context, proto) => new UnkownnDataBandType(context, proto),
+                (antena, context, proto) => new UnkownnDataBandType(context, proto),
                 channels: 0,
                 (c0, c1) => false,
                 UnkownnDataBandType.Serialize,
@@ -40,7 +40,7 @@ namespace ProgramableNetwork
             registrator.PrototypesDb.Add(DataBandProto.Create<FMDataBand, FMDataBandChannel>(
                 id: DataBand_FM,
                 strings: Proto.CreateStr(DataBand_FM, "FM", "Standard Frquency Modulated signal used in classic radios. The channels are from 85.5 to 108.0 kHz and steping by 500 Hz (total 45 channels), default redirection distance is 1000 metres, Antena tower may extend it", "Commonly known radio signal description"),
-                (context, proto) => new FMDataBand(context, proto),
+                (antena, context, proto) => new FMDataBand(antena, context, proto),
                 channels: 45,
                 (c0, c1) => c0.Index != c1.Index,
                 FMDataBand.Serialize,
@@ -133,7 +133,7 @@ namespace ProgramableNetwork
             registrator.PrototypesDb.Add(DataBandProto.Create<AMDataBand, AMDataBandChannel>(
                 id: DataBand_AM,
                 strings: Proto.CreateStr(DataBand_AM, "AM", "Standard Amplitude Modulated signal used in long range radios. The channels are from 530 to 1700 kHz and steping by 10 kHz (total 118 channels), default redirection distance is 500 km, Antena tower may extend it", "Commonly known radio signal description"),
-                (context, proto) => new AMDataBand(context, proto),
+                (antena, context, proto) => new AMDataBand(antena, context, proto),
                 channels: 118,
                 (c0, c1) => c0.Index != c1.Index,
                 AMDataBand.Serialize,
@@ -151,10 +151,7 @@ namespace ProgramableNetwork
                         .AppendTo(container);
 
                     new MineTab(builder, entity, dataBand,
-                        (a, m) => {
-                            var entityDistance = entity.Prototype.DistanceBoost * proto.Distance;
-                            return m.Location.Position.DistanceTo(new Vector2i(1860, 2717)) < entityDistance.IntegerPart;
-                        },
+                        entity.Prototype.DistanceBoost,
                         view, inspector,
                         () => {
                             text.SetText(proto.Display(entity.Context, dataBand));

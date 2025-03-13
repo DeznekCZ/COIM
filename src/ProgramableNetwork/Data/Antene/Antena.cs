@@ -86,7 +86,7 @@ namespace ProgramableNetwork
             string id = data.GetString("databand_type").ValueOrNull ?? DataBands.DataBand_Unknown.Value;
             Proto.ID dataBandType = new Proto.ID(id);
             DataBandProto dataBandProto = Context.ProtosDb.Get<DataBandProto>(dataBandType).ValueOrNull;
-            DataBand = dataBandProto.Constructor(Context, dataBandProto);
+            DataBand = dataBandProto.Constructor(this, Context, dataBandProto);
         }
 
         public static void Serialize(Antena value, BlobWriter writer)
@@ -125,7 +125,7 @@ namespace ProgramableNetwork
                 Log.Info($"Loaded DataBand type: {DataBand.GetType().FullName}");
                 DataBand = (DataBand as UnloadedDataBand).Deserialize(Context, saveVersion);
                 DataBand.Context = Context;
-                DataBand.initContext();
+                DataBand.initContext(this);
                 Log.Info($"Deserialized DataBand type: {DataBand.GetType().FullName}");
             }
         }

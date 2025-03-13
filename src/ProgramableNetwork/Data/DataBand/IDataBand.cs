@@ -13,6 +13,6 @@ namespace ProgramableNetwork
         void Update();
         void CreateChannel();
         void RemoveChannel(IDataBandChannel channel);
-        void initContext();
+        void initContext(Antena antena);
     }
 }

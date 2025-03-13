@@ -134,7 +134,7 @@ namespace ProgramableNetwork
                             var current = dataBandProtos[i];
                             selectionButton.OnClick(() =>
                             {
-                                Entity.DataBand = current.Constructor(Entity.Context, current);
+                                Entity.DataBand = current.Constructor(Entity, Entity.Context, current);
                             });
                         }
                     }

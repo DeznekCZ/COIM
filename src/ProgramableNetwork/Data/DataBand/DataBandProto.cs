@@ -13,7 +13,7 @@ namespace ProgramableNetwork
     {
         public static DataBandProto Create<TDataBand, TDataBandChannel>(
             ID id, Str strings,
-            Func<EntityContext, DataBandProto, TDataBand> constructor,
+            Func<Antena, EntityContext, DataBandProto, TDataBand> constructor,
             int channels,
             Func<TDataBandChannel, TDataBandChannel, bool> comparator,
             Action<TDataBand, BlobWriter> serializer,
@@ -28,7 +28,7 @@ namespace ProgramableNetwork
         {
             return new DataBandProto(
                 id, strings,
-                constructor: (context, proto) => constructor(context, proto),
+                constructor: (antena, context, proto) => constructor(antena, context, proto),
                 channels,
                 comparator: (a, b) => comparator((TDataBandChannel)a, (TDataBandChannel)b),
                 serializer: (dataBand, reader) => serializer((TDataBand)dataBand, reader),
@@ -40,7 +40,7 @@ namespace ProgramableNetwork
         }
 
         private DataBandProto(ID id, Str strings,
-            Func<EntityContext, DataBandProto, IDataBand> constructor,
+            Func<Antena, EntityContext, DataBandProto, IDataBand> constructor,
             int channels,
             Func<IDataBandChannel, IDataBandChannel, bool> comparator,
             Action<IDataBand, BlobWriter> serializer,
@@ -60,7 +60,7 @@ namespace ProgramableNetwork
             Deserializer = deserializer;
         }
 
-        public Func<EntityContext, DataBandProto, IDataBand> Constructor { get; }
+        public Func<Antena, EntityContext, DataBandProto, IDataBand> Constructor { get; }
         public int Channels { get; }
         public Func<EntityContext, IDataBandChannel, string> Display { get; }
         public Action<Antena, AntenaInspector, AntenaView, UiBuilder, StackContainer, IDataBandChannel, DataBandProto> Buttons { get; }

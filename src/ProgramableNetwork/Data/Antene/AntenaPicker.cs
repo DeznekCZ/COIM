@@ -18,7 +18,7 @@ namespace ProgramableNetwork
         private readonly WindowView m_window;
         private readonly ISelectionInspector<Antena, AntenaSelector, Antena> m_inspector;
         private readonly InspectorContext m_inspectorContext;
-        private readonly IDataBandChannel m_module;
+        private readonly FMDataBandChannel m_module;
         private readonly string m_dataName;
         private readonly Fix32 m_distance;
         private readonly Action<Antena> m_selected;
@@ -27,7 +27,7 @@ namespace ProgramableNetwork
         private readonly Btn m_selectionButton;
         private Btn m_btnPreview;
 
-        public AntenaPicker(UiBuilder builder, AntenaProto antenaProto, IDataBandChannel module, Action<Antena> selected, Fix32 distance, Action refresh, WindowView parentWindow, AntenaInspector inspector)
+        public AntenaPicker(UiBuilder builder, AntenaProto antenaProto, FMDataBandChannel module, Action<Antena> selected, Fix32 distance, Action refresh, WindowView parentWindow, AntenaInspector inspector)
             : base(builder, "entity_" + DateTime.Now.Ticks)
         {
             m_builder = builder;

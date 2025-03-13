@@ -24,7 +24,7 @@ namespace ProgramableNetwork
             {
             }
 
-            public void initContext()
+            public void initContext(Antena antena)
             {
                 Prototype = Context.ProtosDb.Get<DataBandProto>(DataBand_Unknown).ValueOrThrow("Unknown signal not found");
             }

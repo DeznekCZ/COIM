@@ -31,8 +31,7 @@ namespace ProgramableNetwork
 
             for (int i = 0; i < listOriginal.Count; i++)
             {
-                if (listOriginal[i].Antena?.Id != lastKnown[i].Antena?.Id ||
-                    comparator.Invoke(listOriginal[i], lastKnown[i]))
+                if (comparator.Invoke(listOriginal[i], lastKnown[i]))
                 {
                     return false;
                 }

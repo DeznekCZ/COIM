@@ -16,8 +16,9 @@ namespace ProgramableNetwork
         private DataBandProto m_proto;
         private Proto.ID m_protoId;
 
-        public AMDataBand(EntityContext context, DataBandProto prototype)
+        public AMDataBand(Antena antena, EntityContext context, DataBandProto prototype)
         {
+            Antena = antena;
             Prototype = prototype;
             Context = context;
             m_redirected = new Lyst<AMDataBandChannel>();
@@ -31,6 +32,8 @@ namespace ProgramableNetwork
         private AMDataBand()
         {
         }
+
+        public Antena Antena { get; set; }
 
         public DataBandProto Prototype
         {
@@ -79,9 +82,10 @@ namespace ProgramableNetwork
             m_active = Lyst<AMDataBandChannel>.Deserialize(reader);
         }
 
-        public void initContext()
+        public void initContext(Antena antena)
         {
-            Log.Info($"Initializing FM BandData");
+            Antena = antena;
+            Log.Info($"Initializing AM BandData");
             var optional = Context.ProtosDb.Get<DataBandProto>(m_protoId);
             if (optional.HasValue)
             {
