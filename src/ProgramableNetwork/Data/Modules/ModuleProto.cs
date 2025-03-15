@@ -430,7 +430,7 @@ namespace ProgramableNetwork
             /// <param name="name">Displayerd tooltip value</param>
             /// <param name="width">taken module width</param>
             /// <returns></returns>
-            public Builder AddDisplay(string id, string name, int width, bool image = false, string[] toggle = null)
+            public Builder AddDisplay(string id, string name, int width, bool image = false, string[] toggle = null, bool entity = false)
             {
                 m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width,
                     image ? "[image]" :
@@ -552,6 +552,13 @@ namespace ProgramableNetwork
             public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
             {
                 m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity.GetType().IsAssignableTo(t) && (filter?.Invoke(module, entity) ?? true), distance ?? 5.ToFix32()));
+                return this;
+            }
+
+            public Builder AddEntityTypeField<T>(string id, string name, string shortDesc = null, Func<Module, T, bool> filter = null)
+                where T : EntityProto, IProtoWithIcon
+            {
+                m_fields.Add(new EntityTypeField<T>(id, name, shortDesc ?? "", filter ?? ((m, proto) => true)));
                 return this;
             }
 

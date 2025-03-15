@@ -3,6 +3,7 @@ using Mafi.Collections;
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Products;
+using Mafi.Core.Prototypes;
 using Mafi.Localization;
 using Mafi.Serialization;
 using Newtonsoft.Json;
@@ -322,6 +323,38 @@ namespace ProgramableNetwork
                 module.NumberData.TryRemove("in__" + name, out slimId);
                 module.StringData.TryRemove("in__" + name, out cache);
                 return null;
+            }
+
+            public IProtoWithIcon EntityProtoIconified(string name)
+            {
+                module.NumberData.TryGetValue("in__" + name, out int slimId);
+
+                if (slimId == 0)
+                {
+                    return default;
+                }
+
+                module.StringData.TryGetValue("in__" + name, out string cache);
+                if (!string.IsNullOrEmpty(cache))
+                { // try get entity by name and check slimId
+                    Option<Proto> product = module.Context.ProtosDb.Get<Proto>(new Mafi.Core.Prototypes.Proto.ID(cache));
+                    if (product.HasValue && FixSavedGames.GetPrototypeString(product.Value.Id.Value).RawValue == slimId)
+                    {
+                        return product.Value as IProtoWithIcon;
+                    }
+                }
+                // else
+                { // try get entity by slimId
+                    Option<Proto> product = module.Context.ProtosDb.First<Proto>(p => FixSavedGames.GetPrototypeString(p.Id.Value).RawValue == slimId);
+                    if (product.HasValue)
+                    {
+                        module.StringData["in__" + name] = product.Value.Id.Value;
+                        return product.Value as IProtoWithIcon;
+                    }
+                }
+
+                module.NumberData.TryRemove("in__" + name, out slimId);
+                return default;
             }
         }
 

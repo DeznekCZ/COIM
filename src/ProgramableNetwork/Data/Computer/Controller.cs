@@ -173,6 +173,10 @@ namespace ProgramableNetwork
                     m.Controller = this;
                     m.Context = Context;
                     m.initContexts(saveVersion);
+                    foreach (IField field in m.Prototype.Fields)
+                    {
+                        field.Validate(m);
+                    }
                 }
             }
 

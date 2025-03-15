@@ -1,7 +1,10 @@
 ﻿
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Mafi;
+using Mafi.Collections;
 using Mafi.Core;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Entities;
@@ -40,6 +43,9 @@ public class FixSavedGames : IInitializer
 
 	private readonly IWorldMapManager m_mapManager;
 
+	private static Dict<string, Action<int>> m_fixer = new Dict<string, Action<int>>();
+    private static List<string> m_strings;
+
     public bool IsBeingLoaded { get; }
 
 	public FixSavedGames(SettlementsManager settlementsManager, EntitiesBuilder entitiesBuilder, TerrainManager terrainManager, IEntitiesManager entitiesManager, IConstructionManager constructionManager, IProductsManager productsManager, PopsHealthManager healthManager, UpointsManager upointsManager, ProtosDb protosDb, UnlockedProtosDb unlockedProtosDb, IPropertiesDb propsDb, StatsManager statsManager, IWorldMapManager mapManager)
@@ -58,17 +64,32 @@ public class FixSavedGames : IInitializer
 		m_statsManager = statsManager;
 		m_mapManager = mapManager;
 		IsBeingLoaded = true;
-
-		Log.Info("[ConstructionSite]: Save game fixer created.");
+		
+		Log.Info($"[{ProgramableNetwork.ModDefinition.ModName}]: Save game fix on loaded game.");
+		SavedGameFixer();
 	}
 
 	void IInitializer.DoOnNewGameOnly(Action action)
 	{
-		Log.Info("[ConstructionSite]: Save game fix initialized on new game, so do nothing.");
+		Log.Info($"[{ProgramableNetwork.ModDefinition.ModName}]: Save game fix initialized on new game, so do nothing.");
 	}
 
 	private void SavedGameFixer()
 	{
+		m_strings = new List<string> { "" }.Concat(m_protosDb.All<Proto>().Select(p => p.Id.Value)).ToList();
+
+		foreach (var item in m_fixer)
+		{
+			try
+			{
+				item.Value(m_strings.IndexOf(item.Key));
+			}
+			catch (Exception)
+			{
+				// ignore error when object is already disposed
+				// mostly whis will not happen, if game is not loaded multiple times
+			}
+		}
 	}
 
 	void IInitializer.DoOnNewGameOrAfterLoad(Action action)
@@ -76,4 +97,14 @@ public class FixSavedGames : IInitializer
 		Log.Info($"[{ProgramableNetwork.ModDefinition.ModName}]: Save game fix on loaded game.");
 		SavedGameFixer();
 	}
+
+    public static void ValidatePrototypeString(string s, Action<int> value)
+    {
+		m_fixer.Add(s, value);
+    }
+
+    public static Fix32 GetPrototypeString(string s)
+    {
+		return Fix32.FromRaw(m_strings.IndexOf(s));
+    }
 }

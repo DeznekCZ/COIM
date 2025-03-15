@@ -323,7 +323,6 @@ namespace ProgramableNetwork
             {
                 text.SetButtonStyle(builder.Style.Global.ImageBtn);
                 text.SetIcon(module.Display[display.Id, builder.Style.Icons.Empty]);
-                string imagePath = display.DefaultText.Replace("[image]", "") + builder.Style.Icons.Empty;
 
                 m_computerView.m_updaters.Add(new DataUpdater<
                         string,

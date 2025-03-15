@@ -6,16 +6,20 @@ using Mafi.Core.Buildings.Offices;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities;
+using Mafi.Core.Entities.Dynamic;
 using Mafi.Core.Entities.Priorities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.ElectricPower;
+using Mafi.Core.Factory.Machines;
 using Mafi.Core.Factory.NuclearReactors;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
 using Mafi.Core.Products;
+using Mafi.Core.Prototypes;
+using Mafi.Core.Vehicles.Trucks;
 using Mafi.Unity.InputControl.TopStatusBar;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UserInterface.Components;
@@ -91,6 +95,24 @@ namespace ProgramableNetwork
                 .AddOutput("value", "Value")
                 .AddProductField("crop", "Crop", filter: FarmProductFilter)
                 .Action(m => { m.Output["value"] = m.Field["crop", 0]; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Constant_Machine", "Constant (machine)", "#M", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddOutput("value", "Value")
+                .AddEntityTypeField<MachineProto>("machine", "Machine")
+                .Action(m => { m.Output["value"] = m.Field["machine", 0]; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Constant_Vehicle", "Constant (vehicle)", "#V", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddOutput("value", "Value")
+                .AddEntityTypeField<DrivingEntityProto>("vehicle", "vehicle")
+                .Action(m => { m.Output["value"] = m.Field["vehicle", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1195,6 +1217,15 @@ namespace ProgramableNetwork
                 .AddDisplay("a", "Product", 1, image: true)
                 .AddControllerDevice()
                 .Action(m => m.Display["a"] = m.Input.Product("a")?.IconPath)
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart($"Display_Entity", $"Display: entity", $"F-E", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Display)
+                .AddInput("a", "Entity")
+                .AddDisplay("a", "Entity", 1, image: true)
+                .AddControllerDevice()
+                .Action(m => m.Display["a"] = m.Input.EntityProtoIconified("a")?.IconPath)
                 .BuildAndAdd();
 
             registrator
