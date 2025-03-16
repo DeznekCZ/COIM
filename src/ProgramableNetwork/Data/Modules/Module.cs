@@ -76,7 +76,7 @@ namespace ProgramableNetwork
         }
 
         public EntityContext Context { get; set; }
-        public ModuleLayout Layout => m_layout = m_layout ?? new ModuleLayout(Prototype);
+        public ModuleLayout Layout => new ModuleLayout(Prototype);
 
         public void Execute()
         {
@@ -325,6 +325,17 @@ namespace ProgramableNetwork
                 return null;
             }
 
+            public T Entity<T>(string name)
+                where T : class, IEntity
+            {
+                if (module.NumberData.TryGetValue("in__" + name, out int data))
+                {
+                    module.Context.EntitiesManager.TryGetEntity(new EntityId(data), out T entity);
+                    return entity;
+                }
+                return default;
+            }
+
             public IProtoWithIcon EntityProtoIconified(string name)
             {
                 module.NumberData.TryGetValue("in__" + name, out int slimId);
@@ -355,6 +366,55 @@ namespace ProgramableNetwork
 
                 module.NumberData.TryRemove("in__" + name, out slimId);
                 return default;
+            }
+        }
+
+        [DoNotSave(0, null)]
+        public FieldOrInputData FieldOrInput => new FieldOrInputData(this);
+
+        public class FieldOrInputData
+        {
+            private Module module;
+
+            internal FieldOrInputData(Module module)
+            {
+                this.module = module;
+            }
+
+            public Fix32 this[string name, int defaultValue]
+            {
+                get => module.Field["field_" + name, Fix32.Zero] > Fix32.Zero
+                    ? module.Field[name, defaultValue]
+                    : module.Input[name, defaultValue];
+            }
+
+            public Fix32 this[string name, Fix32 defaultValue]
+            {
+                get => module.Field["field_" + name, Fix32.Zero] > Fix32.Zero
+                    ? module.Field[name, defaultValue]
+                    : module.Input[name, defaultValue];
+            }
+
+            public T Entity<T>(string name)
+                where T : class, IEntity
+            {
+                return module.Field["field_" + name, Fix32.Zero] > Fix32.Zero
+                    ? module.Field.Entity<T>(name)
+                    : module.Input.Entity<T>(name);
+            }
+
+            public ProductProto Product(string name)
+            {
+                return module.Field["field_" + name, Fix32.Zero] > Fix32.Zero
+                    ? module.Field.Product(name)
+                    : module.Input.Product(name);
+            }
+
+            public IProtoWithIcon EntityProtoIconified(string name)
+            {
+                return module.Field["field_" + name, Fix32.Zero] > Fix32.Zero
+                    ? module.Field.EntityProtoIconified(name)
+                    : module.Input.EntityProtoIconified(name);
             }
         }
 
@@ -460,6 +520,38 @@ namespace ProgramableNetwork
                 {
                     module.NumberData["field__" + name] = value.RawValue;
                 }
+            }
+
+            public IProtoWithIcon EntityProtoIconified(string name)
+            {
+                module.NumberData.TryGetValue("field__" + name, out int slimId);
+
+                if (slimId == 0)
+                {
+                    return default;
+                }
+
+                module.StringData.TryGetValue("field__" + name, out string cache);
+                if (!string.IsNullOrEmpty(cache))
+                { // try get entity by name and check slimId
+                    Option<Proto> product = module.Context.ProtosDb.Get<Proto>(new Mafi.Core.Prototypes.Proto.ID(cache));
+                    if (product.HasValue && FixSavedGames.GetPrototypeString(product.Value.Id.Value).RawValue == slimId)
+                    {
+                        return product.Value as IProtoWithIcon;
+                    }
+                }
+                // else
+                { // try get entity by slimId
+                    Option<Proto> product = module.Context.ProtosDb.First<Proto>(p => FixSavedGames.GetPrototypeString(p.Id.Value).RawValue == slimId);
+                    if (product.HasValue)
+                    {
+                        module.StringData["field__" + name] = product.Value.Id.Value;
+                        return product.Value as IProtoWithIcon;
+                    }
+                }
+
+                module.NumberData.TryRemove("field__" + name, out slimId);
+                return default;
             }
         }
 

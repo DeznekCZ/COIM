@@ -164,8 +164,10 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "Sum")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] + m.Input["b", 0]; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] + m.FieldOrInput["b", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -202,8 +204,10 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] - m.Input["b", 0]; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] - m.FieldOrInput["b", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -221,10 +225,12 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
                 .Action(m => {
                     Fix32 a = m.Input["a", 0];
-                    Fix32 b = m.Input["b", 0];
+                    Fix32 b = m.FieldOrInput["b", 0];
                     Fix32 c = a * b;
                     m.Output["c"] = a * b;
                 })
@@ -236,11 +242,13 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
                 .AddOutput("error", "Error")
                 .Action(m => {
                     Fix32 a = m.Input["a", 0];
-                    Fix32 b = m.Input["b", 0];
+                    Fix32 b = m.FieldOrInput["b", 0];
                     if (b == 0)
                     {
                         m.Output["error"] = 1;
@@ -260,11 +268,13 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
                 .AddOutput("error", "Error")
                 .Action(m => {
                     Fix32 a = m.Input["a", 0];
-                    Fix32 b = m.Input["b", 0];
+                    Fix32 b = m.FieldOrInput["b", 0];
                     if (b == 0)
                     {
                         m.Output["error"] = 1;
@@ -594,7 +604,7 @@ namespace ProgramableNetwork
             foreach (int i in new int[] { 4, 8 })
             {
                 var builder = registrator
-                    .ModuleBuilderStart($"Decision_Select_{i}", $"Select ({i-1} pins)", $"SEL-{i-1}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .ModuleBuilderStart($"Decision_Select_{i}", $"Select ({i-1} pins, integer)", $"SEL-{i-1}", Assets.Base.Products.Icons.Vegetables_svg)
                     .AddCategory(Category.Decision)
                     .AddCategory(Category.Control)
                     .AddInput("index", "Index")
@@ -1099,8 +1109,10 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] == m.Input["b", 0] ? 1 : 0; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] == m.FieldOrInput["b", 0] ? 1 : 0; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1110,8 +1122,10 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] > m.Input["b", 0] ? 1 : 0; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] > m.FieldOrInput["b", 0] ? 1 : 0; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1121,8 +1135,10 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] < m.Input["b", 0] ? 1 : 0; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] < m.FieldOrInput["b", 0] ? 1 : 0; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1132,8 +1148,10 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] >= m.Input["b", 0] ? 1 : 0; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] >= m.FieldOrInput["b", 0] ? 1 : 0; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1143,8 +1161,10 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] <= m.Input["b", 0] ? 1 : 0; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] <= m.FieldOrInput["b", 0] ? 1 : 0; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1156,11 +1176,13 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Control)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
+                .AddBooleanField("field_b", "Use direct constant")
+                .AddFix32Field("b", "B")
                 .AddOutput("b", "Low")
                 .AddOutput("a", "High")
                 .Action(m => {
                     Fix32 a = m.Input["a", 0];
-                    Fix32 b = m.Input["b", 0];
+                    Fix32 b = m.FieldOrInput["b", 0];
                     if (a > b)
                     {
                         m.Output["a"] = a;
