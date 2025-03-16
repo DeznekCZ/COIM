@@ -18,8 +18,7 @@ using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
 using Mafi.Core.Products;
-using Mafi.Core.Prototypes;
-using Mafi.Core.Vehicles.Trucks;
+using Mafi.Core.Vehicles;
 using Mafi.Unity.InputControl.TopStatusBar;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UserInterface.Components;
@@ -1107,6 +1106,89 @@ namespace ProgramableNetwork
                         return ModuleStatus.Error;
                     }
                     m.Output["priority"] = logistic.GeneralPriority;
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Vehicle_Get", "Connection: Vehicle count (get)", "V-G", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .Width(4)
+                .AddInput("vehicle", "Vehicle type")
+                .AddOutput("count", "Vehicle count")
+                .AddEntityField<IEntityAssignedWithVehicles>("building", "Building", "Any building with configurable priority (20 metres)", 20.ToFix32())
+                .AddBooleanField("field_vehicle", "Select by settings", defaultValue: false)
+                .AddEntityTypeField<DrivingEntityProto>("vehicle", "Vehicle", "Any suppoted vehicle type",
+                    filter: (m,p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
+                .Action(m => {
+                    var logistic = m.Field.Entity<IEntityAssignedWithVehicles>("building");
+                    if (logistic is null)
+                    {
+                        m.SetError("Building is not connected");
+                        return ModuleStatus.Error;
+                    }
+                    DrivingEntityProto drivingEntity = m.FieldOrInput.EntityProtoIconified("vehicle") as DrivingEntityProto;
+                    if (drivingEntity is null)
+                    {
+                        m.Output["count"] = logistic.AllVehicles.Count;
+                        return ModuleStatus.Running;
+                    }
+
+                    if (!logistic.CanVehicleBeAssigned(drivingEntity))
+                    {
+                        m.SetError("Invalid vehicle type");
+                        return ModuleStatus.Error;
+                    }
+
+                    m.Output["count"] = logistic.AllVehicles.Where(v => v.Prototype == drivingEntity).Count();
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Vehicle_Set", "Connection: Vehicle count (set)", "V-S", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .Width(4)
+                .AddInput("count", "Vehicle count")
+                .AddInput("vehicle", "Vehicle type")
+                .AddEntityField<IEntityAssignedWithVehicles>("building", "Building", "Any building with configurable priority (20 metres)", 20.ToFix32())
+                .AddBooleanField("field_vehicle", "Select type by settings", defaultValue: false)
+                .AddEntityTypeField<DrivingEntityProto>("vehicle", "Vehicle", "Any suppoted vehicle type",
+                    filter: (m,p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
+                .AddBooleanField("field_count", "Set count by settings", defaultValue: false)
+                .AddInt32Field("count", "Vehicle count", defaultValue: 0)
+                .Action(m => {
+                    var logistic = m.Field.Entity<IEntityAssignedWithVehicles>("building");
+                    if (logistic is null)
+                    {
+                        m.SetError("Building is not connected");
+                        return ModuleStatus.Error;
+                    }
+
+                    DrivingEntityProto drivingEntity = m.FieldOrInput.EntityProtoIconified("vehicle") as DrivingEntityProto;
+
+                    if (drivingEntity is null || !logistic.CanVehicleBeAssigned(drivingEntity))
+                    {
+                        m.SetError("Invalid vehicle type");
+                        return ModuleStatus.Error;
+                    }
+
+                    int count = m.FieldOrInput["count", Fix32.Zero].IntegerPart;
+
+                    int actualCount = logistic.AllVehicles.Where(v => v.Prototype == drivingEntity).Count();
+                    if (actualCount < count)
+                    {
+                        logistic.AssignVehicle(GlobalDependencyResolver.Get<IVehiclesManager>(), drivingEntity);
+                    }
+                    else if (actualCount > count)
+                    {
+                        Vehicle veh = logistic.AllVehicles.Where(v => v.Prototype == drivingEntity).FirstOrDefault();
+                        logistic.UnassignVehicle(veh, cancelJobs: false);
+                    }
                     return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
