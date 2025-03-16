@@ -963,16 +963,26 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionWrite)
                 .AddInput("mode", "Import mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
-                .AddEntityField<IEntityWithLogisticsControl>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
+                    distance: 20.ToFix32(),
+                    filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
                 .Action(m => {
-                    var logistic = m.Field.Entity<IEntityWithLogisticsControl>("logistic");
-                    if (logistic is null)
+                    IEntity entity = m.Field.Entity<IEntity>("logistic");
+                    if (entity is IEntityWithLogisticsControl logistic)
+                    {
+                        logistic.SetLogisticsInputMode((EntityLogisticsMode)m.Input["mode", 0].IntegerPart);
+                        return ModuleStatus.Running;
+                    }
+                    else if (entity is IEntityWithSimpleLogisticsControl simple)
+                    {
+                        simple.SetLogisticsInputDisabled(m.Input["mode", 0].IntegerPart == 2);
+                        return ModuleStatus.Running;
+                    }
+                    else
                     {
                         m.SetError("Building is not connected");
                         return ModuleStatus.Error;
                     }
-                    logistic.SetLogisticsInputMode((EntityLogisticsMode)m.Input["mode", 0].IntegerPart);
-                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -982,16 +992,26 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionRead)
                 .AddOutput("mode", "Import mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
-                .AddEntityField<IEntityWithLogisticsControl>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
+                    distance: 20.ToFix32(),
+                    filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
                 .Action(m => {
-                    var logistic = m.Field.Entity<IEntityWithLogisticsControl>("logistic");
-                    if (logistic is null)
+                    IEntity entity = m.Field.Entity<IEntity>("logistic");
+                    if (entity is IEntityWithLogisticsControl logistic)
+                    {
+                        m.Output["mode"] = ((int)logistic.LogisticsInputMode).ToFix32();
+                        return ModuleStatus.Running;
+                    }
+                    else if (entity is IEntityWithSimpleLogisticsControl simple)
+                    {
+                        m.Output["mode"] = (simple.IsLogisticsInputDisabled ? 2 : 1).ToFix32();
+                        return ModuleStatus.Running;
+                    }
+                    else
                     {
                         m.SetError("Building is not connected");
                         return ModuleStatus.Error;
                     }
-                    m.Output["mode"] = ((int)logistic.LogisticsInputMode).ToFix32();
-                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -1001,16 +1021,26 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionWrite)
                 .AddInput("mode", "Export mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
-                .AddEntityField<IEntityWithLogisticsControl>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
+                    distance: 20.ToFix32(),
+                    filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
                 .Action(m => {
-                    var logistic = m.Field.Entity<IEntityWithLogisticsControl>("logistic");
-                    if (logistic is null)
+                    IEntity entity = m.Field.Entity<IEntity>("logistic");
+                    if (entity is IEntityWithLogisticsControl logistic)
+                    {
+                        logistic.SetLogisticsOutputMode((EntityLogisticsMode)m.Input["mode", 0].IntegerPart);
+                        return ModuleStatus.Running;
+                    }
+                    else if (entity is IEntityWithSimpleLogisticsControl simple)
+                    {
+                        simple.SetLogisticsOutputDisabled(m.Input["mode", 0].IntegerPart == 2);
+                        return ModuleStatus.Running;
+                    }
+                    else
                     {
                         m.SetError("Building is not connected");
                         return ModuleStatus.Error;
                     }
-                    logistic.SetLogisticsOutputMode((EntityLogisticsMode)m.Input["mode", 0].IntegerPart);
-                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -1020,16 +1050,26 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionRead)
                 .AddOutput("mode", "Export mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
-                .AddEntityField<IEntityWithLogisticsControl>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
+                .AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
+                    distance: 20.ToFix32(),
+                    filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
                 .Action(m => {
-                    var logistic = m.Field.Entity<IEntityWithLogisticsControl>("logistic");
-                    if (logistic is null)
+                    IEntity entity = m.Field.Entity<IEntity>("logistic");
+                    if (entity is IEntityWithLogisticsControl logistic)
+                    {
+                        m.Output["mode"] = ((int)logistic.LogisticsOutputMode).ToFix32();
+                        return ModuleStatus.Running;
+                    }
+                    else if (entity is IEntityWithSimpleLogisticsControl simple)
+                    {
+                        m.Output["mode"] = (simple.IsLogisticsOutputDisabled ? 2 : 1).ToFix32();
+                        return ModuleStatus.Running;
+                    }
+                    else
                     {
                         m.SetError("Building is not connected");
                         return ModuleStatus.Error;
                     }
-                    m.Output["mode"] = ((int)logistic.LogisticsOutputMode).ToFix32();
-                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -1060,7 +1100,7 @@ namespace ProgramableNetwork
                 .AddOutput("priority", "Priority: 1 - 15")
                 .AddEntityField<IEntityWithGeneralPriority>("building", "Building", "Any building with configurable priority (20 metres)", 20.ToFix32())
                 .Action(m => {
-                    var logistic = m.Field.Entity<IEntityWithGeneralPriority>("logistic");
+                    var logistic = m.Field.Entity<IEntityWithGeneralPriority>("building");
                     if (logistic is null)
                     {
                         m.SetError("Building is not connected");
