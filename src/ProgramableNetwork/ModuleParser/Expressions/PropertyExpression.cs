@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Contexts;
 
 namespace ProgramableNetwork.Python
 {
@@ -122,37 +119,32 @@ namespace ProgramableNetwork.Python
             }
             else
             {
-                MemberInfo[] instanceMembers = value.GetType()
-                    .GetMember(this.name, BindingFlags.Public | BindingFlags.Instance);
-                MemberInfo[] staticMembers = value.GetType()
-                    .GetMember(this.name, BindingFlags.Public | BindingFlags.Static);
+                PropertyInfo property = value.GetType().GetProperty(name);
+                if (property != null)
+                    return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
 
-                if (instanceMembers.Length > 0)
+                // Look for explicitly implemented interface properties
+                foreach (var interfaceType in value.GetType().GetInterfaces())
                 {
-                    if (instanceMembers[0] is PropertyInfo property)
-                        return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
-                    if (instanceMembers[0] is FieldInfo field)
-                        return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+                    PropertyInfo interfaceProperty = interfaceType.GetProperty(name);
+                    if (interfaceProperty != null)
+                    {
+                        return new Reference<object>(
+                            (v) => interfaceProperty.SetValue(value, v),
+                            () => interfaceProperty.GetValue(value));
+                    }
                 }
-                else if (staticMembers.Length > 0)
-                {
-                    if (staticMembers[0] is PropertyInfo property)
-                        return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
-                    if (staticMembers[0] is FieldInfo field)
-                        return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
-                }
+
+                FieldInfo field = value.GetType().GetField(name);
+                if (field != null)
+                    return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
 
                 MethodInfo[] instanceMethods = value.GetType()
                     .GetMethods(BindingFlags.Public | BindingFlags.Instance)
                     .Where(m => m.Name == this.name)
                     .ToArray();
-                MethodInfo[] staticMethods = value.GetType()
-                    .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .Where(m => m.Name == this.name)
-                    .ToArray();
 
                 var member = instanceMethods.Length > 0 ? MemberCall.Create(value, instanceMethods) :
-                     staticMethods.Length > 0 ? MemberCall.Create(null, staticMethods) :
                      throw new KeyNotFoundException($"{value.GetType()} has no member with name \"{this.name}\"");
                 return new Reference<object>(
                     (v) => throw new InvalidOperationException($"{value.GetType()} is sealed, can not set method \"{this.name}\""),

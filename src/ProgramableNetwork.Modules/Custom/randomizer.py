@@ -1,6 +1,6 @@
 from Core.categories import DefaultCategories
 from Core.fields import Int32Field
-from Core.mafi import Fix32, fix
+from Core.mafi import fix
 from Core.module import DefaultControllers, Module
 from Core.io import Output, Input
 
@@ -32,8 +32,8 @@ class Randomizer(Module):
         if old_seed != seed:
             raw = (seed + addition).RawValue
             self.Output.set("seed", seed)
-            self.Output.set("value", Fix32.FromRaw((raw >> 4) ^ (raw << 4)))
+            self.Output.set("value", fix((raw >> 4) ^ (raw << 4)))
         else:
             seed = self.Output.get("value", seed)
             raw = (seed + addition).RawValue
-            self.Output.set("value", Fix32.FromRaw((raw >> 4) ^ (raw << 4)))
+            self.Output.set("value", fix((raw >> 4) ^ (raw << 4)))

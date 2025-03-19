@@ -1,8 +1,11 @@
 from Core.categories import DefaultCategories
 from Core.fields import EntityField
 from Core.module import DefaultControllers, Module, ModuleStatus
-from Core.entities import IEntityWithWorkers, StaticEntity, IElectricityConsumingEntity
 from Core.io import Output
+
+from Mafi.Core.Entities.Static import StaticEntity
+from Mafi.Core.Factory.ElectricPower import IElectricityConsumingEntity
+from Mafi.Core.Population import IEntityWithWorkers
 
 class Connection_IsActive(Module):
     name = "Connection: Status"
@@ -42,5 +45,4 @@ class Connection_IsActive(Module):
             self.Output.set_bool("workers", False)
             self.Output.set_bool("constructed", True)
             self.Output.set_bool("pause", True)
-            self.Error = self.Tr("NoSelection", "No building is connected")
             return ModuleStatus.Error

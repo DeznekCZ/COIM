@@ -31,19 +31,34 @@ namespace ProgramableNetwork.Python
 
         public void Execute(IDictionary<string, object> context)
         {
-            if (parent == null || !parent.Executed(context))
-            {
-                Executed(context);
-            }
+            Executed(context);
         }
 
         private bool Executed(IDictionary<string, object> context)
         {
-            object condition = this.condition == null ? true : this.condition.GetValue(context);
-            if ((condition is null) || (condition is bool b && !b) || (Expressions.__fix__(condition) == Fix32.Zero))
+            if (parent != null && parent.Executed(context))
+                return true; // already executed
+
+            if (this.condition is null)
             {
-                return false;
+                foreach (var item in block.statements)
+                {
+                    item.Execute(context);
+                }
+                return true;
             }
+
+            object condition = this.condition.GetValue(context);
+
+            if (condition is null)
+                return false;
+
+            if (condition is bool b && !b)
+                return false;
+
+            if (Expressions.__fix__(condition) <= Fix32.Zero)
+                return false;
+
             foreach (var item in block.statements)
             {
                 item.Execute(context);

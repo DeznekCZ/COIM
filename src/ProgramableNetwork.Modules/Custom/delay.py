@@ -1,7 +1,8 @@
 from Core.categories import DefaultCategories
 from Core.io import Input, Output
-from Core.mafi import Fix32
 from Core.module import DefaultControllers, Module
+
+from Mafi import Fix32
 
 class Runtime_Delay_2(Module):
     name = "Control: Delay (2 ticks)"

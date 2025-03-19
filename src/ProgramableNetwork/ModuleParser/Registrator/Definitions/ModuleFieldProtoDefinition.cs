@@ -13,6 +13,8 @@ namespace ProgramableNetwork.Python
 
         public ModuleEntityFieldProtoDefinition(Type type, string id, string name, string desc, Fix32 distance)
         {
+            if (type is null)
+                throw new NullReferenceException("Invalid entity type");
             this.type = type;
             this.id = id;
             this.name = name;

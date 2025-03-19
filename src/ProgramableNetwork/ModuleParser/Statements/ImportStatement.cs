@@ -1,16 +1,7 @@
 ﻿using Mafi;
-using Mafi.Core.Buildings.Settlements;
-using Mafi.Core.Buildings.Storages;
-using Mafi.Core.Entities.Static;
-using Mafi.Core.Entities;
-using Mafi.Core.Factory.Machines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Mafi.Core.Population;
-using Mafi.Core.Factory.ElectricPower;
-using Mafi.Base.Prototypes.Buildings.ThermalStorages;
-using Mafi.Core.Factory.NuclearReactors;
 
 namespace ProgramableNetwork.Python
 {
@@ -31,37 +22,6 @@ namespace ProgramableNetwork.Python
 
             if (name == "Core.categories") // ignore other types
                 context["DefaultCategories"] = typeof(Category);
-
-            else if (name == "Core.entities")
-            {
-                exportedItems.Select(argument =>
-                {
-                    EntityType entityType = (EntityType)Enum.Parse(typeof(EntityType), argument.value);
-
-                    switch (entityType)
-                    {
-                        case EntityType.Entity: return (argument.value, typeof(Entity));
-                        case EntityType.StaticEntity: return (argument.value, typeof(StaticEntity));
-                        case EntityType.StorageBase: return (argument.value, typeof(StorageBase));
-                        case EntityType.Controller: return (argument.value, typeof(Controller));
-                        case EntityType.Antena: return (argument.value, typeof(Antena));
-                        case EntityType.Machine: return (argument.value, typeof(Machine));
-                        case EntityType.ThermalStorage: return (argument.value, typeof(ThermalStorage));
-                        case EntityType.SettlementHousingModule: return (argument.value, typeof(SettlementHousingModule));
-                        case EntityType.SettlementFoodModule: return (argument.value, typeof(SettlementFoodModule));
-                        case EntityType.SettlementTransformer: return (argument.value, typeof(SettlementTransformer));
-                        case EntityType.SettlementWasteModule: return (argument.value, typeof(SettlementWasteModule));
-                        case EntityType.SettlementServiceModule: return (argument.value, typeof(SettlementServiceModule));
-                        case EntityType.IEntityWithWorkers: return (argument.value, typeof(IEntityWithWorkers));
-                        case EntityType.IElectricityConsumingEntity: return (argument.value, typeof(IElectricityConsumingEntity));
-                        case EntityType.IUnityConsumingEntity: return (argument.value, typeof(IUnityConsumingEntity));
-                        case EntityType.NuclearReactor: return (argument.value, typeof(NuclearReactor));
-
-                        default:
-                            throw new NotImplementedException($"Entity type '{entityType}' is not implemented");
-                    }
-                }).Call(p => context[p.value] = p.Item2).ToList();
-            }
 
             else if (name == "Core.fields")
             {
@@ -99,6 +59,19 @@ namespace ProgramableNetwork.Python
                                 string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
                                 int defaultValue = (int?)(args.Length > 3 && args[3] is OrderedValue o3 ? o3.Value : null) ?? 0;
                                 return new ModuleInt32FieldProtoDefinition(
+                                    id, name1, desc, defaultValue
+                                );
+                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                    }
+                    else if (argument.value == "Fix32Field")
+                    {
+                        return (argument.value, new Constructor(
+                            (IArgumentValue[] args) => {
+                                string id = (string)(args[0] is OrderedValue o0 ? o0.Value : null);
+                                string name1 = (string)(args[1] is OrderedValue o1 ? o1.Value : null);
+                                string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
+                                Fix32 defaultValue = (Fix32?)(args.Length > 3 && args[3] is OrderedValue o3 ? o3.Value : null) ?? Fix32.Zero;
+                                return new ModuleFix32FieldProtoDefinition(
                                     id, name1, desc, defaultValue
                                 );
                             }, new string[] { "id", "name", "desc", "defaultValue" }));
@@ -189,6 +162,19 @@ namespace ProgramableNetwork.Python
             else if (name == "Core.errors")
             {
                 context["Exception"] = new Constructor((args) => new Exception(args[0].Value as string), new string[] { "value" });
+            }
+
+            else if (name.StartsWith("Mafi"))
+            {
+                foreach (var item in exportedItems)
+                {
+                    string fullName = name + "." + item.value;
+                    context[item.value] = AppDomain
+                        .CurrentDomain
+                        .GetAssemblies()
+                        .SelectMany(a => a.GetExportedTypes())
+                        .First(t => t.FullName == fullName);
+                }
             }
 
             else

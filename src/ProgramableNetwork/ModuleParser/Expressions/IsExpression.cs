@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Remoting.Contexts;
+﻿using Mafi;
+using System;
 
 namespace ProgramableNetwork.Python
 {
@@ -18,7 +17,7 @@ namespace ProgramableNetwork.Python
             }
             if (right is Type type && !(left is null))
             {
-                return type.IsAssignableFrom(left.GetType());
+                return left.GetType().IsAssignableTo(type);
             }
             return false;
         }

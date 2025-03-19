@@ -1,7 +1,4 @@
-
-
-from Core.entities import Entity
-
+from Mafi.Core.Entities import Entity
 
 class Field:
     def __init__(self, field_id: str, name: str, short_desc: str):
@@ -39,7 +36,7 @@ class FieldValue:
     def set_str(self, name: str, value: str) -> None:
         self.module.string_data["field__" + name] = value or ""
 
-    def get_str(self, name: str, default: "") -> str:
+    def get_str(self, name: str, default = "") -> str:
         return self.module.string_data["field__" + name] or default
 
     def set_ent(self, name: str, value: Entity = None) -> None:

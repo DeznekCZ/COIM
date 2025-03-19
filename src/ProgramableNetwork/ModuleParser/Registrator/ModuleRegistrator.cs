@@ -80,6 +80,12 @@ namespace ProgramableNetwork.Python
                     continue;
                 }
 
+                if (variable is ModuleFix32FieldProtoDefinition fix32Field)
+                {
+                    builder.AddFix32Field(fix32Field.id, fix32Field.name, fix32Field.desc, fix32Field.defaultValue);
+                    continue;
+                }
+
                 if (variable is ModuleStringFieldProtoDefinition stringField)
                 {
                     builder.AddStringField(stringField.id, stringField.name, stringField.desc, stringField.defaultValue);

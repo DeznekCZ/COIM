@@ -1,5 +1,5 @@
 
-from Core.mafi import Fix32
+from Mafi import Fix32
 
 class Output:
     def __init__(self, output_id: str, name: str):

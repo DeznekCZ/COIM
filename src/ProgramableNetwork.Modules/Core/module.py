@@ -1,8 +1,9 @@
 from Core.categories import Category
 from Core.fields import Field, FieldValue
-from Core.entities import Entity
 from Core.io import Input, Output, InputValue, OutputValue
 from Core.translate import LocStr, LocStr1, LocStrFormatted
+
+from Mafi.Core.Entities import Entity
 
 class DefaultControllers:
     Controller = "ProgramableNetwork_Controller"
@@ -18,12 +19,14 @@ class ModuleStatus:
 
 class Module:
     name: str = "module display name"
+    symbol: str = "short name"
     inputs: list[Input] = []
     outputs: list[Output] = []
     fields: list[Field] = []
     categories: list[Category] = []
     controllers: list[str] = []
     width: int = 0
+    computing: float = 0
 
     def __init__(self):
         # defines an interface to data of input inside module

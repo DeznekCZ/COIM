@@ -551,7 +551,7 @@ namespace ProgramableNetwork
 
             public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity.GetType().IsAssignableTo(t) && (filter?.Invoke(module, entity) ?? true), distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity?.GetType()?.IsAssignableTo(t) ?? false && (filter?.Invoke(module, entity) ?? true), distance ?? 5.ToFix32()));
                 return this;
             }
 
