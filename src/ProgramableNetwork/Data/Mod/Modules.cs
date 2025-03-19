@@ -107,7 +107,7 @@ namespace ProgramableNetwork
                 .Action(m => { m.Output["value"] = m.Field["machine", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
-
+            
             registrator
                 .ModuleBuilderStart("Constant_Vehicle", "Constant (vehicle)", "#V", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Arithmetic)
@@ -720,11 +720,12 @@ namespace ProgramableNetwork
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
                 .AddOutput("product", "Product in #")
-                .AddEntityField<LayoutEntity>("entity", "Connection device", "Storage connectable by cable 20m from controller", distance: 20.ToFix32(),
+                .AddEntityField<LayoutEntity>("entity", "Connected storage", "Storage connectable by cable 20m from controller", distance: 20.ToFix32(),
                     filter: (m, e) => e is StorageBase || // e is SettlementWasteModule
                                       e is SettlementFoodModule ||
                                       e is Hospital ||
-                                      e is SettlementModuleProto
+                                      e is SettlementModuleProto ||
+                                      e is IVirtualResourceMiningEntity
                     )
                 .Action(m =>
                 {
@@ -784,6 +785,15 @@ namespace ProgramableNetwork
                             ((Option<IProductBuffer>)module.GetType().GetField("m_inputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(module)).ValueOrNull
                         };
                         return GetValueFromBuffers(m, product, buffers);
+                    }
+
+                    if (entity is IVirtualResourceMiningEntity miner)
+                    {
+                        m.Output["quantity"] = miner.CapacityOfMine.Value;
+                        m.Output["capacity"] = miner.QuantityLeftToMine.Value;
+                        m.Output["fullness"] = (int)(100f * miner.QuantityLeftToMine.Value / miner.CapacityOfMine.Value);
+                        m.Output["product"] = Fix32.FromRaw((int)(uint)miner.ProductToMine.SlimId.Value);
+                        return ModuleStatus.Running;
                     }
 
                     m.Output["quantity"] = 0;
@@ -872,7 +882,7 @@ namespace ProgramableNetwork
                 .AddOutput("meltdown", "Is in melt down")
                 .AddOutput("power", "Actual power")
                 .Width(4)
-                .AddEntityField<NuclearReactor>("reactor", "Connection reactor", 2.ToFix32())
+                .AddEntityField<NuclearReactor>("reactor", "Connection reactor", "Must be placed next to reactor (2 metres)", 5.ToFix32())
                 .Action(m => {
                     var reactor = m.Field.Entity<NuclearReactor>("reactor");
 
@@ -902,7 +912,7 @@ namespace ProgramableNetwork
                 .AddOutput("fertility", "Actual fertility")
                 .AddOutput("fertilizer", "Actual fertilizer level")
                 .Width(4)
-                .AddEntityField<Farm>("farm", "Managed farm", "Farm placed next to controller (2 metres)", 2.ToFix32())
+                .AddEntityField<Farm>("farm", "Managed farm", "Farm placed next to controller (2 metres)", 5.ToFix32())
                 .Action(m => {
                     var farm = m.Field.Entity<Farm>("farm");
                     if (farm is null)
@@ -1235,7 +1245,7 @@ namespace ProgramableNetwork
                             () => foodModule.GetBuffer(1).ValueOrNull
                         };
                         return GetTypeFromBuffer(m, buffers);
-        }
+                    }
 
                     if (entity is Hospital hospital)
                     {

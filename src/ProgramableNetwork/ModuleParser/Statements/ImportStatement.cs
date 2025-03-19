@@ -179,7 +179,7 @@ namespace ProgramableNetwork.Python
 
             else
             {
-                throw new System.NotImplementedException();
+                throw new System.NotImplementedException(name);
             }
         }
     }

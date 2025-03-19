@@ -1,9 +1,10 @@
 from Core.categories import DefaultCategories
-from Core.entities import ThermalStorage
 from Core.fields import EntityField
 from Core.mafi import Fix32, fix
 from Core.module import DefaultControllers, Module, ModuleStatus
 from Core.io import Output
+
+from Mafi.Base.Prototypes.Buildings.ThermalStorages import ThermalStorage
 
 class Connection_ThermalStorage(Module):
     name = "Connection: Thermal Storage (charge)"
