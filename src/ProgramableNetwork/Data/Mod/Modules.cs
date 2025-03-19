@@ -13,7 +13,9 @@ using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.Machines;
 using Mafi.Core.Factory.NuclearReactors;
+using Mafi.Core.Factory.Sorters;
 using Mafi.Core.Factory.Transports;
+using Mafi.Core.Factory.WellPumps;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
@@ -1193,6 +1195,195 @@ namespace ProgramableNetwork
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Filter_Get", "Connection: Filter (get)", "F-G", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .Width(2)
+                .AddInput("index", "Storage compartment")
+                .AddOutput("product", "Product type")
+                .AddEntityField<LayoutEntity>("entity", "Connection device", "Storage connectable by cable 20m from controller", distance: 20.ToFix32(),
+                    filter: (m, e) => e is StorageBase || // e is SettlementWasteModule
+                                      e is SettlementFoodModule ||
+                                      e is Hospital ||
+                                      e is SettlementModuleProto ||
+                                      e is IVirtualResourceMiningEntity ||
+                                      e is Sorter // ||
+                                      // e is OreSortingPlant
+                    )
+                .AddBooleanField("field_index", "Set index by settings", defaultValue: false)
+                .AddInt32Field("index", "Storage compartment")
+                .Action(m => {
+                    LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
+
+                    if (entity is StorageBase storage)
+                    // entity is SettlementWasteModule
+                    {
+                        if (storage.StoredProduct.HasValue)
+                            m.Output["product"] = Fix32.FromRaw((int)(uint)storage.StoredProduct.Value.SlimId.Value);
+                        else
+                            m.Output["product"] = Fix32.Zero;
+                        return ModuleStatus.Running;
+                    }
+
+                    if (entity is SettlementFoodModule foodModule)
+                    {
+                        ProductProto product = m.Input.Product("product");
+                        var buffers = new Func<IProductBuffer>[] {
+                            () => foodModule.GetBuffer(0).ValueOrNull,
+                            () => foodModule.GetBuffer(1).ValueOrNull
+                        };
+                        return GetTypeFromBuffer(m, buffers);
+        }
+
+                    if (entity is Hospital hospital)
+                    {
+                        var buffers = new Func<IProductBuffer>[] {
+                            () => hospital.GetBuffer(0).ValueOrNull,
+                            () => hospital.GetBuffer(1).ValueOrNull
+                        };
+                        return GetTypeFromBuffer(m, buffers);
+                    }
+
+                    if (entity is SettlementServiceModule module)
+                    {
+                        var buffers = new Func<IProductBuffer>[] {
+                            () => (IProductBuffer)module.GetType().GetField("m_inputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(module),
+                            () => ((Option<IProductBuffer>)module.GetType().GetField("m_inputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(module)).ValueOrNull
+                        };
+                        return GetTypeFromBuffer(m, buffers);
+                    }
+
+                    if (entity is IVirtualResourceMiningEntity miner)
+                    {
+                        m.Output["product"] = Fix32.FromRaw((int)(uint)miner.ProductToMine.SlimId.Value);
+                        return ModuleStatus.Running;
+                    }
+
+                    if (entity is Sorter sorter)
+                    {
+                        int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
+                        m.Output["product"] = Fix32.FromRaw((int)((uint?)sorter.FilteredProducts.Skip(index).FirstOrDefault()?.SlimId.Value ?? 0));
+                        return ModuleStatus.Running;
+                    }
+
+                    //if (entity is OreSortingPlant oreSorter)
+                    //{
+                    //    int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
+                    //    char port = (char)('A' + index);
+                    //    var first = oreSorter.ProductsData.Where(d => d.Value.OutputPort == port).FirstOrDefault();
+                    //
+                    //    m.Output["product"] = first.Value is null ? Fix32.Zero :
+                    //        Fix32.FromRaw((int)(uint)first.Value.Buffer.Product.SlimId.Value);
+                    //    return ModuleStatus.Running;
+                    //}
+
+                    m.Output["product"] = -1;
+                    return ModuleStatus.Error;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            //registrator
+            //    .ModuleBuilderStart("Connection_Filter_Set", "Connection: Filter (set)", "F-S", Assets.Base.Products.Icons.Vegetables_svg)
+            //    .AddCategory(Category.Connection)
+            //    .AddCategory(Category.ConnectionRead)
+            //    .Width(2)
+            //    .AddInput("index", "Storage compartment")
+            //    .AddOutput("product", "Product type")
+            //    .AddEntityField<LayoutEntity>("entity", "Building with filter", "Connectable by cable 20m from controller", distance: 20.ToFix32(),
+            //        filter: (m, e) => e is Storage ||
+            //                          e is SettlementFoodModule ||
+            //                          e is Hospital ||
+            //                          e is Sorter
+            //        )
+            //    .AddBooleanField("field_index", "Set index by settings", defaultValue: false)
+            //    .AddInt32Field("index", "Storage compartment")
+            //    .Action(m => {
+            //        LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
+            //
+            //        if (entity is Storage storage)
+            //        // entity is SettlementWasteModule
+            //        {
+            //            ProductProto product = m.FieldOrInput.Product("product");
+            //            if (!(product is null) && storage.AssignProduct(product))
+            //            {
+            //                m.Warning = false;
+            //                return ModuleStatus.Running;
+            //            }
+            //            m.Warning = true;
+            //            return ModuleStatus.Running;
+            //        }
+            //
+            //        if (entity is SettlementFoodModule foodModule)
+            //        {
+            //            int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
+            //            if (index >= 2 || index < 0)
+            //            {
+            //                m.SetError("Invalid compartment index");
+            //                return ModuleStatus.Error;
+            //            }
+            //
+            //            Option<ProductProto> product = m.FieldOrInput.Product("product").SomeOption();
+            //            foodModule.SetProduct(product, index, false);
+            //            if (product.HasValue || foodModule.GetBuffer(index).HasValue)
+            //            {
+            //                m.Warning = !(product.Value?.SlimId == foodModule.GetBuffer(index).Value?.Product.SlimId);
+            //                return ModuleStatus.Running;
+            //            }
+            //            else
+            //                return ModuleStatus.Running;
+            //        }
+            //
+            //        if (entity is Hospital hospital)
+            //        {
+            //            int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
+            //            if (index >= 2 || index < 0)
+            //            {
+            //                m.SetError("Invalid compartment index");
+            //                return ModuleStatus.Error;
+            //            }
+            //
+            //            Option<ProductProto> product = m.FieldOrInput.Product("product").SomeOption();
+            //            hospital.SetProduct(product, index, false);
+            //            if (product.HasValue || hospital.GetBuffer(index).HasValue)
+            //            {
+            //                m.Warning = !(product.Value?.SlimId == hospital.GetBuffer(index).Value?.Product.SlimId);
+            //                return ModuleStatus.Running;
+            //            }
+            //            else
+            //                return ModuleStatus.Running;
+            //        }
+            //
+            //        if (entity is Sorter sorter)
+            //        {
+            //            ProductProto newProduct = m.FieldOrInput.Product("product");
+            //            if (m.NumberData.TryGetValue("old__product", out int product))
+            //            {
+            //                if (product != 0 && (newProduct is null || (int)(uint)newProduct.SlimId.Value != product))
+            //                { // remove old from set
+            //                    ProductProto oldProduct = sorter.FilteredProducts
+            //                            .FirstOrDefault(p => (int)(uint)p.SlimId.Value == product);
+            //                    if (oldProduct != null)
+            //                        sorter.ToggleFilteredProduct(oldProduct);
+            //                }
+            //            }
+            //            if (sorter.FilteredProducts
+            //                      .FirstOrDefault(p => p.SlimId == newProduct.SlimId)
+            //                      is null)
+            //            { // add to set
+            //                sorter.ToggleFilteredProduct(newProduct);
+            //                m.NumberData["old__product"] = (int)(uint)newProduct.SlimId.Value;
+            //            }
+            //            return ModuleStatus.Running;
+            //        }
+            //
+            //        m.Output["product"] = -1;
+            //        return ModuleStatus.Error;
+            //    })
+            //    .AddControllerDevice()
+            //    .BuildAndAdd();
         }
 
         private static ModuleStatus GetValueFromBuffers(Module m, ProductProto product, IProductBuffer[] buffers)
@@ -1207,6 +1398,25 @@ namespace ProgramableNetwork
 
             m.SetError("Invalid product");
             return ModuleStatus.Error;
+        }
+
+        private static ModuleStatus GetTypeFromBuffer(Module m, Func<IProductBuffer>[] buffers)
+        {
+            if (buffers.Length == 1)
+            {
+                m.Output["product"] = Fix32.FromRaw(buffers[0].Invoke().Product.SlimId.Value);
+                return ModuleStatus.Running;
+            }
+
+            int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
+            if (index >= buffers.Length || index < 0)
+            {
+                m.SetError("Invalid compartment index");
+                return ModuleStatus.Error;
+            }
+
+            m.Output["product"] = Fix32.FromRaw(buffers[0].Invoke()?.Product.SlimId.Value ?? 0);
+            return ModuleStatus.Running;
         }
 
         private static ModuleStatus StorageValueFromBuffer(Module m, ProductProto product, IProductBuffer buffer)
