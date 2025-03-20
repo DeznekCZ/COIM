@@ -1,16 +1,11 @@
 ﻿using Mafi;
 using Mafi.Base;
-using Mafi.Collections;
-using Mafi.Collections.ImmutableCollections;
+using Mafi.Base.Prototypes.Machines.ComputingEntities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Factory.Transports;
-using Mafi.Core.Gfx;
+using Mafi.Core.Factory.Datacenters;
 using Mafi.Core.Mods;
-using Mafi.Core.Ports.Io;
-using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
-using Mafi.Core.Terrain;
 
 namespace ProgramableNetwork
 {
@@ -18,6 +13,7 @@ namespace ProgramableNetwork
     {
         public partial class Controllers
         {
+            public static readonly Proto.ID Category = new Proto.ID("ProgramableNetwork_Category");
             public static readonly StaticEntityProto.ID Controller = new StaticEntityProto.ID("ProgramableNetwork_Computer");
             public static readonly StaticEntityProto.ID Antena = new StaticEntityProto.ID("ProgramableNetwork_Antena");
             public static readonly StaticEntityProto.ID AntenaT2 = new StaticEntityProto.ID("ProgramableNetwork_AntenaT2");
@@ -45,8 +41,24 @@ namespace ProgramableNetwork
     {
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
-            var category = registrator.PrototypesDb.Get<ToolbarCategoryProto>(Ids.ToolbarCategories.Machines).ToImmutableArray();
+            ToolbarCategoryProto transportToolbarCategoryProto = registrator.PrototypesDb.Get<ToolbarCategoryProto>(Ids.ToolbarCategories.Transports).ValueOrThrow("Missing game category");
+            var category = registrator.PrototypesDb.Add(new ToolbarCategoryProto(
+                id: NewIds.Controllers.Category,
+                strings: Proto.CreateStr(NewIds.Controllers.Category, "Network", "Contains buildings for for work with network (computation, controller)"),
+                order: transportToolbarCategoryProto.Order + 1,
+                iconPath: Mafi.Unity.Assets.Unity.UserInterface.EntityIcons.Computing_png,
+                isTransportBuildAllowed: true,
+                containsTransports: false,
+                shortcutId: "NETWORK"
+                )).SomeOption().ToImmutableArray();
 
+            // Adapting existing
+            registrator.PrototypesDb.Get<DataCenterProto>(Ids.DataCenters.DataCenter)
+                .ValueOrNull?.Graphics.SetCategories(category);
+            registrator.PrototypesDb.Get<MainframeProto>(Ids.DataCenters.Mainframe)
+                .ValueOrNull?.Graphics.SetCategories(category);
+
+            // New entities
             registrator.PrototypesDb.Add(new ControllerProto(
                 id: NewIds.Controllers.Controller,
                 strings: Proto.CreateStr(NewIds.Controllers.Controller, "Controller", "Handles basic operations and automatization"),
