@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace ProgramableNetwork.Python
 {
@@ -9,8 +10,11 @@ namespace ProgramableNetwork.Python
         public NumberConstant(Token value) : base(typeof(Fix32))
         {
             this.token = value;
-            this.Value = int.TryParse(value.value, out int i) ? i
-                       : float.Parse(value.value);
+            this.Value = int.TryParse(value.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int i) ? (object)i
+                       : long.TryParse(value.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long l) ? (object)l
+                       : float.TryParse(value.value, NumberStyles.Float, CultureInfo.InvariantCulture, out float f) ? (object)f
+                       : double.TryParse(value.value, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? (object)d
+                       : throw new InvalidCastException("Invalid number format: " + value.value);
         }
 
         public NumberConstant(int v) : base(typeof(Fix32))

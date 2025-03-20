@@ -57,7 +57,7 @@ namespace ProgramableNetwork.Python
                                 string id = (string)(args[0] is OrderedValue o0 ? o0.Value : null);
                                 string name1 = (string)(args[1] is OrderedValue o1 ? o1.Value : null);
                                 string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
-                                int defaultValue = (int?)(args.Length > 3 && args[3] is OrderedValue o3 ? o3.Value : null) ?? 0;
+                                int defaultValue = args.Length > 3 && args[3] is OrderedValue o3 ? (int)o3.Value : 0;
                                 return new ModuleInt32FieldProtoDefinition(
                                     id, name1, desc, defaultValue
                                 );
