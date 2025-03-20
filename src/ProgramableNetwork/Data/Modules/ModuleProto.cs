@@ -146,7 +146,7 @@ namespace ProgramableNetwork
         public List<Category> Categories { get; }
         public List<IField> Fields { get; }
         public Electricity UsedPower { get; }
-        public Computing UsedComputing { get; }
+        public PartialQuantity UsedComputing { get; }
         public Action<Module, StackContainer> DisplayFunction { get; }
         public Func<Module, int> WidthFunction { get; }
 
@@ -197,7 +197,7 @@ namespace ProgramableNetwork
             }
         }
 
-        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, Computing usedComputing,
+        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, PartialQuantity usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
             Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
         {
@@ -236,7 +236,7 @@ namespace ProgramableNetwork
             private readonly List<ModuleConnectorProto> m_outputs = new List<ModuleConnectorProto>();
             private readonly List<ModuleConnectorProto> m_displays = new List<ModuleConnectorProto>();
             private Electricity m_usedPower;
-            private Computing m_usedComputing;
+            private PartialQuantity m_usedComputing;
             private EntityCostsTpl.Builder m_costs;
             private Gfx m_gfx;
             private string m_symbol;
@@ -577,6 +577,12 @@ namespace ProgramableNetwork
             public Builder AddCustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui)
             {
                 m_fields.Add(new CustomField(id, name, shortDesc, size, ui));
+                return this;
+            }
+
+            public Builder UseComputation(PartialQuantity quantity)
+            {
+                m_usedComputing = quantity;
                 return this;
             }
         }

@@ -370,14 +370,19 @@ namespace ProgramableNetwork
             var requiredRunningPower = Modules
                 .ToArray()
                 .Where(m => m.IsNotPaused())
+                .Where(m => !(m.Prototype is null))
                 .Select(m => m.Prototype.UsedPower.Value)
                 .Sum().Kw();
 
-            var requiredComputingPower = new Computing( Modules
-                .ToArray()
-                .Where(m => m.IsNotPaused())
-                .Select(m => m.Prototype.UsedComputing.Value)
-                .Sum() );
+            var requiredComputingPower = new Computing(
+                Fix32.FromRaw(
+                    Modules
+                        .AsEnumerable()
+                        .Where(m => m.IsNotPaused())
+                        .Select(m => m.Prototype?.UsedComputing.Value ?? Fix32.Zero)
+                        .Sum(f => f.RawValue)
+                        .Min(Fix32.One.RawValue))
+                .IntegerPart);
 
             PowerRequired = Prototype.IddlePower + requiredRunningPower;
             m_electricConsumer.OnPowerRequiredChanged();
@@ -424,15 +429,18 @@ namespace ProgramableNetwork
             bool anyInfo = false;
             foreach (Module module in Modules)
             {
-                if (module.Prototype.UsedComputing > Computing.Zero && !computingConsumed)
-                    continue;
                 try
                 {
+                    if (module.Prototype.UsedComputing > PartialQuantity.Zero && !computingConsumed)
+                        continue;
+
                     module.Execute();
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     anyError = true;
+                    if (module.IsDebugging)
+                        Log.Exception(e);
                     // ignore exception
                 }
                 anyInfo = anyInfo || module.Info;
