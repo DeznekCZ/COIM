@@ -158,7 +158,10 @@ namespace ProgramableNetwork
             else
             {
                 var alternative = Deprecation.GetAlternative(new ModuleProto.ID(m_protoId));
-                this.Prototype = Context.ProtosDb.Get<ModuleProto>(alternative).ValueOrThrow("Invalid module proto: " + m_protoId);
+                if (alternative != null)
+                    this.Prototype = Context.ProtosDb.Get<ModuleProto>(alternative ?? new ModuleProto.ID()).ValueOrThrow("Invalid module proto: " + m_protoId);
+                else
+                    this.Prototype = ModuleProto.Phantom;
             }
 
             if (loadedVersion == 0)

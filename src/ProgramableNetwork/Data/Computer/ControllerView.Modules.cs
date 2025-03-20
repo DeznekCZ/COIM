@@ -301,9 +301,11 @@ namespace ProgramableNetwork
                 .OnClick(() =>
                 {
                     Entity.Modules.Remove(m_editModule);
-                    int width = m_editModule.Layout.GetWidth(m_editModule);
-                    for (int i = m_targetColumn; i < (m_targetColumn + width); i++)
+                    for (int i = m_targetColumn; i < Entity.Rows[m_targetRow].Count; i++)
                     {
+                        // ignored width because of possible deprecation or phantoms
+                        if (Entity.Rows[m_targetRow][i].ModuleId != m_editModule.Id)
+                            break;
                         Entity.Rows[m_targetRow][i] = 0;
                     }
                     m_container.HideItem(m_editDialog);

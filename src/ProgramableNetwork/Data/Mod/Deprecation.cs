@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Mafi;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,11 +20,12 @@ namespace ProgramableNetwork
             Deprecations[deprecated] = replacement;
         }
 
-        public static ModuleProto.ID GetAlternative(ModuleProto.ID original)
+        public static ModuleProto.ID? GetAlternative(ModuleProto.ID original)
         {
-            if (Deprecations.TryGetValue(original, out var alternative))
+            if (Deprecations?.TryGetValue(original, out var alternative) ?? false)
                 return alternative;
-            throw new Exception("Can not load Module ID: " + original.Value);
+            else
+                return null;
         }
     }
 }
