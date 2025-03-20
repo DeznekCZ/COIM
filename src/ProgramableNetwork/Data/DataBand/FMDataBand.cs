@@ -6,7 +6,6 @@ using Mafi.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace ProgramableNetwork
 {
@@ -50,6 +49,13 @@ namespace ProgramableNetwork
         public EntityContext Context { get; set; }
 
         public IEnumerable<IDataBandChannel> Channels => m_redirected?.Cast<IDataBandChannel>() ?? new List<IDataBandChannel>();
+
+        public Computing RequiredComputation => Computing.Zero;
+
+        public Electricity RequiredPower => m_redirected
+                                                .AsEnumerable()
+                                                .Where(c => !(c.Antena is null))
+                                                .Count().Kw() * 50;
 
         private Lyst<FMDataBandChannel> m_redirected;
         private Lyst<FMDataBandChannel> m_active;

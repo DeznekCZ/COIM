@@ -5,21 +5,12 @@ using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Ports.Io;
 using System;
 using Mafi.Serialization;
-using System.Collections.Generic;
 using Mafi.Core.Population;
 using Mafi.Core.Prototypes;
-using Mafi.Base;
 using Mafi.Core.Factory.ElectricPower;
-using Mafi.Collections.ImmutableCollections;
-using Mafi.Core.Ports;
-using System.Linq;
-using Mafi.Collections;
 using Mafi.Core.Factory.ComputingPower;
-using Mafi.Core.Economy;
 using Mafi.Core.Maintenance;
-using Mafi.Core.Products;
 using Mafi.Core.Entities.Static;
-using Mafi.Unity.UserInterface;
 using static ProgramableNetwork.DataBands;
 
 namespace ProgramableNetwork
@@ -243,21 +234,9 @@ namespace ProgramableNetwork
                 return;
             }
 
-            var requiredRunningPower = new List<Module>()
-                .ToArray()
-                .Where(m => m.IsNotPaused())
-                .Select(m => m.Prototype.UsedPower.Value)
-                .Sum().Kw();
+            PowerRequired = Prototype.IddlePower + DataBand.RequiredPower;
 
-            var requiredComputingPower = new Computing(new List<Module>()
-                .ToArray()
-                .Where(m => m.IsNotPaused())
-                .Select(m => m.Prototype.UsedComputing.Value)
-                .Sum());
-
-            PowerRequired = Prototype.IddlePower + requiredRunningPower;
-
-            ComputingRequired = requiredComputingPower;
+            ComputingRequired = DataBand.RequiredComputation;
 
             DataBand.Update();
         }

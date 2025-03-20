@@ -2,6 +2,7 @@
 using Mafi.Collections;
 using Mafi.Serialization;
 using System.Collections.Generic;
+using Mafi;
 
 namespace ProgramableNetwork
 {
@@ -19,6 +20,10 @@ namespace ProgramableNetwork
             public DataBandProto Prototype { get; private set; }
 
             public IEnumerable<IDataBandChannel> Channels { get; } = new Lyst<IDataBandChannel>();
+
+            public Computing RequiredComputation => Computing.Zero;
+
+            public Electricity RequiredPower => Electricity.Zero;
 
             public void CreateChannel()
             {

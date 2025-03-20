@@ -3,10 +3,8 @@ using Mafi.Collections;
 using Mafi.Core.Entities;
 using Mafi.Core.Prototypes;
 using Mafi.Serialization;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace ProgramableNetwork
 {
@@ -50,6 +48,17 @@ namespace ProgramableNetwork
         public EntityContext Context { get; set; }
 
         public IEnumerable<IDataBandChannel> Channels => m_redirected?.Cast<IDataBandChannel>() ?? new List<IDataBandChannel>();
+
+        public Computing RequiredComputation => Computing.Zero;
+
+        public Electricity RequiredPower => (Fix32
+            .FromRaw( m_redirected
+                .Select(c => c.WorldMapMine is null
+                           ? Fix32.Zero
+                           : c.Distance(c.WorldMapMine) / (Prototype.Distance * Antena.Prototype.DistanceBoost)
+                )
+                .Sum(f => f.RawValue)
+            ) * 200).IntegerPart.Kw();
 
         private Lyst<AMDataBandChannel> m_redirected;
         private Lyst<AMDataBandChannel> m_active;

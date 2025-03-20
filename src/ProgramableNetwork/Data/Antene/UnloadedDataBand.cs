@@ -1,5 +1,4 @@
 ﻿using Mafi;
-using Mafi.Collections;
 using Mafi.Core.Entities;
 using Mafi.Serialization;
 using System.Collections.Generic;
@@ -23,6 +22,10 @@ namespace ProgramableNetwork
         public DataBandProto Prototype { get; set; }
 
         public IEnumerable<IDataBandChannel> Channels { get; set; }
+
+        public Computing RequiredComputation => Computing.Zero;
+
+        public Electricity RequiredPower => Electricity.Zero;
 
         public void CreateChannel()
         {
