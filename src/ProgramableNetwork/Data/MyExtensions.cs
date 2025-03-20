@@ -6,6 +6,7 @@ using Mafi.Core.Entities.Dynamic;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.Transports;
+using Mafi.Core.Prototypes;
 using Mafi.Localization;
 using Mafi.Unity;
 using Mafi.Unity.UiFramework;
@@ -13,6 +14,7 @@ using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Style;
 using System;
+using System.Reflection;
 
 namespace ProgramableNetwork
 {
@@ -174,6 +176,14 @@ namespace ProgramableNetwork
                     color: ColorRgba.White
                 ));
             return element;
+        }
+
+        public static void SetCategories(this LayoutEntityProto.Gfx gfx, ImmutableArray<ToolbarCategoryProto> toolbarCategories)
+        {
+            if (gfx == null) return;
+            var field = typeof(LayoutEntityProto.Gfx)
+                .GetField("<Categories>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(gfx, toolbarCategories);
         }
     }
 }
