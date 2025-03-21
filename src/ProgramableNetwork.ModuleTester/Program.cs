@@ -21,8 +21,8 @@ namespace ProgramableNetwork.ModuleTester
     {
         static void Main(string[] args)
         {
-            ExportBinaries();
-            //RunTest();
+            //ExportBinaries();
+            RunTest();
         }
 
         private static void RunTest()
