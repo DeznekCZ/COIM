@@ -44,18 +44,33 @@ namespace ProgramableNetwork
             var numberEditor = uiBuilder
                 .NewTxtField("value")
                 .SetParent(fieldContainer, true)
-                .SetWidth(200)
+                .SetWidth(180)
                 .SetHeight(20)
                 .AppendTo(fieldContainer);
 
+            var setButton = uiBuilder
+                .NewBtnPrimary("set")
+                .SetParent(fieldContainer, true)
+                .SetWidth(20)
+                .SetHeight(20)
+                .SetText("✓")
+                .SetEnabled(false)
+                .AppendTo(fieldContainer);
+
+            setButton.OnClick(() =>
+            {
+                string changeValue = numberEditor.GetText();
+                module.Field[Id, ""] = changeValue;
+                setButton.SetEnabled(false);
+            });
+
             numberEditor.SetOnValueChangedAction(() =>
             {
-                module.Field[Id, ""] = numberEditor.GetText();
+                setButton.SetEnabled(true);
             });
 
             string value = module.Field[Id, Default];
             numberEditor.SetText(value);
-            module.Field[Id, ""] = value;
         }
 
         public void Validate(Module module)
