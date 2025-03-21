@@ -24,6 +24,7 @@ using Mafi.Core.Vehicles;
 using Mafi.Unity.InputControl.TopStatusBar;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UserInterface.Components;
+using ProgramableNetwork.Data.Variables;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -38,6 +39,7 @@ namespace ProgramableNetwork
         {
             Constants(registrator);
             Buttons(registrator);
+            Variables(registrator);
             Arithmetic(registrator);
             Comparation(registrator);
             Connections(registrator);
@@ -54,7 +56,8 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart("Game_Pause", "Pause game (DEBUG)", "GP", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Control)
                 .AddInput("pause", "Pause")
-                .Action(m => {
+                .Action(m =>
+                {
                     m.Info = false;
                     if (m.Input["pause", 0] > Fix32.Zero)
                     {
@@ -65,6 +68,138 @@ namespace ProgramableNetwork
                     {
                         m.Info = false;
                     }
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+        }
+
+        private static void Variables(ProtoRegistrator registrator)
+        {
+            registrator
+                .ModuleBuilderStart("VariableNetwork_Read", "Network Variable (read)", "*N", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Control)
+                .AddCategory(Category.Arithmetic)
+                .UseComputation(0.1.Quantity())
+                .AddOutput("value", "Value")
+                .AddDisplay("name", "Variable name (should be longer)", 1)
+                .AddStringField("name", "Variable name", defaultValue: "")
+                .AddCustomField("variables", "Variables", () => 20, field =>
+                {
+                    field.Builder.NewBtnGeneral("variables", field.Container)
+                        .SetText(field.Name)
+                        .OnClick(() => GlobalDependencyResolver.Get<VariableWindow>().BuildAndShow(field.Builder))
+                        .AppendTo(field.Container);
+                })
+                .Width(1)
+                .Action(m =>
+                {
+                    string name = m.Field["name", ""];
+                    m.Display["name"] = name.Substring(0, Math.Min(name.Length, 2));
+
+                    if (name.IsNullOrEmpty())
+                    {
+                        m.SetError("Invalid variable name");
+                        return ModuleStatus.Error;
+                    }
+
+                    m.Output["value"] = GlobalDependencyResolver
+                        .Get<VariableManager>()
+                        .GetVariable(name);
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("VariableNetwork_Write", "Network Variable (write)", "*N", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Control)
+                .AddCategory(Category.Arithmetic)
+                .UseComputation(0.1.Quantity())
+                .AddDisplay("name", "Variable name (should be longer)", 1)
+                .AddStringField("name", "Variable name", defaultValue: "")
+                .AddInput("value", "Value")
+                .AddBooleanField("field_value", "Use direct constant")
+                .AddFix32Field("value", "Value")
+                .Width(1)
+                .Action(m =>
+                {
+                    string name = m.Field["name", ""];
+                    m.Display["name"] = name.Substring(0, Math.Min(name.Length, 2));
+
+                    if (name.IsNullOrEmpty())
+                    {
+                        m.SetError("Invalid variable name");
+                        return ModuleStatus.Error;
+                    }
+
+                    GlobalDependencyResolver
+                        .Get<VariableManager>()
+                        .SetVariable(name, m.FieldOrInput["value", Fix32.Zero]);
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Variable_Read", "Variable (read)", "*C", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Control)
+                .AddCategory(Category.Arithmetic)
+                .UseComputation(0.1.Quantity())
+                .AddOutput("value", "Value")
+                .AddDisplay("name", "Variable name (should be longer)", 1)
+                .AddStringField("name", "Variable name", defaultValue: "")
+                .Width(1)
+                .Action(m =>
+                {
+                    string name = m.Field["name", ""];
+                    m.Display["name"] = name.Substring(0, Math.Min(name.Length, 2));
+            
+                    if (name.IsNullOrEmpty())
+                    {
+                        m.SetError("Invalid variable name");
+                        return ModuleStatus.Error;
+                    }
+
+                    Controller controller = m.Controller;
+                    string moduleType = "Variable_Write".ModuleId();
+
+                    Module targetModule = controller.Modules.AsEnumerable()
+                        .FirstOrDefault(mod => mod.Prototype.Id.Value == moduleType
+                                            && mod.Field["name", ""] == name);
+                    if (targetModule != null)
+                    {
+                        m.Output["value"] = targetModule.FieldOrInput["value", 0];
+                        return ModuleStatus.Running;
+                    }
+
+                    m.Output["value"] = 0;
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+            
+            registrator
+                .ModuleBuilderStart("Variable_Write", "Variable (write)", "*C", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Control)
+                .AddCategory(Category.Arithmetic)
+                .UseComputation(0.1.Quantity())
+                .AddDisplay("name", "Variable name (should be longer)", 1)
+                .AddStringField("name", "Variable name", defaultValue: "")
+                .AddInput("value", "Value")
+                .AddBooleanField("field_value", "Use direct constant")
+                .AddFix32Field("value", "Value")
+                .Width(1)
+                .Action(m =>
+                {
+                    string name = m.Field["name", ""];
+                    m.Display["name"] = name.Substring(0, Math.Min(name.Length, 2));
+            
+                    if (name.IsNullOrEmpty())
+                    {
+                        m.SetError("Invalid variable name");
+                        return ModuleStatus.Error;
+                    }
+                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
