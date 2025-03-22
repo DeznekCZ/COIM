@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class NoneConst : IExpression
+    public class NoneConst : IExpression
     {
         private Token none;
         public string Path => throw new NotImplementedException($"Cannot get path from constant {GetType()}");

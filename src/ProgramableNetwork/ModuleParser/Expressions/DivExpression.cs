@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class DivExpression : ABinaryOperatorExpression
+    public class DivExpression : ABinaryOperatorExpression
     {
         public DivExpression(IExpression left, IExpression right) : base(left, right)
         {

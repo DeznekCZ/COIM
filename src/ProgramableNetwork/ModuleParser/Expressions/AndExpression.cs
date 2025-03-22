@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class AndExpression : IExpression
+    public class AndExpression : IExpression
     {
         private IExpression left;
         private IExpression right;

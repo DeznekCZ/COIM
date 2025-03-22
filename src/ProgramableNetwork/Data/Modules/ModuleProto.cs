@@ -189,6 +189,33 @@ namespace ProgramableNetwork
                     //})
                     .Build();
                 Proto.RegisterPhantom(Phantom);
+                typeof(ModuleProto)
+                    .GetField("<WidthFunction>k__BackingField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    .SetValue(Phantom, (Func<Module, int>)((m) =>
+                    {
+                        if (m.NumberData.TryGetValue("phantom__width", out int width))
+                        {
+                            return width;
+                        }
+                        bool rowHit = false;
+                        foreach (var row in m.Controller.Rows)
+                        {
+                            foreach (var column in row)
+                            {
+                                if (column.ModuleId == m.Id)
+                                {
+                                    rowHit = true;
+                                    width++;
+                                    continue;
+                                }
+                                if (rowHit) break;
+                            }
+                            if (rowHit) break;
+                        }
+                        m.NumberData["phantom__width"] = width;
+                        return width;
+                    }));
+
             }
             catch (Exception e)
             {

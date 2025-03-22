@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ProgramableNetwork.Python
 {
-    internal class GreaterEqualExpression : ABinaryOperatorExpression, IComparison
+    public class GreaterEqualExpression : ABinaryOperatorExpression, IComparison
     {
         public GreaterEqualExpression(IExpression left, IExpression right) : base(left, right)
         {

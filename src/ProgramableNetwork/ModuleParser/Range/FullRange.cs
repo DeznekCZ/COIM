@@ -2,7 +2,7 @@
 
 namespace ProgramableNetwork.Python
 {
-    internal class FullRange : IRange
+    public class FullRange : IRange
     {
         private IExpression step;
 

@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class NamedValue : IArgumentValue
+    public class NamedValue : IArgumentValue
     {
         private string name;
         private object value;

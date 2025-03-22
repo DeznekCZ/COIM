@@ -43,7 +43,6 @@
         mstr,
         fstrbegin,
         fstrmiddle,
-        fstrend,
         number,
         none,
         btrue,

@@ -12,7 +12,7 @@ namespace ProgramableNetwork.Python
     {
         public static void Register(ProtoRegistrator registrator, string file)
         {
-            Token[] tokens = Tokenizer.Parse(file);
+            Token[] tokens = Tokenizer.ParseFile(file);
             Block block = Lexer.Parse(tokens);
 
             Dictionary<string, object> context = new Dictionary<string, object>();

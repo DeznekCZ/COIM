@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class BooleanConst : ConstantExpression
+    public class BooleanConst : ConstantExpression
     {
         public BooleanConst(Token token) : base(typeof(bool))
         {

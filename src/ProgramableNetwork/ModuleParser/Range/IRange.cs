@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal interface IRange : IExpression
+    public interface IRange : IExpression
     {
     }
 }

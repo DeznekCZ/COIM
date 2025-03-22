@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace ProgramableNetwork.Python
 {
-    internal class PropertyExpression : IExpression
+    public class PropertyExpression : IExpression
     {
         private readonly IExpression expression;
         private readonly string name;

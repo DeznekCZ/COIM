@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class PositiveExpression : AUnaryOperatorExpression
+    public class PositiveExpression : AUnaryOperatorExpression
     {
         public PositiveExpression(IExpression expression) : base(expression)
         {

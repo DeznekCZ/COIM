@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 namespace ProgramableNetwork.Python
 {
     [Serializable]
-    internal class ReturnException : Exception
+    public class ReturnException : Exception
     {
         public ReturnException(object value)
         {

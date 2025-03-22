@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class AddExpression : ABinaryOperatorExpression
+    public class AddExpression : ABinaryOperatorExpression
     {
         public AddExpression(IExpression left, IExpression right) : base(left, right)
         {

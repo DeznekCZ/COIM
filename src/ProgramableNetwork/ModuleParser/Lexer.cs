@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -59,7 +60,7 @@ namespace ProgramableNetwork.Python
 
                     case PythonTokens.elif:
                         if (!(tree.statements.Last() is IfStatement ifs1))
-                            throw new InvalidOperationException($"elif is allowed only after if or elif statement: {token}");
+                            throw new PythonParseException(token, $"elif is allowed only after if or elif statement");
 
                         tree.statements.RemoveAt(tree.statements.Count - 1);
                         ParseElIf(ifs1, tree);
@@ -67,7 +68,7 @@ namespace ProgramableNetwork.Python
 
                     case PythonTokens.elsep:
                         if (!(tree.statements.Last() is IfStatement ifs2))
-                            throw new InvalidOperationException($"else is allowed only after if or elif statement: {token}");
+                            throw new PythonParseException(token, $"else is allowed only after if or elif statement");
 
                         tree.statements.RemoveAt(tree.statements.Count - 1);
                         ParseElse(ifs2, tree);
@@ -107,7 +108,7 @@ namespace ProgramableNetwork.Python
 
                     case PythonTokens.undefined:
                     default:
-                        throw new NotImplementedException($"undefined: {token}");
+                        throw new PythonParseException(token, $"unrecognized or unimplemented token");
                 }
             }
             return tree;
@@ -410,7 +411,7 @@ namespace ProgramableNetwork.Python
                     case PythonTokens.invert:
                         expression = new InvertExpression(expression);
                         break;
-                    default: throw new NotImplementedException();
+                    default: throw new PythonParseException(Token.EOF, "<unreachable error>");
                 };
             }
             return expression;
@@ -472,8 +473,7 @@ namespace ProgramableNetwork.Python
                 case PythonTokens.mstr:
                     return new StringConstant(decide);
                 case PythonTokens.fstrbegin:
-                    Revert(decide);
-                    return fstring();
+                    return fstring(decide);
                 case PythonTokens.lparen:
                     // TODO tuple
                     IExpression expression = ParseExpression(newLineIgnore);
@@ -487,7 +487,7 @@ namespace ProgramableNetwork.Python
                     return new ListExpression(listItems);
                 default:
                     Revert(decide);
-                    throw new NotImplementedException();
+                    throw new PythonParseException(decide, $"unexpected or not implemented atom token");
             }
         }
 
@@ -574,7 +574,7 @@ namespace ProgramableNetwork.Python
             bool skipStep = IsNext(PythonTokens.rlist, out Token _);
 
             if (skipStart)
-                throw new NotImplementedException("List slices are not implemeted");
+                throw new PythonParseException(AnyNext(), "List slices are not implemeted");
 
             IExpression start = ParseExpression();
             skipStart = IsNext(PythonTokens.block, out Token _);
@@ -582,14 +582,50 @@ namespace ProgramableNetwork.Python
             skipStep = IsNext(PythonTokens.rlist, out Token _);
 
             if (skipStart && !skipStep)
-                throw new NotImplementedException("List slices are not implemeted");
+                throw new PythonParseException(AnyNext(), "List slices are not implemeted");
 
             return new SingleItem(start);
         }
 
-        private IExpression fstring()
+        private IExpression fstring(Token begin)
         {
-            throw new NotImplementedException();
+            if (begin.value.EndsWith("\"") || begin.value.EndsWith("'"))
+            {
+                Token stringToken = new Token(begin.source, begin.lineText, begin.line, begin.column + 1, begin.length - 1, PythonTokens.str, begin.value.Substring(1));
+                return new StringConstant(stringToken);
+            }
+
+            char endingCharacter = begin.value[1];
+            // clear unrequired f on beginning
+            begin = new Token(begin.source, begin.lineText, begin.line, begin.column + 1, begin.length - 1, PythonTokens.str, begin.value.Substring(1));
+
+            List<IExpression> value = new List<IExpression>();
+            string ReplaceEnds(string s) => $"{endingCharacter}{s.Substring(1, s.Length - 2)}{endingCharacter}";
+
+            while (true) // loop trough next tokens
+            {
+                if (begin.value.Length > 2)
+                {
+                    Token stringToken = new Token(begin.source, begin.lineText, begin.line, begin.column + 1, begin.length - 1, PythonTokens.str,
+                        ReplaceEnds(begin.value.Replace("{{", "{")
+                                               .Replace("}}", "}"))
+                    );
+                    value.Add(new StringConstant(stringToken));
+                }
+                if (begin.value.EndsWith("{"))
+                {
+                    value.Add(new CallExpression(
+                        new ObjectConstant(new Constructor((args) => Expressions.__str__(args[0].Value))),
+                        new List<IArgument> { new OrderedArgument(ParseExpression()) }
+                    ));
+                    begin = RequireNext(PythonTokens.fstrmiddle);
+                    continue;
+                }
+                return new CallExpression(
+                    new ObjectConstant(new Constructor((args) => string.Concat(args.Select(a => (string)a.Value)))),
+                    value.Select(e => new OrderedArgument(e)).ToList<IArgument>()
+                );
+            }
         }
 
         private List<Token> NextList(PythonTokens type, PythonTokens next, params PythonTokens[] ignore)
@@ -626,7 +662,7 @@ namespace ProgramableNetwork.Python
             while (ignore.Contains(token.type))
                 token = Dequeue();
             if (token.type != type)
-                throw new InvalidOperationException($"Expected token '{type}', got: {token}");
+                throw new PythonParseException(token, $"Expected token '{type}', got: {token}");
             return token;
         }
 

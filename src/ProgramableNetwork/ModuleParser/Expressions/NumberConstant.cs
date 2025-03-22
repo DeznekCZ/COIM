@@ -19,7 +19,7 @@ namespace ProgramableNetwork.Python
 
         public NumberConstant(int v) : base(typeof(Fix32))
         {
-            this.token = new Token(new System.IO.FileInfo("f"), 0, 0, 1, PythonTokens.number, v.ToString());
+            this.token = new Token(new System.IO.FileInfo("f"), "<builtin>", 0, 0, 1, PythonTokens.number, v.ToString());
             this.Value = v;
         }
 

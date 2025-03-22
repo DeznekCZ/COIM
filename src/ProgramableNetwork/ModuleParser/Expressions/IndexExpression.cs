@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class IndexExpression : ABinaryOperatorExpression
+    public class IndexExpression : ABinaryOperatorExpression
     {
         public IndexExpression(IExpression left, IRange right) : base(left, right)
         {

@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class ShiftLeftExpression : ABinaryOperatorExpression
+    public class ShiftLeftExpression : ABinaryOperatorExpression
     {
         public ShiftLeftExpression(IExpression left, IExpression right) : base(left, right)
         {

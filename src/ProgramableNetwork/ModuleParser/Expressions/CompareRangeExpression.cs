@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class CompareRangeExpression
+    public class CompareRangeExpression
     {
         private CompareRangeExpression() { }
 

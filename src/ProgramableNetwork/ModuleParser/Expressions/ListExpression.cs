@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ProgramableNetwork.Python
 {
-    internal class ListExpression : IExpression
+    public class ListExpression : IExpression
     {
         private List<IExpression> listItems;
         public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");

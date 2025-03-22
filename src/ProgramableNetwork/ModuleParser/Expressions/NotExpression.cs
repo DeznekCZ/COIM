@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class NotExpression : AUnaryOperatorExpression
+    public class NotExpression : AUnaryOperatorExpression
     {
         public NotExpression(IExpression expression) : base(expression)
         {

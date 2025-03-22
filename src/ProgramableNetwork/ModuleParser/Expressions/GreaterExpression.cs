@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class GreaterExpression : ABinaryOperatorExpression, IComparison
+    public class GreaterExpression : ABinaryOperatorExpression, IComparison
     {
         public GreaterExpression(IExpression left, IExpression right) : base(left, right)
         {

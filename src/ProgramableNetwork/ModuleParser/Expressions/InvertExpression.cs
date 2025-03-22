@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
-    internal class InvertExpression : IExpression
+    public class InvertExpression : IExpression
     {
         private IExpression expression;
 

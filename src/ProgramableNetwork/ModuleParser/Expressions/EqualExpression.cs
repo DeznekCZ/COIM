@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ProgramableNetwork.Python
 {
-    internal class EqualExpression : ABinaryOperatorExpression, IComparison
+    public class EqualExpression : ABinaryOperatorExpression, IComparison
     {
         public EqualExpression(IExpression left, IExpression right) : base(left, right)
         {

@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class OrderedValue : IArgumentValue
+    public class OrderedValue : IArgumentValue
     {
         private object value;
 

@@ -7,9 +7,9 @@ using UnityEngine;
 
 namespace ProgramableNetwork.Python
 {
-    internal class Expressions
+    public class Expressions
     {
-        internal static bool __bool__(object v)
+        public static bool __bool__(object v)
         {
             return v is bool b ? b
                 : v is int i ? i != 0
@@ -20,7 +20,7 @@ namespace ProgramableNetwork.Python
                 : throw new NotImplementedException("Can not convert to __bool__");
         }
 
-        internal static int __int__(object v)
+        public static int __int__(object v)
         {
             return v is int i ? i
                 : v is float f ? (int)f
@@ -31,7 +31,7 @@ namespace ProgramableNetwork.Python
                 : throw new NotImplementedException("Can not convert to __int__");
         }
 
-        internal static float __float__(object v)
+        public static float __float__(object v)
         {
             return v is float f ? f
                 : v is Fix32 fix ? fix.ToFloat()
@@ -42,7 +42,7 @@ namespace ProgramableNetwork.Python
                 : throw new NotImplementedException("Can not convert to __float__");
         }
 
-        internal static Fix32 __fix__(object v)
+        public static Fix32 __fix__(object v)
         {
             return v is Fix32 fix ? fix
                 : v is float f ? f.ToFix32()
@@ -53,7 +53,7 @@ namespace ProgramableNetwork.Python
                 : throw new NotImplementedException("Can not convert to __fix__");
         }
 
-        internal static string __str__(object v)
+        public static string __str__(object v)
         {
             if (v is null) return "None";
             if (v is string s) return s;
@@ -67,7 +67,7 @@ namespace ProgramableNetwork.Python
             return v.ToString(); // nouzovka
         }
 
-        internal static object __neg__(object v)
+        public static object __neg__(object v)
         {
             return v is float f ? -f
                 : v is Fix32 fix ? (object)(-fix)
@@ -78,7 +78,7 @@ namespace ProgramableNetwork.Python
                 : throw new NotImplementedException("Can not call __neg__");
         }
 
-        internal static object __pos__(object v)
+        public static object __pos__(object v)
         {
             return v is float f ? f
                 : v is Fix32 fix ? (object)(fix)
@@ -89,21 +89,21 @@ namespace ProgramableNetwork.Python
                 : throw new NotImplementedException("Can not call __pos__");
         }
 
-        internal static object __or__(object v1, object v2)
+        public static object __or__(object v1, object v2)
         {
             if (v1 is null && v2 is null)
                 return 0;
             return __int__(v1) | __int__(v2);
         }
 
-        internal static object __xor__(object v1, object v2)
+        public static object __xor__(object v1, object v2)
         {
             if (v1 is null && v2 is null)
                 return 0;
             return __int__(v1) ^ __int__(v2);
         }
 
-        internal static object __call__(object executable, List<(string name, object value)> arguments)
+        public static object __call__(object executable, List<(string name, object value)> arguments)
         {
             if (executable is Constructor constructor)
             {
@@ -135,7 +135,7 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException("Invocation is not defined");
         }
 
-        internal static bool __eq__(object left, object right)
+        public static bool __eq__(object left, object right)
         {
             if (left is null && right is null)
                 return true;
@@ -194,7 +194,7 @@ namespace ProgramableNetwork.Python
             return false;
         }
 
-        internal static bool __ne__(object left, object right)
+        public static bool __ne__(object left, object right)
         {
             if (left is null && right is null)
                 return false;
@@ -243,7 +243,7 @@ namespace ProgramableNetwork.Python
             return false;
         }
 
-        internal static bool __ge__(object left, object right)
+        public static bool __ge__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot compare null values");
@@ -290,7 +290,7 @@ namespace ProgramableNetwork.Python
             return false;
         }
 
-        internal static bool __gt__(object left, object right)
+        public static bool __gt__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot compare null values");
@@ -337,7 +337,7 @@ namespace ProgramableNetwork.Python
             return false;
         }
 
-        internal static bool __le__(object left, object right)
+        public static bool __le__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot compare null values");
@@ -384,7 +384,7 @@ namespace ProgramableNetwork.Python
             return false;
         }
 
-        internal static bool __lt__(object left, object right)
+        public static bool __lt__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot compare null values");
@@ -431,17 +431,17 @@ namespace ProgramableNetwork.Python
             return false;
         }
 
-        internal static object __range__(object left, Range range)
+        public static object __range__(object left, Range range)
         {
             throw new NotImplementedException("Range operator is not defined");
         }
 
-        internal static object __index__(object left, object right)
+        public static object __index__(object left, object right)
         {
             throw new NotImplementedException("Index operator is not defined");
         }
 
-        internal static void __setitem__(object target, object index, object value)
+        public static void __setitem__(object target, object index, object value)
         {
             if (target is List<object> list)
             {
@@ -455,7 +455,7 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException("__setitem__");
         }
 
-        internal static object __getitem__(object target, object index)
+        public static object __getitem__(object target, object index)
         {
             if (target is List<object> list)
             {
@@ -468,7 +468,7 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException("__getitem__");
         }
 
-        internal static bool __contains__(object target, object key)
+        public static bool __contains__(object target, object key)
         {
             if (target is null) throw new NullReferenceException("Target is None");
             if (target is IDictionary<string, object> dict)
@@ -478,12 +478,12 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException("__contains__");
         }
 
-        internal static object __invert__(object v)
+        public static object __invert__(object v)
         {
             throw new NotImplementedException("__invert__");
         }
 
-        internal static object __mul__(object left, object right)
+        public static object __mul__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot multiply null values");
@@ -498,7 +498,7 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException($"Types has no multiply yet or never (same type)");
         }
 
-        internal static object __div__(object left, object right)
+        public static object __div__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot divide null values");
@@ -513,7 +513,7 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException($"Types has no divide yet or never (same type)");
         }
 
-        internal static object __divint__(object left, object right)
+        public static object __divint__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot divide null values");
@@ -528,7 +528,7 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException($"Types has no divide yet or never (same type)");
         }
 
-        internal static object __mod__(object left, object right)
+        public static object __mod__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot divide null values");
@@ -543,14 +543,14 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException($"Types has no divide yet or never (same type)");
         }
 
-        internal static bool __not__(object v)
+        public static bool __not__(object v)
         {
             if (v is bool b)
                 return !b;
             throw new NotImplementedException("__not__");
         }
 
-        internal static Fix32 __pow__(object left, object right)
+        public static Fix32 __pow__(object left, object right)
         {
             Fix32 fixLeft = __fix__(left);
             Fix32 fixRight = __fix__(right);
@@ -558,21 +558,21 @@ namespace ProgramableNetwork.Python
             return fixLeft.Pow(fixRight);
         }
 
-        internal static object __lshift__(object left, object right)
+        public static object __lshift__(object left, object right)
         {
             if (left is null && right is null)
                 return 0;
             return __int__(left) << __int__(right);
         }
 
-        internal static object __rshift__(object left, object right)
+        public static object __rshift__(object left, object right)
         {
             if (left is null && right is null)
                 return 0;
             return __int__(left) >> __int__(right);
         }
 
-        internal static object __add__(object left, object right)
+        public static object __add__(object left, object right)
         {
             if (left is null || right is null)
                 throw new NotImplementedException($"Cannot divide null values");

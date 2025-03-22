@@ -1,7 +1,7 @@
 ﻿
 namespace ProgramableNetwork.Python
 {
-    internal class ModExpression : ABinaryOperatorExpression
+    public class ModExpression : ABinaryOperatorExpression
     {
         public ModExpression(IExpression left, IExpression right) : base(left, right)
         {

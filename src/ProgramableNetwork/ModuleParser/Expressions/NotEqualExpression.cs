@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ProgramableNetwork.Python
 {
-    internal class NotEqualExpression : ABinaryOperatorExpression, IComparison
+    public class NotEqualExpression : ABinaryOperatorExpression, IComparison
     {
         public NotEqualExpression(IExpression left, IExpression right) : base(left, right)
         {

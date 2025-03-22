@@ -2,7 +2,7 @@
 
 namespace ProgramableNetwork.Python
 {
-    internal class NegativeExpression : AUnaryOperatorExpression
+    public class NegativeExpression : AUnaryOperatorExpression
     {
         public NegativeExpression(IExpression expression) : base(expression)
         {

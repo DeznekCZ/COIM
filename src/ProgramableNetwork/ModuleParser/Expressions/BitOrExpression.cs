@@ -2,7 +2,7 @@
 
 namespace ProgramableNetwork.Python
 {
-    internal class BitOrExpression : ABinaryOperatorExpression
+    public class BitOrExpression : ABinaryOperatorExpression
     {
         public BitOrExpression(IExpression left, IExpression right) : base(left, right)
         {

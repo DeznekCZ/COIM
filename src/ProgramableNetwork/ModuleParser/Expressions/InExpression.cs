@@ -3,7 +3,7 @@ using System;
 
 namespace ProgramableNetwork.Python
 {
-    internal class InExpression : ABinaryOperatorExpression
+    public class InExpression : ABinaryOperatorExpression
     {
         public InExpression(IExpression left, IExpression right) : base(left, right)
         {

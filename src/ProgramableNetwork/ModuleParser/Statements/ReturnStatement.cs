@@ -7,18 +7,18 @@ using System.Threading.Tasks;
 
 namespace ProgramableNetwork.Python
 {
-    internal class ReturnStatement : IStatement
+    public class ReturnStatement : IStatement
     {
-        private IExpression expression;
+        public IExpression Expression { get; }
 
         public ReturnStatement(IExpression expression = null)
         {
-            this.expression = expression;
+            this.Expression = expression;
         }
 
         public void Execute(IDictionary<string, object> context)
         {
-            throw new ReturnException( expression?.GetValue(context) );
+            throw new ReturnException( Expression?.GetValue(context) );
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace ProgramableNetwork.Python
 {
-    internal class MulExpression : ABinaryOperatorExpression
+    public class MulExpression : ABinaryOperatorExpression
     {
         public MulExpression(IExpression left, IExpression right) : base(left, right)
         {

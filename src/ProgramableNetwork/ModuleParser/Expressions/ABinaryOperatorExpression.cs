@@ -10,6 +10,8 @@ namespace ProgramableNetwork.Python
         private object leftValue;
         private object rightValue;
 
+        public IExpression Left => left;
+        public IExpression Right => right;
         public virtual string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
 
         protected ABinaryOperatorExpression(IExpression left, IExpression right)

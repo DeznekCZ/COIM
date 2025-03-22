@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace ProgramableNetwork.Python
 {
-    internal class BitXorExpression : ABinaryOperatorExpression
+    public class BitXorExpression : ABinaryOperatorExpression
     {
         public BitXorExpression(IExpression left, IExpression right) : base(left, right)
         {

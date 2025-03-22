@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace ProgramableNetwork.Python
 {
-    internal class MemberCall
+    public class MemberCall
     {
         private object value;
         private MethodInfo[] memberInfos;
