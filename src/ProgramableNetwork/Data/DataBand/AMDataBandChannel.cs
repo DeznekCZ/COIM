@@ -26,6 +26,8 @@ namespace ProgramableNetwork
 
         private AMOperation m_operation;
 
+        private IRandom random;
+
         public static void Serialize(AMDataBandChannel channel, BlobWriter writer)
         {
             writer.WriteByte(/*version*/5);
@@ -103,10 +105,10 @@ namespace ProgramableNetwork
         {
             if (!(WorldMapMine is null))
             {
-                Percent percentage = ErrorPossibility(WorldMapMine);
-                var random = (new Random().NextDouble() * 100).Percent();
+                if (random == null)
+                   random = GlobalDependencyResolver.Get<RandomProvider>().GetSimRandomFor(this);
 
-                if (random < percentage)
+                if (random.NextPercent() < ErrorPossibility(WorldMapMine))
                 {
                     // action is not done, the transmit failed
                     return;
@@ -151,7 +153,7 @@ namespace ProgramableNetwork
         {
             var entityDistance = OriginalDataBand.Antena.Prototype.DistanceBoost * OriginalDataBand.Prototype.Distance;
             var measuredDistance = Distance(mine);
-            return (15.ToFix32() * (measuredDistance / entityDistance)).ToPercent();
+            return (0.15.ToFix32() * (measuredDistance / entityDistance)).ToPercent();
         }
 
         public Fix32 Distance(WorldMapMine mine)

@@ -99,12 +99,10 @@ namespace ProgramableNetwork.Data.Variables
                 .AppendTo(ItemsContainer);
             Txt name = Builder.NewTxt("headerName")
                 .SetWidth(200)
-                .SetParent(container)
                 .SetText("Name:")
                 .AppendTo(container);
             Txt value = Builder.NewTxt("headerValue")
                 .SetWidth(300)
-                .SetParent(container)
                 .SetText("Value:")
                 .AppendTo(container);
 
@@ -144,19 +142,16 @@ namespace ProgramableNetwork.Data.Variables
                 m_variables.AppendDivider(2, Style.EntitiesMenu.MenuBg);
 
                 StackContainer container = Builder.NewStackContainer(DateTime.Now.Ticks.ToString())
-                    .SetParent(m_variables)
                     .SetStackingDirection(StackContainer.Direction.LeftToRight)
                     .SetHeight(20)
                     .SetWidth(500)
                     .AppendTo(m_variables);
                 Txt name = Builder.NewTxt(DateTime.Now.Ticks.ToString())
                     .SetWidth(200)
-                    .SetParent(container)
                     .SetText(item)
                     .AppendTo(container);
                 Txt value = Builder.NewTxt(DateTime.Now.Ticks.ToString())
                     .SetWidth(300)
-                    .SetParent(container)
                     .SetText(m_variableManager.GetVariable(item).ToString())
                     .SetTextStyle(Builder.Style.Global.Text.Extend(ColorRgba.White))
                     .AppendTo(container);

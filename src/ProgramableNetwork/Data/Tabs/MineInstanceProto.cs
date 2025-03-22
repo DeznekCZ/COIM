@@ -22,7 +22,7 @@ namespace ProgramableNetwork
                 "name_" + mine.CustomTitle.Value,
                 (mine.CustomTitle.HasValue ? mine.CustomTitle.Value : mine.Prototype.Strings.Name.TranslatedString) +
                 "\n(distance: " + dataBandChannel.Distance(mine).IntegerPart + " km," +
-                " error: " + dataBandChannel.ErrorPossibility(mine).ToFix32().IntegerPart + "%)" ,
+                " error: " + dataBandChannel.ErrorPossibility(mine) + ")" ,
                 "", true, true));
         }
 
