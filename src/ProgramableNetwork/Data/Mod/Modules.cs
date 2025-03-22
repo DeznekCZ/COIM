@@ -16,6 +16,7 @@ using Mafi.Core.Factory.NuclearReactors;
 using Mafi.Core.Factory.Sorters;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Factory.WellPumps;
+using Mafi.Core.Input;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
@@ -1017,6 +1018,7 @@ namespace ProgramableNetwork
                 .AddOutput("meltdown", "Is in melt down")
                 .AddOutput("power", "Actual power")
                 .Width(4)
+                .UseComputation(PartialQuantity.One * 2)
                 .AddEntityField<NuclearReactor>("reactor", "Connection reactor", "Must be placed next to reactor (2 metres)", 5.ToFix32())
                 .Action(m => {
                     var reactor = m.Field.Entity<NuclearReactor>("reactor");
@@ -1430,105 +1432,103 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            //registrator
-            //    .ModuleBuilderStart("Connection_Filter_Set", "Connection: Filter (set)", "F-S", Assets.Base.Products.Icons.Vegetables_svg)
-            //    .AddCategory(Category.Connection)
-            //    .AddCategory(Category.ConnectionRead)
-            //    .Width(2)
-            //    .AddInput("index", "Storage compartment")
-            //    .AddOutput("product", "Product type")
-            //    .AddEntityField<LayoutEntity>("entity", "Building with filter", "Connectable by cable 20m from controller", distance: 20.ToFix32(),
-            //        filter: (m, e) => e is Storage ||
-            //                          e is SettlementFoodModule ||
-            //                          e is Hospital ||
-            //                          e is Sorter
-            //        )
-            //    .AddBooleanField("field_index", "Set index by settings", defaultValue: false)
-            //    .AddInt32Field("index", "Storage compartment")
-            //    .Action(m => {
-            //        LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
-            //
-            //        if (entity is Storage storage)
-            //        // entity is SettlementWasteModule
-            //        {
-            //            ProductProto product = m.FieldOrInput.Product("product");
-            //            if (!(product is null) && storage.AssignProduct(product))
-            //            {
-            //                m.Warning = false;
-            //                return ModuleStatus.Running;
-            //            }
-            //            m.Warning = true;
-            //            return ModuleStatus.Running;
-            //        }
-            //
-            //        if (entity is SettlementFoodModule foodModule)
-            //        {
-            //            int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
-            //            if (index >= 2 || index < 0)
-            //            {
-            //                m.SetError("Invalid compartment index");
-            //                return ModuleStatus.Error;
-            //            }
-            //
-            //            Option<ProductProto> product = m.FieldOrInput.Product("product").SomeOption();
-            //            foodModule.SetProduct(product, index, false);
-            //            if (product.HasValue || foodModule.GetBuffer(index).HasValue)
-            //            {
-            //                m.Warning = !(product.Value?.SlimId == foodModule.GetBuffer(index).Value?.Product.SlimId);
-            //                return ModuleStatus.Running;
-            //            }
-            //            else
-            //                return ModuleStatus.Running;
-            //        }
-            //
-            //        if (entity is Hospital hospital)
-            //        {
-            //            int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
-            //            if (index >= 2 || index < 0)
-            //            {
-            //                m.SetError("Invalid compartment index");
-            //                return ModuleStatus.Error;
-            //            }
-            //
-            //            Option<ProductProto> product = m.FieldOrInput.Product("product").SomeOption();
-            //            hospital.SetProduct(product, index, false);
-            //            if (product.HasValue || hospital.GetBuffer(index).HasValue)
-            //            {
-            //                m.Warning = !(product.Value?.SlimId == hospital.GetBuffer(index).Value?.Product.SlimId);
-            //                return ModuleStatus.Running;
-            //            }
-            //            else
-            //                return ModuleStatus.Running;
-            //        }
-            //
-            //        if (entity is Sorter sorter)
-            //        {
-            //            ProductProto newProduct = m.FieldOrInput.Product("product");
-            //            if (m.NumberData.TryGetValue("old__product", out int product))
-            //            {
-            //                if (product != 0 && (newProduct is null || (int)(uint)newProduct.SlimId.Value != product))
-            //                { // remove old from set
-            //                    ProductProto oldProduct = sorter.FilteredProducts
-            //                            .FirstOrDefault(p => (int)(uint)p.SlimId.Value == product);
-            //                    if (oldProduct != null)
-            //                        sorter.ToggleFilteredProduct(oldProduct);
-            //                }
-            //            }
-            //            if (sorter.FilteredProducts
-            //                      .FirstOrDefault(p => p.SlimId == newProduct.SlimId)
-            //                      is null)
-            //            { // add to set
-            //                sorter.ToggleFilteredProduct(newProduct);
-            //                m.NumberData["old__product"] = (int)(uint)newProduct.SlimId.Value;
-            //            }
-            //            return ModuleStatus.Running;
-            //        }
-            //
-            //        m.Output["product"] = -1;
-            //        return ModuleStatus.Error;
-            //    })
-            //    .AddControllerDevice()
-            //    .BuildAndAdd();
+            registrator
+                .ModuleBuilderStart("Connection_Filter_Set", "Connection: Filter (set)", "F-S", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .Width(2)
+                .AddInput("index", "Storage compartment")
+                .AddInput("product", "Product type")
+                .AddEntityField<LayoutEntity>("entity", "Building with filter", "Connectable by cable 20m from controller", distance: 20.ToFix32(),
+                    filter: (m, e) => e is Storage ||
+                                      e is SettlementFoodModule ||
+                                      e is Hospital ||
+                                      e is Sorter
+                    )
+                .AddBooleanField("field_index", "Set index by settings", defaultValue: false)
+                .AddInt32Field("index", "Storage compartment")
+                .Action(m => {
+                    LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
+            
+                    if (entity is Storage storage)
+                    // entity is SettlementWasteModule
+                    {
+                        ProductProto product = m.FieldOrInput.Product("product");
+                        if (product is null)
+                            storage.ToggleClearProduct();
+                        else
+                            storage.AssignProduct(product);
+                        return ModuleStatus.Running;
+                    }
+            
+                    if (entity is SettlementFoodModule foodModule)
+                    {
+                        int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
+                        if (index >= 2 || index < 0)
+                        {
+                            m.SetError("Invalid compartment index");
+                            return ModuleStatus.Error;
+                        }
+            
+                        Option<ProductProto> product = m.FieldOrInput.Product("product").CreateOption();
+                        foodModule.SetProduct(product, index, false);
+                        if (product.HasValue || foodModule.GetBuffer(index).HasValue)
+                        {
+                            m.Warning = !(product.Value?.SlimId == foodModule.GetBuffer(index).Value?.Product.SlimId);
+                            return ModuleStatus.Running;
+                        }
+                        else
+                            return ModuleStatus.Running;
+                    }
+            
+                    if (entity is Hospital hospital)
+                    {
+                        int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
+                        if (index >= 2 || index < 0)
+                        {
+                            m.SetError("Invalid compartment index");
+                            return ModuleStatus.Error;
+                        }
+            
+                        Option<ProductProto> product = m.FieldOrInput.Product("product").CreateOption();
+                        hospital.SetProduct(product, index, false);
+                        if (product.HasValue || hospital.GetBuffer(index).HasValue)
+                        {
+                            m.Warning = !(product.Value?.SlimId == hospital.GetBuffer(index).Value?.Product.SlimId);
+                            return ModuleStatus.Running;
+                        }
+                        else
+                            return ModuleStatus.Running;
+                    }
+            
+                    if (entity is Sorter sorter)
+                    {
+                        ProductProto newProduct = m.FieldOrInput.Product("product");
+                        if (m.NumberData.TryGetValue("old__product", out int product))
+                        {
+                            if (product != 0 && (newProduct is null || (int)(uint)newProduct.SlimId.Value != product))
+                            { // remove old from set
+                                ProductProto oldProduct = sorter.FilteredProducts
+                                        .FirstOrDefault(p => (int)(uint)p.SlimId.Value == product);
+                                if (oldProduct != null)
+                                    sorter.ToggleFilteredProduct(oldProduct);
+                            }
+                        }
+                        if (!(newProduct is null) && sorter.FilteredProducts
+                                  .FirstOrDefault(p => p.SlimId == newProduct.SlimId)
+                                  is null)
+                        { // add to set
+                            sorter.ToggleFilteredProduct(newProduct);
+                            m.NumberData["old__product"] = (int)(uint)newProduct.SlimId.Value;
+                        }
+                        return ModuleStatus.Running;
+                    }
+            
+                    m.Output["product"] = 0;
+                    return ModuleStatus.Error;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
         }
 
         private static ModuleStatus GetValueFromBuffers(Module m, ProductProto product, IProductBuffer[] buffers)

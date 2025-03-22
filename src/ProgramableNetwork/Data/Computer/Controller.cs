@@ -373,16 +373,7 @@ namespace ProgramableNetwork
                 .Where(m => !(m.Prototype is null))
                 .Select(m => m.Prototype.UsedPower.Value)
                 .Sum().Kw();
-
-            var requiredComputingPower = new Computing(
-                Fix32.FromRaw(
-                    Modules
-                        .AsEnumerable()
-                        .Where(m => m.IsNotPaused())
-                        .Select(m => m.Prototype?.UsedComputing.Value ?? Fix32.Zero)
-                        .Sum(f => f.RawValue)
-                        .Min(Fix32.One.RawValue))
-                .IntegerPart);
+            Computing requiredComputingPower = GetRequiredComputation();
 
             PowerRequired = Prototype.IddlePower + requiredRunningPower;
             m_electricConsumer.OnPowerRequiredChanged();
@@ -397,6 +388,19 @@ namespace ProgramableNetwork
                     UpdateModules(m_computingConsumer.TryConsume());
                 }
             }
+        }
+
+        private Computing GetRequiredComputation()
+        {
+            PartialQuantity sum = PartialQuantity.Zero;
+            foreach (Module module in Modules)
+            {
+                if (module.IsPaused) continue;
+                sum += module.Prototype.UsedComputing;
+            }
+
+            if (sum == PartialQuantity.Zero) return Computing.Zero;
+            return Computing.FromQuantity(sum.IntegerPart.Max(Quantity.One));
         }
 
         private void UpdateModules(bool computingConsumed)
