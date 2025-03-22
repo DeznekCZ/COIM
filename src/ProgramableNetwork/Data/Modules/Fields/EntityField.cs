@@ -39,11 +39,12 @@ namespace ProgramableNetwork
 
         public void Validate(Module module)
         {
+            EntityInfo entityData = null;
             // FOR ONLY NEWLY CONSTRUCTED
             if (module.StringData.TryGetValue("field__" + Id, out var value))
             {
                 Log.Info("Searching for entity in module by config: " + module.Id + " with key: " + Id);
-                EntityInfo entityData = JsonConvert.DeserializeObject<EntityInfo>(value);
+                entityData = JsonConvert.DeserializeObject<EntityInfo>(value);
 
                 foreach (IEntity entity in module.Controller.Context.EntitiesManager.Entities)
                 {
@@ -60,10 +61,9 @@ namespace ProgramableNetwork
                     }
                 }
                 Log.Info("Not found");
-                module.Field.Entity<IEntity>(Id, null); // update string representation
             }
             // BACKWARD COMPATIBILITY
-            else if (module.NumberData.TryGetValue("field__" + Id, out var id))
+            if (module.NumberData.TryGetValue("field__" + Id, out var id))
             {
                 Log.Info("Searching for entity in module by id: " + module.Id + " with key: " + Id);
                 if (module.Controller.Context.EntitiesManager.TryGetEntity(new EntityId(id), out IEntity anyEntity))
@@ -74,6 +74,17 @@ namespace ProgramableNetwork
                     {
                         Log.Info("Reassigning for reference");
                         module.Field.Entity(Id, entity);
+                    }
+                    else if (entityData != null)
+                    {
+                        anyEntity.HasPosition(out Tile2f entityTile);
+
+                        if (module.Controller.Position2f - entityTile == entityData.Relative)
+                        {
+                            Log.Info("Found by position");
+                            module.Field.Entity(Id, anyEntity); // set by position
+                            return; // BUT position changed
+                        }
                     }
                     else
                     {
