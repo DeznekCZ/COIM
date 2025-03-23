@@ -1030,6 +1030,8 @@ namespace ProgramableNetwork
                     Percent target = m.Input["target", Fix32.Zero].ToPercent();
                     if (!reactor.IsInMeltdown && reactor.TargetPowerLevel != target)
                     {
+                        if (target < Percent.Zero || target > reactor.MaxPowerLevelPercent)
+                            return;
                         reactor.SetTargetPowerLevel(target);
                     }
                 })
