@@ -215,12 +215,11 @@ namespace ProgramableNetwork
             return (EntityNotificator)v;
         }
 
-        private static readonly int SerializerVersion = 1;
         protected override void SerializeData(BlobWriter writer)
         {
             base.SerializeData(writer);
             writer.WriteString(m_protoId.Value);
-            writer.WriteInt(SerializerVersion);
+            writer.WriteInt(/*Version*/ 2);
 
             writer.WriteString(ErrorMessage ?? "");
             Option<string>.Serialize(CustomTitle, writer);
@@ -233,6 +232,9 @@ namespace ProgramableNetwork
             writer.WriteUInt(m_notificationInfoManager.NotificationId.Value);
             writer.WriteUInt(m_notificationWarningManager.NotificationId.Value);
             writer.WriteUInt(m_notificationErrorManager.NotificationId.Value);
+
+            writer.WriteInt(m_clockSpeed);
+            writer.WriteInt(m_clock);
 
             Lyst<Module>.Serialize(Modules, writer);
             Lyst<Lyst<ModulePlacement>>.Serialize(Rows, writer);
@@ -270,6 +272,17 @@ namespace ProgramableNetwork
                 v = m_notificationErrorManager = new EntityNotificator();
                 typeof(EntityNotificator).GetProperty("NotificationId").SetValue(v, new NotificationId(reader.ReadUInt()));
                 m_notificationErrorManager = (EntityNotificator)v;
+            }
+
+            if (version >= 2)
+            {
+                m_clockSpeed = reader.ReadInt();
+                m_clock   = reader.ReadInt();
+            }
+            else
+            {
+                m_clockSpeed = 0;
+                m_clock   = 0;
             }
 
             Modules = Lyst<Module>.Deserialize(reader);
@@ -327,6 +340,12 @@ namespace ProgramableNetwork
         private bool m_reninitNotification;
 
         [DoNotSave(0, null)]
+        private int m_clockSpeed;
+
+        [DoNotSave(0, null)]
+        private int m_clock;
+
+        [DoNotSave(0, null)]
         public bool IsIdleForMaintenance => m_maintenanceConsumer.Status.IsBroken;
 
         [DoNotSave(0, null)]
@@ -367,27 +386,50 @@ namespace ProgramableNetwork
                 Maintenance.RefreshMaintenanceCost();
             }
 
-            var requiredRunningPower = Modules
+            Electricity requiredRunningPower = GetRequiredRunningPower();
+            PowerRequired = Prototype.IddlePower + requiredRunningPower;
+            m_electricConsumer.OnPowerRequiredChanged();
+
+            bool electricityConsumed = m_electricConsumer.TryConsume();
+
+            Computing requiredComputingPower = GetRequiredComputation();
+            ComputingRequired = requiredComputingPower;
+            m_computingConsumer.OnComputingRequiredChanged();
+
+            bool computingConsumed = electricityConsumed && m_computingConsumer.TryConsume();
+
+            if (m_clock >= m_clockSpeed)
+            {
+                m_clock = 0;
+            }
+            else
+            {
+                m_clock++;
+                return;
+            }
+
+            if (electricityConsumed)
+            {
+                if (m_maintenanceConsumer.Status.CurrentBreakdownChance < new Random().Next(100).Percent())
+                {
+                    UpdateModules(computingConsumed);
+                }
+            }
+        }
+
+        private Electricity GetRequiredRunningPower()
+        {
+            var total = Modules
                 .ToArray()
                 .Where(m => m.IsNotPaused())
                 .Where(m => !(m.Prototype is null))
                 .Select(m => m.Prototype.UsedPower.Value)
-                .Sum().Kw();
-            Computing requiredComputingPower = GetRequiredComputation();
+                .Sum();
 
-            PowerRequired = Prototype.IddlePower + requiredRunningPower;
-            m_electricConsumer.OnPowerRequiredChanged();
+            if (Speed == 0)
+                return total.Kw();
 
-            ComputingRequired = requiredComputingPower;
-            m_computingConsumer.OnComputingRequiredChanged();
-
-            if (m_electricConsumer.TryConsume())
-            {
-                if (m_maintenanceConsumer.Status.CurrentBreakdownChance < new Random().Next(100).Percent())
-                {
-                    UpdateModules(m_computingConsumer.TryConsume());
-                }
-            }
+            return (total * 1 / (1 + Speed)).Max(1).Kw();
         }
 
         private Computing GetRequiredComputation()
@@ -400,6 +442,7 @@ namespace ProgramableNetwork
             }
 
             if (sum == PartialQuantity.Zero) return Computing.Zero;
+            sum = (sum * 1 / (1 + Speed)).Max(PartialQuantity.One);
             return Computing.FromQuantity(sum.IntegerPart.Max(Quantity.One));
         }
 
@@ -496,5 +539,7 @@ namespace ProgramableNetwork
 
         [DoNotSave()]
         public bool IsCargoAffectedByGeneralPriority => false;
+
+        public int Speed { get => m_clockSpeed; set => m_clockSpeed = value; }
     }
 }
