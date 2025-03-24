@@ -54,7 +54,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Analyzer Include="C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
-    <Analyzer Include="S:\git\COIM-Derbis\src\ProgramableNetwork\bin\Debug\net471\ProgramableNetwork.dll" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\ExampleScript.cs" />
@@ -66,6 +65,7 @@
     <None Include="Assets\DLLs\Mafi.Unity.dll" />
     <None Include="Assets\DLLs\Newtonsoft.Json.dll" />
     <None Include="Assets\DLLs\Mafi.dll" />
+    <None Include="Assets\DLLs\ProgramableNetwork.dll" />
     <None Include="Assets\DLLs\Mafi.ModsAuthoringSupport.dll" />
   </ItemGroup>
   <ItemGroup>
@@ -327,11 +327,11 @@
     <Reference Include="Mafi.Core">
       <HintPath>Assets\DLLs\Mafi.Core.dll</HintPath>
     </Reference>
+    <Reference Include="ProgramableNetwork">
+      <HintPath>Assets\DLLs\ProgramableNetwork.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>Assets\DLLs\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="ProgramableNetwork">
-      <HintPath>Assets\ProgramableNetwork\ProgramableNetwork.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Android.Types">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Types.dll</HintPath>

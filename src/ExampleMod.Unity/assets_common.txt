@@ -1,3 +1,38 @@
+icons_75f7
+    Assets/Bridges/Icons/Floor_1x1.png
+    Assets/Bridges/Icons/Ramp_1x3x1.png
+
+materials_f253
+    Assets/Bridges/Materials/Concrete.png
+    Assets/Bridges/Materials/ConcreteBlock.mat
+
+meshes_9c86
+    Assets/Bridges/Meshes/Floor_1x1_H.obj
+
+floor_1x1_h1_6a7d
+    Assets/Bridges/Prefabs/Floor_1x1_H1.prefab
+
+floor_1x1_h2_15cd
+    Assets/Bridges/Prefabs/Floor_1x1_H2.prefab
+
+floor_1x1_h3_a1bf
+    Assets/Bridges/Prefabs/Floor_1x1_H3.prefab
+
+floor_1x1_h4_6a83
+    Assets/Bridges/Prefabs/Floor_1x1_H4.prefab
+
+ramp_1x3_r1_4309
+    Assets/Bridges/Prefabs/Ramp_1x3_R1.prefab
+
+ramp_1x3_r2_890b
+    Assets/Bridges/Prefabs/Ramp_1x3_R2.prefab
+
+ramp_1x3_r3_8c60
+    Assets/Bridges/Prefabs/Ramp_1x3_R3.prefab
+
+ramp_1x3_r4_8d01
+    Assets/Bridges/Prefabs/Ramp_1x3_R4.prefab
+
 blastfurnace_d374
     Assets/ExampleMod/BlastFurnace.prefab
 

@@ -308,8 +308,8 @@
     <Reference Include="UnityEditor.Graphs">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\Managed\UnityEditor.Graphs.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEditor.OSXStandalone.Extensions">
-      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\MacStandaloneSupport\UnityEditor.OSXStandalone.Extensions.dll</HintPath>
+    <Reference Include="UnityEditor.WebGL.Extensions">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\WebGLSupport\UnityEditor.WebGL.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="UnityEditor.Android.Extensions">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\AndroidPlayer\UnityEditor.Android.Extensions.dll</HintPath>
@@ -320,20 +320,71 @@
     <Reference Include="UnityEditor.LinuxStandalone.Extensions">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\LinuxStandaloneSupport\UnityEditor.LinuxStandalone.Extensions.dll</HintPath>
     </Reference>
-    <Reference Include="Mafi">
-      <HintPath>Assets\DLLs\Mafi.dll</HintPath>
+    <Reference Include="Mafi.Base">
+      <HintPath>Assets\DLLs\Mafi.Base.dll</HintPath>
     </Reference>
     <Reference Include="Mafi.ModsAuthoringSupport">
       <HintPath>Assets\DLLs\Mafi.ModsAuthoringSupport.dll</HintPath>
     </Reference>
-    <Reference Include="Mafi.Base">
-      <HintPath>Assets\DLLs\Mafi.Base.dll</HintPath>
+    <Reference Include="Mafi.Unity">
+      <HintPath>Assets\DLLs\Mafi.Unity.dll</HintPath>
+    </Reference>
+    <Reference Include="Mafi">
+      <HintPath>Assets\DLLs\Mafi.dll</HintPath>
     </Reference>
     <Reference Include="Mafi.Core">
       <HintPath>Assets\DLLs\Mafi.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Mafi.Unity">
-      <HintPath>Assets\DLLs\Mafi.Unity.dll</HintPath>
+    <Reference Include="K4os.Compression.LZ4">
+      <HintPath>Assets\Base\AssetStudio\K4os.Compression.LZ4.dll</HintPath>
+    </Reference>
+    <Reference Include="SixLabors.ImageSharp.Drawing">
+      <HintPath>Assets\Base\AssetStudio\SixLabors.ImageSharp.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>Assets\Base\AssetStudio\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="AssetStudio.PInvoke">
+      <HintPath>Assets\Base\AssetStudio\AssetStudio.PInvoke.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenTK">
+      <HintPath>Assets\Base\AssetStudio\OpenTK.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Rocks">
+      <HintPath>Assets\Base\AssetStudio\Mono.Cecil.Rocks.dll</HintPath>
+    </Reference>
+    <Reference Include="SixLabors.ImageSharp">
+      <HintPath>Assets\Base\AssetStudio\SixLabors.ImageSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="AssetStudioUtility">
+      <HintPath>Assets\Base\AssetStudio\AssetStudioUtility.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>Assets\Base\AssetStudio\Mono.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="AssetStudioFBXWrapper">
+      <HintPath>Assets\Base\AssetStudio\AssetStudioFBXWrapper.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Mdb">
+      <HintPath>Assets\Base\AssetStudio\Mono.Cecil.Mdb.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenTK.GLControl">
+      <HintPath>Assets\Base\AssetStudio\OpenTK.GLControl.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Pdb">
+      <HintPath>Assets\Base\AssetStudio\Mono.Cecil.Pdb.dll</HintPath>
+    </Reference>
+    <Reference Include="SixLabors.Fonts">
+      <HintPath>Assets\Base\AssetStudio\SixLabors.Fonts.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>Assets\Base\AssetStudio\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Texture2DDecoderWrapper">
+      <HintPath>Assets\Base\AssetStudio\Texture2DDecoderWrapper.dll</HintPath>
+    </Reference>
+    <Reference Include="AssetStudio">
+      <HintPath>Assets\Base\AssetStudio\AssetStudio.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework">
       <HintPath>Library\PackageCache\com.unity.ext.nunit@1.0.6\net35\unity-custom\nunit.framework.dll</HintPath>
