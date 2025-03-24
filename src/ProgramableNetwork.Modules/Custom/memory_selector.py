@@ -10,7 +10,7 @@ class Runtime_Memory_Selector_1(Module):
     name = "Control: Memory Selector (1 input)"
     symbol = "MS"
     inputs = [
-        Input("1", "Signal input")
+        Input("in_1", "Signal input")
     ]
     outputs = [
         Output("output", "Signal output")
@@ -28,7 +28,7 @@ class Runtime_Memory_Selector_1(Module):
 
     def action(self):
         if self.Input.get_bool("in_1", False):
-            self.Output.set("output", self.Field.get("1", Fix32.Zero))
+            self.Output.set("output", self.Field.get("field_1", Fix32.Zero))
         else:
             self.Output.set("output", self.Field.get("default", Fix32.Zero))
 
