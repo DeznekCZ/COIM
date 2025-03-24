@@ -30,6 +30,7 @@
     <Compile Include="Custom\connection_isactive.py" />
     <Compile Include="Core\fields.py" />
     <Compile Include="Core\module.py" />
+    <Compile Include="Custom\memory_selector.py" />
     <Compile Include="Custom\notification.py" />
     <Compile Include="Custom\randomizer.py" />
     <Compile Include="Mafi\Base\Ai\__init__.py" />
