@@ -34,15 +34,17 @@ namespace ProgramableNetwork.Python
                     AddIO(outputs as IList, builder.AddOutput);
                 if (classEntry.classContext.TryGetValue("fields", out object fields))
                     AddFields(builder, fields as IList);
+                if (classEntry.classContext.TryGetValue("Init", out object initAction))
+                    AddInit(builder, classEntry, initAction as Method);
                 if (classEntry.classContext.TryGetValue("action", out object action) ||
                     classEntry.classContext.TryGetValue("Action", out action))
                     AddAction(builder, classEntry, action as Method);
-                if (classEntry.classContext.TryGetValue("categroies", out object categories))
+                if (classEntry.classContext.TryGetValue("categories", out object categories))
                     AddCategories(builder, categories as List<object>);
                 if (classEntry.classContext.TryGetValue("width", out object width))
                     builder.Width(Expressions.__int__(width));
 
-                // TODO search for variable of device and categories
+                // TODO search for variable of device
                 builder.SetGfx(Assets.Base.Products.Icons.Vegetables_svg);
                 builder.AddControllerDevice();
 
@@ -94,10 +96,20 @@ namespace ProgramableNetwork.Python
             }
         }
 
-
         private static void AddAction(ModuleProto.Builder builder, Class classContext, Method action)
         {
             builder.Action((module) =>
+            {
+                ModuleWrapper wrapper = new ModuleWrapper(module, classContext);
+                action.Self = wrapper;
+                object ret = Expressions.__call__(action, new List<(string name, object value)>());
+                return ret is ModuleStatus status ? status : ModuleStatus.Running;
+            });
+        }
+
+        private static void AddInit(ModuleProto.Builder builder, Class classContext, Method action)
+        {
+            builder.Init((module) =>
             {
                 ModuleWrapper wrapper = new ModuleWrapper(module, classContext);
                 action.Self = wrapper;

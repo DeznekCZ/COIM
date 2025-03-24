@@ -137,7 +137,7 @@ namespace ProgramableNetwork
 
         public new ID Id { get; }
         public Func<Module, ModuleStatus> Action { get; }
-        public Func<Module, ModuleStatus> Reset { get; }
+        public Func<Module, ModuleStatus> Init { get; }
         public bool IsInputModule { get; }
         public bool IsOutputModule { get; }
         public List<ModuleConnectorProto> Inputs { get; }
@@ -224,14 +224,14 @@ namespace ProgramableNetwork
             }
         }
 
-        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, PartialQuantity usedComputing,
+        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> m_init, bool isInputModule, bool isOutputModule, Electricity usedPower, PartialQuantity usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
             Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
             Symbol = m_symbol;
             Action = action;
-            Reset = reset;
+            Init = m_init;
             IsInputModule = isInputModule;
             IsOutputModule = isOutputModule;
             Inputs = m_inputs;
@@ -256,7 +256,7 @@ namespace ProgramableNetwork
             private string m_name;
             private string m_description;
             private Func<Module, ModuleStatus> m_action;
-            private Func<Module, ModuleStatus> m_reset;
+            private Func<Module, ModuleStatus> m_init;
             private bool m_isOutputModule = false;
             private bool m_isInputModule = false;
             private readonly List<ModuleConnectorProto> m_inputs = new List<ModuleConnectorProto>();
@@ -324,7 +324,7 @@ namespace ProgramableNetwork
                     m_gfx,
                     m_tags,
                     m_action ?? (m => ModuleStatus.Running),
-                    m_reset ?? (m => ModuleStatus.Init),
+                    m_init ?? (m => ModuleStatus.Running),
                     m_isInputModule,
                     m_isOutputModule,
                     m_usedPower,
@@ -501,15 +501,15 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder Reset(Action<Module> reset)
+            public Builder Init(Action<Module> init)
             {
-                m_reset = (m) => { reset(m); return ModuleStatus.Init; };
+                m_init = (m) => { init(m); return ModuleStatus.Running; };
                 return this;
             }
 
-            public Builder Reset(Func<Module, ModuleStatus> reset)
+            public Builder Init(Func<Module, ModuleStatus> init)
             {
-                m_reset = reset;
+                m_init = init;
                 return this;
             }
 
@@ -595,15 +595,15 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddCustomField(string id, string name, Func<int> size, Action<CustomField> ui)
+            public Builder AddCustomField(string id, string name, Func<int> size, Action<CustomField> ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, null, size, ui));
+                m_fields.Add(new CustomField(id, name, null, size, ui, data ?? ((field) => { })));
                 return this;
             }
 
-            public Builder AddCustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui)
+            public Builder AddCustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, shortDesc, size, ui));
+                m_fields.Add(new CustomField(id, name, shortDesc, size, ui, data ?? ((field) => { })));
                 return this;
             }
 
@@ -612,6 +612,16 @@ namespace ProgramableNetwork
                 m_usedComputing = quantity;
                 return this;
             }
+        }
+
+        public void ExecuteInit(Module m)
+        {
+            foreach (var field in Fields)
+            {
+                field.InitData(m);
+            }
+            m.SetStatus(Init.Invoke(m));
+            Log.Info($"Module initialized: {m.Id} ({m.Prototype.Id.Value}) with status {m.Status}");
         }
     }
 

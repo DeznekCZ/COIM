@@ -134,7 +134,7 @@ namespace ProgramableNetwork.Data.Variables
         {
             if (lyst is null) return;
 
-            m_variables.ClearAll();
+            m_variables.ClearAndDestroyAll();
             m_updaters.Clear();
 
             foreach (var item in lyst)

@@ -97,12 +97,12 @@ namespace ProgramableNetwork.Python
 
             public bool get_bool(string name, bool value)
             {
-                return module.Output[name, (value ? 1 : 0).ToFix32()] > 0;
+                return module.Output.Bool[name];
             }
 
             public void set_bool(string name, bool value)
             {
-                module.Output[name] = (value ? 1 : 0).ToFix32();
+                module.Output.Bool[name] = value;
             }
 
             public Fix32 get(string name, Fix32 value)
@@ -141,7 +141,8 @@ namespace ProgramableNetwork.Python
         }
 
         public Dict<string, int> NumberData => module.NumberData;
-
         public Dict<string, string> StringData => module.StringData;
+        public ModuleProto Prototype => module.Prototype;
+        public Controller Controller => module.Controller;
     }
 }

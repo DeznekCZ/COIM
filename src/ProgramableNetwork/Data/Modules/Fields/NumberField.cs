@@ -3,6 +3,7 @@ using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Components;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
 
@@ -46,10 +47,8 @@ namespace ProgramableNetwork
             var numberEditor = uiBuilder
                 .NewTxtField("value")
                 .SetParent(fieldContainer, true)
-                .SetWidth(200)
                 .SetWidth(180)
                 .SetHeight(20)
-                .SetText("0")
                 .AppendTo(fieldContainer);
 
             var setButton = uiBuilder
@@ -70,53 +69,72 @@ namespace ProgramableNetwork
             numberEditor.SetOnValueChangedAction(() =>
             {
                 setter = null;
-                if (typeof(T) == typeof(int))
-                {
-                    if (int.TryParse(numberEditor.GetText(), out int value))
-                    {
-                        setter = () => module.Field[Id] = value.ToFix32();
-                    }
-                }
-                else if (typeof(T) == typeof(long))
-                {
-                    if (long.TryParse(numberEditor.GetText(), out long value))
-                    {
-                        setter = () => module.Field[Id, ""] = value.ToString();
-                    }
-                }
-                else if (typeof(T) == typeof(Fix32))
+                if (typeof(T) == typeof(Fix32))
                 {
                     if (double.TryParse(numberEditor.GetText(), NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
                     {
                         setter = () => module.Field[Id] = value.ToFix32();
                     }
                 }
+                else if (typeof(T) == typeof(int))
+                {
+                    if (int.TryParse(numberEditor.GetText(), out int value))
+                    {
+                        setter = () => module.Field.Integer[Id] = value;
+                    }
+                }
+                else if (typeof(T) == typeof(long))
+                {
+                    if (long.TryParse(numberEditor.GetText(), out long value))
+                    {
+                        setter = () => module.Field[Id, false] = value.ToString();
+                    }
+                }
                 setButton.SetEnabled(setter != null);
             });
 
-            if (typeof(T) == typeof(int))
+            if (Default is Fix32)
             {
-                int value = module.Field[Id, (int)(object)Default].IntegerPart;
-                numberEditor.SetText(value.ToString());
-                module.Field[Name] = value.ToFix32();
+                numberEditor.SetText(module.Field[Id].ToString());
             }
-            else if (typeof(T) == typeof(long))
+            else if (Default is int)
             {
-                string value = module.Field[Id, ((long)(object)Default).ToString()];
-                numberEditor.SetText(value);
-                module.Field[Name, "0"] = value;
+                numberEditor.SetText(module.Field.Integer[Id].ToString());
             }
-            else if (typeof(T) == typeof(Fix32))
+            else if (Default is long)
             {
-                Fix32 value = module.Field[Id, (Fix32)(object)Default];
-                numberEditor.SetText(value.ToString());
-                module.Field[Name] = value;
+                numberEditor.SetText(module.Field[Id, "0"]);
+            }
+            else
+            {
+                Log.Error($"Invalid number type: {Default.GetType()}");
+                throw new Exception($"Invalid number type: {Default.GetType()}");
+            }
+        }
+
+        public void InitData(Module module)
+        {
+            if (Default is Fix32 f)
+            {
+                module.Field[Id] = f;
+            }
+            else if (Default is int i)
+            {
+                module.Field.Integer[Id] = i;
+            }
+            else if (Default is long l)
+            {
+                module.Field[Id, false] = l.ToString();
+            }
+            else
+            {
+                Log.Error($"Invalid number type: {Default.GetType()}");
+                throw new Exception($"Invalid number type: {Default.GetType()}");
             }
         }
 
         public void Validate(Module module)
         {
-            // nothing to do
         }
     }
 }

@@ -60,7 +60,7 @@ namespace ProgramableNetwork
             setButton.OnClick(() =>
             {
                 string changeValue = numberEditor.GetText();
-                module.Field[Id, ""] = changeValue;
+                module.Field[Id, false] = changeValue;
                 setButton.SetEnabled(false);
             });
 
@@ -69,13 +69,17 @@ namespace ProgramableNetwork
                 setButton.SetEnabled(true);
             });
 
-            string value = module.Field[Id, Default];
-            numberEditor.SetText(value);
+            numberEditor.SetText(module.Field[Id, false]);
         }
 
         public void Validate(Module module)
         {
             // nothing to do
+        }
+
+        public void InitData(Module module)
+        {
+            module.Field[Id, false] = Default;
         }
     }
 }

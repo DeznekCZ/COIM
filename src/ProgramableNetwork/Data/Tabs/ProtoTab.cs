@@ -59,7 +59,7 @@ namespace ProgramableNetwork
                 .SetText("X")
                 .OnClick(() => {
                     m_module.Field[m_fieldId] = Fix32.Zero;
-                    m_module.Field[m_fieldId, ""] = "";
+                    m_module.Field[m_fieldId, false] = "";
                     m_refresh();
                 })
                 .AppendTo(m_btnPreviewHolder);
@@ -79,7 +79,7 @@ namespace ProgramableNetwork
                     (product) =>
                     {
                         m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
-                        m_module.Field[m_fieldId, ""] = product.Id.Value;
+                        m_module.Field[m_fieldId, false] = product.Id.Value;
                         m_window.OnHide -= protoPicker_Hide;
                         m_protoPicker.Hide();
                         try
@@ -98,7 +98,7 @@ namespace ProgramableNetwork
                                 .SetText("X")
                                 .OnClick(() => {
                                     m_module.Field[m_fieldId] = Fix32.Zero;
-                                    m_module.Field[m_fieldId, ""] = "";
+                                    m_module.Field[m_fieldId, false] = "";
                                     m_refresh();
                                 })
                                 .AppendTo(m_btnPreviewHolder);

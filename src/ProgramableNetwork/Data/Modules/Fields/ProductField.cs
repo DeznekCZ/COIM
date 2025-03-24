@@ -45,6 +45,11 @@ namespace ProgramableNetwork
             productTab.AppendTo(fieldContainer);
         }
 
+        public void InitData(Module module)
+        {
+            // nothing to validate
+        }
+
         public void Validate(Module module)
         {
             // nothing to validate

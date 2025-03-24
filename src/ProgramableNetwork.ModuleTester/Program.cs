@@ -40,6 +40,7 @@ namespace ProgramableNetwork.ModuleTester
             {
                 @"..\..\..\ProgramableNetwork.Modules\Custom\delay.py",
                 @"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py",
+                @"..\..\..\ProgramableNetwork.Modules\Custom\memory_selector.py",
                 @"..\..\..\ProgramableNetwork.Modules\Custom\randomizer.py",
             };
 

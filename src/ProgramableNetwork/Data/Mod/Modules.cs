@@ -169,7 +169,7 @@ namespace ProgramableNetwork
                                             && mod.Field["name", ""] == name);
                     if (targetModule != null)
                     {
-                        m.Output["value"] = targetModule.FieldOrInput["value", 0];
+                        m.Output["value"] = targetModule.FieldOrInput["value"];
                         return ModuleStatus.Running;
                     }
 
@@ -213,7 +213,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddOutput("value", "Value")
                 .AddInt32Field("number", "Number")
-                .Action(m => { m.Output["value"] = m.Field["number", 0]; })
+                .Action(m => { m.Output["value"] = m.Field["number"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -222,7 +222,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddOutput("value", "Value")
                 .AddProductField("product", "Product")
-                .Action(m => { m.Output["value"] = m.Field["product", 0]; })
+                .Action(m => { m.Output["value"] = m.Field["product"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -231,7 +231,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddOutput("value", "Value")
                 .AddProductField("crop", "Crop", filter: FarmProductFilter)
-                .Action(m => { m.Output["value"] = m.Field["crop", 0]; })
+                .Action(m => { m.Output["value"] = m.Field["crop"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -240,7 +240,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddOutput("value", "Value")
                 .AddEntityTypeField<MachineProto>("machine", "Machine")
-                .Action(m => { m.Output["value"] = m.Field["machine", 0]; })
+                .Action(m => { m.Output["value"] = m.Field["machine"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
             
@@ -249,7 +249,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddOutput("value", "Value")
                 .AddEntityTypeField<DrivingEntityProto>("vehicle", "vehicle")
-                .Action(m => { m.Output["value"] = m.Field["vehicle", 0]; })
+                .Action(m => { m.Output["value"] = m.Field["vehicle"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -258,7 +258,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddOutput("value", "Value")
                 .AddBooleanField("boolean", "Boolean")
-                .Action(m => { m.Output["value"] = m.Field["boolean", 0]; })
+                .Action(m => { m.Output["value"] = m.Field["boolean"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -267,7 +267,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddOutput("value", "Value")
                 .AddFix32Field("float", "Float")
-                .Action(m => { m.Output["value"] = m.Field["float", 0]; })
+                .Action(m => { m.Output["value"] = m.Field["float"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
         }
@@ -304,7 +304,7 @@ namespace ProgramableNetwork
                 .AddBooleanField("field_b", "Use direct constant")
                 .AddFix32Field("b", "B")
                 .AddOutput("c", "Sum")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] + m.FieldOrInput["b", 0]; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] + m.FieldOrInput["b"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -326,7 +326,7 @@ namespace ProgramableNetwork
                     .ModuleBuilderStart($"Sum_{i}", $"C = A + .. ({i - 1})", $"A+({i - 1})", Assets.Base.Products.Icons.Vegetables_svg)
                     .AddCategory(Category.Arithmetic)
                     .AddOutput("sum", "Sum")
-                    .Action(m => { m.Output["c"] = m.Input["a", 0] + m.Input["b", 0]; })
+                    .Action(m => { m.Output["c"] = m.Input["a"] + m.Input["b", 0]; })
                     .AddControllerDevice();
 
                 for (int j = 0; j < i; j++)
@@ -344,7 +344,7 @@ namespace ProgramableNetwork
                 .AddBooleanField("field_b", "Use direct constant")
                 .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] - m.FieldOrInput["b", 0]; })
+                .Action(m => { m.Output["c"] = m.Input["a"] - m.FieldOrInput["b", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -353,7 +353,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddOutput("b", "B")
-                .Action(m => { m.Output["b"] = 0 - m.Input["a", 0]; })
+                .Action(m => { m.Output["b"] = 0 - m.Input["a"]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -366,8 +366,8 @@ namespace ProgramableNetwork
                 .AddFix32Field("b", "B")
                 .AddOutput("c", "C")
                 .Action(m => {
-                    Fix32 a = m.Input["a", 0];
-                    Fix32 b = m.FieldOrInput["b", 0];
+                    Fix32 a = m.Input["a"];
+                    Fix32 b = m.FieldOrInput["b"];
                     Fix32 c = a * b;
                     m.Output["c"] = a * b;
                 })
@@ -384,8 +384,8 @@ namespace ProgramableNetwork
                 .AddOutput("c", "C")
                 .AddOutput("error", "Error")
                 .Action(m => {
-                    Fix32 a = m.Input["a", 0];
-                    Fix32 b = m.FieldOrInput["b", 0];
+                    Fix32 a = m.Input["a"];
+                    Fix32 b = m.FieldOrInput["b"];
                     if (b == 0)
                     {
                         m.Output["error"] = 1;
@@ -434,8 +434,9 @@ namespace ProgramableNetwork
                 .AddOutput("average", "Average")
                 .AddInt32Field("count", "Count", "Maximum number of values to be counted in average with default: 10", 10)
                 .Action(m => {
-                    Fix32 desiredCount = m.Field["count", 1];
-                    if (desiredCount < 1) desiredCount = 1;
+                    Fix32 desiredCount = m.Field["count", Fix32.One];
+                    if (desiredCount < Fix32.One)
+                        return ModuleStatus.Error;
 
                     Fix32 input = m.Input["input", 0];
                     Fix32 oldCount = (m.Output["count", 1] - 1);
@@ -443,6 +444,7 @@ namespace ProgramableNetwork
 
                     m.Output["count"] = Min(desiredCount, m.Output["count", 0] + 1.ToFix32());
                     m.Output["average"] = (average / m.Output["count"]);
+                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -615,21 +617,19 @@ namespace ProgramableNetwork
             Action<Module>[] ands = new Action<Module>[] {
                 (m) =>
                 {
-                    m.Output["a"] = (
+                    m.Output.Bool["a"] =
                         m.Input["a", 0] > 0 &&
-                        m.Input["b", 0] > 0
-                    ) ? 1 : 0;
+                        m.Input["b", 0] > 0;
                     m.Output["b"] = m.Output["a"] > 0 ? 0 : 1;
                 },
                 (m) =>
                 {
-                    m.Output["a"] = (
+                    m.Output.Bool["a"] =
                         m.Input["a", 0] > 0 &&
                         m.Input["b", 0] > 0 &&
                         m.Input["c", 0] > 0 &&
-                        m.Input["d", 0] > 0
-                    ) ? 1 : 0;
-                    m.Output["b"] = m.Output["a"] > 0 ? 0 : 1;
+                        m.Input["d", 0] > 0;
+                    m.Output.Bool["b"] = !m.Output.Bool["a"];
                 }
             };
             foreach (int i in new int[] { 2, 4 })
@@ -728,7 +728,7 @@ namespace ProgramableNetwork
                     for (int i = 0; i < count; i++)
                     {
                         string name = names[i];
-                        Fix32 value = m.Field[name, 0];
+                        Fix32 value = m.Field[name];
                         if (index <= value)
                         {
                             m.Output["selected"] = m.Input[name, 0];
@@ -792,11 +792,6 @@ namespace ProgramableNetwork
                             m.Output["b"] = targetModule.Input["b", 0];
                             m.Output["c"] = targetModule.Input["c", 0];
                             m.Output["d"] = targetModule.Input["d", 0];
-
-                            m.StatusOut["a"] = ModuleStatus.Running;
-                            m.StatusOut["b"] = ModuleStatus.Running;
-                            m.StatusOut["c"] = ModuleStatus.Running;
-                            m.StatusOut["d"] = ModuleStatus.Running;
                             return;
                         }
                     }
@@ -958,7 +953,7 @@ namespace ProgramableNetwork
                     Transport entity = m.Field.Entity<Transport>("entity");
                     Fix32 buffer = m.Input["buffer", 0];
                     int filterId = m.Input["product", 0].RawValue;
-                    bool fullstack = m.Field["fullstack", 0] > 0;
+                    bool fullstack = m.Field.Bool["fullstack"];
 
                     if (entity != null)
                     {
@@ -1590,8 +1585,12 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddBooleanField("field_b", "Use direct constant")
                 .AddFix32Field("b", "B")
+                .AddOutput("not_c", "not C")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] == m.FieldOrInput["b", 0] ? 1 : 0; })
+                .Action(m => {
+                    m.Output.Bool["c"] = m.Input["a", 0] == m.FieldOrInput["b", 0];
+                    m.Output.Bool["not_c"] = !m.Output.Bool["c"];
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1603,8 +1602,12 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddBooleanField("field_b", "Use direct constant")
                 .AddFix32Field("b", "B")
+                .AddOutput("not_c", "not C")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] > m.FieldOrInput["b", 0] ? 1 : 0; })
+                .Action(m => {
+                    m.Output.Bool["c"] = m.Input["a", 0] > m.FieldOrInput["b", 0];
+                    m.Output.Bool["not_c"] = !m.Output.Bool["c"];
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1616,8 +1619,12 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddBooleanField("field_b", "Use direct constant")
                 .AddFix32Field("b", "B")
+                .AddOutput("not_c", "not C")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] < m.FieldOrInput["b", 0] ? 1 : 0; })
+                .Action(m => {
+                    m.Output.Bool["c"] = m.Input["a", 0] < m.FieldOrInput["b", 0];
+                    m.Output.Bool["not_c"] = !m.Output.Bool["c"];
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1629,8 +1636,12 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddBooleanField("field_b", "Use direct constant")
                 .AddFix32Field("b", "B")
+                .AddOutput("not_c", "not C")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] >= m.FieldOrInput["b", 0] ? 1 : 0; })
+                .Action(m => {
+                    m.Output.Bool["c"] = m.Input["a", 0] >= m.FieldOrInput["b", 0];
+                    m.Output.Bool["not_c"] = !m.Output.Bool["c"];
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1642,8 +1653,12 @@ namespace ProgramableNetwork
                 .AddInput("b", "B")
                 .AddBooleanField("field_b", "Use direct constant")
                 .AddFix32Field("b", "B")
+                .AddOutput("not_c", "not C")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] <= m.FieldOrInput["b", 0] ? 1 : 0; })
+                .Action(m => {
+                    m.Output.Bool["c"] = m.Input["a", 0] <= m.FieldOrInput["b", 0];
+                    m.Output.Bool["not_c"] = !m.Output.Bool["c"];
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1687,7 +1702,7 @@ namespace ProgramableNetwork
                 return (Module m) =>
                 {
                     Fix32 value = m.Input["a"];
-                    int floating = Math.Min(m.Field["float", 0].IntegerPart, digits);
+                    int floating = Math.Min(m.Field.Integer["float"], digits);
                     int inting = Math.Max(Math.Min(digits - floating, digits), 0);
 
                     string full = inting > 0 ? value.IntegerPart.ToString($"D{inting}") : "";
@@ -1757,7 +1772,7 @@ namespace ProgramableNetwork
                     }
                     else
                     {
-                        int value = m.Field["fm", 0].IntegerPart;
+                        int value = m.Field.Integer["fm"];
                         Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
                         m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " kHz" : "");
 
@@ -1770,7 +1785,7 @@ namespace ProgramableNetwork
                         }
                         else
                         {
-                            Fix32[] signals = fm.Read(m.Field["fm", 0].IntegerPart);
+                            Fix32[] signals = fm.Read(m.Field.Integer["fm"]);
                             int minCount = Math.Min(signals.Length, digits);
                             for (int i = 0; i < minCount; i++)
                             {
@@ -1884,7 +1899,7 @@ namespace ProgramableNetwork
                     Antena entity = m.Field.Entity<Antena>("antena");
                     if (entity.DataBand is FMDataBand fm && !entity.IsPaused)
                     {
-                        int value = m.Field["fm", 0].IntegerPart;
+                        int value = m.Field.Integer["fm"];
                         Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
                         m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " kHz" : "");
 
@@ -1895,7 +1910,7 @@ namespace ProgramableNetwork
                             {
                                 signals[i] = m.Input[names[i], 0];
                             }
-                            fm.Update(m.Field["fm", 0].IntegerPart, signals);
+                            fm.Update(m.Field.Integer["fm"], signals);
                         }
                     }
                 };
@@ -2087,7 +2102,7 @@ namespace ProgramableNetwork
                         m.Output["am"] = am.Read(m.Field["am", Fix32.Zero].IntegerPart, Fix32.Zero);
 
                         // signal value
-                        int value = m.Field["am", 0].IntegerPart;
+                        int value = m.Field.Integer["am"];
                         Fix32 displayValue = (53 + value).ToFix32() * 10f.ToFix32();
                         m.Display["am"] = displayValue.ToStringRounded(0);
                     }
@@ -2186,13 +2201,13 @@ namespace ProgramableNetwork
                     Antena entity = m.Field.Entity<Antena>("antena");
                     if (entity.DataBand is AMDataBand am && !entity.IsPaused)
                     {
-                        int value = m.Field["am", 0].IntegerPart;
+                        int value = m.Field.Integer["am"];
                         Fix32 displayValue = (53 + value).ToFix32() * 10.ToFix32();
                         m.Display["am"] = displayValue.ToStringRounded(0);
 
                         if (!entity.IsPaused)
                         {
-                            am.Update(m.Field["am", 0].IntegerPart, m.Input["am", Fix32.Zero]);
+                            am.Update(m.Field.Integer["am"], m.Input["am", Fix32.Zero]);
                         }
                     }
                 })

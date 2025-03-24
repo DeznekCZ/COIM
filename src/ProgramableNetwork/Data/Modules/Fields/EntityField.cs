@@ -33,6 +33,7 @@ namespace ProgramableNetwork
         }
 
         public string Id => id;
+
         public string Name => name;
 
         public int Size => 40;
@@ -115,12 +116,19 @@ namespace ProgramableNetwork
                 .SetParent(fieldContainer, true)
                 .SetWidth(180)
                 .SetHeight(40)
+#pragma warning disable CS0618 // Typ nebo člen je zastaralý.
                 .SetText(Name)
+#pragma warning restore CS0618 // Typ nebo člen je zastaralý.
                 .ToolTip(inspector, shortDesc, attached: true)
                 .AppendTo(fieldContainer);
 
             new Picker(uiBuilder, module, id, entitySelector, distance, updateDialog, parentWindow, inspector)
                 .AppendTo(fieldContainer);
+        }
+
+        public void InitData(Module module)
+        {
+            // nothing to do
         }
 
         public class Picker : StackContainer

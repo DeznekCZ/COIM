@@ -117,14 +117,14 @@ namespace ProgramableNetwork
                 // TODO add template browser in Update 3
 
                 var protos = new (string id, string display, Action<Module> settings)[] {
-                    ("Constant", "[1]", (m) => m.Field["number"] = 1),
-                    ("Constant", "[100]", (m) => m.Field["number"] = 100),
-                    ("Display_Int_2", "[100|0]", (m) => m.Field["float"] = 1),
+                    ("Constant", "[1]", (m) => m.Field.Integer["number"] = 1),
+                    ("Constant", "[100]", (m) => m.Field.Integer["number"] = 100),
+                    ("Display_Int_2", "[100|0]", (m) => m.Field.Integer["float"] = 1),
                     ("Boolean_And", null, (m) => { }),
                     ("Boolean_Or", null, (m) => { }),
                     ("Compare_Int_Greater", null, (m) => { }),
                     ("Connection_Storage", null, (m) => { }),
-                    ("Connection_Transport", "Cap 100%", (m) => m.Field["fullstack"] = 1),
+                    ("Connection_Transport", "Cap 100%", (m) => m.Field.Bool["fullstack"] = true),
                 };
 
                 Builder.NewTxt("dialogNewTemplates")
@@ -146,11 +146,11 @@ namespace ProgramableNetwork
                         .SetText(text)
                         .SetParent(m_newDialog, true)
                         .SetHeight(20)
-                        .SetEnabled(m_newModule != null)
                         .OnClick(() =>
                         {
                             if (TryPlaceAt(proto.Value, m_targetRow, m_targetColumn))
                             {
+                                m_editModule.Prototype.ExecuteInit(m_editModule);
                                 item.settings(m_editModule);
                                 CreateEditDialog(m_editModule);
                             }
@@ -191,6 +191,7 @@ namespace ProgramableNetwork
                     {
                         if (TryPlaceAt(m_newModule, m_targetRow, m_targetColumn))
                         {
+                            m_editModule.Prototype.ExecuteInit(m_editModule);
                             CreateEditDialog(m_editModule);
                         }
                     })
@@ -437,7 +438,7 @@ namespace ProgramableNetwork
             int height = (module.Prototype.Fields.Count - 1) * 5 + 10;
             foreach (IField item in module.Prototype.Fields)
             {
-                StackContainer fieldContainer = Builder.NewStackContainer("field_" + item.Name)
+                StackContainer fieldContainer = Builder.NewStackContainer("field_" + item.Id)
                     .SetParent(holder, true)
                     .SetHeight(item.Size)
                     .AppendTo(holder);

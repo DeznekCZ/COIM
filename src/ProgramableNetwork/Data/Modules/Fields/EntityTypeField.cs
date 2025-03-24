@@ -48,6 +48,11 @@ namespace ProgramableNetwork
             protoTab.AppendTo(fieldContainer);
         }
 
+        public void InitData(Module module)
+        {
+            // nothing to do
+        }
+
         public void Validate(Module module)
         {
             if (module.StringData.TryGetValue("field__" + Id, out var id))

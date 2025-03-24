@@ -1,5 +1,6 @@
 ﻿using Mafi.Core.Prototypes;
 using Mafi.Localization;
+using System;
 
 namespace ProgramableNetwork
 {
@@ -17,6 +18,5 @@ namespace ProgramableNetwork
             Width = width;
             DefaultText = defaultText;
         }
-
     }
 }

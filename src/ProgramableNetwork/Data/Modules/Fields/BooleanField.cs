@@ -1,4 +1,5 @@
-﻿using Mafi.Unity.UiFramework;
+﻿using Mafi;
+using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Components;
@@ -40,8 +41,7 @@ namespace ProgramableNetwork
                 .ToolTip(inspector, shortDesc, attached: true)
                 .AppendTo(fieldContainer);
 
-            bool value = module.Field[Id, Default ? 1 : 0] > 0;
-            module.Field[Id] = value ? 1 : 0;
+            bool value = module.Field.Bool[Id];
 
             Btn falseSelector = uiBuilder
                 .NewBtnGeneral("false")
@@ -79,6 +79,11 @@ namespace ProgramableNetwork
         public void Validate(Module module)
         {
             // nothing to do
+        }
+
+        public void InitData(Module module)
+        {
+            module.Field[Id] = Default ? Fix32.One : Fix32.Zero;
         }
     }
 }

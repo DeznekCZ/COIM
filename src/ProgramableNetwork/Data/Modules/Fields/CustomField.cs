@@ -1,4 +1,5 @@
-﻿using Mafi.Unity;
+﻿using Mafi;
+using Mafi.Unity;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
 using System;
@@ -11,14 +12,16 @@ namespace ProgramableNetwork
         private string name;
         private string shortDesc;
         private Action<CustomField> ui;
+        private Action<CustomField> data;
         private Func<int> size;
 
-        public CustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui)
+        public CustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui, Action<CustomField> data)
         {
             this.id = id;
             this.name = name;
             this.shortDesc = shortDesc;
             this.ui = ui;
+            this.data = data;
             this.size = size;
         }
 
@@ -40,8 +43,13 @@ namespace ProgramableNetwork
             Builder = uiBuilder;
             Container = fieldContainer;
             Refresh = updateDialog;
-            Reference = new Reference((v) => module.Field[id] = v, () => module.Field[id, 0]);
+            Reference = new Reference((v) => module.Field[id] = v, () => module.Field[id, Fix32.Zero]);
             ui.Invoke(this);
+        }
+
+        public void InitData(Module module)
+        {
+            data.Invoke(this);
         }
 
         public void Validate(Module module)

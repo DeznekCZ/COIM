@@ -47,12 +47,16 @@ class Module:
         self.Info = False
         # set an display state to warning
         self.Warning = False
+        # accessor to prototype
+        self.Prototype = None
+        # accessor to controller
+        self.Controller = None
     
     def Tr(key: str, default: str) -> LocStr | LocStr1 | LocStrFormatted:
       """Creates and translation string for modules"""
       pass
 
-    def Init(self, prototype):
+    def Init(self):
         pass
 
     def Action(self):
