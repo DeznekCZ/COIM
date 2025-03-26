@@ -49,55 +49,32 @@ namespace ProgramableNetwork
 
                 foreach (IEntity entity in module.Controller.Context.EntitiesManager.Entities)
                 {
-                    if (entity.Prototype.Id.Value == entityData.Prototype)
+                    if (entitySelector.Invoke(module, entity))
                     {
+                        entity.HasPosition(out Tile3f entityBlockTile);
                         entity.HasPosition(out Tile2f entityTile);
 
-                        if (module.Controller.Position2f - entityTile == entityData.Relative)
+                        if (entityData.Z == int.MinValue)
                         {
-                            Log.Info("Found by definition");
-                            module.Field.Entity(Id, entity); // set by position
-                            return; // BUT position changed
+                            if (module.Controller.Position2f - entityTile == entityData.Relative2)
+                            {
+                                Log.Info("Found by definition");
+                                module.Field.Entity(Id, entity); // set by position
+                                return; // BUT position changed
+                            }
+                        }
+                        else
+                        {
+                            if (module.Controller.Position3f - entityBlockTile == entityData.Relative)
+                            {
+                                Log.Info("Found by definition");
+                                module.Field.Entity(Id, entity); // set by position
+                                return; // BUT position changed
+                            }
                         }
                     }
                 }
                 Log.Info("Not found");
-            }
-            // BACKWARD COMPATIBILITY
-            if (module.NumberData.TryGetValue("field__" + Id, out var id))
-            {
-                Log.Info("Searching for entity in module by id: " + module.Id + " with key: " + Id);
-                if (module.Controller.Context.EntitiesManager.TryGetEntity(new EntityId(id), out IEntity anyEntity))
-                {
-                    if (anyEntity is IStaticEntity entity && entity.OccupiedTiles
-                        .Select(t => entity.Position3f.AddX(t.RelativeX).AddY(t.RelativeY))
-                        .FirstOrDefault(t => (module.Controller.Position3f - t).Length <= distance) != Tile3f.Zero)
-                    {
-                        Log.Info("Reassigning for reference");
-                        module.Field.Entity(Id, entity);
-                    }
-                    else if (entityData != null)
-                    {
-                        anyEntity.HasPosition(out Tile2f entityTile);
-
-                        if (module.Controller.Position2f - entityTile == entityData.Relative)
-                        {
-                            Log.Info("Found by position");
-                            module.Field.Entity(Id, anyEntity); // set by position
-                            return; // BUT position changed
-                        }
-                    }
-                    else
-                    {
-                        Log.Info("Removing - out of range");
-                        module.Field.Entity<IEntity>(Id, null);
-                    }
-                }
-                else
-                {
-                    Log.Info("Removing - missing entity");
-                    module.Field.Entity<IEntity>(Id, null);
-                }
             }
             else
             {

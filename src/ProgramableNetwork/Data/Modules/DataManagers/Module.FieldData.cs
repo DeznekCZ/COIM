@@ -90,8 +90,8 @@ namespace ProgramableNetwork
                     return;
                 }
 
-                entity.HasPosition(out Tile2f posA);
-                var relativePosition = module.Controller.Position2f - posA;
+                entity.HasPosition(out Tile3f posA);
+                var relativePosition = module.Controller.Position3f - posA;
 
                 module.NumberData["field__" + name] = entity.Id.Value;
                 module.StringData["field__" + name] = JsonConvert.SerializeObject(new EntityInfo(entity, relativePosition));
