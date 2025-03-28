@@ -42,6 +42,7 @@ namespace ProgramableNetwork
         {
             EntityInfo entityData = null;
             // FOR ONLY NEWLY CONSTRUCTED
+            module.NumberData.TryRemove("field__" + Id, out _);
             if (module.StringData.TryGetValue("field__" + Id, out var value))
             {
                 Log.Info("Searching for entity in module by config: " + module.Id + " with key: " + Id);
