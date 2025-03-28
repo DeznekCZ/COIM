@@ -579,6 +579,38 @@ namespace ProgramableNetwork
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Stats_Vehicle", "Connection: Office - Vehicles", "VEH", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .AddCategory(Category.Stats)
+                .AddEntityField<CaptainOffice>("office", "Captains office", "Must be placest next to Captains office", 2.ToFix32())
+                .AddInput("vehicle", "Amount of owned vehicle/ship (all when unselected)")
+                .AddBooleanField("field_vehicle", "Select by settings", defaultValue: false)
+                .AddEntityTypeField<DynamicEntityProto>("vehicle", "Vehicle", "Vehicle count to read").AddInput("vehicle", "Vehicle type")
+                .AddOutput("count", "Amount of owned vehicle/ship (all when unselected)")
+                .AddOutput("assignable", "Amount of assignable vehicle/ship (all when unselected)")
+                .Width(2)
+                .Action(m =>
+                {
+                    if (m.Field.Entity<CaptainOffice>("office") is null)
+                        return ModuleStatus.Error;
+
+                    if (m.FieldOrInput.EntityProtoIconified("vehicle") is DynamicEntityProto drivingEntity)
+                    {
+                        var stats = GlobalDependencyResolver.Get<IVehiclesManager>().GetStats(drivingEntity);
+                        m.Output.Integer["count"] = stats.Owned;
+                        m.Output.Integer["assignable"] = stats.Assignable;
+                        return ModuleStatus.Running;
+                    }
+
+                    m.Output.Integer["count"] = GlobalDependencyResolver.Get<IVehiclesManager>().AllVehicles.Count;
+                    m.Output.Integer["assignable"] = 0;
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
         }
 
         private void Forks(ProtoRegistrator registrator)
