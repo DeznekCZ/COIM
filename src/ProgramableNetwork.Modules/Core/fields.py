@@ -1,4 +1,6 @@
+from Mafi import Fix32
 from Mafi.Core.Entities import Entity
+from Core.mafi import fix
 
 class Field:
     def __init__(self, field_id: str, name: str, short_desc: str):
@@ -11,8 +13,18 @@ class Int32Field(Field):
         super().__init__(field_id, name, short_desc)
         self.default_value = default_value
 
+class Fix32Field(Field):
+    def __init__(self, field_id: str, name: str, short_desc="", default_value=fix(0)):
+        super().__init__(field_id, name, short_desc)
+        self.default_value = default_value
+
 class StringField(Field):
     def __init__(self, field_id: str, name: str, short_desc="", default_value=""):
+        super().__init__(field_id, name, short_desc)
+        self.default_value = default_value
+
+class BooleanField(Field):
+    def __init__(self, field_id: str, name: str, short_desc="", default_value=False):
         super().__init__(field_id, name, short_desc)
         self.default_value = default_value
 
@@ -24,26 +36,16 @@ class EntityField(Field):
         self.filter = entity_filter
 
 class FieldValue:
-    def __init__(self, module):
-        self.module = module
+    def __init__(self, module): pass
+    def get(self, name: str, default: Fix32) -> Fix32: pass
+    def get_bool(self, name: str, default: bool) -> bool: pass
+    def get_int(self, name: str, default: int) -> int: pass
+    def get_ent(self, name: str) -> Entity: pass
+    def get_str(self, name: str, default: str) -> Entity: pass
 
-    def set(self, name: str, value: float) -> None:
-        self.module.number_data["field__" + name] = value
-
-    def get(self, name: str, default: float) -> float:
-        return self.module.number_data["field__" + name] or default
-
-    def set_str(self, name: str, value: str) -> None:
-        self.module.string_data["field__" + name] = value or ""
-
-    def get_str(self, name: str, default = "") -> str:
-        return self.module.string_data["field__" + name] or default
-
-    def set_ent(self, name: str, value: Entity = None) -> None:
-        if Entity is None:
-            self.module.number_data["field__" + name] = 0
-        else:
-            self.module.number_data["field__" + name] = value.Id.Value
-
-    def get_ent(self, name: str) -> Entity:
-        return self.module.number_data["field__" + name]
+class FieldOrInputValue:
+    def __init__(self, module): pass
+    def get(self, name: str, default: Fix32) -> Fix32: pass
+    def get_bool(self, name: str, default: bool) -> bool: pass
+    def get_int(self, name: str, default: int) -> int: pass
+    def get_ent(self, name: str) -> Entity: pass

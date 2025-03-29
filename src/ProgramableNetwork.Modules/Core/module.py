@@ -35,6 +35,8 @@ class Module:
         self.Output = OutputValue(self)
         # defines an interface to data of field inside module
         self.Field = FieldValue(self)
+        # defines an interface to data of field inside module
+        self.FieldOrInput = FieldOrInputValue(self)
         # defines an interface to raw data inside module
         self.NumberData = {}
         # defines an interface to raw data inside module

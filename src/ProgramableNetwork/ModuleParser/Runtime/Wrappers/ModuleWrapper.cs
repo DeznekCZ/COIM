@@ -15,6 +15,38 @@ namespace ProgramableNetwork.Python
             this.@class = @class;
         }
 
+        public FieldOrInputSetter FieldOrInput => new FieldOrInputSetter(module);
+
+        public class FieldOrInputSetter
+        {
+            private Module module;
+
+            public FieldOrInputSetter(Module module)
+            {
+                this.module = module;
+            }
+
+            public Entity get_ent(string fieldName)
+            {
+                return module.FieldOrInput.Entity<Entity>(fieldName);
+            }
+
+            public bool get_bool(string name, bool value)
+            {
+                return module.FieldOrInput.Bool[name, value];
+            }
+
+            public int get_int(string name, int value)
+            {
+                return module.FieldOrInput.Integer[name, value];
+            }
+
+            public Fix32 get(string name, Fix32 value)
+            {
+                return module.FieldOrInput[name, value];
+            }
+        }
+
         public FieldSetter Field => new FieldSetter(module);
 
         public class FieldSetter
@@ -33,12 +65,22 @@ namespace ProgramableNetwork.Python
 
             public bool get_bool(string name, bool value)
             {
-                return module.Field[name, (value ? 1 : 0).ToFix32()] > 0;
+                return module.Field.Bool[name, value];
             }
 
             public void set_bool(string name, bool value)
             {
-                module.Field[name] = (value ? 1 : 0).ToFix32();
+                module.Field.Bool[name] = value;
+            }
+
+            public int get_int(string name, int value)
+            {
+                return module.Field.Integer[name, value];
+            }
+
+            public void set_int(string name, int value)
+            {
+                module.Field.Integer[name] = value;
             }
 
             public Fix32 get(string name, Fix32 value)
@@ -65,12 +107,22 @@ namespace ProgramableNetwork.Python
 
             public bool get_bool(string name, bool value)
             {
-                return module.Input[name, (value ? 1 : 0).ToFix32()] > 0;
+                return module.Input.Bool[name, value];
             }
 
             public void set_bool(string name, bool value)
             {
-                module.Input[name] = (value ? 1 : 0).ToFix32();
+                module.Input.Bool[name] = value;
+            }
+
+            public int get_int(string name, int value)
+            {
+                return module.Input.Integer[name, value];
+            }
+
+            public void set_int(string name, int value)
+            {
+                module.Input.Integer[name] = value;
             }
 
             public Fix32 get(string name, Fix32 value)
@@ -103,6 +155,17 @@ namespace ProgramableNetwork.Python
             public void set_bool(string name, bool value)
             {
                 module.Output.Bool[name] = value;
+            }
+            
+
+            public int get_int(string name, int value)
+            {
+                return module.Output.Integer[name];
+            }
+
+            public void set_int(string name, int value)
+            {
+                module.Output.Integer[name] = value;
             }
 
             public Fix32 get(string name, Fix32 value)

@@ -50,6 +50,19 @@ namespace ProgramableNetwork.Python
                                 );
                             }, new string[] { "type", "id", "name", "desc", "defaultValue" }));
                     }
+                    else if (argument.value == "BooleanField")
+                    {
+                        return (argument.value, new Constructor(
+                            (IArgumentValue[] args) => {
+                                string id = (string)(args[0] is OrderedValue o0 ? o0.Value : null);
+                                string name1 = (string)(args[1] is OrderedValue o1 ? o1.Value : null);
+                                string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
+                                bool defaultValue = args.Length > 3 && args[3] is OrderedValue o3 ? (bool)o3.Value : false;
+                                return new ModuleBooleanFieldProtoDefinition(
+                                    id, name1, desc, defaultValue
+                                );
+                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                    }
                     else if (argument.value == "Int32Field")
                     {
                         return (argument.value, new Constructor(
