@@ -52,6 +52,10 @@ namespace ProgramableNetwork
                     .SetParent(this, true)
                     .SetSize(width * 20, displaysExists ? 20 : 40)
                     .SetText(module.Prototype.Symbol)
+                    .SetOnMouseEnterLeaveActions(
+                        () => m_computerView.AddPreviewHighlight(module),
+                        () => m_computerView.ClearPreviewHighlight()
+                    )
                     .OnClick(() =>
                     {
                         m_computerView.CreateEditDialog(module);
@@ -428,6 +432,16 @@ namespace ProgramableNetwork
             {
                 ToggleDisplay_Symbol(builder, module, display, text, "●");
             }
+        }
+
+        private void AddPreviewHighlight(Module module)
+        {
+            m_controller.AddPreviewHighlight(module);
+        }
+
+        private void ClearPreviewHighlight()
+        {
+            m_controller.ClearPreviewHighlight();
         }
     }
 }

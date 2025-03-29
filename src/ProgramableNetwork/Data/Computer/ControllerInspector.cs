@@ -160,5 +160,21 @@ namespace ProgramableNetwork
             base.OnDeactivated();
             //EntitySelectionInput = null;
         }
+
+        internal void AddPreviewHighlight(Module module)
+        {
+            foreach (var item in module.Prototype.Fields.Where(f => f is EntityField))
+            {
+                if (module.Field.Entity<IEntity>(item.Id) is IRenderedEntity entity)
+                {
+                    EntityHighlighter.Highlight(entity, ColorRgba.CornflowerBlue);
+                }
+            }
+        }
+
+        internal void ClearPreviewHighlight()
+        {
+            EntityHighlighter.ClearAllHighlights();
+        }
     }
 }

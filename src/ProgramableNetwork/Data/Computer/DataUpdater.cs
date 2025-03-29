@@ -64,4 +64,60 @@ namespace ProgramableNetwork
             return value;
         }
     }
+
+    public class DataUpdaterChecked<T, C> : IDataUpdater
+    {
+        private T value;
+        private Func<C, T> getter;
+        private Action<C, T> setter;
+        private Func<T, T, bool> comparator;
+        private C context;
+
+        public DataUpdaterChecked(Func<C, T> getter, Action<C, T> setter, Func<T,T,bool> comparator, C context, T init)
+        {
+            this.value = init;
+            this.getter = getter;
+            this.setter = setter;
+            this.comparator = comparator;
+            this.context = context;
+        }
+
+        public bool WasChanged()
+        {
+            try
+            {
+                T newValue = getter(context);
+                if (comparator(value, newValue))
+                {
+                    return false;
+                }
+                value = newValue;
+                return true;
+            }
+            catch (NullReferenceException e)
+            {
+                Log.Info("Change failed: " + e);
+                return false;
+            }
+        }
+
+        public void Update()
+        {
+            try
+            {
+                if (WasChanged())
+                {
+                    setter(context, value);
+                }
+            }
+            catch (NullReferenceException e)
+            {
+                Log.Info("Update failed: " + e);
+            }
+        }
+
+        public T GetValue() {
+            return value;
+        }
+    }
 }
