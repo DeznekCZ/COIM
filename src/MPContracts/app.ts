@@ -12,6 +12,10 @@ const app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 app.use(express.json())
+app.use((req, res, next) => { // eslint-disable-line @typescript-eslint/no-unused-vars
+    console.log(req.path);
+    next();
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -49,6 +53,7 @@ app.use((err, req, res, next) => { // eslint-disable-line @typescript-eslint/no-
     });
 });
 
+process.env.MARKET_NAME = process.env.MARKET_NAME ?? "Market";
 app.set('port', process.env.PORT || 6542);
 
 const server = app.listen(app.get('port'), function () {

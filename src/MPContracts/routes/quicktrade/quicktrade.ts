@@ -142,7 +142,6 @@ router.get('/take/:id', async (req: express.Request, res: express.Response) => {
     }
 });
 
-// TODO
 router.get('/claim/:id', async (req: express.Request, res: express.Response) => {
     try {
         const authorization: Registration = JSON.parse(req.headers.authorization);
@@ -161,47 +160,31 @@ router.get('/claim/:id', async (req: express.Request, res: express.Response) => 
             return;
         }
 
-        const id: number = Number.parseInt(req.params.id);
+        const canBeClaimed = fs.existsSync(`/home/coi/market/offers/${authorization.CreationTime}.${req.params.id}.used`)
+        const wasNotSold = fs.existsSync(`/home/coi/market/offers/${authorization.CreationTime}.${req.params.id}.open`)
+        const doesNotExist = !canBeClaimed && !wasNotSold;
 
-        fs.mkdirSync(`/home/coi/market/offers`, { recursive: true });
-        const files: string[] = fs.readdirSync(`/home/coi/market/offers`);
-
-        for (const fileKey in files) {
-            const file = files[fileKey];
-            const partSplit = file.split(".");
-            const user = Number.parseInt(partSplit[0]);
-            const offer = Number.parseInt(partSplit[1]);
-            const open = partSplit[2] === "open";
-
-            if (offer !== id)
-                continue;
-
-            if (user === authorization.CreationTime) {
-                res.status(401);
-                res.send("Can not buy own item");
-                return;
-            }
-
-            if (!open) {
-                res.status(401);
-                res.send("Already sold (unclaimed)");
-                return;
-            }
-
-            fs.renameSync(`/home/coi/market/offers/${file}`, `/home/coi/market/offers/${user}.${offer}.used`);
-            res.status(200).send();
+        if (doesNotExist) {
+            res.status(404);
+            res.send("Item does not exists");
             return;
         }
 
-        res.status(401);
-        res.send("Already sold (claimed)");
+        if (wasNotSold) {
+            res.status(406);
+            res.send("Item was not sold");
+            return;
+        }
+
+        fs.rmSync(`/home/coi/market/offers/${authorization.CreationTime}.${req.params.id}.used`);
+        res.status(200).send();
+
     } catch (e) {
         console.log(e);
         res.sendStatus(500);
     }
 });
 
-// TODO
 router.get('/remove/:id', async (req: express.Request, res: express.Response) => {
     try {
         const authorization: Registration = JSON.parse(req.headers.authorization);
@@ -220,40 +203,25 @@ router.get('/remove/:id', async (req: express.Request, res: express.Response) =>
             return;
         }
 
-        const id: number = Number.parseInt(req.params.id);
+        const canBeClaimed = fs.existsSync(`/home/coi/market/offers/${authorization.CreationTime}.${req.params.id}.used`)
+        const isCreated = fs.existsSync(`/home/coi/market/offers/${authorization.CreationTime}.${req.params.id}.open`)
+        const doesNotExist = !canBeClaimed && !isCreated;
 
-        fs.mkdirSync(`/home/coi/market/offers`, { recursive: true });
-        const files: string[] = fs.readdirSync(`/home/coi/market/offers`);
-
-        for (const fileKey in files) {
-            const file = files[fileKey];
-            const partSplit = file.split(".");
-            const user = Number.parseInt(partSplit[0]);
-            const offer = Number.parseInt(partSplit[1]);
-            const open = partSplit[2] === "open";
-
-            if (offer !== id)
-                continue;
-
-            if (user === authorization.CreationTime) {
-                res.status(401);
-                res.send("Can not buy own item");
-                return;
-            }
-
-            if (!open) {
-                res.status(401);
-                res.send("Already sold (unclaimed)");
-                return;
-            }
-
-            fs.renameSync(`/home/coi/market/offers/${file}`, `/home/coi/market/offers/${user}.${offer}.used`);
-            res.status(200).send();
+        if (doesNotExist) {
+            res.status(404);
+            res.send("Item does not exists");
             return;
         }
 
-        res.status(401);
-        res.send("Already sold (claimed)");
+        if (canBeClaimed) {
+            res.status(406);
+            res.send("Item must be claimed");
+            return;
+        }
+
+        fs.rmSync(`/home/coi/market/offers/${authorization.CreationTime}.${req.params.id}.open`);
+        res.status(200).send();
+
     } catch (e) {
         console.log(e);
         res.sendStatus(500);
