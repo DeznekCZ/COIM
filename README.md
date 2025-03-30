@@ -14,7 +14,7 @@ This branch is only an picker for specific projects within modding:
   - branch: https://github.com/DeznekCZ/COIM/tree/main-programable-network
   - latest release is always placed in: https://github.com/DeznekCZ/COIM/releases
   - the Discord discussion is placed in: https://discord.com/channels/803508556325584926/1264293900999200858
-- Multiplayer Trades:
-  - branch: https://github.com/DeznekCZ/COIM/tree/main-multiplayer-trades
+- Multiplayer Contracts:
+  - branch: https://github.com/DeznekCZ/COIM/tree/main-multiplayer-contracts
   - latest release is always placed in: https://github.com/DeznekCZ/COIM/releases
   - the Discord discussion is placed in: https://discord.com/channels/803508556325584926/1265044492176719913
