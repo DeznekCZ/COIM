@@ -1,0 +1,29 @@
+ManifestFileVersion: 0
+CRC: 3761181085
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: b32ba145ad8ad2a0cf7fe6006e251b39
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 71fae6ce9612b55492988b7c6597434c
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Bridges/Prefabs/Ramp_1x3_R2.prefab
+Dependencies:
+- S:/git/COIM-Derbis/src/ExampleMod.Unity/AssetBundles/materials_f253
+- S:/git/COIM-Derbis/src/ExampleMod.Unity/AssetBundles/meshes_9c86

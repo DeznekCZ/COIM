@@ -1,0 +1,29 @@
+ManifestFileVersion: 0
+CRC: 1838208067
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: bc66885d0536bb19f9197f7fc396e375
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 71fae6ce9612b55492988b7c6597434c
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Bridges/Prefabs/Floor_1x1_H1.prefab
+Dependencies:
+- S:/git/COIM-Derbis/src/ExampleMod.Unity/AssetBundles/materials_f253
+- S:/git/COIM-Derbis/src/ExampleMod.Unity/AssetBundles/meshes_9c86
