@@ -120,6 +120,15 @@ namespace ProgramableNetwork
                 .SetSize(100, 20)
                 .AppendTo(nextRowStack);
 
+            AddHeaderButton(Builder.NewBtnGeneral("showArrows")
+                .SetSize(20, 20)
+                .SetButtonStyle(Builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White))
+                .SetIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Connect128_png)
+                .SetOnMouseEnterLeaveActions(
+                    m_controller.AddPreviewHighlightAll,
+                    m_controller.ClearPreviewHighlight
+                ));
+
             itemContainer.AppendDivider(5, Style.EntitiesMenu.MenuBg);
 
             AddModuleImplementation(itemContainer, updaterBuilder, (width, height) =>

@@ -2,14 +2,13 @@
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
-using Mafi.Core.Factory.Transports;
 using Mafi.Core.Input;
 using Mafi.Unity;
 using Mafi.Unity.Entities;
 using Mafi.Unity.InputControl;
 using Mafi.Unity.InputControl.Cursors;
 using Mafi.Unity.InputControl.Inspectors;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -22,6 +21,9 @@ namespace ProgramableNetwork
         private readonly AudioSource m_invalidOpSound;
         private bool m_highlightSearched;
         private IRenderedEntity m_hoveredEntity;
+        private readonly LinesFactory m_linesFactory;
+        private readonly List<LineMb> m_lines = new List<LineMb>();
+        private readonly Material m_movingArrowsLineMaterialShared;
 
         public ControllerInspector(
             InspectorContext context,
@@ -30,10 +32,14 @@ namespace ProgramableNetwork
             ShortcutsManager shortcutsManager,
             //TerrainCursor terrainCursor,
             NewInstanceOf<EntityHighlighter> entityHighlighter,
-            NewInstanceOf<EntityHighlighter> entityHighlighterSelectable
+            NewInstanceOf<EntityHighlighter> entityHighlighterSelectable,
+            LinesFactory linesFactory,
+            AssetsDb assetsDb
             ) : base(context)
         {
             m_windowView = new ControllerView(this);
+            m_linesFactory = linesFactory;
+            m_movingArrowsLineMaterialShared = assetsDb.GetSharedMaterial("Assets/Core/Materials/MovingArrowsLine.mat");
             CursorManager = cursorManager;
             CursorPickingManager = cursorPickingManager;
             //TerrainCursor = terrainCursor;
@@ -161,20 +167,57 @@ namespace ProgramableNetwork
             //EntitySelectionInput = null;
         }
 
+        internal void AddPreviewHighlightAll()
+        {
+            Dictionary<EntityId, IEntity> entities = new Dictionary<EntityId, IEntity>();
+            foreach (var module in SelectedEntity.Modules)
+            {
+                GetEntitiesOfModule(entities, module);
+            }
+            AddPreviewHighlightOfEntities(entities.Values);
+        }
+
         internal void AddPreviewHighlight(Module module)
         {
-            foreach (var item in module.Prototype.Fields.Where(f => f is EntityField))
-            {
-                if (module.Field.Entity<IEntity>(item.Id) is IRenderedEntity entity)
-                {
-                    EntityHighlighter.Highlight(entity, ColorRgba.CornflowerBlue);
-                }
-            }
+            Dictionary<EntityId, IEntity> entities = new Dictionary<EntityId, IEntity>();
+            GetEntitiesOfModule(entities, module);
+            AddPreviewHighlightOfEntities(entities.Values);
         }
 
         internal void ClearPreviewHighlight()
         {
             EntityHighlighter.ClearAllHighlights();
+            ClearAllLines();
+        }
+
+        private static void GetEntitiesOfModule(Dictionary<EntityId, IEntity> entities, Module module)
+        {
+            foreach (var item in module.Prototype.Fields.Where(f => f is EntityField))
+            {
+                if (module.Field.Entity<IEntity>(item.Id) is IRenderedEntity entity)
+                {
+                    entities[entity.Id] = entity;
+                }
+            }
+        }
+
+        private void AddPreviewHighlightOfEntities(IEnumerable<IEntity> entities)
+        {
+            foreach (var entity in entities)
+            {
+                EntityHighlighter.Highlight(entity as IRenderedEntity, ColorRgba.CornflowerBlue);
+                entity.HasPosition(out Tile3f position);
+                var line = m_linesFactory.CreateLine(position.ToVector3(), SelectedEntity.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+                line.SetTextureMode(LineTextureMode.Tile);
+                m_lines.Add(line);
+            }
+        }
+
+        private void ClearAllLines()
+        {
+            foreach (var line in m_lines)
+                line.gameObject.Destroy();
+            m_lines.Clear();
         }
     }
 }

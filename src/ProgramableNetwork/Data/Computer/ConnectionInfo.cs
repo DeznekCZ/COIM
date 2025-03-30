@@ -28,19 +28,26 @@ namespace ProgramableNetwork.Data.Variables
     {
         private StackContainer m_controllers;
         private Option<ScrollableStackContainer> m_scrollableStackContainer;
+        private readonly Material m_movingArrowsLineMaterialShared;
         private readonly List<IDataUpdater> m_updaters;
         private readonly InspectorContext m_inspectorContext;
         private readonly EntityHighlighter m_entityHighlighter;
+        private readonly LinesFactory m_linesFactory;
+        private readonly List<LineMb> m_lines = new List<LineMb>();
         private readonly IGameLoopEvents m_gameLoop;
 
         public ScrollableStackContainer ScrollableItemsContainer { get; private set; }
         public StackContainer ItemsContainer { get; private set; }
 
-        public ConnectionInfo(VariableManager variableManager, IUnityInputMgr unityInput, InspectorContext inspectorContext, UiBuilder uiBuilder, IGameLoopEvents gameLoop, NewInstanceOf<EntityHighlighter> entityHighlighter)
+        public ConnectionInfo(VariableManager variableManager, IUnityInputMgr unityInput, InspectorContext inspectorContext,
+            UiBuilder uiBuilder, IGameLoopEvents gameLoop, NewInstanceOf<EntityHighlighter> entityHighlighter,
+            LinesFactory linesFactory, AssetsDb assetsDb)
             : base("connections", FooterStyle.Round, false)
         {
             m_inspectorContext = inspectorContext;
+            m_movingArrowsLineMaterialShared = assetsDb.GetSharedMaterial("Assets/Core/Materials/MovingArrowsLine.mat");
             m_entityHighlighter = entityHighlighter.Instance;
+            m_linesFactory = linesFactory;
             m_gameLoop = gameLoop;
             m_updaters = new List<IDataUpdater>();
             unityInput.RegisterGlobalShortcut(
@@ -58,6 +65,14 @@ namespace ProgramableNetwork.Data.Variables
         {
             m_inspectorContext.EntitiesManager.StaticEntityAdded.RemoveNonSaveable(this, EntitiesChanged);
             m_inspectorContext.EntitiesManager.StaticEntityRemoved.RemoveNonSaveable(this, EntitiesChanged);
+            ClearAllLines();
+        }
+
+        private void ClearAllLines()
+        {
+            foreach (var line in m_lines)
+                line.gameObject.Destroy();
+            m_lines.Clear();
         }
 
         private void VariableWindow_OnShowStart()
@@ -130,26 +145,20 @@ namespace ProgramableNetwork.Data.Variables
                     ).Sum());
 
             var controllers = m_inspectorContext.EntitiesManager.GetAllEntitiesOfType<Controller>();
-            foreach (var item in controllers)
+            foreach (var controller in controllers)
             {
                 m_controllers.AppendDivider(2, Style.EntitiesMenu.MenuBg);
 
                 StackContainer container = Builder.NewStackContainer(DateTime.Now.Ticks.ToString())
                     .SetStackingDirection(StackContainer.Direction.LeftToRight)
-                    .SetHeight(40)
-                    .SetWidth(500)
-                    .AppendTo(m_controllers);
+                    .SetWidth(500);
 
-                Builder.NewBtnGeneral("controller_" + item.Id.Value)
+                var controllerButton = Builder.NewBtnGeneral("controller_" + controller.Id.Value)
                     //.ToolTip(this, item.CustomTitle.ValueOrNull ?? item.DefaultTitle.Value)
-                    .OnClick(() => m_inspectorContext.CameraController.PanTo(item.Position2f))
+                    .OnClick(() => m_inspectorContext.CameraController.PanTo(controller.Position2f))
                     .SetSize(40, 40)
                     .SetButtonStyle(Builder.Style.Global.ImageBtn)
-                    .SetIcon(item.Prototype.IconPath)
-                    .SetOnMouseEnterLeaveActions(
-                        () => m_entityHighlighter.HighlightOnly(item, ColorRgba.CornflowerBlue),
-                        () => m_entityHighlighter.ClearAllHighlights()
-                    )
+                    .SetIcon(controller.Prototype.IconPath)
                     .AppendTo(container);
 
                 GridContainer linkcontainer = Builder.NewGridContainer(DateTime.Now.Ticks.ToString())
@@ -158,7 +167,7 @@ namespace ProgramableNetwork.Data.Variables
                     .AppendTo(container)
                     .SetDynamicHeightMode(10);
 
-                List<(Module module, List<EntityField> fields)> list = item.Modules
+                List<(Module module, List<EntityField> fields)> list = controller.Modules
                     .Select(module => (
                         module,
                         module.Prototype.Fields
@@ -168,12 +177,17 @@ namespace ProgramableNetwork.Data.Variables
                     ))
                     .ToList();
 
-                container.SetHeight((list.Sum((data) => data.fields.Count) / 10 + 1) * 40);
+                container
+                    .SetHeight((list.Sum((data) => data.fields.Count) / 10 + 1) * 40)
+                    .AppendTo(m_controllers);
+                Dictionary<EntityId, IEntity> allEntities = new Dictionary<EntityId, IEntity>();
                 foreach (var (module, fields) in list)
                 {
                     foreach (EntityField field in fields)
                     {
                         IEntity entity = module.Field.Entity<IEntity>(field.Id);
+                        if (entity?.HasPosition(out Tile3f _) ?? false)
+                            allEntities[entity.Id] = entity;
 
                         m_updaters.Add(new DataUpdaterChecked<EntityId?, (Module module, EntityField field)>(
                             (c) => c.module.Field.Entity<IEntity>(c.field.Id)?.Id,
@@ -183,21 +197,57 @@ namespace ProgramableNetwork.Data.Variables
                             entity?.Id
                         ));
 
-                        Builder.NewBtnGeneral("controller_" + item.Id.Value + "_module_" + module.Id + "_field_" + field.Id)
+                        Builder.NewBtnGeneral("controller_" + controller.Id.Value + "_module_" + module.Id + "_field_" + field.Id)
                             //.ToolTip(this, item.CustomTitle.ValueOrNull ?? item.DefaultTitle.Value)
                             .OnClick(() => m_inspectorContext.CameraController.PanTo(entity.HasPosition(out Tile2f position)
-                                                ? position : item.Position2f))
+                                                ? position : controller.Position2f))
                             .SetSize(40, 40)
                             .SetButtonStyle(Builder.Style.Global.ImageBtn)
                             .SetIcon(entity?.Prototype is IProtoWithIcon withIcon
-                                        ? withIcon.IconPath : Assets.Unity.UserInterface.General.Empty128_png)
+                                        ? withIcon.IconPath : Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png)
                             .SetOnMouseEnterLeaveActions(
-                                () => m_entityHighlighter.HighlightOnly(entity as IRenderedEntity, ColorRgba.CornflowerBlue),
-                                () => m_entityHighlighter.ClearAllHighlights()
+                                () =>
+                                {
+                                    ClearAllLines();
+                                    m_entityHighlighter.ClearAllHighlights();
+                                    m_entityHighlighter.Highlight(controller, ColorRgba.Yellow);
+                                    m_entityHighlighter.Highlight(entity as IRenderedEntity, ColorRgba.CornflowerBlue);
+                                    entity.HasPosition(out Tile3f position);
+                                    var line = m_linesFactory.CreateLine(position.ToVector3(), controller.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+                                    line.SetTextureMode(LineTextureMode.Tile);
+                                    m_lines.Add(line);
+                                },
+                                () =>
+                                {
+                                    ClearAllLines();
+                                    m_entityHighlighter.ClearAllHighlights();
+                                }
                             )
                             .AppendTo(linkcontainer);
                     }
                 }
+
+                controllerButton
+                    .SetOnMouseEnterLeaveActions(
+                        () =>
+                        {
+                            m_entityHighlighter.ClearAllHighlights();
+                            m_entityHighlighter.Highlight(controller, ColorRgba.Yellow);
+                            foreach (var entity in allEntities.Values)
+                            {
+                                entity.HasPosition(out Tile3f position);
+                                var line = m_linesFactory.CreateLine(position.ToVector3(), controller.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+                                line.SetTextureMode(LineTextureMode.Tile);
+                                m_lines.Add(line);
+                                m_entityHighlighter.Highlight(entity as IRenderedEntity, ColorRgba.CornflowerBlue);
+                            }
+                        },
+                        () =>
+                        {
+                            ClearAllLines();
+                            m_entityHighlighter.ClearAllHighlights();
+                        }
+                    );
             }
 
             Builder.NewStackContainer("filler")
