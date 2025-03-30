@@ -1,6 +1,3 @@
-blastfurnace_d374
-    Assets/ExampleMod/BlastFurnace.prefab
-
 antena_1406
     Assets/ProgramableNetwork/Antena/Antena.obj
     Assets/ProgramableNetwork/Antena/backplate.mat

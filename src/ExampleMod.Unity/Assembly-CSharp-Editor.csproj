@@ -308,8 +308,8 @@
     <Reference Include="UnityEditor.Graphs">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\Managed\UnityEditor.Graphs.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEditor.OSXStandalone.Extensions">
-      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\MacStandaloneSupport\UnityEditor.OSXStandalone.Extensions.dll</HintPath>
+    <Reference Include="UnityEditor.WebGL.Extensions">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\WebGLSupport\UnityEditor.WebGL.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="UnityEditor.Android.Extensions">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\AndroidPlayer\UnityEditor.Android.Extensions.dll</HintPath>
@@ -320,20 +320,26 @@
     <Reference Include="UnityEditor.LinuxStandalone.Extensions">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\PlaybackEngines\LinuxStandaloneSupport\UnityEditor.LinuxStandalone.Extensions.dll</HintPath>
     </Reference>
-    <Reference Include="Mafi">
-      <HintPath>Assets\DLLs\Mafi.dll</HintPath>
-    </Reference>
-    <Reference Include="Mafi.ModsAuthoringSupport">
-      <HintPath>Assets\DLLs\Mafi.ModsAuthoringSupport.dll</HintPath>
+    <Reference Include="ProgramableNetwork">
+      <HintPath>Assets\DLLs\ProgramableNetwork.dll</HintPath>
     </Reference>
     <Reference Include="Mafi.Base">
       <HintPath>Assets\DLLs\Mafi.Base.dll</HintPath>
     </Reference>
-    <Reference Include="Mafi.Core">
-      <HintPath>Assets\DLLs\Mafi.Core.dll</HintPath>
+    <Reference Include="Mafi.ModsAuthoringSupport">
+      <HintPath>Assets\DLLs\Mafi.ModsAuthoringSupport.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>Assets\DLLs\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Mafi.Unity">
       <HintPath>Assets\DLLs\Mafi.Unity.dll</HintPath>
+    </Reference>
+    <Reference Include="Mafi">
+      <HintPath>Assets\DLLs\Mafi.dll</HintPath>
+    </Reference>
+    <Reference Include="Mafi.Core">
+      <HintPath>Assets\DLLs\Mafi.Core.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework">
       <HintPath>Library\PackageCache\com.unity.ext.nunit@1.0.6\net35\unity-custom\nunit.framework.dll</HintPath>

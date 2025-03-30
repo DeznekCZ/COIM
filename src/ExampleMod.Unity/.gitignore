@@ -11,7 +11,7 @@ Assets/Sandbox*
 Assets/UnityVS/Editor/*
 Assets/DLLs/*.dll
 Assets/DLLs/*.meta
-AssetBundles/*
+#AssetBundles/*
 game_Data/*
 game.exe
 UnityPlayer.dll

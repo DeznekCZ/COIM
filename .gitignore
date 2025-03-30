@@ -20,3 +20,6 @@ Thumbs.db
 ehthumbs.db
 desktop.ini
 /src/ProgramableNetwork/packages
+/src/ExampleMod.Unity/AssetBundles/AssetBundles
+/src/ExampleMod.Unity/AssetBundles/AssetBundles.manifest
+/src/ExampleMod.Unity/AssetBundles/mafi_bundles.manifest
