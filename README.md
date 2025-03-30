@@ -1,4 +1,4 @@
-# Programable Network (Captain of industry modification)
+# COIM (Captain of industry modification)
 
 ## Questions, issues
 
@@ -9,10 +9,12 @@ You can also file issues here on Github, but the response time from our team mig
 
 ## Getting started
 
-1. Download latest varsion from [Github Release](https://github.com/DeznekCZ/COIM-ProgramableNetwork/releases)
-2. Open or create directory `%APPDATA%/Captain of Industry/Mods`, if not exists create it.
-3. Inside it, extract `ProgramableNetwork-[version].zip`.
-4. Launch the game and in `Miscellaneous` settings enable mod support and restart the game so that the setting takes effect.
-5. Launch a new game and observe that the `ProgramableNetwork` is loaded by locating a new node in the research tree (open using `G` key). In case of any errors, examine logs in the `%APPDATA%/Captain of Industry/Logs` directory.
-6. Congratulations, you are now running Programable Network mod in Captain of Industry!
-
+This branch is only an picker for specific projects within modding:
+- Programable Network:
+  - branch: https://github.com/DeznekCZ/COIM/tree/main-programable-network
+  - latest release is always placed in: https://github.com/DeznekCZ/COIM/releases
+  - the Discord discussion is placed in: https://discord.com/channels/803508556325584926/1264293900999200858
+- Multiplayer Trades:
+  - branch: https://github.com/DeznekCZ/COIM/tree/main-multiplayer-trades
+  - latest release is always placed in: https://github.com/DeznekCZ/COIM/releases
+  - the Discord discussion is placed in: https://discord.com/channels/803508556325584926/1265044492176719913
