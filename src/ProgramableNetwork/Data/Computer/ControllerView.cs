@@ -124,6 +124,7 @@ namespace ProgramableNetwork
                 .SetSize(20, 20)
                 .SetButtonStyle(Builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White))
                 .SetIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Connect128_png)
+                .OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().BuildAndShow(Builder))
                 .SetOnMouseEnterLeaveActions(
                     m_controller.AddPreviewHighlightAll,
                     m_controller.ClearPreviewHighlight
