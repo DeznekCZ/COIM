@@ -9,7 +9,7 @@ You can also file issues here on Github, but the response time from our team mig
 
 ## Getting started
 
-1. Download latest varsion from [Github Release](https://github.com/DeznekCZ/COIM-ProgramableNetwork/releases)
+1. Download latest varsion from [Github Release](https://github.com/DeznekCZ/COIM/releases) with name Programable Network
 2. Open or create directory `%APPDATA%/Captain of Industry/Mods`, if not exists create it.
 3. Inside it, extract `ProgramableNetwork-[version].zip`.
 4. Launch the game and in `Miscellaneous` settings enable mod support and restart the game so that the setting takes effect.
