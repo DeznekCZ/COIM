@@ -10,11 +10,13 @@ You can also file issues here on Github, but the response time from our team mig
 ## Getting started
 
 This branch is only an picker for specific projects within modding:
+- latest release is always placed in: https://github.com/DeznekCZ/COIM/releases 
 - Programable Network:
   - branch: https://github.com/DeznekCZ/COIM/tree/main-programable-network
-  - latest release is always placed in: https://github.com/DeznekCZ/COIM/releases
   - the Discord discussion is placed in: https://discord.com/channels/803508556325584926/1264293900999200858
 - Multiplayer Contracts:
   - branch: https://github.com/DeznekCZ/COIM/tree/main-multiplayer-contracts
-  - latest release is always placed in: https://github.com/DeznekCZ/COIM/releases
   - the Discord discussion is placed in: https://discord.com/channels/803508556325584926/1265044492176719913
+- Bridges
+  - branch: https://github.com/DeznekCZ/COIM/tree/main-bridges
+  - the Discord discussion is placed in: https://discord.com/channels/803508556325584926/1268304964271476868
