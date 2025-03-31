@@ -1,3 +1,27 @@
-blastfurnace_d374
-    Assets/ExampleMod/BlastFurnace.prefab
+windpower_bef1
+    Assets/WindPower/Axis.obj
+    Assets/WindPower/Blade.mat
+    Assets/WindPower/Blade_Body.obj
+    Assets/WindPower/Blade_Tip.obj
+    Assets/WindPower/Gondola.mat
+    Assets/WindPower/GondolaPart1.obj
+    Assets/WindPower/GondolaPart2.obj
+    Assets/WindPower/Holder.obj
+    Assets/WindPower/Pilar.mat
+    Assets/WindPower/Pilar.obj
+    Assets/WindPower/RotorAxis.mat
+    Assets/WindPower/Tip.mat
+    Assets/WindPower/WindTurbine_T1_Icon.png
+
+blade_1683
+    Assets/WindPower/Blade.prefab
+
+gondola_819a
+    Assets/WindPower/Gondola.prefab
+
+pilar_0423
+    Assets/WindPower/Pilar.prefab
+
+windturbine_t1_2f96
+    Assets/WindPower/WindTurbine_T1.prefab
 
