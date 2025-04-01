@@ -1,17 +1,7 @@
 ﻿using Mafi;
 using Mafi.Core;
-using Mafi.Core.Entities;
-using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Environment;
-using Mafi.Core.Factory.ElectricPower;
 using Mafi.Unity.Entities;
 using Mafi.Unity.Entities.Static;
-using Mafi.Unity.UiToolkit.Library.ObjectEditor;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using WindPower.Entity;
 
@@ -21,21 +11,13 @@ namespace WindPower.Unity
     public class WindTurbineMb : StaticEntityMb, IEntityMbWithRenderUpdate
     {
         private WindTurbine m_windTrubine;
-        private IRandom m_random;
         private Transform m_gondola;
         private Transform m_rotor;
-        private bool m_paused;
 
-        public void Initialize(WindTurbine windTurbine, RandomProvider randomProvider)
+        public void Initialize(WindTurbine windTurbine)
         {
             base.Initialize(windTurbine);
             m_windTrubine = windTurbine;
-            m_random = randomProvider.GetSimRandomFor(this);
-            if (m_random is null)
-            {
-                Log.Warning("Missing random generator");
-                return;
-            }
 
             m_gondola = base.gameObject.transform.Find("Gondola");
             if (m_gondola is null)
@@ -57,9 +39,15 @@ namespace WindPower.Unity
             if (m_windTrubine is null) return;
 
             // update gondola direction
-            if (m_random is null) return;
             if (m_gondola is null) return;
-            m_gondola.Rotate(Vector3.up, time.DeltaTimeMs * 0.01f * (m_random.NextFloat() - 0.5f));
+            Fix32 current = m_gondola.eulerAngles.y.ToFix32();
+            int direction = (m_windTrubine.WindDirection - current).Sign();
+            Fix32 abs = (m_windTrubine.WindDirection - current).Abs().Min(1.ToFix32());
+            if (abs > 0)
+                m_gondola.Rotate(Vector3.up, time.DeltaTimeMs * 0.01f * direction * abs.ToFloat());
+
+
+            Log.Debug($"Angles: {current} => {m_windTrubine.WindDirection.ToFloat()}");
 
             // update rotation of blades
             if (m_rotor is null) return;

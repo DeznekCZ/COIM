@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6857548233709984542}
+  - component: {fileID: 5954413264268393608}
   m_Layer: 0
   m_Name: WindTurbine_T1
   m_TagString: Untagged
@@ -33,6 +34,19 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &5954413264268393608
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6857548233709984543}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 2, y: 16, z: 2}
+  m_Center: {x: 0, y: 8, z: 0}
 --- !u!1001 &1126123939820536311
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -106,6 +120,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5803499485442071680, guid: 8947a3c0af9348b4a8a8b9d2429bf205, type: 3}
+    - {fileID: 5803499485442071693, guid: 8947a3c0af9348b4a8a8b9d2429bf205, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 8947a3c0af9348b4a8a8b9d2429bf205, type: 3}
 --- !u!4 &6857548233602686331 stripped
 Transform:
@@ -338,6 +353,16 @@ PrefabInstance:
     - {fileID: 4798689473851667350, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
     - {fileID: 4798689474029198819, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
     - {fileID: 4798689474029198818, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 4798689474258046275, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 4798689473246484448, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 4798689472314553988, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 4798689473660112846, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 4798689473851667338, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 4798689474029198823, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 2528284417925958639, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 2528284417816716674, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 4118188233616368085, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+    - {fileID: 4118188233439481784, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
 --- !u!4 &6857548233316279975 stripped
 Transform:

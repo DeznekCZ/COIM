@@ -2,7 +2,6 @@
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
-using ProgramableNetwork;
 
 namespace Mafi.Unity
 {

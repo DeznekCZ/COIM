@@ -3,7 +3,6 @@ using Mafi.Collections;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Dynamic;
-using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.Transports;
 using Mafi.Localization;
@@ -14,7 +13,7 @@ using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Style;
 using System;
 
-namespace ProgramableNetwork
+namespace WindPower
 {
     public static class MyExtensions
     {
