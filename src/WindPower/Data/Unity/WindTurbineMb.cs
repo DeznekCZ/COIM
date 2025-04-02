@@ -46,9 +46,6 @@ namespace WindPower.Unity
             if (abs > 0)
                 m_gondola.Rotate(Vector3.up, time.DeltaTimeMs * 0.01f * direction * abs.ToFloat());
 
-
-            Log.Debug($"Angles: {current} => {m_windTrubine.WindDirection.ToFloat()}");
-
             // update rotation of blades
             if (m_rotor is null) return;
             m_rotor.Rotate(Vector3.forward, time.DeltaTimeMs * 0.6f * m_windTrubine.Speed.ToFloat());

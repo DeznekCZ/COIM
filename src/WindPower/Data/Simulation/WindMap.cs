@@ -25,9 +25,10 @@ namespace WindPower.Simulation
         private readonly IWeatherManager m_weatherManager;
         private readonly TerrainManager m_terrainManager;
         private readonly IEntitiesManager m_entitiesManager;
-        private HeightTilesF[] m_terrainHeightMap;
+        private float[] m_terrainHeightMap;
         private int[] m_entityHeightMap;
         private Fix32 m_windDirection;
+        private float m_oldWind;
 
         public WindMap(IWeatherManager weatherManager, TerrainManager terrainManager, IEntitiesManager entitiesManager)
         {
@@ -44,7 +45,8 @@ namespace WindPower.Simulation
             m_entitiesManager.StaticEntityAdded.Add(this, entityAdded);
             m_entitiesManager.StaticEntityRemoved.Add(this, entityRemoved);
 
-            m_terrainHeightMap = m_terrainManager.HeightsData.AsEnumerable().ToArray();
+            m_terrainHeightMap = m_terrainManager.HeightsData.AsEnumerable()
+                                .Select(h => h.Value.ToFloat()).ToArray();
             m_entityHeightMap = new int[m_terrainHeightMap.Length];
 
             _ = Recalculate(m_cancelationTokenSourceCalculation.Token);
@@ -78,46 +80,49 @@ namespace WindPower.Simulation
 
         public Percent GetWindPower(Tile3i tile, HeightTilesI gondola)
         {
-            if (m_cache.TryGetValue(tile, out Percent power))
+            float newWind = m_weatherManager.CurrentWeather.Graphics.WindStrength;
+            if (m_oldWind != newWind)
+            {
+                m_cache.Clear();
+                m_oldWind = newWind;
+            }
+            else if (m_cache.TryGetValue(tile, out Percent power))
                 return power;
 
             float buildingHeight = 0;
-            float terrainHeight = 0;
             float count = 0;
-            const float coef = 121; 
             for (int x = 1; x <= 10; x++)
             {
                 for (int y = 1; y <= 10; y++)
                 {
                     if (x * y > x * x || x * y > y * y) continue;
-                    count += 4 * (coef / x * y);
+                    count += 4;
 
                     int index = m_terrainManager.GetTileIndex(tile.X + x, tile.Y + y).Value;
-                    buildingHeight += (m_entityHeightMap[index] - tile.Y) * (coef / x * y);
-                    terrainHeight += (m_terrainHeightMap[index].Value.ToFloat() - tile.Y) * (coef / x * y);
+                    buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
 
                     index = m_terrainManager.GetTileIndex(tile.X - x, tile.Y + y).Value;
-                    buildingHeight += (m_entityHeightMap[index] - tile.Y) * (coef / x * y);
-                    terrainHeight += (m_terrainHeightMap[index].Value.ToFloat() - tile.Y) * (coef / x * y);
+                    buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
 
                     index = m_terrainManager.GetTileIndex(tile.X - x, tile.Y - y).Value;
-                    buildingHeight += (m_entityHeightMap[index] - tile.Y) * (coef / x * y);
-                    terrainHeight += (m_terrainHeightMap[index].Value.ToFloat() - tile.Y) * (coef / x * y);
+                    buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
 
                     index = m_terrainManager.GetTileIndex(tile.X + x, tile.Y - y).Value;
-                    buildingHeight += (m_entityHeightMap[index] - tile.Y) * (coef / x * y);
-                    terrainHeight += (m_terrainHeightMap[index].Value.ToFloat() - tile.Y) * (coef / x * y);
+                    buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
+
+                    Log.Debug($"T:{m_terrainHeightMap[index]}, B:{m_entityHeightMap[index]}");
                 }
             }
+            buildingHeight /= count;
 
-            float buildingHeightF = ((buildingHeight / count) / gondola.Value).Max(0).Min(1);
-            float terrainHeightF = ((terrainHeight / count) + tile.Y + gondola.Value).Max(0);
+            if (buildingHeight > tile.Z + gondola.Value)
+                return m_cache[tile] = Percent.Zero;
 
-            m_cache[tile] = Percent.FromFloat(
-                m_weatherManager.CurrentWeather.Graphics.WindStrength *
-                ((1 - buildingHeightF).Max(0)) *
-                (terrainHeightF) / 50);
-            return m_cache[tile];
+            // Get partial by terrain height
+            float terrain = 0.5f + (tile.Z + gondola.Value) / 50 * 0.5f;
+            float building = (tile.Z + gondola.Value - buildingHeight) / (gondola.Value);
+
+            return m_cache[tile] = Percent.FromFloat(newWind * terrain * building);
         }
 
         public void Dispose()
@@ -157,12 +162,11 @@ namespace WindPower.Simulation
                                     .Where(e => (e is IStaticEntity && !(e is WindTurbine)))
                                     .Cast<IStaticEntity>())
             {
-                int terrainHeight = entity.Position3f.Z.IntegerPart;
                 foreach (OccupiedTileRelative tileRef in entity.OccupiedTiles)
                 {
                     Tile2i coord = entity.Position2f.Tile2i + tileRef.RelCoord;
                     int index = m_terrainManager.GetTileIndex(coord).Value;
-                    int height = tileRef.FromHeightRel.Value + terrainHeight;
+                    int height = tileRef.FromHeightRel.Value;
                     entityHeightMap[index] = entityHeightMap[index].Max(height);
                 }
                 if (token.IsCancellationRequested)
@@ -177,7 +181,7 @@ namespace WindPower.Simulation
 
         private void heightChanged(Tile2iAndIndex index)
         {
-            m_terrainHeightMap[index.IndexRaw] = m_terrainManager.GetHeight(index.Index);
+            m_terrainHeightMap[index.IndexRaw] = m_terrainManager.GetHeight(index.Index).Value.ToFloat();
         }
     }
 }
