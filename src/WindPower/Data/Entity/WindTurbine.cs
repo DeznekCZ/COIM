@@ -6,6 +6,7 @@ using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Environment;
 using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Maintenance;
+using Mafi.Depedencies;
 using Mafi.Serialization;
 using System;
 using WindPower.Simulation;
@@ -31,8 +32,6 @@ namespace WindPower.Entity
         [DoNotSave(0, null)]
         private IEntityMaintenanceProvider m_maintenance;
         [DoNotSave(0, null)]
-        private WindMap m_windMap;
-        [DoNotSave(0, null)]
         private WindTurbineProto m_proto;
         [DoNotSave(0, null)]
         private Mafi.Core.Entities.Static.StaticEntityProto.ID m_protoId;
@@ -54,7 +53,7 @@ namespace WindPower.Entity
             }
         }
 
-        public WindTurbine(EntityId id, WindTurbineProto proto, TileTransform transform, EntityContext context, WindMap windMap, WeatherManager weatherManager,
+        public WindTurbine(EntityId id, WindTurbineProto proto, TileTransform transform, EntityContext context, WeatherManager weatherManager,
             IElectricityGeneratorRegistratorFactory generatorRegistratorFactory, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
             : base(id, proto, transform, context)
         {
@@ -63,7 +62,6 @@ namespace WindPower.Entity
             this.m_generator = generatorRegistratorFactory.CreateAndRegisterFor(this, 0);
             this.MaintenanceCosts = Prototype.Costs.Maintenance;
             this.m_maintenance = maintenanceProvidersFactory.CreateFor(this);
-            this.m_windMap = windMap;
             MaxGenerationCapacity = Prototype.GeneratedPower;
         }
 
@@ -81,7 +79,7 @@ namespace WindPower.Entity
         [DoNotSave(0, null)]
         public Percent Speed { get; private set; }
         [DoNotSave(0, null)]
-        public Fix32 WindDirection => m_windMap.GetWindDirection();
+        public Fix32 WindDirection { get; private set; }
         [DoNotSave(0, null)]
         public MaintenanceCosts MaintenanceCosts { get; private set; }
 
@@ -135,17 +133,17 @@ namespace WindPower.Entity
             Prototype = Context.ProtosDb.Get<WindTurbineProto>(m_protoId).ValueOrThrow("Invalid wind turbine proto: " + m_protoId);
             MaxGenerationCapacity = Prototype.GeneratedPower;
             m_weatherManager = resolver.Resolve<WeatherManager>();
-            m_windMap = resolver.Resolve<WindMap>();
         }
 
         protected override void SerializeData(BlobWriter writer)
         {
             base.SerializeData(writer);
             writer.WriteString(m_protoId.Value);
-            writer.WriteInt(/* Version */0);
+            writer.WriteInt(/* Version */1);
             Percent.Serialize(StoredPower, writer);
             Percent.Serialize(TargetPower, writer);
             Percent.Serialize(Speed, writer);
+            Fix32.Serialize(WindDirection, writer);
             writer.WriteGeneric(m_generator);
             writer.WriteGeneric(m_maintenance);
         }
@@ -158,6 +156,8 @@ namespace WindPower.Entity
             StoredPower = Percent.Deserialize(reader);
             TargetPower = Percent.Deserialize(reader);
             Speed = Percent.Deserialize(reader);
+            if (version > 0)
+                WindDirection = Fix32.Deserialize(reader);
             m_generator = reader.ReadGenericAs<IElectricityGeneratorRegistrator>();
             m_maintenance = reader.ReadGenericAs<IEntityMaintenanceProvider>();
 
@@ -166,7 +166,10 @@ namespace WindPower.Entity
 
         public void SimUpdate()
         {
-            WindPower = m_windMap.GetWindPower(CenterTile.SetZ(Position3f.Tile3i.Z), new HeightTilesI(Prototype.GondolaHeight / 2));
+            var windMap = GlobalDependencyResolver.Get<WindMap>();
+            WindDirection = windMap.GetWindDirection();
+
+            WindPower = windMap.GetWindPower(CenterTile.SetZ(Position3f.Tile3i.Z), Prototype.GondolaHeight, Prototype.BladeWidth);
             if (!IsEnabled)
             {
                 TargetPower = Percent.Zero;
@@ -181,6 +184,7 @@ namespace WindPower.Entity
                 m_canGenerate = false;
                 Speed = StoredPower;
                 m_power = Electricity.Zero;
+                MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
                 return;
             }
 
@@ -196,12 +200,14 @@ namespace WindPower.Entity
                 {
                     Speed = StoredPower;
                     m_power = Electricity.Zero;
+                    MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
                     return;
                 }
 
                 Speed = StoredPower;
                 float partial = StoredPower.ToFloat() / Prototype.GeneratedPower.Quantity.Value;
                 m_power = Electricity.FromKw((int)(Prototype.GeneratedPower.Value * partial));
+                MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
                 return;
             }
 
@@ -218,12 +224,14 @@ namespace WindPower.Entity
                 {
                     Speed = StoredPower;
                     m_power = Electricity.Zero;
+                    MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
                     return;
                 }
                 if (StoredPower == Percent.Hundred)
                 {
                     Speed = StoredPower;
                     m_power = Prototype.GeneratedPower;
+                    MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
                     return;
                 }
 
@@ -231,6 +239,7 @@ namespace WindPower.Entity
                 Speed = StoredPower;
                 m_canGenerate = true;
                 m_power = Electricity.FromKw((int)(Prototype.GeneratedPower.Value * partial));
+                MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
                 return;
             }
 
@@ -238,6 +247,7 @@ namespace WindPower.Entity
             m_canGenerate = true;
             Speed = StoredPower;
             m_power = Prototype.GeneratedPower;
+            MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
         }
     }
 }

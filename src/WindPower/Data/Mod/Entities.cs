@@ -33,7 +33,8 @@ namespace WindPower
                     categories: registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(Ids.ToolbarCategories.MachinesElectricity).SomeOption().ToImmutableArray()),
                 generatedPower: 1200.Kw(),
                 brakingPower: 500.KwMech(),
-                gondolaHeight: 16,
+                gondolaHeight: new HeightTilesF(16 / 2),
+                bladeWidth: new HeightTilesF((3f / 2f).ToFix32()),
                 cannotBeReflected: true,
                 constructionDurationPerProduct: Duration.FromSec(1)
             ));

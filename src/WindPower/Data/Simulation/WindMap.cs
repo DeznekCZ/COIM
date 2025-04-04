@@ -1,15 +1,13 @@
 ﻿using Mafi;
-using Mafi.Collections.ReadonlyCollections;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Environment;
 using Mafi.Core.Terrain;
-using Mafi.Core.Terrain.Trees;
+using Mafi.Depedencies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WindPower.Entity;
@@ -21,16 +19,21 @@ namespace WindPower.Simulation
     {
         private CancellationTokenSource m_cancelationTokenSourceCalculation;
         private CancellationTokenSource m_cancellationTokenSourceWindDirection;
-        private readonly Dictionary<Tile3i, Percent> m_cache;
-        private readonly IWeatherManager m_weatherManager;
-        private readonly TerrainManager m_terrainManager;
-        private readonly IEntitiesManager m_entitiesManager;
+        private Dictionary<Tile3i, Percent> m_cache;
+        private IWeatherManager m_weatherManager;
+        private TerrainManager m_terrainManager;
+        private IEntitiesManager m_entitiesManager;
         private float[] m_terrainHeightMap;
         private int[] m_entityHeightMap;
         private Fix32 m_windDirection;
-        private float m_oldWind;
+        private Fix32 m_oldWind;
 
         public WindMap(IWeatherManager weatherManager, TerrainManager terrainManager, IEntitiesManager entitiesManager)
+        {
+            Init(weatherManager, terrainManager, entitiesManager);
+        }
+
+        private void Init(IWeatherManager weatherManager, TerrainManager terrainManager, IEntitiesManager entitiesManager)
         {
             m_cache = new Dictionary<Tile3i, Percent>();
             m_cancelationTokenSourceCalculation = new CancellationTokenSource();
@@ -41,9 +44,9 @@ namespace WindPower.Simulation
             m_terrainManager = terrainManager;
             m_entitiesManager = entitiesManager;
 
-            m_terrainManager.HeightChanged.Add(this, heightChanged);
-            m_entitiesManager.StaticEntityAdded.Add(this, entityAdded);
-            m_entitiesManager.StaticEntityRemoved.Add(this, entityRemoved);
+            m_terrainManager.HeightChanged.AddNonSaveable(this, heightChanged);
+            m_entitiesManager.StaticEntityAdded.AddNonSaveable(this, entityAdded);
+            m_entitiesManager.StaticEntityRemoved.AddNonSaveable(this, entityRemoved);
 
             m_terrainHeightMap = m_terrainManager.HeightsData.AsEnumerable()
                                 .Select(h => h.Value.ToFloat()).ToArray();
@@ -78,9 +81,16 @@ namespace WindPower.Simulation
             return m_windDirection;
         }
 
-        public Percent GetWindPower(Tile3i tile, HeightTilesI gondola)
+        public Percent GetWindPower(Tile3i tile, HeightTilesF gondola, HeightTilesF bladeWidth)
         {
-            float newWind = m_weatherManager.CurrentWeather.Graphics.WindStrength;
+            if (m_terrainManager == null || m_weatherManager == null || m_entitiesManager == null)
+            {
+                m_terrainManager = GlobalDependencyResolver.Get<TerrainManager>();
+                m_weatherManager = GlobalDependencyResolver.Get<IWeatherManager>();
+                m_entitiesManager = GlobalDependencyResolver.Get<IEntitiesManager>();
+            }
+
+            Fix32 newWind = m_weatherManager.CurrentWeather.Graphics.WindStrength.ToFix32();
             if (m_oldWind != newWind)
             {
                 m_cache.Clear();
@@ -95,7 +105,7 @@ namespace WindPower.Simulation
             {
                 for (int y = 1; y <= 10; y++)
                 {
-                    if (x * y > x * x || x * y > y * y) continue;
+                    if ((x * y).Sqrt() < 10) continue;
                     count += 4;
 
                     int index = m_terrainManager.GetTileIndex(tile.X + x, tile.Y + y).Value;
@@ -110,19 +120,23 @@ namespace WindPower.Simulation
                     index = m_terrainManager.GetTileIndex(tile.X + x, tile.Y - y).Value;
                     buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
 
-                    Log.Debug($"T:{m_terrainHeightMap[index]}, B:{m_entityHeightMap[index]}");
+                    //Log.Debug($"T:{m_terrainHeightMap[index]}, B:{m_entityHeightMap[index]}");
                 }
             }
             buildingHeight /= count;
 
-            if (buildingHeight > tile.Z + gondola.Value)
+            if (buildingHeight.ToFix32() > tile.Z + (gondola.Value * 2))
                 return m_cache[tile] = Percent.Zero;
 
             // Get partial by terrain height
-            float terrain = 0.5f + (tile.Z + gondola.Value) / 50 * 0.5f;
-            float building = (tile.Z + gondola.Value - buildingHeight) / (gondola.Value);
+            Fix32 terrain = 0.5.ToFix32() + (tile.Z.ToFix32() + gondola.Value) / 40.ToFix32() * 0.5.ToFix32();
+            Fix32 building = (tile.Z.ToFix32() + gondola.Value - buildingHeight.ToFix32()) / bladeWidth.Value;
 
-            return m_cache[tile] = Percent.FromFloat(newWind * terrain * building);
+            if (tile.Z.ToFix32() + gondola.Value - buildingHeight.ToFix32() > bladeWidth.Value)
+                return m_cache[tile] = newWind.ToPercent() * terrain.ToPercent();
+
+
+            return m_cache[tile] = (newWind * terrain * building).ToPercent();
         }
 
         public void Dispose()

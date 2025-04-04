@@ -25,6 +25,10 @@ namespace WindPower.Unity
                 Log.Warning("Missing 'Gondola' transform");
                 return;
             }
+            Vector3 newAngles = m_gondola.eulerAngles;
+            newAngles.y = m_windTrubine.WindDirection.ToFloat();
+            m_gondola.eulerAngles = newAngles;
+
             m_rotor = m_gondola.Find("Rotor");
             if (m_rotor is null)
             {
