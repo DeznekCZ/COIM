@@ -120,11 +120,10 @@ namespace ProgramableNetwork
                     ("Constant", "[1]", (m) => m.Field.Integer["number"] = 1),
                     ("Constant", "[100]", (m) => m.Field.Integer["number"] = 100),
                     ("Display_Int_2", "[100|0]", (m) => m.Field.Integer["float"] = 1),
-                    ("Boolean_And", null, (m) => { }),
-                    ("Boolean_Or", null, (m) => { }),
-                    ("Compare_Int_Greater", null, (m) => { }),
-                    ("Connection_Storage", null, (m) => { }),
+                    ("Compare_Int_Greater", "[A>99]", (m) => { m.Field.Integer["b"] = 99; m.Field.Bool["field_b"] = true; }),
+                    ("Compare_Int_Equal", "[A=100]", (m) => { m.Field.Integer["b"] = 100; m.Field.Bool["field_b"] = true; }),
                     ("Connection_Transport", "Cap 100%", (m) => m.Field.Bool["fullstack"] = true),
+                    ("Connection_Storage", null, (m) => { }),
                 };
 
                 Builder.NewTxt("dialogNewTemplates")
