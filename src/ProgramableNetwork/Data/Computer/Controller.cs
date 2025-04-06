@@ -461,6 +461,12 @@ namespace ProgramableNetwork
             // Copy all outputs to inputs
             foreach (Module module in Modules)
             {
+                foreach (var input in module.Prototype.Inputs)
+                {
+                    module.NumberData.TryRemove("in__" + input.Id, out _);
+                    // module.StringData.TryRemove("in__" + input.Id, out _);
+                }
+
                 foreach (KeyValuePair<string, ModuleConnector> item in module.InputModules.ToArray())
                 {
                     if (cache.TryGetValue(item.Value.ModuleId, out Module connected))
