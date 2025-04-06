@@ -143,6 +143,7 @@ namespace ProgramableNetwork
         public List<ModuleConnectorProto> Inputs { get; }
         public List<ModuleConnectorProto> Outputs { get; }
         public List<ModuleConnectorProto> Displays { get; }
+        public Action<Module> DisplayUpdate { get; }
         public List<Category> Categories { get; }
         public List<IField> Fields { get; }
         public Electricity UsedPower { get; }
@@ -224,7 +225,7 @@ namespace ProgramableNetwork
             }
         }
 
-        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> m_init, bool isInputModule, bool isOutputModule, Electricity usedPower, PartialQuantity usedComputing,
+        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> m_init, Action<Module> m_display, bool isInputModule, bool isOutputModule, Electricity usedPower, PartialQuantity usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
             Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
         {
@@ -237,6 +238,7 @@ namespace ProgramableNetwork
             Inputs = m_inputs;
             Outputs = m_outputs;
             Displays = m_displays;
+            DisplayUpdate = m_display;
             Fields = m_fields;
             UsedPower = usedPower;
             UsedComputing = usedComputing;
@@ -257,6 +259,7 @@ namespace ProgramableNetwork
             private string m_description;
             private Func<Module, ModuleStatus> m_action;
             private Func<Module, ModuleStatus> m_init;
+            private Action<Module> m_display;
             private bool m_isOutputModule = false;
             private bool m_isInputModule = false;
             private readonly List<ModuleConnectorProto> m_inputs = new List<ModuleConnectorProto>();
@@ -325,6 +328,7 @@ namespace ProgramableNetwork
                     m_tags,
                     m_action ?? (m => ModuleStatus.Running),
                     m_init ?? (m => ModuleStatus.Running),
+                    m_display ?? (m => { }),
                     m_isInputModule,
                     m_isOutputModule,
                     m_usedPower,
@@ -457,10 +461,11 @@ namespace ProgramableNetwork
             /// <param name="name">Displayerd tooltip value</param>
             /// <param name="width">taken module width</param>
             /// <returns></returns>
-            public Builder AddDisplay(string id, string name, int width, bool image = false, string[] toggle = null, bool entity = false)
+            public Builder AddDisplay(string id, string name, int width, bool image = false, string[] toggle = null, bool entity = false, bool led = false)
             {
                 m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width,
                     image ? "[image]" :
+                    led ? "[led]":
                     toggle != null ? "[toggle]" + WriteToggleArray(toggle) :
                     (new string('0', width * 2) + "|")
                     ));
@@ -486,6 +491,12 @@ namespace ProgramableNetwork
             public Builder Action(Func<Module, ModuleStatus> action)
             {
                 m_action = action;
+                return this;
+            }
+
+            public Builder Display(Action<Module> action)
+            {
+                m_display = action;
                 return this;
             }
 

@@ -6,6 +6,7 @@ using Mafi.Unity.UserInterface.Components;
 using System.Linq;
 using Mafi;
 using System;
+using Mafi.Unity.UiFramework.Styles;
 
 namespace ProgramableNetwork
 {
@@ -46,6 +47,7 @@ namespace ProgramableNetwork
 
                 inputsPanel.AppendTo(this);
 
+                m_computerView.m_updaters.Add(new EachFrame(() => module.Prototype.DisplayUpdate(module)));
 
                 // Add Field panel
                 Btn fieldsPanel = uiBuilder.NewBtnGeneral(name + "_edit")
@@ -300,6 +302,10 @@ namespace ProgramableNetwork
                     {
                         ToggleDisplay(builder, module, display, text);
                     }
+                    else if (display.DefaultText.StartsWith("[led]"))
+                    {
+                        ToggleDisplay_LED(builder, module, display, text, click: false);
+                    }
                     else
                     {
                         TextDisplay(builder, module, display, text);
@@ -397,40 +403,44 @@ namespace ProgramableNetwork
                 });
             }
 
-            private void ToggleDisplay_Symbol(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text, string symbol)
+            private void ToggleDisplay_Symbol(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text, string symbol, bool click = true)
             {
                 text.SetText(symbol);
+
+                BtnStyle defaultStyle = click
+                    ? builder.Style.Global.GeneralBtnActive
+                    : builder.Style.Global.ImageBtn.Extend(border: BorderStyle.DEFAULT);
+
                 if (module.Display[display.Id, ""].Length > 0)
-                {
-                    text.SetButtonStyle(builder.Style.Global.GeneralBtnActive.ExtendText(color: ColorRgba.Green));
-                }
+                    text.SetButtonStyle(defaultStyle.ExtendText(color: ColorRgba.Green));
                 else
-                {
-                    text.SetButtonStyle(builder.Style.Global.GeneralBtnActive.ExtendText(color: ColorRgba.Red));
-                }
+                    text.SetButtonStyle(defaultStyle.ExtendText(color: ColorRgba.Red));
 
                 m_computerView.m_updaters.Add(new DataUpdater<
                         ColorRgba,
-                        (Module module, Btn text, ModuleConnectorProto display)
+                        (Module module, Btn text, ModuleConnectorProto display, BtnStyle style)
                     >(
                     getter: (c) => c.module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red,
-                    setter: (c, t) => c.text.SetButtonStyle(builder.Style.Global.GeneralBtnActive.ExtendText(color: t)),
+                    setter: (c, t) => c.text.SetButtonStyle(c.style.ExtendText(color: t)),
                     comparator: (a, b) => a == b,
-                    context: (module, text, display)
+                    context: (module, text, display, defaultStyle)
                 ));
 
-                text.OnClick(() =>
+                if (click)
                 {
-                    if (module.Display[display.Id, ""].Length > 0)
-                        module.Display[display.Id] = "";
-                    else
-                        module.Display[display.Id] = "1";
-                });
+                    text.OnClick(() =>
+                    {
+                        if (module.Display[display.Id, ""].Length > 0)
+                            module.Display[display.Id] = "";
+                        else
+                            module.Display[display.Id] = "1";
+                    });
+                }
             }
 
-            private void ToggleDisplay_LED(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text)
+            private void ToggleDisplay_LED(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text, bool click = true)
             {
-                ToggleDisplay_Symbol(builder, module, display, text, "●");
+                ToggleDisplay_Symbol(builder, module, display, text, "●", click);
             }
         }
 
