@@ -95,6 +95,7 @@ namespace ProgramableNetwork
             data.Set<StaticEntityProto.ID>("controller_proto", m_protoId, (str, blob) => blob.WriteString(str.Value));
             data.SetArray<Module>("controller_modules", Modules.ToImmutableArray(), Module.Serialize);
             data.SetArray<Lyst<ModulePlacement>>("controller_rows", Rows.ToImmutableArray(), Lyst<ModulePlacement>.Serialize);
+            data.SetInt("controller_speed", Speed);
         }
 
         public void ApplyConfig(EntityConfigData data)
@@ -128,6 +129,11 @@ namespace ProgramableNetwork
             {
                 this.Rows.Clear();
                 this.Rows.AddRange(newLocation?.AsEnumerable());
+            }
+            var newSpeed = data.GetInt("controller_speed");
+            if (newSpeed != null)
+            {
+                this.Speed = newSpeed.Value;
             }
         }
 
