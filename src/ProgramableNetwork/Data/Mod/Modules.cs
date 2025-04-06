@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Base;
 using Mafi.Core.Buildings.Cargo;
+using Mafi.Core.Buildings.Cargo.Modules;
 using Mafi.Core.Buildings.Farms;
 using Mafi.Core.Buildings.Offices;
 using Mafi.Core.Buildings.Settlements;
@@ -1529,6 +1530,7 @@ namespace ProgramableNetwork
                 .AddInput("product", "Product type")
                 .AddEntityField<LayoutEntity>("entity", "Building with filter", "Connectable by cable 20m from controller", distance: 20.ToFix32(),
                     filter: (m, e) => e is Storage ||
+                                      e is CargoDepotModule ||
                                       e is SettlementFoodModule ||
                                       e is Hospital ||
                                       e is Sorter
@@ -1539,13 +1541,22 @@ namespace ProgramableNetwork
                     LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
             
                     if (entity is Storage storage)
-                    // entity is SettlementWasteModule
                     {
                         ProductProto product = m.FieldOrInput.Product("product");
                         if (product is null)
                             storage.ToggleClearProduct();
                         else
                             storage.AssignProduct(product);
+                        return ModuleStatus.Running;
+                    }
+            
+                    if (entity is CargoDepotModule module)
+                    {
+                        ProductProto product = m.FieldOrInput.Product("product");
+                        if (product is null)
+                            module.ToggleClearProduct();
+                        else
+                            module.AssignProduct(product);
                         return ModuleStatus.Running;
                     }
             
