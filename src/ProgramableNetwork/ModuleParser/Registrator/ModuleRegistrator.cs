@@ -93,6 +93,12 @@ namespace ProgramableNetwork.Python
                     builder.AddStringField(stringField.id, stringField.name, stringField.desc, stringField.defaultValue);
                     continue;
                 }
+
+                if (variable is ModuleBooleanFieldProtoDefinition booleanField)
+                {
+                    builder.AddBooleanField(booleanField.id, booleanField.name, booleanField.desc, booleanField.defaultValue);
+                    continue;
+                }
             }
         }
 
