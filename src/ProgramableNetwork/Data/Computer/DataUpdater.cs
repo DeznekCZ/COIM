@@ -11,6 +11,16 @@ namespace ProgramableNetwork
         void Update();
     }
 
+    public class EachFrame : IDataUpdater
+    {
+        private Action m_action;
+        public EachFrame(Action action) {
+            this.m_action = action;
+        }
+        public void Update() => m_action();
+        public bool WasChanged() => true;
+    }
+
     public class DataUpdater<T, C> : IDataUpdater
     {
         private T value;
