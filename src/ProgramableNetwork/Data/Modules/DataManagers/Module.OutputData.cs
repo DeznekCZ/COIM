@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using Mafi.Core.Products;
 
 namespace ProgramableNetwork
 {
@@ -38,6 +39,39 @@ namespace ProgramableNetwork
             {
                 get => this[name, Fix32.Zero];
                 set => module.NumberData["out__" + name] = value.RawValue;
+            }
+
+            public ProductProto Product(string name)
+            {
+                module.NumberData.TryGetValue("out__" + name, out int slimId);
+
+                if (slimId == 0)
+                {
+                    return null;
+                }
+
+                module.StringData.TryGetValue("out__" + name, out string cache);
+                if (!string.IsNullOrEmpty(cache))
+                { // try get entity by name and check slimId
+                    Option<ProductProto> product = module.Context.ProtosDb.Get<ProductProto>(new Mafi.Core.Prototypes.Proto.ID(cache));
+                    if (product.HasValue && product.Value.SlimId.Value == slimId)
+                    {
+                        return product.Value;
+                    }
+                }
+                // else
+                { // try get entity by slimId
+                    Option<ProductProto> product = module.Context.ProtosDb.First<ProductProto>(p => p.SlimId.Value == slimId);
+                    if (product.HasValue && product.Value.SlimId.Value == slimId)
+                    {
+                        module.StringData["out__" + name] = product.Value.Id.Value;
+                        return product.Value;
+                    }
+                }
+
+                module.NumberData.TryRemove("out__" + name, out slimId);
+                module.StringData.TryRemove("out__" + name, out cache);
+                return null;
             }
         }
     }
