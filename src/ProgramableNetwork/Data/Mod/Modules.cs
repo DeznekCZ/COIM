@@ -214,6 +214,11 @@ namespace ProgramableNetwork
                 .AddOutput("value", "Value")
                 .AddInt32Field("number", "Number")
                 .Action(m => { m.Output["value"] = m.Field["number"]; })
+                .AddDisplay("number", "Value", 1)
+                .Display(m => {
+                    var s = m.Field.Integer["number"].ToString();
+                    m.Display["number"] = s.Length > 3 ? s.Substring(s.Length - 3) : s;
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -223,6 +228,8 @@ namespace ProgramableNetwork
                 .AddOutput("value", "Value")
                 .AddProductField("product", "Product")
                 .Action(m => { m.Output["value"] = m.Field["product"]; })
+                .AddDisplay("product", "Product", 1, image: true)
+                .Display(m => { m.Display["product"] = m.Field.Product("product")?.IconPath; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -232,6 +239,8 @@ namespace ProgramableNetwork
                 .AddOutput("value", "Value")
                 .AddProductField("crop", "Crop", filter: FarmProductFilter)
                 .Action(m => { m.Output["value"] = m.Field["crop"]; })
+                .AddDisplay("crop", "Crop", 1, image: true)
+                .Display(m => { m.Display["crop"] = m.Field.Product("crop")?.IconPath; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -241,6 +250,8 @@ namespace ProgramableNetwork
                 .AddOutput("value", "Value")
                 .AddEntityTypeField<MachineProto>("machine", "Machine")
                 .Action(m => { m.Output["value"] = m.Field["machine"]; })
+                .AddDisplay("machine", "Machine", 1, image: true)
+                .Display(m => { m.Display["machine"] = m.Field.EntityProtoIconified("machine")?.IconPath; })
                 .AddControllerDevice()
                 .BuildAndAdd();
             
@@ -250,6 +261,8 @@ namespace ProgramableNetwork
                 .AddOutput("value", "Value")
                 .AddEntityTypeField<DrivingEntityProto>("vehicle", "vehicle")
                 .Action(m => { m.Output["value"] = m.Field["vehicle"]; })
+                .AddDisplay("vehicle", "Vehicle", 1, image: true)
+                .Display(m => { m.Display["vehicle"] = m.Field.EntityProtoIconified("vehicle")?.IconPath; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -259,6 +272,8 @@ namespace ProgramableNetwork
                 .AddOutput("value", "Value")
                 .AddBooleanField("boolean", "Boolean")
                 .Action(m => { m.Output["value"] = m.Field["boolean"]; })
+                .AddDisplay("boolean", "On", 1, led: true)
+                .Display(m => { m.Display["boolean"] = m.Output.Bool["boolean"] ? "1" : ""; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -268,6 +283,11 @@ namespace ProgramableNetwork
                 .AddOutput("value", "Value")
                 .AddFix32Field("float", "Float")
                 .Action(m => { m.Output["value"] = m.Field["float"]; })
+                .AddDisplay("number", "Value", 1)
+                .Display(m => {
+                    var s = m.Field["float"].ToStringRounded(1).Replace(".", "|");
+                    m.Display["float"] = s.Length > 3 ? s.Substring(s.Length - 3) : s;
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
         }
@@ -965,6 +985,13 @@ namespace ProgramableNetwork
                     m.Output["product"] = -1;
                     return ModuleStatus.Error;
                 })
+                .AddDisplay("fullness", "Fullness", 3)
+                .AddDisplay("product", "Product", 1, image: true)
+                .Display((m) =>
+                {
+                    m.Display["product"] = m.Output.Product("product")?.IconPath;
+                    m.Display["fullness"] = m.Output.Integer["fullness"] + "%";
+                })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1004,6 +1031,13 @@ namespace ProgramableNetwork
                     m.Output["fullness"] = 100;
                     m.Output["moving"] = 0;
                     throw new Exception("Entity can not be read");
+                })
+                .AddDisplay("fullness", "Fullness", 3)
+                .AddDisplay("moving", "Is moving", 1, led: true)
+                .Display((m) =>
+                {
+                    m.Display["moving"] = m.Output.Bool["moving"] ? "1" : "";
+                    m.Display["fullness"] = m.Output.Integer["fullness"] + "%";
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -1130,6 +1164,31 @@ namespace ProgramableNetwork
                     {
                         farm.AssignCropToSlot(m.Context.ProtosDb.Get<CropProto>(Ids.Crops.NoCrop), nextSlot);
                         return ModuleStatus.Running;
+                    }
+                })
+                .AddDisplay("crop_3", "Crop 3rd next", 1, image: true)
+                .AddDisplay("crop_2", "Crop 2nd next", 1, image: true)
+                .AddDisplay("crop_1", "Crop next", 1, image: true)
+                .AddDisplay("crop_0", "Crop actual", 1, image: true)
+                .Display((m) =>
+                {
+                    var farm = m.Field.Entity<Farm>("farm");
+                    if (farm is null) return;
+
+                    string emptyCrop = m.Context.ProtosDb.Get<CropProto>(Ids.Crops.NoCrop).Value.IconPath;
+                    DisplayCrop((farm.ActiveScheduleIndex) % 4);
+                    DisplayCrop((farm.ActiveScheduleIndex + 1) % 4);
+                    DisplayCrop((farm.ActiveScheduleIndex + 2) % 4);
+                    DisplayCrop((farm.ActiveScheduleIndex + 3) % 4);
+
+                    void DisplayCrop(int i)
+                    {
+                        Option<CropProto> crop = farm.Schedule[i];
+                        if (crop.ValueOrNull is null)
+                            m.Display["crop_" + i] = emptyCrop;
+                        else
+                            m.Display["crop_" + i] = crop.Value.IconPath ??
+                                                     crop.Value.ProductProduced.Product.IconPath;
                     }
                 })
                 .AddControllerDevice()
@@ -1780,7 +1839,7 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart($"Display_Bool", $"Display: LED", $"F-B", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Display)
                 .AddInput("a", "Product")
-                .AddDisplay("a", "Product", 1, toggle: new string[0])
+                .AddDisplay("a", "Product", 1, led: true)
                 .AddControllerDevice()
                 .Action(m => m.Display["a"] = m.Input["a", 0] > 0 ? "1" : "")
                 .BuildAndAdd();
