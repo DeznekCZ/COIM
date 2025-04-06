@@ -920,8 +920,7 @@ namespace ProgramableNetwork
                     {
                         m.Output["quantity"] = storage.CurrentQuantity.Value;
                         m.Output["capacity"] = storage.Capacity.Value;
-                        m.Output["fullness"] = (int)(100f * storage.CurrentQuantity.Value / storage.Capacity.Value);
-
+                        m.Output["fullness"] = (100f * storage.CurrentQuantity.Value / storage.Capacity.Value).ToFix32();
                         if (storage.StoredProduct.HasValue)
                             m.Output["product"] = Fix32.FromRaw((int)(uint)storage.StoredProduct.Value.SlimId.Value);
                         else
@@ -1667,7 +1666,7 @@ namespace ProgramableNetwork
         {
             m.Output["quantity"] = buffer.Quantity.Value;
             m.Output["capacity"] = buffer.Capacity.Value;
-            m.Output["fullness"] = (int)(100f * buffer.Quantity.Value / buffer.Capacity.Value);
+            m.Output["fullness"] = (100f * buffer.Quantity.Value / buffer.Capacity.Value).ToFix32();
             m.Output["product"] = Fix32.FromRaw(product.SlimId.Value);
             return ModuleStatus.Running;
         }
