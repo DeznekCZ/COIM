@@ -27,12 +27,17 @@
     <Compile Include="Core\errors.py" />
     <Compile Include="Core\display.py" />
     <Compile Include="Core\mafi.py" />
+    <Compile Include="Custom\clock.py" />
     <Compile Include="Custom\connection_isactive.py" />
     <Compile Include="Core\fields.py" />
     <Compile Include="Core\module.py" />
+    <Compile Include="Custom\equal_selector.py" />
+    <Compile Include="Custom\flipflop.py" />
+    <Compile Include="Custom\max.py" />
     <Compile Include="Custom\memory_selector.py" />
     <Compile Include="Custom\notification.py" />
     <Compile Include="Custom\randomizer.py" />
+    <Compile Include="Custom\shift.py" />
     <Compile Include="Mafi\Base\Ai\__init__.py" />
     <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\__init__.py" />
     <Compile Include="Mafi\Base\Prototypes\Buildings\__init__.py" />
