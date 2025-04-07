@@ -1176,10 +1176,10 @@ namespace ProgramableNetwork
                     if (farm is null) return;
 
                     string emptyCrop = m.Context.ProtosDb.Get<CropProto>(Ids.Crops.NoCrop).Value.IconPath;
-                    DisplayCrop((farm.ActiveScheduleIndex) % 4);
-                    DisplayCrop((farm.ActiveScheduleIndex + 1) % 4);
-                    DisplayCrop((farm.ActiveScheduleIndex + 2) % 4);
-                    DisplayCrop((farm.ActiveScheduleIndex + 3) % 4);
+                    DisplayCrop(0);
+                    DisplayCrop(1);
+                    DisplayCrop(2);
+                    DisplayCrop(3);
 
                     void DisplayCrop(int i)
                     {
