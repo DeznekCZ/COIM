@@ -13,7 +13,7 @@ using Mafi;
 using Mafi.Core.Entities.Dynamic;
 using Mafi.Localization;
 using System;
-using ProtoID = Mafi.Core.Prototypes.Proto.ID;
+using ProgramableNetwork.Python;
 
 namespace ProgramableNetwork
 {
@@ -116,41 +116,29 @@ namespace ProgramableNetwork
             {
                 // TODO add template browser in Update 3
 
-                var protos = new (string id, string display, Action<Module> settings)[] {
-                    ("Constant", "[1]", (m) => m.Field.Integer["number"] = 1),
-                    ("Constant", "[100]", (m) => m.Field.Integer["number"] = 100),
-                    ("Display_Int_2", "[100|0]", (m) => m.Field.Integer["float"] = 1),
-                    ("Compare_Int_Greater", "[A>99]", (m) => { m.Field.Integer["b"] = 99; m.Field.Bool["field_b"] = true; }),
-                    ("Compare_Int_Equal", "[A=100]", (m) => { m.Field.Integer["b"] = 100; m.Field.Bool["field_b"] = true; }),
-                    ("Connection_Transport", "Cap 100%", (m) => m.Field.Bool["fullstack"] = true),
-                    ("Connection_Storage", null, (m) => { }),
-                };
+                Dictionary<string, Template> protos = TemplateRegistrator.GetTemplates();
 
                 Builder.NewTxt("dialogNewTemplates")
                     .SetText(NewTr.Tools.Templates)
                     .SetParent(m_newDialog, true)
                     .SetHeight(20)
                     .AppendTo(m_newDialog);
-                foreach (var item in protos)
+                foreach (KeyValuePair<string, Template> item in protos)
                 {
-                    Option<ModuleProto> proto = m_controller.Context.ProtosDb.Get<ModuleProto>(new ProtoID(item.id.ModuleId())).Value;
-                    if (!proto.HasValue)
-                        continue; // skip missing templates
+                    string text = item.Value.ModuleProto.Strings.Name.TranslatedString;
+                    if (item.Value.Name != null)
+                        text += ": " + item.Value.Name;
 
-                    string text = proto.Value.Strings.Name.TranslatedString;
-                    if (item.display != null)
-                        text += ": " + item.display;
-
-                    Builder.NewBtnGeneral($"dialogNewCreateTemplate_{item.id}")
+                    Builder.NewBtnGeneral($"dialogNewCreateTemplate_{item.Key}")
                         .SetText(text)
                         .SetParent(m_newDialog, true)
                         .SetHeight(20)
                         .OnClick(() =>
                         {
-                            if (TryPlaceAt(proto.Value, m_targetRow, m_targetColumn))
+                            if (TryPlaceAt(item.Value.ModuleProto, m_targetRow, m_targetColumn))
                             {
                                 m_editModule.Prototype.ExecuteInit(m_editModule);
-                                item.settings(m_editModule);
+                                item.Value.Setting(m_editModule);
                                 CreateEditDialog(m_editModule);
                             }
                         })
