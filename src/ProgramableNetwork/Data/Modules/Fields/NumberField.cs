@@ -1,8 +1,7 @@
 ﻿using Mafi;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
+using Mafi.Unity.Ui;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
@@ -28,45 +27,44 @@ namespace ProgramableNetwork
         public T Default { get; }
 
         private Action setter;
-
-        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
-            fieldContainer.SetHeight(20);
+            Row row = new Row();
+            row.Height(20);
+            fieldContainer.Add(row);
 
-            var txt = uiBuilder
-                .NewBtnGeneral("name")
-                .SettingFieldNameStyle(uiBuilder)
-                .SetParent(fieldContainer, true)
-                .SetWidth(180)
-                .SetHeight(40)
-                .SetText(Name)
-                .ToolTip(inspector, ShortDesc, attached: true)
-                .AppendTo(fieldContainer);
+            Label label = new Label();
+            label.Value(new Mafi.Localization.LocStrFormatted(Name));
+            label.Tooltip(new Mafi.Localization.LocStrFormatted(ShortDesc));
+            label.Size(width: 180, height: 40);
+            row.Add(label);
 
-            var numberEditor = uiBuilder
-                .NewTxtField("value")
-                .SetParent(fieldContainer, true)
-                .SetWidth(180)
-                .SetHeight(20)
-                .AppendTo(fieldContainer);
+            var numberEditor = new TextField();
+            numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
+            numberEditor.Width(180);
+            numberEditor.Height(20);
+            row.Add(numberEditor);
 
-            var setButton = uiBuilder
-                .NewBtnPrimary("set")
-                .SetParent(fieldContainer, true)
-                .SetWidth(20)
-                .SetHeight(20)
-                .SetText("✓")
-                .SetEnabled(false)
-                .AppendTo(fieldContainer);
+            var setButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg);
+            setButton.Width(20);
+            setButton.Height(20);
+            setButton.Enabled(false);
+            row.Add(setButton);
+
+            setButton.OnClick(() =>
+            {
+                string changeValue = numberEditor.GetText();
+                module.Field[Id, false] = changeValue;
+                setButton.Enabled(false);
+            });
 
             setButton.OnClick(() =>
             {
                 setter?.Invoke();
-                setButton.SetEnabled(false);
+                setButton.Enabled(false);
             });
 
-            numberEditor.SetOnValueChangedAction(() =>
+            numberEditor.OnValueChanged((e) =>
             {
                 setter = null;
                 if (typeof(T) == typeof(Fix32))
@@ -90,20 +88,20 @@ namespace ProgramableNetwork
                         setter = () => module.Field[Id, false] = value.ToString();
                     }
                 }
-                setButton.SetEnabled(setter != null);
+                setButton.Enabled(true);
             });
 
             if (Default is Fix32)
             {
-                numberEditor.SetText(module.Field[Id].ToString());
+                numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id].ToString()));
             }
             else if (Default is int)
             {
-                numberEditor.SetText(module.Field.Integer[Id].ToString());
+                numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field.Integer[Id].ToString()));
             }
             else if (Default is long)
             {
-                numberEditor.SetText(module.Field[Id, "0"]);
+                numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, "0"]));
             }
             else
             {

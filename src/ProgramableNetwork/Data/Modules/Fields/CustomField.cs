@@ -1,7 +1,7 @@
 ﻿using Mafi;
-using Mafi.Unity;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
+using Mafi.Unity.Ui;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
 
 namespace ProgramableNetwork
@@ -31,16 +31,13 @@ namespace ProgramableNetwork
 
         public int Size => size();
 
-        public ITooltipInspector Inspector { get; private set; }
-        public UiBuilder Builder { get; private set; }
-        public StackContainer Container { get; private set; }
+        public ControllerInspector Inspector { get; private set; }
+        public UiComponent Container { get; private set; }
         public Action Refresh { get; private set; }
         public Reference Reference { get; private set; }
-
-        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
             Inspector = inspector;
-            Builder = uiBuilder;
             Container = fieldContainer;
             Refresh = updateDialog;
             Reference = new Reference((v) => module.Field[id] = v, () => module.Field[id, Fix32.Zero]);

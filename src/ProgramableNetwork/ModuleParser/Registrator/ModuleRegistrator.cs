@@ -10,7 +10,7 @@ namespace ProgramableNetwork.Python
 {
     public class ModuleRegistrator
     {
-        public static void Register(ProtoRegistrator registrator, string file)
+        public static void Register(ProtoRegistrator registrator, string file, out List<Class> templates)
         {
             Token[] tokens = Tokenizer.ParseFile(file);
             Block block = Lexer.Parse(tokens);
@@ -50,6 +50,11 @@ namespace ProgramableNetwork.Python
 
                 builder.BuildAndAdd();
             }
+
+            templates = context.Values
+                .Where(v => v is Class c && c.baseTypes.Contains(typeof(Template)))
+                .Cast<Class>()
+                .ToList();
         }
 
         private static void AddIO(IList modules, Func<string, string, ModuleProto.Builder> add)

@@ -1,8 +1,8 @@
 ﻿using Mafi;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
+using Mafi.Core;
+using Mafi.Unity.Ui;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
 
 namespace ProgramableNetwork
@@ -26,53 +26,44 @@ namespace ProgramableNetwork
 
         public int Size => 20;
 
-        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
-            fieldContainer.SetHeight(20);
+            Row row = new Row();
+            row.Height(20);
+            fieldContainer.Add(row);
 
-            var txt = uiBuilder
-                .NewBtnGeneral("name")
-                .SettingFieldNameStyle(uiBuilder)
-                .SetParent(fieldContainer, true)
-                .SetWidth(180)
-                .SetHeight(40)
-                .SetText(Name)
-                .ToolTip(inspector, shortDesc, attached: true)
-                .AppendTo(fieldContainer);
+            Label label = new Label();
+            label.Value(new Mafi.Localization.LocStrFormatted(Name));
+            label.Tooltip(new Mafi.Localization.LocStrFormatted(shortDesc));
+            label.Size(width: 180, height: 40);
+            row.Add(label);
 
             bool value = module.Field.Bool[Id];
 
-            Btn falseSelector = uiBuilder
-                .NewBtnGeneral("false")
-                .SetButtonStyle(!value ? uiBuilder.Style.Global.GeneralBtnActive : uiBuilder.Style.Global.GeneralBtn)
-                .SetParent(fieldContainer, true)
-                .SetWidth(100)
-                .SetHeight(20)
-                .SetText("OFF")
-                .AppendTo(fieldContainer);
+            ButtonText falseSelector = new ButtonText(new Mafi.Localization.LocStrFormatted("OFF"));
+            if (value) falseSelector.Class("selected");
+            falseSelector.Width(100);
+            falseSelector.Height(20);
+            row.Add(falseSelector);
 
-            Btn trueSelector = uiBuilder
-                .NewBtnGeneral("true")
-                .SetButtonStyle(value ? uiBuilder.Style.Global.GeneralBtnActive : uiBuilder.Style.Global.GeneralBtn)
-                .SetParent(fieldContainer, true)
-                .SetWidth(100)
-                .SetHeight(20)
-                .SetText("ON")
-                .AppendTo(fieldContainer);
+            ButtonText trueSelector = new ButtonText(new Mafi.Localization.LocStrFormatted("ON"));
+            if (!value) trueSelector.Class("selected");
+            trueSelector.Width(100);
+            trueSelector.Height(20);
+            row.Add(trueSelector);
 
             trueSelector.OnClick(() =>
             {
                 module.Field[Id] = 1;
-                trueSelector.SetButtonStyle(uiBuilder.Style.Global.GeneralBtnActive);
-                falseSelector.SetButtonStyle(uiBuilder.Style.Global.GeneralBtn);
+                trueSelector.Class("selected");
+                falseSelector.ClassRemove("selected");
             });
 
             falseSelector.OnClick(() =>
             {
                 module.Field[Id] = 0;
-                trueSelector.SetButtonStyle(uiBuilder.Style.Global.GeneralBtn);
-                falseSelector.SetButtonStyle(uiBuilder.Style.Global.GeneralBtnActive);
+                trueSelector.ClassRemove("selected");
+                falseSelector.Class("selected");
             });
         }
 

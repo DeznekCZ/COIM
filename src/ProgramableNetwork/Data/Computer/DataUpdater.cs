@@ -1,6 +1,4 @@
 ﻿using Mafi;
-using Mafi.Localization;
-using Mafi.Unity.UiFramework.Components;
 using System;
 
 namespace ProgramableNetwork

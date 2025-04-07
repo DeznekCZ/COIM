@@ -4,7 +4,6 @@ using Mafi.Core.Mods;
 using Mafi.Core.Prototypes;
 using Mafi.Core.World.Entities;
 using Mafi.Localization;
-using Mafi.Unity.UserInterface.Style;
 using System;
 using System.Reflection;
 using static Mafi.Base.Assets.Base;
@@ -79,6 +78,8 @@ namespace ProgramableNetwork
         public IMod Mod => null;
 
         public AMOperation Value { get; }
+
+        public bool IsInitialized => true;
 
         public bool TryGetParam<T>(out T paramValue) where T : class
         {

@@ -5,10 +5,6 @@ using Mafi.Core.Syncers;
 using Mafi.Unity;
 using Mafi.Unity.InputControl;
 using Mafi.Unity.InputControl.Inspectors;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface.Components;
-using Mafi.Unity.UserInterface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,34 +12,35 @@ using UnityEngine;
 using Mafi.Unity.Entities;
 using Mafi.Core.Entities;
 using Mafi.Core.Prototypes;
+using Mafi.Unity.Ui;
+using Mafi.Unity.UiToolkit.Library;
+using Mafi.Unity.UiToolkit.Component;
+using static ProgramableNetwork.NewIds;
 
 namespace ProgramableNetwork
 {
     [GlobalDependency(RegistrationMode.AsSelf)]
-    public class ConnectionInfo : WindowView
+    public class ConnectionInfo : Window
     {
-        private StackContainer m_controllers;
-        private Option<ScrollableStackContainer> m_scrollableStackContainer;
+        private ScrollColumn m_scrollableStackContainer;
+        private UiComponent m_stackContainer;
         private Option<Controller> m_selected;
+        private IUiUpdater updater;
         private readonly Material m_movingArrowsLineMaterialShared;
         private readonly List<IDataUpdater> m_updaters;
-        private readonly InspectorContext m_inspectorContext;
+        private readonly UiContext m_UiContext;
         private readonly EntityHighlighter m_entityHighlighter;
         private readonly LinesFactory m_linesFactory;
         private readonly List<LineMb> m_lines = new List<LineMb>();
         private readonly AudioSource m_invalidOpSound;
 
-        public ScrollableStackContainer ScrollableItemsContainer { get; private set; }
-        public StackContainer ItemsContainer { get; private set; }
-
-        public ConnectionInfo(IUnityInputMgr unityInput, InspectorContext inspectorContext,
-            UiBuilder uiBuilder, NewInstanceOf<EntityHighlighter> entityHighlighter,
+        public ConnectionInfo(IUnityInputMgr unityInput, UiContext UiContext, NewInstanceOf<EntityHighlighter> entityHighlighter,
             LinesFactory linesFactory, AssetsDb assetsDb)
-            : base("connections", FooterStyle.Round, false)
+            : base(new Mafi.Localization.LocStrFormatted("Controller menu"), addFullscreenButton: false)
         {
-            m_inspectorContext = inspectorContext;
+            m_UiContext = UiContext;
             m_movingArrowsLineMaterialShared = assetsDb.GetSharedMaterial("Assets/Core/Materials/MovingArrowsLine.mat");
-            m_invalidOpSound = uiBuilder.AudioDb.GetSharedAudio(uiBuilder.Audio.InvalidOp);
+            m_invalidOpSound = UiContext.AudioDb.InvalidOp();
             m_entityHighlighter = entityHighlighter.Instance;
             m_linesFactory = linesFactory;
             m_updaters = new List<IDataUpdater>();
@@ -51,31 +48,53 @@ namespace ProgramableNetwork
                 m => KeyBindings.FromPrimaryKeys(KbCategory.General, ShortcutMode.Game, KeyCode.LeftControl, KeyCode.W),
                 () =>
                 {
-                    BuildAndShow(uiBuilder);
+                    this.Show();
                 });
-            SetOnCloseButtonClickAction(Hide);
-            OnShowStart += VariableWindow_OnShowStart;
-            OnHide += VariableWindow_OnHide;
+            OnOpenStart += VariableWindow_OnOpenStart;
+            OnCloseStart += VariableWindow_OnCloseStart;
+
+
+            this.AbsolutePositionCenter();
+            MakeMovable();
+
+            UpdaterBuilder updaterBuilder = UpdaterBuilder.Start();
+
+            m_scrollableStackContainer = new ScrollColumn();
+            Add(m_scrollableStackContainer);
+
+            m_stackContainer = new UiComponent();
+            m_stackContainer.Size(width: 500.px());
+            m_scrollableStackContainer.Add(m_stackContainer);
+            m_scrollableStackContainer.Size(width: 500.px());
+
+            WindowSize(500.px(), 100.Percent());
+
+            // TODO search bar
+
+            Refresh();
+
+            this.Observe(() => DateTime.Now.Ticks)
+                .Do((l) => m_updaters.ForEach(u => u.Update()));
         }
 
-        private void VariableWindow_OnHide()
+        private void VariableWindow_OnCloseStart(Window w)
         {
-            m_inspectorContext.EntitiesManager.StaticEntityAdded.RemoveNonSaveable(this, EntitiesChanged);
-            m_inspectorContext.EntitiesManager.StaticEntityRemoved.RemoveNonSaveable(this, EntitiesChanged);
+            m_UiContext.EntitiesManager.StaticEntityAdded.RemoveNonSaveable(this, EntitiesChanged);
+            m_UiContext.EntitiesManager.StaticEntityRemoved.RemoveNonSaveable(this, EntitiesChanged);
             ClearAllLines();
         }
 
         private void ClearAllLines()
         {
             foreach (var line in m_lines)
-                line.gameObject.Destroy();
+                UnityEngine.Object.Destroy(line.gameObject);
             m_lines.Clear();
         }
 
-        private void VariableWindow_OnShowStart()
+        private void VariableWindow_OnOpenStart()
         {
-            m_inspectorContext.EntitiesManager.StaticEntityAdded.AddNonSaveable(this, EntitiesChanged);
-            m_inspectorContext.EntitiesManager.StaticEntityRemoved.AddNonSaveable(this, EntitiesChanged);
+            m_UiContext.EntitiesManager.StaticEntityAdded.AddNonSaveable(this, EntitiesChanged);
+            m_UiContext.EntitiesManager.StaticEntityRemoved.AddNonSaveable(this, EntitiesChanged);
             Refresh();
         }
 
@@ -84,86 +103,36 @@ namespace ProgramableNetwork
             Refresh();
         }
 
-        protected override void BuildWindowContent()
-        {
-            SetTitle("Controller menu");
-            PositionSelfToCenter();
-            MakeMovable();
-
-            UpdaterBuilder updaterBuilder = UpdaterBuilder.Start();
-
-            ItemsContainer = Builder.NewStackContainer("StackContainer")
-                .SetStackingDirection(StackContainer.Direction.TopToBottom)
-                .SetWidth(500)
-                .SetSizeMode(StackContainer.SizeMode.Dynamic)
-                .PutTo(GetContentPanel());
-
-            // TODO search bar
-            m_controllers = Builder.NewStackContainer("variables")
-                .SetStackingDirection(StackContainer.Direction.TopToBottom);
-
-            ScrollableItemsContainer = new ScrollableStackContainer(Builder, 500, m_controllers)
-                .SetWidth(500)
-                .SetHeight(500)
-                .AppendTo(ItemsContainer);
-            ScrollableItemsContainer.SizeChanged += delegate
-            {
-                SetContentSize(500, 500);
-            };
-
-            Refresh();
-
-            updaterBuilder
-                .Observe(() => DateTime.Now.Ticks)
-                .Do((l) => m_updaters.ForEach(u => u.Update()));
-
-            AddUpdater(updaterBuilder.Build());
-
-            ItemsContainer.SizeChanged += delegate
-            {
-                SetContentSize(500, 500);
-            };
-            SetContentSize(500, 500);
-        }
-
         private void Refresh()
         {
-            m_updaters.Clear();
-            m_controllers.ClearAndDestroyAll();
+            //m_updaters.Clear();
+            //m_controllers.ClearAndDestroyAll();
 
-            var height = 0;
-            m_controllers.AppendDivider(2, Style.EntitiesMenu.MenuBg);
-            height += 2;
+            ClearAllLines();
 
-            var controllers = m_inspectorContext.EntitiesManager.GetAllEntitiesOfType<Controller>();
+            var controllers = m_UiContext.EntitiesManager.GetAllEntitiesOfType<Controller>();
             foreach (var controller in controllers)
             {
-                StackContainer container = Builder.NewStackContainer(DateTime.Now.Ticks.ToString())
-                    .SetStackingDirection(StackContainer.Direction.LeftToRight)
-                    .SetWidth(500);
+                Row controllerLine = new Row();
+                controllerLine.Size(width: 500.px());
 
-                var controllerButton = Builder.NewBtnGeneral("controller_" + controller.Id.Value)
+                var controllerButton = new ButtonIcon(controller.Prototype.IconPath)
                     //.ToolTip(this, item.CustomTitle.ValueOrNull ?? item.DefaultTitle.Value)
-                    .OnClick(() => m_inspectorContext.CameraController.PanTo(controller.Position2f))
+                    .OnClick(() => m_UiContext.CameraController.PanTo(controller.Position2f))
                     .OnDoubleClick(() =>
                     {
                         m_selected = controller;
-                        InspectorContext inspectorContext = GlobalDependencyResolver.Get<InspectorContext>();
-                        if (inspectorContext.MainController.TryActivateFor(inspectorContext.InputMgr, controller))
-                            inspectorContext.InputMgr.ActivateNewController(inspectorContext.MainController);
+                        UiContext UiContext = GlobalDependencyResolver.Get<UiContext>();
+                        if (UiContext.InspectorsManager.TryActivateFor(controller, out var inspectorController))
+                            UiContext.InputMgr.ActivateNewController(inspectorController);
                         else
                             m_invalidOpSound.Play();
                     })
-                    .SetSize(40, 40)
-                    .SetButtonStyle(Builder.Style.Global.ImageBtn)
-                    .SetIcon(controller.Prototype.IconPath)
-                    .AppendTo(container);
+                    .Size(40, 40);
+                controllerLine.Add(controllerButton);
 
-                GridContainer linkcontainer = Builder.NewGridContainer(DateTime.Now.Ticks.ToString())
-                    .SetCellSize(new Vector2(40, 40))
-                    .SetWidth(400)
-                    .AppendTo(container)
-                    .SetDynamicHeightMode(10);
+                Grid linkcontainer = new Grid(10);
+                controllerLine.Add(linkcontainer.Component);
 
                 List<(Module module, List<EntityField> fields)> list = controller.Modules
                     .Select(module => (
@@ -194,30 +163,24 @@ namespace ProgramableNetwork
                     }
                 }
 
-                container.SetHeight(((allEntities.Count - 1) / 10 + 1) * 40);
-                container.AppendTo(m_controllers);
-                height += ((allEntities.Count - 1) / 10 + 1) * 40;
-
                 foreach (var entity in allEntities.Values)
                 {
-                    Builder.NewBtnGeneral("controller_" + controller.Id.Value + "_entity_" + entity.Id.Value)
+                    var entityButton = new ButtonIcon(entity?.Prototype is IProtoWithIcon withIcon
+                                    ? withIcon.IconPath : Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png)
                         //.ToolTip(this, item.CustomTitle.ValueOrNull ?? item.DefaultTitle.Value)
-                        .OnClick(() => m_inspectorContext.CameraController.PanTo(entity.HasPosition(out Tile2f position)
+                        .OnClick(() => m_UiContext.CameraController.PanTo(entity.HasPosition(out Tile2f position)
                                             ? position : controller.Position2f))
                         .OnDoubleClick(() =>
                         {
-                            InspectorContext inspectorContext = GlobalDependencyResolver.Get<InspectorContext>();
-                            if (inspectorContext.MainController.TryActivateFor(inspectorContext.InputMgr, entity as IRenderedEntity))
-                                inspectorContext.InputMgr.ActivateNewController(inspectorContext.MainController);
+                            UiContext UiContext = GlobalDependencyResolver.Get<UiContext>();
+                            if (UiContext.InspectorsManager.TryActivateFor(entity, out var inspector))
+                                UiContext.InputMgr.ActivateNewController(inspector);
                             else
                                 m_invalidOpSound.Play();
                         })
-                        .SetSize(40, 40)
-                        .SetButtonStyle(Builder.Style.Global.ImageBtn)
-                        .SetIcon(entity?.Prototype is IProtoWithIcon withIcon
-                                    ? withIcon.IconPath : Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png)
-                        .SetOnMouseEnterLeaveActions(
-                            () =>
+                        .Size(40, 40);
+                    entityButton.OnMouseEnter(
+                            (e) =>
                             {
                                 ClearAllLines();
                                 m_entityHighlighter.ClearAllHighlights();
@@ -227,18 +190,20 @@ namespace ProgramableNetwork
                                 var line = m_linesFactory.CreateLine(position.ToVector3(), controller.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
                                 line.SetTextureMode(LineTextureMode.Tile);
                                 m_lines.Add(line);
-                            },
-                            () =>
+                            }
+                        );
+                    entityButton.OnMouseLeave(
+                            (e) =>
                             {
                                 ClearAllLines();
                                 m_entityHighlighter.ClearAllHighlights();
                             }
-                        )
-                        .AppendTo(linkcontainer);
+                        );
+                    linkcontainer.Add( entityButton );
                 }
 
                 controllerButton
-                    .SetOnMouseEnterLeaveActions(
+                    .OnMouseEnterLeave(
                         () =>
                         {
                             m_entityHighlighter.ClearAllHighlights();
@@ -259,11 +224,8 @@ namespace ProgramableNetwork
                         }
                     );
 
-                m_controllers.AppendDivider(2, Style.EntitiesMenu.MenuBg);
-                height += 2;
+                Add(controllerLine);
             }
-
-            m_controllers.SetHeight(height);
         }
     }
 }

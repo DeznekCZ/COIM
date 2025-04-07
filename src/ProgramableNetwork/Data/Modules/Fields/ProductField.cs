@@ -1,8 +1,8 @@
 ﻿using Mafi.Core.Products;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
+using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Library;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
 
 namespace ProgramableNetwork
@@ -15,34 +15,31 @@ namespace ProgramableNetwork
         {
             this.Id = id;
             this.Name = name;
-            this.shortDesc = shortDesc;
+            this.ShortDesc = shortDesc;
             this.filter = filter;
         }
 
         public string Id { get; }
 
         public string Name { get; }
-        public string shortDesc { get; }
+        public string ShortDesc { get; }
 
         public int Size => 40;
 
-        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
-            fieldContainer.SetHeight(40);
+            Row row = new Row();
+            row.Height(40);
+            fieldContainer.Add(row);
 
-            var txt = uiBuilder
-                .NewBtnGeneral("name")
-                .SettingFieldNameStyle(uiBuilder)
-                .SetParent(fieldContainer, true)
-                .SetWidth(180)
-                .SetHeight(40)
-                .SetText(Name)
-                .ToolTip(inspector, shortDesc, attached: true)
-                .AppendTo(fieldContainer);
+            Label label = new Label();
+            label.Value(new Mafi.Localization.LocStrFormatted(Name));
+            label.Tooltip(new Mafi.Localization.LocStrFormatted(ShortDesc));
+            label.Size(width: 180, height: 40);
+            row.Add(label);
 
-            ProductTab productTab = new ProductTab(uiBuilder, module, Id, filter, updateDialog, parentWindow, inspector.Context);
-            productTab.AppendTo(fieldContainer);
+            ProductTab protoTab = new ProductTab(uiContext, module, Id, filter, updateDialog, parentWindow);
+            row.Add(protoTab);
         }
 
         public void InitData(Module module)

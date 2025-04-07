@@ -4,6 +4,7 @@ using Mafi.Core.Entities;
 using Mafi.Core.World;
 using Mafi.Core.World.Entities;
 using Mafi.Serialization;
+using Mafi.Unity.UiToolkit.Component;
 using System;
 using System.Linq;
 
@@ -159,6 +160,11 @@ namespace ProgramableNetwork
         public Fix32 Distance(WorldMapMine mine)
         {
             return mine?.Location.Position.DistanceTo(HomeLocation) ?? Fix32.MaxValue;
+        }
+
+        public UiComponent CreateUI(Antena antena, IDataBand databand, IDataBandChannel channel, Action remove)
+        {
+            throw new NotImplementedException("Display of channel is finalized");
         }
     }
 

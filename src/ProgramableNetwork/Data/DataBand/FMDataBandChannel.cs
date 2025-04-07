@@ -2,6 +2,8 @@
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Serialization;
+using Mafi.Unity.UiToolkit.Component;
+using System;
 using System.Linq;
 
 namespace ProgramableNetwork
@@ -58,6 +60,11 @@ namespace ProgramableNetwork
                 Fix32[] data = OriginalDataBand.Read(Index);
                 targetDataBand.Update(Index, data);
             }
+        }
+
+        public UiComponent CreateUI(Antena antena, IDataBand databand, IDataBandChannel channel, Action remove)
+        {
+            throw new NotImplementedException("FM ui is not finished");
         }
     }
 }

@@ -1,9 +1,9 @@
-﻿using Mafi.Unity.UiFramework.Components;
+﻿using Mafi.Unity.UiToolkit.Component;
 
 namespace ProgramableNetwork
 {
     public interface IFieldInstance
     {
-        StackContainer UiElement { get; }
+        UiComponent UiElement { get; }
     }
 }

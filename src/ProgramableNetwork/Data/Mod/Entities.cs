@@ -48,7 +48,6 @@ namespace ProgramableNetwork
                 order: transportToolbarCategoryProto.Order + 1,
                 iconPath: Mafi.Unity.Assets.Unity.UserInterface.EntityIcons.Computing_png,
                 isTransportBuildAllowed: true,
-                containsTransports: false,
                 shortcutId: "NETWORK"
                 )).SomeOption().ToImmutableArray();
 

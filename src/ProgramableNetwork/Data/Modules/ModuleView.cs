@@ -1,12 +1,13 @@
 ﻿using Mafi.Core.Syncers;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
 using System.Linq;
 using Mafi;
 using System;
-using Mafi.Unity.UiFramework.Styles;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
+using Mafi.Unity.Ui;
+using System.Runtime.Remoting.Contexts;
+using System.Drawing.Drawing2D;
+using Mafi.Unity.UiToolkit;
 
 namespace ProgramableNetwork
 {
@@ -14,122 +15,98 @@ namespace ProgramableNetwork
     {
         private ModuleConnector m_higlighted;
 
-        private class ModuleView : StackContainer
+        public ModuleConnector OutputConnection { get; set; }
+
+        private class ModuleView : UiComponent
         {
             private readonly Module m_module;
-            private readonly ControllerInspector m_controller;
-            private readonly ControllerView m_computerView;
+            private readonly ControllerView m_controller;
 
-            public ModuleView(UiBuilder uiBuilder, Module module, ControllerInspector controller, ControllerView computerView, bool selected, Action refresh)
-                : base(uiBuilder, "moduleView_" + module.Id)
+            public ModuleView(Module module, ControllerView controllerView, UiContext uiContext, bool selected, Action refresh)
+                : base(new UnityEngine.UIElements.VisualElement())
             {
                 this.m_module = module;
-                this.m_controller = controller;
-                this.m_computerView = computerView;
+                this.m_controller = controllerView;
                 string name = "moduleView_" + module.Id;
                 var updater = UpdaterBuilder.Start();
                 int width = module.Layout.GetWidth(module);
                 bool displaysExists = module.Prototype.Displays.Count > 0;
 
-                this.SetSize(width * 20, 80);
-                this.SetStackingDirection(Direction.TopToBottom);
-                this.SetItemSpacing(0);
-                this.SetSizeMode(SizeMode.StaticDirectionAligned);
+                this.Size(width * 20, 80);
 
                 // Add Input panel
-                StackContainer inputsPanel = uiBuilder.NewStackContainer(name + "_inputs")
-                    .SetParent(this, true)
-                    .SetSize(width * 20, 20)
-                    .SetBackground(ColorRgba.DarkGreen)
-                    .SetSizeMode(SizeMode.StaticCenterAligned)
-                    .SetStackingDirection(Direction.RightToLeft);
-                AddInputs(uiBuilder, inputsPanel, module, updater, refresh);
+                Row inputsPanel = new Row();
+                inputsPanel.Size((width * 20).px(), 20.px());
+                inputsPanel.Background(ColorRgba.DarkGreen);
+                AddInputs(uiContext, inputsPanel, module, refresh);
+                Add(inputsPanel);
 
-                inputsPanel.AppendTo(this);
-
-                m_computerView.m_updaters.Add(new EachFrame(() => module.Prototype.DisplayUpdate(module)));
+                m_controller.m_updaters.Add(new EachFrame(() => module.Prototype.DisplayUpdate(module)));
 
                 // Add Field panel
-                Btn fieldsPanel = uiBuilder.NewBtnGeneral(name + "_edit")
-                    .SetParent(this, true)
-                    .SetSize(width * 20, displaysExists ? 20 : 40)
-                    .SetText(module.Prototype.Symbol)
-                    .SetOnMouseEnterLeaveActions(
-                        () => m_computerView.AddPreviewHighlight(module),
-                        () => m_computerView.ClearPreviewHighlight()
-                    )
-                    .OnClick(() =>
+                ButtonText fieldsPanel = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Prototype.Symbol));
+                fieldsPanel.Size(width * 20, displaysExists ? 20 : 40);
+                fieldsPanel.OnMouseEnterLeave(
+                        () => m_controller.AddPreviewHighlight(module),
+                        () => m_controller.ClearPreviewHighlight()
+                    );
+                fieldsPanel.OnClick(() =>
                     {
-                        m_computerView.CreateEditDialog(module);
+                        new ModuleEditDialog(module, m_controller, uiContext, m_controller.m_controller).Show();
                     });
+                Add(fieldsPanel);
 
-                m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
+                m_controller.m_updaters.Add(new DataUpdater<(bool selected, ColorRgba color), int>(
                     (context) =>
                     {
-                        var baseStyle = (selected ? uiBuilder.Style.Global.GeneralBtnActive : uiBuilder.Style.Global.GeneralBtn)
-                            .Extend(backgroundClr: ColorRgba.DarkGreen);
+                        if (module.Status == ModuleStatus.Error)
+                            return (selected, ColorRgba.DarkRed);
 
-                        if (module.Status == ModuleStatus.Running)
-                            return baseStyle.Extend(
-                                backgroundClr: ColorRgba.DarkGreen);
-
-                        else if (module.Status == ModuleStatus.Error)
-                            return baseStyle.Extend(
-                                backgroundClr: ColorRgba.DarkRed);
-
-                        return baseStyle;
+                        return (selected, ColorRgba.DarkGreen);
                     },
-                    (context, style) => fieldsPanel.SetButtonStyle(style),
+                    (context, style) => {
+                        fieldsPanel.BackgroundTint(style.color);
+                        fieldsPanel.Selected(style.selected);
+                    },
                     (styleA, styleB) => styleA.Equals(styleB),
                     0
                 ));
 
                 DataUpdater<string, int> tooltipUpdater;
-                m_computerView.m_updaters.Add(tooltipUpdater = new DataUpdater<string, int>(
+                m_controller.m_updaters.Add(tooltipUpdater = new DataUpdater<string, int>(
+                    // TODO show multiple tooltips
                     (context) => module.Error,
-                    (context, style) => { },
+                    (context, style) => fieldsPanel.Tooltip(new Mafi.Localization.LocStrFormatted(style), enabled: !string.IsNullOrEmpty(style), isError: true),
                     (oldError, newError) => oldError != newError,
                     0
                 ));
 
-                fieldsPanel.ToolTip(controller, tooltipUpdater.GetValue, attached: true);
-
-                fieldsPanel.AppendTo(this);
-
                 if (selected)
-                    fieldsPanel.SetButtonStyle(uiBuilder.Style.Global.GeneralBtnActive);
+                {
+                    fieldsPanel.BackgroundTint(ColorRgba.DarkGreen);
+                    fieldsPanel.Selected(selected);
+                }
 
                 if (displaysExists)
                 {
-                    StackContainer displaysPanel = uiBuilder.NewStackContainer(name + "_displays")
-                        .SetParent(this, true)
-                        .SetSize(width * 20, 20)
-                        .SetBackground(ColorRgba.DarkDarkGray)
-                        .SetSizeMode(SizeMode.StaticCenterAligned)
-                        .SetStackingDirection(Direction.LeftToRight);
-                    AddDisplays(uiBuilder, displaysPanel, module, updater, refresh);
+                    Row displaysPanel = new Row()
+                        .Size((width * 20).px(), 20.px())
+                        .Background(ColorRgba.DarkDarkGray);
+                    AddDisplays(uiContext, displaysPanel, module, refresh);
 
-                    displaysPanel.AppendTo(this);
+                    Add(displaysPanel);
                 }
 
                 // Add Ouptut panel
-                StackContainer outputsPanel = uiBuilder.NewStackContainer(name + "_outputs")
-                    .SetParent(this, true)
-                    .SetSize(width * 20, 20)
-                    .SetBackground(ColorRgba.DarkRed)
-                    .SetSizeMode(SizeMode.StaticCenterAligned)
-                    .SetStackingDirection(Direction.RightToLeft);
-                AddOutputs(uiBuilder, outputsPanel, module, updater, refresh);
+                Row outputsPanel = new Row()
+                    .Size(width * 20, 20)
+                    .Background(ColorRgba.DarkRed);
+                AddOutputs(uiContext, outputsPanel, module, refresh);
 
-                outputsPanel.AppendTo(this);
-
-                var updaterBuilt = updater.Build();
-                computerView.AddUpdater(updaterBuilt);
-
-                this.RectTransform.ForceUpdateRectTransforms();
+                Add(outputsPanel);
             }
 
-            private void AddInputs(UiBuilder builder, StackContainer inputsPanel, Module module, UpdaterBuilder updater, Action refresh)
+            private void AddInputs(UiContext uiContext, Row inputsPanel, Module module, Action refresh)
             {
                 var inputs = module.Prototype.Inputs;
                 for (int i = inputs.Count - 1; i >= 0; i--)
@@ -137,12 +114,10 @@ namespace ProgramableNetwork
                     var input = inputs[i];
                     bool isConnected = module.InputModules.ContainsKey(input.Id);
 
-                    Btn btn = builder.NewBtnGeneral($"{module.Id}_input_{i}")
-                        .SetText(isConnected ? "◎" : "○")
-                        .SetButtonStyle(builder.Style.Global.GeneralBtn
-                                            .Extend(backgroundClr: ColorRgba.DarkRed)
-                                            .ExtendText(color: ColorRgba.Gold))
-                        .SetSize(20, 20)
+                    ButtonText btn = new ButtonText(new Mafi.Localization.LocStrFormatted(isConnected ? "◎" : "○"))
+                        .Background(ColorRgba.DarkRed)
+                        .Color(ColorRgba.Gold)
+                        .Size(20.px(), 20.px())
                         .OnRightClick(() =>
                         {
                             if (module.InputModules.TryRemove(input.Id, out _))
@@ -151,55 +126,58 @@ namespace ProgramableNetwork
                             }
                             else
                             {
-                                builder.AudioDb.GetSharedAudio(builder.Audio.InvalidOp).Play();
+                                uiContext.AudioDb.InvalidOp(true).Play();
                             }
                         })
                         .OnClick(() =>
                         {
-                            if (m_computerView.OutputConnection == null)
+                            if (m_controller.OutputConnection == null)
                             {
-                                builder.AudioDb.GetSharedAudio(builder.Audio.InvalidOp).Play();
+                                uiContext.AudioDb.InvalidOp(true).Play();
                             }
                             else
                             {
-                                module.InputModules[input.Id] = m_computerView.OutputConnection;
+                                module.InputModules[input.Id] = m_controller.OutputConnection;
                                 refresh();
                             }
                         })
-                        .SetOnMouseEnterLeaveActions(
-                            () => { },
-                            () => { }
-                        )
-                        .AppendTo(inputsPanel)
-                        .ToolTip(m_computerView.m_controller, (input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' '),
-                            offset: Offset.Top(-5), attached: true);
+                        //.OnMouseEnterLeave(
+                        //    () => { },
+                        //    () => { }
+                        //)
+                        .Tooltip(new Mafi.Localization.LocStrFormatted((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' ')));
+                    inputsPanel.Add(btn);
 
-                    m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
+                    m_controller.m_updaters.Add(new DataUpdater<(ColorRgba text, ColorRgba background), int>(
                         (context) =>
                         {
-                            var baseStyle = builder.Style.Global.GeneralBtn
-                                .Extend(backgroundClr: ColorRgba.DarkGreen)
-                                .ExtendText(color: ColorRgba.Gold);
+                            var text = ColorRgba.Gold;
+                            var background = ColorRgba.DarkGreen;
 
-                            if (isConnected && m_computerView.m_higlighted != null &&
+                            if (isConnected && m_controller.m_higlighted != null &&
                                 module.InputModules
                                     .Where(pair => pair.Key == input.Id)
                                     .Select(pair => pair.Value)
-                                    .Any(connector => connector.Equals(m_computerView.m_higlighted)))
-                                return baseStyle.Extend(
-                                    backgroundClr: ColorRgba.Green,
-                                    text: baseStyle.Text.Extend(ColorRgba.White));
+                                    .Any(connector => connector.Equals(m_controller.m_higlighted)))
+                            {
+                                text = ColorRgba.White;
+                                background = ColorRgba.DarkGreen;
+                            }
 
-                            return baseStyle;
+                            return (text, background);
                         },
-                        (context, style) => btn.SetButtonStyle(style),
+                        (context, style) =>
+                        {
+                            btn.Color(style.text);
+
+                        },
                         (styleA, styleB) => styleA.Equals(styleB),
                         0
                     ));
                 }
             }
 
-            private void AddOutputs(UiBuilder builder, StackContainer inputsPanel, Module module, UpdaterBuilder updater, Action refresh)
+            private void AddOutputs(UiContext uiContext, Row inputsPanel, Module module, Action refresh)
             {
                 var outputs = module.Prototype.Outputs;
                 for (int i = outputs.Count - 1; i >= 0; i--)
@@ -213,22 +191,20 @@ namespace ProgramableNetwork
                         .FirstOrDefault(c => c.ModuleId == module.Id
                                           && c.OutputId == output.Id) != null;
 
-                    var btn = builder.NewBtnGeneral($"{module.Id}_output_{i}")
-                        .SetText(isConnected ? "◎" : "○")
-                        .SetButtonStyle(builder.Style.Global.GeneralBtn
-                                            .Extend(backgroundClr: ColorRgba.DarkRed)
-                                            .ExtendText(color: ColorRgba.Gold))
-                        .SetSize(20, 20)
+                    ButtonText btn = new ButtonText(new Mafi.Localization.LocStrFormatted(isConnected ? "◎" : "○"))
+                        .Background(ColorRgba.DarkRed)
+                        .Color(ColorRgba.Gold)
+                        .Size(20.px(), 20.px())
                         .OnRightClick(() =>
                         {
                             if (!isConnected)
                             {
                                 // module not found, is not unassignable
-                                builder.AudioDb.GetSharedAudio(builder.Audio.InvalidOp).Play();
+                                uiContext.AudioDb.InvalidOp(true).Play();
                                 return;
                             }
 
-                            foreach (var target in m_controller.SelectedEntity.Modules)
+                            foreach (var target in m_controller.Entity.Modules)
                             {
                                 foreach (var connection in target.InputModules)
                                 {
@@ -241,155 +217,164 @@ namespace ProgramableNetwork
                                 }
                             }
                         })
-                        .OnClick(() => {
-                            if (m_computerView.OutputConnection != null
-                                && m_computerView.OutputConnection.ModuleId == module.Id
-                                && m_computerView.OutputConnection.OutputId == output.Id)
+                        .OnClick(() =>
+                        {
+                            if (m_controller.OutputConnection != null
+                                && m_controller.OutputConnection.ModuleId == module.Id
+                                && m_controller.OutputConnection.OutputId == output.Id)
                             {
-                                m_computerView.OutputConnection = null;
+                                m_controller.OutputConnection = null;
                             }
                             else
                             {
-                                m_computerView.OutputConnection = new ModuleConnector(module.Id, output.Id);
+                                m_controller.OutputConnection = new ModuleConnector(module.Id, output.Id);
                             }
                         })
-                        .SetOnMouseEnterLeaveActions(
-                            () => { m_computerView.m_higlighted = new ModuleConnector(module.Id, output.Id); },
-                            () => { m_computerView.m_higlighted = null; }
-                        )
-                        .AppendTo(inputsPanel)
-                        .ToolTip(m_computerView.m_controller, (output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' '),
-                            offset: Offset.Top(20), attached: true);
+                        .Tooltip(new Mafi.Localization.LocStrFormatted((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' ')));
+                    btn.OnMouseEnterLeave(
+                            () => { m_controller.m_higlighted = new ModuleConnector(module.Id, output.Id); },
+                            () => { m_controller.m_higlighted = null; }
+                        );
+                    inputsPanel.Add(btn);
 
-                    m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
+                    m_controller.m_updaters.Add(new DataUpdater<(ColorRgba text, ColorRgba background), int>(
                         (context) =>
                         {
-                            var baseStyle = builder.Style.Global.GeneralBtn
-                                .Extend(backgroundClr: ColorRgba.DarkRed)
-                                .ExtendText(color: ColorRgba.Gold);
+                            var text = ColorRgba.Gold;
+                            var background = ColorRgba.DarkGreen;
 
-                            if (m_computerView.OutputConnection != null
-                                && m_computerView.OutputConnection.ModuleId == module.Id
-                                && m_computerView.OutputConnection.OutputId == output.Id)
-                                return baseStyle.Extend(
-                                    text: baseStyle.Text.Extend(ColorRgba.Green));
+                            if (m_controller.OutputConnection != null
+                                && m_controller.OutputConnection.ModuleId == module.Id
+                                && m_controller.OutputConnection.OutputId == output.Id)
+                                background = ColorRgba.Green;
 
-                            return baseStyle;
+                            return (text, background);
                         },
-                        (context, style) => btn.SetButtonStyle(style),
+                        (context, style) =>
+                        {
+                            btn.Color(style.text);
+
+                        },
                         (styleA, styleB) => styleA.Equals(styleB),
                         0
                     ));
                 }
             }
 
-            private void AddDisplays(UiBuilder builder, StackContainer displaysPanel, Module module, UpdaterBuilder updater, Action refresh)
+            private void AddDisplays(UiContext uiContext, Row displaysPanel, Module module, Action refresh)
             {
                 var displays = module.Prototype.Displays;
                 for (int i = displays.Count - 1; i >= 0; i--)
                 {
                     var display = displays[i];
 
-                    var text = builder.NewBtnGeneral($"{module.Id}_display_{i}")
-                        .SetSize(20 * display.Width, 20)
-                        .AppendTo(displaysPanel);
+                    var text = new ButtonText(new Mafi.Localization.LocStrFormatted($""))
+                        .Size((20 * display.Width).px(), 20.px());
+                    displaysPanel.Add(text);
 
                     if (display.DefaultText == "[image]")
                     {
-                        ImageDisplay(builder, module, display, text);
+                        displaysPanel.Add(ImageDisplay(uiContext, module, display));
                     }
                     else if (display.DefaultText.StartsWith("[toggle]"))
                     {
-                        ToggleDisplay(builder, module, display, text);
+                        displaysPanel.Add(ToggleDisplay(uiContext, module, display));
                     }
                     else if (display.DefaultText.StartsWith("[led]"))
                     {
-                        ToggleDisplay_LED(builder, module, display, text, click: false);
+                        displaysPanel.Add(ToggleDisplay_LED(uiContext, module, display, click : false));
                     }
                     else
                     {
-                        TextDisplay(builder, module, display, text);
+                        displaysPanel.Add(TextDisplay(uiContext, module, display));
                     }
                 }
             }
 
-            private void TextDisplay(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text)
+            private Button TextDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
-                text.SetButtonStyle(builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White));
-                text.SetText(module.Display[display.Id, display.DefaultText]);
+                var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, display.DefaultText]));
+                text.Color(ColorRgba.White);
+                text.Size((20 * display.Width).px(), 20.px());
 
-                m_computerView.m_updaters.Add(new DataUpdater<
+                m_controller.m_updaters.Add(new DataUpdater<
                         string,
-                        (Module module, Btn text, ModuleConnectorProto display)
+                        (Module module, ButtonText text, ModuleConnectorProto display)
                     >(
                     getter: (c) => c.module.Display[c.display.Id, c.display.DefaultText],
-                    setter: (c, t) => c.text.SetText(t),
+                    setter: (c, t) => c.text.Value(new Mafi.Localization.LocStrFormatted(t)),
                     comparator: string.Equals,
                     context: (module, text, display)
                 ));
+                return text;
             }
 
-            private void ImageDisplay(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text)
+            private Button ImageDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
-                text.SetButtonStyle(builder.Style.Global.ImageBtn);
-                text.SetIcon(module.Display[display.Id, builder.Style.Icons.Empty]);
+                var text = new ButtonIcon(module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png]);
+                text.Color(ColorRgba.White);
+                text.Size((20 * display.Width).px(), 20.px());
 
-                m_computerView.m_updaters.Add(new DataUpdater<
+                m_controller.m_updaters.Add(new DataUpdater<
                         string,
-                        (Module module, Btn text, ModuleConnectorProto display)
+                        (Module module, ButtonIcon text, ModuleConnectorProto display)
                     >(
-                    getter: (c) => c.module.Display[c.display.Id, builder.Style.Icons.Empty],
-                    setter: (c, t) => c.text.SetIcon(t),
+                    getter: (c) => c.module.Display[c.display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png],
+                    setter: (c, t) => c.text.Icon.Value(t),
                     comparator: string.Equals,
                     context: (module, text, display)
                 ));
+                return text;
             }
 
-            private void ToggleDisplay(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text)
+            private Button ToggleDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
                 char separator = display.DefaultText["[toggle]".Length];
                 string[] options = display.DefaultText.Replace($"[toggle]{separator}", "").Split(separator);
 
                 if (options.Length == 1 && options[0].Length == 0)
                 {
-                    ToggleDisplay_LED(builder, module, display, text);
+                    return ToggleDisplay_LED(uiContext, module, display);
                 }
                 else if (options.Length == 1)
                 {
-                    ToggleDisplay_Symbol(builder, module, display, text, options[0]);
+                    return ToggleDisplay_Symbol(uiContext, module, display, options[0]);
                 }
                 else if (options.Length == 2)
                 {
-                    ToggleDisplay_DoubleText(builder, module, display, text, options);
+                    return ToggleDisplay_DoubleText(uiContext, module, display, options);
                 }
                 else
                 {
-                    text.SetButtonStyle(builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White));
-                    text.SetText(module.Display[display.Id, display.DefaultText]);
+                    var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, display.DefaultText]));
+                    text.Color(ColorRgba.White);
+                    text.Size((20 * display.Width).px(), 20.px());
 
-                    m_computerView.m_updaters.Add(new DataUpdater<
+                    m_controller.m_updaters.Add(new DataUpdater<
                             string,
-                            (Module module, Btn text, ModuleConnectorProto display)
+                            (Module module, ButtonText text, ModuleConnectorProto display)
                         >(
                         getter: (c) => c.module.Display[c.display.Id, c.display.DefaultText],
-                        setter: (c, t) => c.text.SetText(t),
+                        setter: (c, t) => c.text.Value(new Mafi.Localization.LocStrFormatted(t)),
                         comparator: string.Equals,
                         context: (module, text, display)
                     ));
+                    return text;
                 }
             }
 
-            private void ToggleDisplay_DoubleText(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text, string[] options)
+            private Button ToggleDisplay_DoubleText(UiContext uiContext, Module module, ModuleConnectorProto display, string[] options)
             {
-                text.SetButtonStyle(builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White));
-                text.SetText(module.Display[display.Id, options[0]]);
+                var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, options[0]]));
+                text.Color(ColorRgba.White);
+                text.Size((20 * display.Width).px(), 20.px());
 
-                m_computerView.m_updaters.Add(new DataUpdater<
+                m_controller.m_updaters.Add(new DataUpdater<
                         string,
-                        (Module module, Btn text, ModuleConnectorProto display)
+                        (Module module, ButtonText text, ModuleConnectorProto display)
                     >(
                     getter: (c) => c.module.Display[display.Id, options[0]],
-                    setter: (c, t) => c.text.SetText(t),
+                    setter: (c, t) => c.text.Value(new Mafi.Localization.LocStrFormatted(t)),
                     comparator: string.Equals,
                     context: (module, text, display)
                 ));
@@ -401,29 +386,31 @@ namespace ProgramableNetwork
                     else
                         module.Display[display.Id] = options[0];
                 });
+                return text;
             }
 
-            private void ToggleDisplay_Symbol(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text, string symbol, bool click = true)
+            private Button ToggleDisplay_Symbol(UiContext uiContext, Module module, ModuleConnectorProto display, string symbol, bool click = true)
             {
-                text.SetText(symbol);
+                ButtonText text = new ButtonText(new Mafi.Localization.LocStrFormatted(symbol));
+                text.Size((20 * display.Width).px(), 20.px());
 
-                BtnStyle defaultStyle = click
-                    ? builder.Style.Global.GeneralBtnActive
-                    : builder.Style.Global.ImageBtn.Extend(border: BorderStyle.DEFAULT);
+                //BtnStyle defaultStyle = click
+                //    ? builder.Style.Global.GeneralBtnActive
+                //    : builder.Style.Global.ImageBtn.Extend(border: BorderStyle.DEFAULT);
 
                 if (module.Display[display.Id, ""].Length > 0)
-                    text.SetButtonStyle(defaultStyle.ExtendText(color: ColorRgba.Green));
+                    text.Color(ColorRgba.Green);
                 else
-                    text.SetButtonStyle(defaultStyle.ExtendText(color: ColorRgba.Red));
+                    text.Color(ColorRgba.Red);
 
-                m_computerView.m_updaters.Add(new DataUpdater<
+                m_controller.m_updaters.Add(new DataUpdater<
                         ColorRgba,
-                        (Module module, Btn text, ModuleConnectorProto display, BtnStyle style)
+                        (Module module, ButtonText text, ModuleConnectorProto display)
                     >(
                     getter: (c) => c.module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red,
-                    setter: (c, t) => c.text.SetButtonStyle(c.style.ExtendText(color: t)),
+                    setter: (c, t) => c.text.Color(t),
                     comparator: (a, b) => a == b,
-                    context: (module, text, display, defaultStyle)
+                    context: (module, text, display)
                 ));
 
                 if (click)
@@ -436,11 +423,12 @@ namespace ProgramableNetwork
                             module.Display[display.Id] = "1";
                     });
                 }
+                return text;
             }
 
-            private void ToggleDisplay_LED(UiBuilder builder, Module module, ModuleConnectorProto display, Btn text, bool click = true)
+            private Button ToggleDisplay_LED(UiContext uiContext, Module module, ModuleConnectorProto display, bool click = true)
             {
-                ToggleDisplay_Symbol(builder, module, display, text, "●", click);
+                return ToggleDisplay_Symbol(uiContext, module, display, "●", click);
             }
         }
 

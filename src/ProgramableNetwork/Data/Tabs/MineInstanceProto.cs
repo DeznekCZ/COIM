@@ -40,6 +40,8 @@ namespace ProgramableNetwork
 
         public IMod Mod { get; }
 
+        public bool IsInitialized => true;
+
         public bool TryGetParam<T>(out T paramValue) where T : class
         {
             paramValue = default;

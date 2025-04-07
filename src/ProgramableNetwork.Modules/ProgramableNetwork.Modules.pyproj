@@ -24,9 +24,13 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(APPDATA)\Captain of Industry\Mods\ProgramableNetwork\Modules\Core\ids.py">
+      <Link>Core\ids.py</Link>
+    </Compile>
     <Compile Include="Core\errors.py" />
     <Compile Include="Core\display.py" />
     <Compile Include="Core\mafi.py" />
+    <Compile Include="Core\template.py" />
     <Compile Include="Custom\clock.py" />
     <Compile Include="Custom\connection_isactive.py" />
     <Compile Include="Core\fields.py" />
@@ -38,6 +42,7 @@
     <Compile Include="Custom\notification.py" />
     <Compile Include="Custom\randomizer.py" />
     <Compile Include="Custom\shift.py" />
+    <Compile Include="Custom\template.py" />
     <Compile Include="Mafi\Base\Ai\__init__.py" />
     <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\__init__.py" />
     <Compile Include="Mafi\Base\Prototypes\Buildings\__init__.py" />
@@ -349,6 +354,7 @@
     <Folder Include="Mafi\Streams\" />
     <Folder Include="Mafi\Utils\" />
     <Folder Include="Mafi\Vornoi\" />
+    <Folder Include="ModuleIds\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Core\categories.py" />

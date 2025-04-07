@@ -46,13 +46,13 @@ namespace ProgramableNetwork.ModuleTester
 
             foreach (var file in files)
             {
-                ModuleRegistrator.Register(registrator, file);
+                ModuleRegistrator.Register(registrator, file, out _);
             }
 
             protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Connection_IsActive", out ModuleProto proto);
 
             EntityManager manager = new EntityManager();
-            EntityContext entityContext = new EntityContext(null, manager, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            EntityContext entityContext = new EntityContext(null, manager, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
             FakeProto fakeProto = new FakeProto(new FakeProto.ID("fake"));
             manager.AddEntity(1, new FakeEntity(new EntityId(1), fakeProto, entityContext));
             Module m = new Module(proto, entityContext, null);
