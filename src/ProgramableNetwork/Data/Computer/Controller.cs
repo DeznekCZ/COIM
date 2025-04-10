@@ -24,7 +24,7 @@ namespace ProgramableNetwork
 {
     [GenerateSerializer(false, null, 0)]
     public class Controller : LayoutEntityBase, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
-        IUnityConsumingEntity, IComputingConsumingEntity, IElectricityConsumingEntity, IMaintainedEntity
+        IUnityConsumingEntity, IComputingConsumingEntity, IElectricityConsumingEntity, IMaintainedEntity, IEntityWithCustomTitle
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 	    {
@@ -95,6 +95,7 @@ namespace ProgramableNetwork
             data.Set<StaticEntityProto.ID>("controller_proto", m_protoId, (str, blob) => blob.WriteString(str.Value));
             data.SetArray<Module>("controller_modules", Modules.ToImmutableArray(), Module.Serialize);
             data.SetArray<Lyst<ModulePlacement>>("controller_rows", Rows.ToImmutableArray(), Lyst<ModulePlacement>.Serialize);
+            data.SetInt("controller_speed", Speed);
         }
 
         public void ApplyConfig(EntityConfigData data)
@@ -128,6 +129,11 @@ namespace ProgramableNetwork
             {
                 this.Rows.Clear();
                 this.Rows.AddRange(newLocation?.AsEnumerable());
+            }
+            var newSpeed = data.GetInt("controller_speed");
+            if (newSpeed != null)
+            {
+                this.Speed = newSpeed.Value;
             }
         }
 
@@ -455,6 +461,12 @@ namespace ProgramableNetwork
             // Copy all outputs to inputs
             foreach (Module module in Modules)
             {
+                foreach (var input in module.Prototype.Inputs)
+                {
+                    module.NumberData.TryRemove("in__" + input.Id, out _);
+                    // module.StringData.TryRemove("in__" + input.Id, out _);
+                }
+
                 foreach (KeyValuePair<string, ModuleConnector> item in module.InputModules.ToArray())
                 {
                     if (cache.TryGetValue(item.Value.ModuleId, out Module connected))

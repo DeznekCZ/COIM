@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace ProgramableNetwork.Python
 {
@@ -166,6 +168,26 @@ namespace ProgramableNetwork.Python
                 context["ModuleStatus"] = typeof(ModuleStatus);
             }
 
+            else if (name == "Core.template")
+            {
+                context["Template"] = typeof(Template);
+            }
+
+            else if (name == "Core.ids")
+            {
+                foreach (var item in exportedItems)
+                {
+                    if (item.value == "*")
+                        throw new PythonParseException(item, "Cannot use * for import of captain of insustry classes");
+
+                    context[item.value] = AssemblyBuilder
+                        .DefineDynamicAssembly(new AssemblyName("ProgramableNetwork"), AssemblyBuilderAccess.ReflectionOnly)
+                        .DefineDynamicModule("Modules")
+                        .DefineType(item.value, TypeAttributes.Public)
+                        .CreateType();
+                }
+            }
+
             else if (name == "Core.mafi")
             {
                 context["fix"] = new Constructor((args) => Expressions.__fix__(args[0].Value), new string[] { "value" });
@@ -181,6 +203,11 @@ namespace ProgramableNetwork.Python
             {
                 foreach (var item in exportedItems)
                 {
+                    if (item.value == "*")
+                    {
+                        throw new PythonParseException(item, "Cannot use * for import of captain of insustry classes");
+                    }
+
                     string fullName = name + "." + item.value;
                     context[item.value] = AppDomain
                         .CurrentDomain

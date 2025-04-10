@@ -63,6 +63,7 @@ namespace ProgramableNetwork
             registrator.RegisterData<DataBands>();
             registrator.RegisterData<Entities>();
             registrator.RegisterData<ControllerNotification>();
+            registrator.RegisterData<ModuleIdsGenerator>();
 
             // Registers all research from this assembly. See ExampleResearchData.cs for examples.
             registrator.RegisterDataWithInterface<IResearchNodesData>();

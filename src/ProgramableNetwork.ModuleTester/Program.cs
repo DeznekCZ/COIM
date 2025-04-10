@@ -46,7 +46,7 @@ namespace ProgramableNetwork.ModuleTester
 
             foreach (var file in files)
             {
-                ModuleRegistrator.Register(registrator, file);
+                ModuleRegistrator.Register(registrator, file, out _);
             }
 
             protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Connection_IsActive", out ModuleProto proto);
