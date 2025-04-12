@@ -10,6 +10,10 @@ class Runtime_Clock_1(Module):
     name = "Control: Clock (1 output)"
     symbol = "CLK"
 
+    inputs = [
+        Input("Reset", "Reset")
+    ]
+
     outputs = [
         Output("clock", "Clock")
     ]
@@ -26,6 +30,11 @@ class Runtime_Clock_1(Module):
     controllers = [ DefaultControllers.Controller ]
 
     def action(self):
+        if self.Input.get_bool("Reset", False):
+            self.Output.set_int("sub_clock", 0)
+            self.Output.set_int("clock", 0)
+            return
+
         sub_clock = self.Output.get_int("sub_clock", 0)
         sub_clock = sub_clock + 1
         update = False
@@ -54,6 +63,11 @@ class Runtime_Clock_2(Module):
     name = "Control: Clock (2 outputs)"
     symbol = "CLOCK"
 
+    inputs = [
+        Input("Pause", "Pause"),
+        Input("Reset", "Reset")
+    ]
+
     outputs = [
         Output("update", "Updated this tick"),
         Output("clock", "Clock")
@@ -70,6 +84,14 @@ class Runtime_Clock_2(Module):
     controllers = [ DefaultControllers.Controller ]
 
     def action(self):
+        if self.Input.get_bool("Reset", False):
+            self.Output.set_int("sub_clock", 0)
+            self.Output.set_int("clock", 0)
+            return
+
+        if self.Input.get_bool("Pause", False):
+            return
+
         sub_clock = self.Output.get_int("sub_clock", 0)
         sub_clock = sub_clock + 1
         update = False
