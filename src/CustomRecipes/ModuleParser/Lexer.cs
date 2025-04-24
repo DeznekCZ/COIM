@@ -476,9 +476,14 @@ namespace CustomRecipes.Python
                     return fstring(decide);
                 case PythonTokens.lparen:
                     // TODO tuple
-                    IExpression expression = ParseExpression(newLineIgnore);
+                    List<IExpression> expressions = new List<IExpression>();
+                    expressions.Add(ParseExpression(newLineIgnore));
+
+                    if (IsNext(PythonTokens.next, out _, newLineIgnore))
+                        expressions.Add(ParseExpression(newLineIgnore));
+
                     RequireNext(PythonTokens.rparen);
-                    return expression;
+                    return new PyTuple(expressions);
                 case PythonTokens.llist:
                     // TODO tuple
                     var listItems = list();

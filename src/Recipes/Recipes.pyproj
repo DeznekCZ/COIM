@@ -184,6 +184,7 @@
     <Compile Include="Recipes\coal_liquification.py" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Core\" />
     <Folder Include="CustomRecipes\" />
     <Folder Include="Mafi\" />
     <Folder Include="Mafi\Base\" />
@@ -341,6 +342,7 @@
     <Folder Include="Mafi\Utils\" />
     <Folder Include="Mafi\Vornoi\" />
     <Folder Include="ModuleIds\" />
+    <Folder Include="Assets\" />
     <Folder Include="Recipes\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />

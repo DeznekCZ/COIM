@@ -114,7 +114,7 @@ namespace CustomRecipes.Python
                 NamedValue[] named = new NamedValue[arguments.Count];
                 for (int i = 0; i < arguments.Count; i++)
                 {
-                    named[i] = arguments[i].name is null
+                    named[i] = string.IsNullOrEmpty(arguments[i].name)
                         ? new NamedValue(constructor.Arguments[i], arguments[i].value)
                         : new NamedValue(arguments[i].name, arguments[i].value);
                 }
@@ -133,7 +133,7 @@ namespace CustomRecipes.Python
                 NamedValue[] named = new NamedValue[arguments.Count];
                 for (int i = 0; i < arguments.Count; i++)
                 {
-                    named[i] = arguments[i].name is null
+                    named[i] = string.IsNullOrEmpty(arguments[i].name)
                         ? new NamedValue(function.Arguments[i], arguments[i].value)
                         : new NamedValue(arguments[i].name, arguments[i].value);
                 }

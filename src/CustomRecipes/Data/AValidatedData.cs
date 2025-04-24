@@ -14,6 +14,7 @@ namespace CustomRecipes
             }
             catch (System.Exception e)
             {
+                Log.Error("CustomExtension: Failed to load custom extension: (edict, recipe, research)");
                 Log.Exception(e);
                 throw e;
             }

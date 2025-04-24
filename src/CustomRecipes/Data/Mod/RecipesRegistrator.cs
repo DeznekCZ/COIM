@@ -11,10 +11,10 @@ namespace CustomRecipes.Data.Mod
     {
         public void RegisterData(ProtoRegistrator registrator)
         {
+            CustomAssetManager.Clear();
+
             DirectoryInfo modules = new DirectoryInfo(typeof(RecipesRegistrator).Assembly.Location + "/../Recipes");
             Log.Info("Location of modules: " + modules.FullName);
-
-            List<Class> allTemplates = new List<Class>();
 
             int failed = 0;
             foreach (FileInfo file in modules.EnumerateFiles())
@@ -35,7 +35,7 @@ namespace CustomRecipes.Data.Mod
 
             if (failed > 0)
             {
-                throw new CheckException("Modules was not loaded, see log: " + failed);
+                throw new CheckException("Modules was not loaded, see log (maybe is wrong order load only): " + failed);
             }
         }
     }

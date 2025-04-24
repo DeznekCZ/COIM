@@ -1,17 +1,25 @@
-﻿using CustomRecipes.Python;
+﻿using CustomRecipes.Data.Mod;
+using CustomRecipes.Python;
 using Mafi;
+using Mafi.Base;
+using Mafi.Collections;
 using Mafi.Collections.ImmutableCollections;
+using Mafi.Core;
 using Mafi.Core.Factory.Machines;
 using Mafi.Core.Factory.Recipes;
 using Mafi.Core.Mods;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Research;
+using Mafi.Core.Terrain.Generation;
 using Mafi.Core.UnlockingTree;
+using Mafi.Unity;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace CustomRecipes.ModuleParser.Registrator
 {
@@ -32,13 +40,94 @@ namespace CustomRecipes.ModuleParser.Registrator
                 ["Duration"] = typeof(Duration),
                 ["Quantity"] = typeof(Quantity),
                 ["Proto"] = typeof(Proto),
+                ["ResearchCostsTpl"] = typeof(ResearchCostsTpl),
                 #endregion
+
+                ["add_texture"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    Texture2D texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, false);
+                    string basePath = typeof(RecipeRegistrator).Assembly.Location;
+                    string assetPath = GetArgument<string>("path").ElseRequiredThrow();
+                    byte[] image = File.ReadAllBytes(Path.Combine(basePath, "..", assetPath));
+                    if (!texture2D.LoadImage(image))
+                    {
+                        throw new ArgumentException($"Could not load an image: {assetPath}");
+                    }
+
+                    if (GetArgument<string>("replace").ElseNotExists(out string replacementAssetPath))
+                        assetPath = replacementAssetPath;
+
+                    CustomAssetManager.Alternations.Add(assetPath, texture2D);
+                    return null;
+                }, new[] { "path", "replace" }),
 
                 #region Build research TODO
                 ["build_research"] = new Constructor((args) =>
                 {
-                    throw new NotImplementedException();
-                }, new[] { "research" }),
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    var builder = registrator.ResearchNodeProtoBuilder.Start(
+                        name: GetArgument<string>("name")
+                                  .ElseRequiredThrow(),
+                        nodeId: GetArgument<ResearchNodeProto.ID>("researchId")
+                                    .When<string>(s => new ResearchNodeProto.ID(s))
+                                    .ElseRequiredThrow());
+
+                    builder.SetCosts(GetArgument<ResearchCostsTpl>("costs")
+                        .When<int>(diff => new ResearchCostsTpl.Builder().SetDifficulty(diff))
+                        .When<List<object>>(list => throw new NotImplementedException())
+                        .ElseDefault(new ResearchCostsTpl.Builder().SetDifficulty(1)));
+
+                    builder.SetGridPosition(
+                            GetArgument<Vector2i>("position")
+                                .When<(int x, int y)>(pt => new Vector2i(pt.x, pt.y))
+                                .ElseDefault(Vector2i.Zero)
+                        );
+
+                    if (GetArgument<List<ResearchNodeProto>>("parents")
+                        .When<List<object>>(o =>
+                        {
+                            List<ResearchNodeProto> protosCollector = new List<ResearchNodeProto>();
+                            foreach (object item in o)
+                            {
+                                if (item is ResearchNodeProto proto)
+                                    protosCollector.Add(proto);
+                                else if (item is ResearchNodeProto.ID id)
+                                    protosCollector.Add(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id));
+                                else if (item is string sid)
+                                    protosCollector.Add(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(sid)));
+                                else
+                                    throw new ProtoBuilderException($"Proto '{item}' was not found.");
+                            }
+                            return protosCollector;
+                        }).ElseNotExists(out var protos))
+                    {
+                        builder.AddParents(protos.ToArray());
+                    }
+
+                    if (GetArgument<string>("icon").ElseNotExists(out string path))
+                    {
+                        builder.AddIcon(Option.None, path);
+                    }
+
+                    return builder.BuildAndAdd();
+                }, new[] { "researchId", "name", "description", "difficulty", "position", "parents" }),
                 #endregion
 
                 #region Define product
@@ -184,10 +273,28 @@ namespace CustomRecipes.ModuleParser.Registrator
                 #region Unlock
                 ["add_unlock_recipe"] = new Constructor((args) =>
                 {
-                    RecipeProto recipe = (RecipeProto)args[1].Value;
-                    MachineProto machine = (MachineProto)args[2].Value;
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
 
-                    ResearchNodeProto research = registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>((ResearchNodeProto.ID)args[0].Value);
+                    RecipeProto recipe = GetArgument<RecipeProto>("recipe")
+                                            .When<RecipeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(id))
+                                            .When<string>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(new RecipeProto.ID(id)))
+                                            .ElseRequiredThrow();
+                    MachineProto machine = GetArgument<MachineProto>("machine")
+                                               .When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
+                                               .When<string>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(new MachineProto.ID(id)))
+                                               .ElseRequiredThrow();
+                    ResearchNodeProto research = GetArgument<ResearchNodeProto>("research")
+                                                    .When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+                                                    .When<string>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
+                                                    .ElseRequiredThrow();
+
                     typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
                                              .SetValue(research, research.Units
                                                                          .AsEnumerable()
@@ -195,6 +302,41 @@ namespace CustomRecipes.ModuleParser.Registrator
                                                                          .ToImmutableArray());
                     return null;
                 }, new[] { "research", "machine", "recipe" }),
+
+                ["add_unlock_machine"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    MachineProto machine = GetArgument<MachineProto>("machine")
+                                               .When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
+                                               .When<string>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(new MachineProto.ID(id)))
+                                               .ElseRequiredThrow();
+
+                    ResearchNodeProto research = GetArgument<ResearchNodeProto>("research")
+                                                    .When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+                                                    .When<string>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
+                                                    .ElseRequiredThrow();
+
+                    typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
+                                             .SetValue(research, research.Units
+                                                                         .AsEnumerable()
+                                                                         .Concat(new IUnlockNodeUnit[] { new ProtoWithIconUnlock(machine, false) })
+                                                                         .ToImmutableArray());
+
+                    typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+                                                 .SetValue(research.Graphics, research.Graphics.Icons
+                                                                                               .AsEnumerable()
+                                                                                               .Concat(new KeyValuePair<Option<Proto>, string>[] { new KeyValuePair<Option<Proto>, string>(machine, machine.IconPath) })
+                                                                                               .ToImmutableArray());
+                    return null;
+                }, new[] { "research", "machine" }),
                 #endregion
 
                 ["recipe_id"] = new Constructor((args) =>
