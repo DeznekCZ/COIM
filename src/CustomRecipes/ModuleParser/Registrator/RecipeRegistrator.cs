@@ -8,6 +8,7 @@ using Mafi.Core;
 using Mafi.Core.Factory.Machines;
 using Mafi.Core.Factory.Recipes;
 using Mafi.Core.Mods;
+using Mafi.Core.Population.Edicts;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Research;
@@ -41,8 +42,16 @@ namespace CustomRecipes.ModuleParser.Registrator
                 ["Quantity"] = typeof(Quantity),
                 ["Proto"] = typeof(Proto),
                 ["ResearchCostsTpl"] = typeof(ResearchCostsTpl),
+                ["Vector3i"] = typeof(Vector3i),
+                ["Vector3f"] = typeof(Vector3f),
+                ["Vector2i"] = typeof(Vector2i),
+                ["Vector2f"] = typeof(Vector2f),
+                ["Prefab"] = typeof(Prefab), //TODO
+                ["Mat"] = typeof(Mat), //TODO
+                ["Tex"] = typeof(Tex), //TODO
                 #endregion
 
+                #region Texture
                 ["add_texture"] = new Constructor((args) =>
                 {
                     AnyArgument<T> GetArgument<T>(string argumentName)
@@ -66,11 +75,155 @@ namespace CustomRecipes.ModuleParser.Registrator
                     if (GetArgument<string>("replace").ElseNotExists(out string replacementAssetPath))
                         assetPath = replacementAssetPath;
 
+                    texture2D.name = assetPath;
                     CustomAssetManager.Alternations.Add(assetPath, texture2D);
-                    return null;
+                    return new Tex { path = assetPath };
                 }, new[] { "path", "replace" }),
+                #endregion
 
-                #region Build research TODO
+                #region Texture_Material
+                ["add_texture_material"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    Tex texture = GetArgument<Tex>("texture")
+                                     .When<string>(pathTex => new Tex { path = pathTex })
+                                     .ElseRequiredThrow();
+
+                    Texture2D texture2D;
+                    if (CustomAssetManager.Alternations.TryGetValue(texture.path, out UnityEngine.Object data))
+                    {
+                        if (data is Texture2D t2d)
+                            texture2D = t2d;
+                        else
+                            throw new ArgumentException($"Given prefab is not a Texture: {texture.path}");
+                    }
+                    else
+                    {
+                        texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, false);
+                        string basePath = typeof(RecipeRegistrator).Assembly.Location;
+                        string assetPath = texture.path;
+                        byte[] image = File.ReadAllBytes(Path.Combine(basePath, "..", assetPath));
+
+                        if (!texture2D.LoadImage(image))
+                            throw new ArgumentException($"Could not load an image: {assetPath}");
+
+                        CustomAssetManager.Alternations.Add(assetPath, texture2D);
+                        texture2D.name = texture.path;
+                    }
+
+                    string path = GetArgument<string>("path").ElseRequiredThrow();
+                    Material material = new Material(Shader.Find("Standard"));
+                    material.CopyPropertiesFromMaterial(new AssetsDb().DefaultMaterial);
+                    material.mainTexture = texture2D;
+                    material.SetTexture(Shader.PropertyToID("_AlbedoTex"), texture2D);
+                    material.color = Color.white;
+                    CustomAssetManager.Alternations.Add(path, material);
+                    return new Mat { path = path };
+                }, new[] { "path", "texture" }),
+                #endregion
+
+                #region Model
+                ["add_prefab_box"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    Texture2D texture = GetArgument<Texture2D>("texture")
+                                           .When<string>(pathTex =>
+                                           {
+                                               if (CustomAssetManager.Alternations.TryGetValue(pathTex, out UnityEngine.Object data))
+                                                   return data is Texture2D t2d ? t2d : throw new ArgumentException($"Given prefab is not a Texture: {pathTex}");
+
+                                               Texture2D texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, false);
+                                               string basePath = typeof(RecipeRegistrator).Assembly.Location;
+                                               string assetPath = pathTex;
+                                               byte[] image = File.ReadAllBytes(Path.Combine(basePath, "..", assetPath));
+                                               if (!texture2D.LoadImage(image))
+                                               {
+                                                   throw new ArgumentException($"Could not load an image: {assetPath}");
+                                               }
+                                               CustomAssetManager.Alternations.Add(assetPath, texture2D);
+                                               return texture2D;
+                                           })
+                                           .ElseRequiredThrow();
+
+                    string path = GetArgument<string>("path").ElseRequiredThrow();
+                    GameObject prefab = new GameObject();
+                    prefab.SetActive(true);
+                    prefab.name = path;
+
+                    MeshFilter meshFilter = prefab.AddComponent<MeshFilter>();
+                    Mesh mesh = new Mesh();
+                    float x = GetArgument<float>("width").ElseDefault(0.5f);
+                    float y = GetArgument<float>("height").ElseDefault(0.2f);
+                    float z = GetArgument<float>("depth").ElseDefault(0.5f);
+                    mesh.vertices = new[]
+                    {
+                        new Vector3(-x, 0, -z),
+                        new Vector3(x, 0, z),
+                        new Vector3(x, 0, -z),
+                        new Vector3(-x, 0, z),
+                        new Vector3(-x, y, -z),
+                        new Vector3(x, y, z),
+                        new Vector3(x, y, -z),
+                        new Vector3(-x, y, z),
+                    };
+                    mesh.triangles = new[]
+                    {
+                        // Front face
+                        0, 2, 1,
+                        0, 3, 2,
+                        // Back face
+                        4, 5, 6,
+                        4, 6, 7,
+                        // Left face
+                        0, 7, 3,
+                        0, 4, 7,
+                        // Right face
+                        1, 2, 6,
+                        1, 6, 5,
+                        // Top face
+                        3, 7, 6,
+                        3, 6, 2,
+                        // Bottom face
+                        0, 1, 5,
+                        0, 5, 4
+                    };
+                    mesh.uv = new[]
+                    {
+                        new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
+                        new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1)
+                    };
+                    mesh.RecalculateNormals();
+                    mesh.RecalculateBounds();
+                    meshFilter.mesh = mesh;
+
+                    MeshRenderer meshRenderer = prefab.AddComponent<MeshRenderer>();
+                    meshRenderer.material = new Material(Shader.Find("Standard"));
+                    meshRenderer.material.mainTexture = texture;
+
+                    CustomAssetManager.Alternations.Add(path, prefab);
+                    CustomAssetManager.Alternations.Add(path + "__mesh", meshFilter.mesh);
+                    CustomAssetManager.Alternations.Add(path + "__material", meshRenderer.material);
+                    return new Prefab() { path = path };
+                }, new[] { "path", "texture" }),
+                #endregion
+
+                #region Build research
                 ["build_research"] = new Constructor((args) =>
                 {
                     AnyArgument<T> GetArgument<T>(string argumentName)
@@ -130,7 +283,7 @@ namespace CustomRecipes.ModuleParser.Registrator
                 }, new[] { "researchId", "name", "description", "difficulty", "position", "parents" }),
                 #endregion
 
-                #region Define product
+                #region Define product reference for recipe creation
                 ["Product"] = new Constructor((args) =>
                 {
                     AnyArgument<T> GetArgument<T>(string argumentName)
@@ -160,18 +313,6 @@ namespace CustomRecipes.ModuleParser.Registrator
                 #region Build recipe
                 ["build_recipe"] = new Constructor((args) =>
                 {
-                    string[] positional = new string[]
-                    {
-                        "recipeId",
-                        "name",
-                        "description",
-                        "machine",
-                        "research",
-                        "duration",
-                        "ingredients",
-                        "products"
-                    };
-
                     AnyArgument<T> GetArgument<T>(string argumentName)
                     {
                         IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
@@ -188,7 +329,7 @@ namespace CustomRecipes.ModuleParser.Registrator
                     RecipeProtoBuilder.State builder = registrator.RecipeProtoBuilder
                         .Start(
                             name: GetArgument<string>("name").ElseRequiredThrow(),
-                            recipeId: 
+                            recipeId:
                                 GetArgument<RecipeProto.ID>("recipeId")
                                     .When<string>(v => new RecipeProto.ID(v))
                                     .ElseRequiredThrow(),
@@ -270,6 +411,61 @@ namespace CustomRecipes.ModuleParser.Registrator
                 }),
                 #endregion
 
+                #region Build edict
+                ["build_edict"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+
+                    Proto.ID edictId = GetArgument<EdictProto.ID>("edictId")
+                                    .When<string>(v => new EdictProto.ID(v))
+                                    .ElseRequiredThrow();
+                    return registrator.PrototypesDb.Add(new EdictProto(
+                        id: edictId,
+                        strings: Proto.CreateStr(
+                            edictId,
+                            name: GetArgument<string>("name").ElseRequiredThrow(),
+                            descShort: GetArgument<string>("description").ElseDefault("")
+                        ),
+                        category: GetArgument<EdictCategoryProto>("category")
+                            .When<EdictCategoryProto.ID>(id => registrator.PrototypesDb.GetOrThrow<EdictCategoryProto>(id))
+                            .When<string>(id => registrator.PrototypesDb.GetOrThrow<EdictCategoryProto>(new EdictCategoryProto.ID(id)))
+                            .ElseRequiredThrow(),
+                        monthlyUpointsCost: GetArgument<Upoints>("cost")
+                            .When<int>(i => i.Upoints())
+                            .ElseDefault(0.3.Upoints()),
+                        edictImplementation: GetArgument<Type>("implementation").ElseRequiredThrow(),
+                        graphics: new EdictProto.Gfx(GetArgument<Tex>("icon")
+                                                         .When<string>(s => new Tex() { path = s })
+                                                         .ElseRequiredThrow().path),
+                        isGeneratingUnity: GetArgument<bool?>("isGeneratingUnity").ElseDefault(null),
+                        previousTier: GetArgument<Option<EdictProto>>("previousTier")
+                            .When<EdictProto>(Option.Some)
+                            .When<EdictProto.ID>(id => registrator.PrototypesDb.GetOrThrow<EdictProto>(id))
+                            .When<string>(id => registrator.PrototypesDb.GetOrThrow<EdictProto>(new EdictProto.ID(id)))
+                            .ElseDefault(Option.None)
+                    ));
+                }, new string[]
+                {
+                    "edictId",
+                    "name",
+                    "description",
+                    "category",
+                    "icon",
+                    "implementation",
+                    "cost",
+                    "isGeneratingUnity",
+                    "previousTier",
+                }),
+                #endregion
+
                 #region Unlock
                 ["add_unlock_recipe"] = new Constructor((args) =>
                 {
@@ -302,6 +498,34 @@ namespace CustomRecipes.ModuleParser.Registrator
                                                                          .ToImmutableArray());
                     return null;
                 }, new[] { "research", "machine", "recipe" }),
+
+                ["add_unlock_product"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    ProductProto product = GetArgument<ProductProto>("product")
+                                              .When<ProductProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ProductProto>(id))
+                                              .When<string>(id => registrator.PrototypesDb.GetOrThrow<ProductProto>(new ProductProto.ID(id)))
+                                              .ElseRequiredThrow();
+                    ResearchNodeProto research = GetArgument<ResearchNodeProto>("research")
+                                                    .When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+                                                    .When<string>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
+                                                    .ElseRequiredThrow();
+
+                    typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
+                                             .SetValue(research, research.Units
+                                                                         .AsEnumerable()
+                                                                         .Concat(new IUnlockNodeUnit[] { new ProductUnlock(product, false) })
+                                                                         .ToImmutableArray());
+                    return null;
+                }, new[] { "research", "product" }),
 
                 ["add_unlock_machine"] = new Constructor((args) =>
                 {
@@ -339,7 +563,8 @@ namespace CustomRecipes.ModuleParser.Registrator
                 }, new[] { "research", "machine" }),
                 #endregion
 
-                ["recipe_id"] = new Constructor((args) =>
+                #region Build product
+                ["build_product_loose"] = new Constructor((args) =>
                 {
                     AnyArgument<T> GetArgument<T>(string argumentName)
                     {
@@ -350,11 +575,86 @@ namespace CustomRecipes.ModuleParser.Registrator
                             return new AnyArgument<T>(argumentName, arg.Value);
                     }
 
-                    return GetArgument<RecipeProto.ID>("recipeId")
-                               .When<RecipeProto>(r => r.Id)
-                               .When<string>(id => new RecipeProto.ID(id))
-                               .ElseRequiredThrow();
-                }, new[] { "recipeId" })
+                    var id = GetArgument<ProductProto.ID>("productId")
+                           .When<string>(ids => new ProductProto.ID(ids))
+                           .ElseRequiredThrow();
+                    var name = GetArgument<string>("name").ElseRequiredThrow();
+                    var icon = GetArgument<string>("icon").ElseRequiredThrow();
+                    var material = GetArgument<Mat>("material").ElseRequiredThrow();
+                    var desc = GetArgument<string>("description").ElseDefault("");
+                    var isDumped = GetArgument<bool>("isDumped").ElseDefault(false);
+                    var isStorable = GetArgument<bool>("isStorable").ElseDefault(false);
+                    var isRecyclable = GetArgument<bool>("isRecyclable").ElseDefault(false);
+                    var isWaste = GetArgument<bool>("isWaste").ElseDefault(false);
+                    var isRough = GetArgument<bool>("isRough").ElseDefault(false);
+                    var color = GetArgument<ColorRgba>("color")
+                            .When<(int r, int g, int b)>(t => new ColorRgba((byte)t.r, (byte)t.g, (byte)t.b))
+                            .ElseRequiredThrow();
+
+                    var product = new LooseProductProto(
+                        id: id,
+                        strings: Proto.CreateStr(id, name, desc),
+                        graphics: new LooseProductProto.Gfx(
+                            prefabPath: isRough ? "Assets/Base/Transports/ConveyorLoose/PileRough.prefab" : "Assets/Base/Transports/ConveyorLoose/PileSmooth.prefab",
+                            pileMaterialAssetPath: /*Mafi.Base.Assets.Base.Products.Loose.Coal_mat*/ material.path,
+                            useRoughPileMeshes: isRough,
+                            resourcesVizColor: color,
+                            customIconPath: icon
+                        ),
+                        isDumpedOnTerrainByDefault: isDumped,
+                        isStorable: isStorable,
+                        isRecyclable: isRecyclable,
+                        isWaste: isWaste
+                    );
+                    registrator.PrototypesDb.Add(product, GetArgument<bool>("isLocked").ElseDefault(false));
+                    return null;
+                }, new[] { "productId", "name", "description", "icon", "color", "isDumped", "isStorable", "isRecyclable", "isWaste", "isRough", "isLocked" }),
+
+                ["build_product_unit"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    var id = GetArgument<ProductProto.ID>("productId")
+                           .When<string>(ids => new ProductProto.ID(ids))
+                           .ElseRequiredThrow();
+                    var name = GetArgument<string>("name").ElseRequiredThrow();
+                    var icon = GetArgument<string>("icon").ElseRequiredThrow();
+                    var prefab = GetArgument<string>("prefab")
+                                    .When<Prefab>(p => p.path)
+                                    .ElseRequiredThrow();
+                    var desc = GetArgument<string>("description").ElseDefault("");
+                    var maxTransport = GetArgument<Quantity>("maxTransport")
+                                          .When<int>(i => new Quantity(i))
+                                          .ElseDefault(new Quantity(3));
+                    var packing = GetArgument<CountableProductStackingMode>("packingMode").ElseDefault(CountableProductStackingMode.Auto);
+                    var allowPackingNoise = GetArgument<bool>("allowPackingNoise").ElseDefault(false);
+                    var isStorable = GetArgument<bool>("isStorable").ElseDefault(false);
+                    var isWaste = GetArgument<bool>("isWaste").ElseDefault(false);
+
+                    var product = new CountableProductProto(
+                        id: id,
+                        strings: Proto.CreateStr(id, name, desc),
+                        maxQuantityPerTransportedProduct: maxTransport,
+                        isStorable: isStorable,
+                        graphics: new CountableProductProto.Gfx(
+                            prefabPath: prefab,
+                            customIconPath: icon,
+                            packingMode: packing,
+                            allowPackingNoise: allowPackingNoise
+                        ),
+                        isWaste: isWaste
+                    );
+                    registrator.PrototypesDb.Add(product, GetArgument<bool>("isLocked").ElseDefault(false));
+                    return null;
+                }, new[] { "productId", "name", "icon", "prefab", "maxTransport", "packingMode", "allowPackingNoise", "description", "isStorable", "isWaste", "isLocked" })
+                #endregion
             };
 
             foreach (IStatement statement in block.statements)

@@ -13,7 +13,7 @@ namespace CustomRecipes.Python
         //lang=regex
         private const string paren = @"(?<lparen>\()|(?<rparen>\))|(?<llist>\[)|(?<rlist>\])|(?<ldict>{)|(?<rdict>})";
         //lang=regex
-        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre>>=)|(?<shiftl><<)|(?<shiftr>>>)|(?<lr><)|(?<gr>>)|(?<isp>is)|(?<not>not)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
+        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre>>=)|(?<shiftl><<)|(?<shiftr>>>)|(?<lr><)|(?<gr>>)|(?<isp>is\s)|(?<not>not\s)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
         //lang=regex
         private const string oper = @"(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>//)|(?<div>/)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<invert>~)|(?<semicolon>;)";
         //lang=regex

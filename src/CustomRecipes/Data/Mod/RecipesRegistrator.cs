@@ -31,8 +31,6 @@ namespace CustomRecipes.Data.Mod
                 }
             }
 
-            // TOTO register technologies later
-
             if (failed > 0)
             {
                 throw new CheckException("Modules was not loaded, see log (maybe is wrong order load only): " + failed);

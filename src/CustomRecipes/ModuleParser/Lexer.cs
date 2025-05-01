@@ -479,7 +479,7 @@ namespace CustomRecipes.Python
                     List<IExpression> expressions = new List<IExpression>();
                     expressions.Add(ParseExpression(newLineIgnore));
 
-                    if (IsNext(PythonTokens.next, out _, newLineIgnore))
+                    while (IsNext(PythonTokens.next, out _, newLineIgnore))
                         expressions.Add(ParseExpression(newLineIgnore));
 
                     RequireNext(PythonTokens.rparen);
@@ -492,7 +492,7 @@ namespace CustomRecipes.Python
                     return new ListExpression(listItems);
                 default:
                     Revert(decide);
-                    throw new PythonParseException(decide, $"unexpected or not implemented atom token");
+                    throw new PythonParseException(decide, $"unexpected or not implemented atom token {decide}");
             }
         }
 

@@ -2,11 +2,11 @@
 ## ACT AS BUILD IN FUNCTIONS
 ## when is not included by block, automatically import them all
 
-from Mafi import Duration, Quantity, Vector2i
+from Mafi import ColorRgba, Duration, Quantity, Vector2f, Vector2i, Vector3f, Vector3i
 from Mafi.Core.Factory.Recipes import RecipeProto
 from Mafi.Core.Factory.Machines import MachineProto
 from Mafi.Core.Research import ResearchCostsTpl, ResearchNodeProto
-from Mafi.Core.Products import ProductProto
+from Mafi.Core.Products import LooseProductProto, ProductProto
 from Mafi.Core.Entities.Static import StaticEntityProto
 from Mafi.Core.Entities.Dynamic import DynamicEntityProto
 
@@ -27,17 +27,109 @@ class Product:
         self.quantity = quantity
         self.port = port or "*"
 
+class Model:
+    def __init__(
+        self,
+        path: str,
+        vertices: list[Vector3f | (float, float, float)], # type: ignore
+        texcoords: list[Vector2f | (float, float)], # type: ignore
+        triangles: list[Vector3i | (int, int, int)] # type: ignore
+    ):
+        self.path = path
+
+class Prefab:
+    from CustomRecipes import Prefab
+
+    def __init__(
+        self,
+        path: str,
+        position: Vector3f | (float, float, float), # type: ignore
+        rotation: Vector3f | (float, float, float), # type: ignore
+        scale: Vector3f | (float, float, float), # type: ignore
+        children: list[Prefab | Model] = []
+    ):
+        self.path = path
+
+class Mat:
+    def __init__(
+        self,
+        path: str
+    ):
+        self.path = path
+
+class Tex:
+    def __init__(
+        self,
+        path: str
+    ):
+        self.path = path
+
 def recipe_id(recipeId: str | RecipeProto) -> RecipeProto.ID:
     """ create recipe id from text value or from RecipeProto """
     return RecipeProto.ID(recipeId);
 
-def add_texture(path: str, replace: str = None) -> None:
+def add_texture(path: str, replace: str = None) -> Tex:
     """
     Parameters:
         icon: path within mod, 
         replace: path of icon to be replaced with the modification,
             when used, the path within assets will be linked by replace value
     """
+    pass
+
+def add_prefab_box(
+        path: str,
+        texture: str = None
+    ) -> Prefab:
+    """
+    Parameters:
+        icon: path within mod, 
+        replace: path of icon to be replaced with the modification,
+            when used, the path within assets will be linked by replace value
+    """
+    pass
+
+def add_texture_material(
+        path: str,
+        texture: str = None
+        # TODO add additional settings
+        # like normal map, color, ...
+    ) -> Mat:
+    """
+    Parameters:
+        icon: path within mod, 
+        replace: path of icon to be replaced with the modification,
+            when used, the path within assets will be linked by replace value
+    """
+    pass
+
+def build_product_loose(
+        productId: ProductProto.ID | str,
+        name: str,
+        icon: str,
+        color: ColorRgba | (int, int, int), # type: ignore
+        material: Mat | str,
+        description: str = "",
+        isDumped = False,
+        isStorable = False,
+        isRecyclable = False,
+        isWaste = False,
+        isRough = False,
+        isLocked = False
+    ) -> LooseProductProto:
+    pass
+
+def build_product_unit(
+        productId: ProductProto.ID | str,
+        name: str,
+        icon: str,
+        prefab: Prefab | str,
+        maxTransport = Quantity(3),
+        description: str = "",
+        isStorable = False,
+        isWaste = False,
+        isLocked = False
+    ) -> LooseProductProto:
     pass
 
 def build_recipe(
@@ -101,5 +193,12 @@ def add_unlock_machine(
         research: ResearchNodeProto | ResearchNodeProto.ID | str,
         machine: MachineProto | MachineProto.ID | str
     ):
-    """ Adds recipe to existing research """
+    """ Adds machine to existing research """
+    pass
+
+def add_unlock_product(
+        research: ResearchNodeProto | ResearchNodeProto.ID | str,
+        product: ProductProto | ProductProto.ID | str
+    ):
+    """ Adds product to existing research """
     pass

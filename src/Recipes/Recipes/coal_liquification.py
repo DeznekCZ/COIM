@@ -1,9 +1,30 @@
 from Mafi import Duration, Quantity, Vector2i
 from Mafi.Base import Assets, Ids
 #from Mafi.Core.Research import TechnologyProto
-from CustomRecipes import add_unlock_recipe, add_unlock_machine, build_recipe, build_research, add_texture, Product
+from CustomRecipes import Prefab, add_prefab_box, add_texture_material, add_unlock_recipe, add_unlock_machine, build_product_loose, build_product_unit, add_unlock_product, build_recipe, build_research, add_texture, Product
 
-add_texture("Assets/Container.png", Assets.Base.Products.Icons.Coal_svg)
+#add_texture("Assets/Container.png", Assets.Base.Products.Icons.Coal_svg)
+texture = add_texture("Assets/Container.png")
+
+build_product_loose(
+    productId = "Product_CoalCoke",
+    name = "Coke",
+    icon = "Assets/Container.png",
+    material = add_texture_material(path = "Assets/Container.mat", texture = texture),
+    isStorable = True,
+    isLocked = True,
+    isRough = True,
+    color = (0, 0, 0)
+)
+
+build_product_unit(
+    productId = "Product_CoalBlock",
+    name = "Coal block",
+    icon = "Assets/Container.png",
+    prefab = add_prefab_box("Assets/Container_Coal.prefab", "Assets/Container.png"),
+    isStorable = True,
+    isLocked = True
+)
 
 ## Simple testing research
 research = build_research(
@@ -26,6 +47,8 @@ add_unlock_machine(research, Ids.Machines.Flare)
 add_unlock_machine(research, Ids.Machines.AirSeparator)
 add_unlock_machine(research, Ids.Machines.HydroCrackerT1)
 add_unlock_machine(research, Ids.Machines.BoilerGas)
+add_unlock_product(research, "Product_CoalCoke")
+add_unlock_product(research, "Product_CoalBlock")
 
 ## Simple testing recipe
 recipe = build_recipe(
