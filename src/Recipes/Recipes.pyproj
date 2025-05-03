@@ -184,6 +184,8 @@
     <Compile Include="Recipes\coal_liquification.py" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Assets\Products\" />
+    <Folder Include="Assets\Products\Icons\" />
     <Folder Include="Core\" />
     <Folder Include="CustomRecipes\" />
     <Folder Include="Mafi\" />
@@ -344,6 +346,9 @@
     <Folder Include="ModuleIds\" />
     <Folder Include="Assets\" />
     <Folder Include="Recipes\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\Products\Icons\CoalVapor.png" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

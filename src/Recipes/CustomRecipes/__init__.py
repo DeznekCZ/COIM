@@ -114,8 +114,7 @@ def build_product_loose(
         isStorable = False,
         isRecyclable = False,
         isWaste = False,
-        isRough = False,
-        isLocked = False
+        isRough = False
     ) -> LooseProductProto:
     pass
 
@@ -127,8 +126,21 @@ def build_product_unit(
         maxTransport = Quantity(3),
         description: str = "",
         isStorable = False,
-        isWaste = False,
-        isLocked = False
+        isWaste = False
+    ) -> LooseProductProto:
+    pass
+
+def build_product_fluid(
+        productId: ProductProto.ID | str,
+        name: str,
+        icon: str,
+        color: ColorRgba | (int, int, int) = None, # type: ignore
+        transportColor: ColorRgba | (int, int, int) = None, # type: ignore
+        transportAccentColor: ColorRgba | (int, int, int) = None, # type: ignore
+        canBeDiscarded = True,
+        description: str = "",
+        isStorable = False,
+        isWaste = False
     ) -> LooseProductProto:
     pass
 
@@ -136,7 +148,7 @@ def build_recipe(
         recipeId: RecipeProto.ID | str,
         name: str,
         description: str,
-        machine = MachineProto.ID | MachineProto | str,
+        machine: MachineProto.ID | MachineProto | str,
         research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
         duration: Duration | None = Duration(60),
         ingredients: list[Product] | None = [],
@@ -154,6 +166,29 @@ def build_recipe(
             in case is not define in eather case, it will be locked in game
         duration: default - 60 seconds
             may be redefined by Duration.FromSec(int) or by Duration.FromMin(int)
+        ingredients: list - none, empty or at least one Product in case products are empty
+        products: list - none, empty or at least one Product in case ingredients are empty
+    """
+    pass
+
+def edit_recipe(
+        recipe: RecipeProto | RecipeProto.ID | str,
+        duration: Duration | None = Duration(60),
+        ingredients: list[Product] | None = [],
+        products: list[Product] | None = [],
+        machine: MachineProto.ID | MachineProto | str = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None
+    ) -> RecipeProto:
+    """
+    Parameters:
+        recipe: required - recipe unique identifier
+        duration: default - 60 seconds
+            may be redefined by Duration.FromSec(int) or by Duration.FromMin(int)
+        machine: optional - machine to add the recipe (required for research or addition of recipe to other machine, but it may cause issues with recipe outputs)
+        research: optional - default research (usually already existing)
+            research definition is optional, it may be later added by
+            add_unlock(researchId, machineId, build_recipe(Recipe_Class))
+            in case is not define in eather case, it will be locked in game
         ingredients: list - none, empty or at least one Product in case products are empty
         products: list - none, empty or at least one Product in case ingredients are empty
     """

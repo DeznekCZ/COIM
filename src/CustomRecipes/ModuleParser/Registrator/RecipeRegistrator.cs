@@ -274,9 +274,11 @@ namespace CustomRecipes.ModuleParser.Registrator
                         builder.AddParents(protos.ToArray());
                     }
 
-                    if (GetArgument<string>("icon").ElseNotExists(out string path))
+                    if (GetArgument<Tex>("icon")
+                        .When<string>(s => new Tex { path = s })
+                        .ElseNotExists(out Tex path))
                     {
-                        builder.AddIcon(Option.None, path);
+                        builder.AddIcon(Option.None, path.path);
                     }
 
                     return builder.BuildAndAdd();
@@ -382,7 +384,7 @@ namespace CustomRecipes.ModuleParser.Registrator
                                     .ToArray(); // invoke ling actions
                     }
 
-                    builder.SetDuration(GetArgument<Duration>("duration").ElseDefault(Duration.FromSec(60)));
+                    builder.SetDuration(GetArgument<Duration>("duration").When<int>(Duration.FromSec).ElseDefault(Duration.FromSec(60)));
 
                     RecipeProto recipe = builder.BuildAndAdd();
                     if (GetArgument<ResearchNodeProto>("research")
@@ -403,6 +405,104 @@ namespace CustomRecipes.ModuleParser.Registrator
                     "recipeId",
                     "name",
                     "description",
+                    "machine",
+                    "research",
+                    "duration",
+                    "ingredients",
+                    "products"
+                }),
+                #endregion
+                
+                #region Edit recipe
+                ["edit_recipe"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    RecipeProto recipe = GetArgument<RecipeProto>("recipe")
+                                               .When<RecipeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(id))
+                                               .When<string>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(new RecipeProto.ID(id)))
+                                               .ElseRequiredThrow();
+
+                    if (GetArgument<List<object>>("ingredients").ElseNotExists(out var ingredientsList))
+                    {
+                        ingredientsList.Select(e => (Product)e)
+                                       .Call(e =>
+                                       {
+                                           RecipeInput recipeInput = recipe.AllInputs
+                                               .AsEnumerable()
+                                               .Where(a => a.Product.Id == e.product.Id)
+                                               .FirstOrDefault();
+
+                                           if (recipeInput == null)
+                                               throw new ArgumentException("Recipe has no ingredient with id: " + e.product.Id.Value);
+
+                                           typeof(RecipeInput)
+                                               .GetField("Quantity", BindingFlags.Public | BindingFlags.Instance)
+                                               .SetValue(recipeInput, e.quantity);
+                                       })
+                                       .ToArray(); // invoke ling actions
+                    }
+
+                    if (GetArgument<List<object>>("products").ElseNotExists(out var productsList))
+                    {
+                        productsList.Select(e => (Product)e)
+                                    .Call(e =>
+                                    {
+                                        RecipeOutput recipeOutput = recipe.AllOutputs
+                                            .AsEnumerable()
+                                            .Where(a => a.Product.Id == e.product.Id)
+                                            .FirstOrDefault();
+
+                                        if (recipeOutput == null)
+                                            throw new ArgumentException("Recipe has no produc with id: " + e.product.Id.Value);
+
+                                        typeof(RecipeOutput)
+                                            .GetField("Quantity", BindingFlags.Public | BindingFlags.Instance)
+                                            .SetValue(recipeOutput, e.quantity);
+                                    })
+                                    .ToArray(); // invoke ling actions
+                    }
+
+                    if (GetArgument<Duration>("duration")
+                        .When<int>(i => Duration.FromSec(i))
+                        .ElseNotExists(out Duration duration))
+                    {
+                        typeof(RecipeProto)
+                            .GetField("<Duration>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+                            .SetValue(recipe, duration);
+                    }
+
+                    if (GetArgument<ResearchNodeProto>("research")
+                        .When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+                        .When<string>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
+                        .ElseNotExists(out ResearchNodeProto research))
+                    {
+                        MachineProto machine = GetArgument<MachineProto>("machine")
+                                                   .When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
+                                                   .When<string>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(new MachineProto.ID(id)))
+                                                   .ElseRequiredThrow();
+
+                        if (!machine.Recipes.Any(r => r.Id == recipe.Id))
+                            machine.AddRecipe(recipe);
+
+                        typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
+                                                 .SetValue(research, research.Units
+                                                                             .AsEnumerable()
+                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false) })
+                                                                             .ToImmutableArray());
+                    }
+
+                    return recipe;
+                }, new string[]
+                {
+                    "recipe",
                     "machine",
                     "research",
                     "duration",
@@ -579,8 +679,11 @@ namespace CustomRecipes.ModuleParser.Registrator
                            .When<string>(ids => new ProductProto.ID(ids))
                            .ElseRequiredThrow();
                     var name = GetArgument<string>("name").ElseRequiredThrow();
-                    var icon = GetArgument<string>("icon").ElseRequiredThrow();
-                    var material = GetArgument<Mat>("material").ElseRequiredThrow();
+                    var icon = GetArgument<Tex>("icon")
+                        .When<string>(s => new Tex { path = s })
+                        .ElseRequiredThrow()
+                        .path;
+                    var material = GetArgument<Mat>("material").When<string>(s => new Mat { path = s }).ElseRequiredThrow();
                     var desc = GetArgument<string>("description").ElseDefault("");
                     var isDumped = GetArgument<bool>("isDumped").ElseDefault(false);
                     var isStorable = GetArgument<bool>("isStorable").ElseDefault(false);
@@ -607,7 +710,7 @@ namespace CustomRecipes.ModuleParser.Registrator
                         isWaste: isWaste
                     );
                     registrator.PrototypesDb.Add(product, GetArgument<bool>("isLocked").ElseDefault(false));
-                    return null;
+                    return product;
                 }, new[] { "productId", "name", "description", "icon", "color", "isDumped", "isStorable", "isRecyclable", "isWaste", "isRough", "isLocked" }),
 
                 ["build_product_unit"] = new Constructor((args) =>
@@ -625,7 +728,10 @@ namespace CustomRecipes.ModuleParser.Registrator
                            .When<string>(ids => new ProductProto.ID(ids))
                            .ElseRequiredThrow();
                     var name = GetArgument<string>("name").ElseRequiredThrow();
-                    var icon = GetArgument<string>("icon").ElseRequiredThrow();
+                    var icon = GetArgument<Tex>("icon")
+                        .When<string>(s => new Tex { path = s })
+                        .ElseRequiredThrow()
+                        .path;
                     var prefab = GetArgument<string>("prefab")
                                     .When<Prefab>(p => p.path)
                                     .ElseRequiredThrow();
@@ -652,8 +758,59 @@ namespace CustomRecipes.ModuleParser.Registrator
                         isWaste: isWaste
                     );
                     registrator.PrototypesDb.Add(product, GetArgument<bool>("isLocked").ElseDefault(false));
-                    return null;
-                }, new[] { "productId", "name", "icon", "prefab", "maxTransport", "packingMode", "allowPackingNoise", "description", "isStorable", "isWaste", "isLocked" })
+                    return product;
+                }, new[] { "productId", "name", "icon", "prefab", "maxTransport", "packingMode", "allowPackingNoise", "description", "isStorable", "isWaste", "isLocked" }),
+
+                ["build_product_fluid"] = new Constructor((args) =>
+                {
+                    AnyArgument<T> GetArgument<T>(string argumentName)
+                    {
+                        IArgumentValue arg = args.Where(a => a.Name == argumentName).FirstOrDefault();
+                        if (arg is null)
+                            return new AnyArgument<T>(argumentName, default, empty: true);
+                        else
+                            return new AnyArgument<T>(argumentName, arg.Value);
+                    }
+
+                    var id = GetArgument<ProductProto.ID>("productId")
+                           .When<string>(ids => new ProductProto.ID(ids))
+                           .ElseRequiredThrow();
+                    var name = GetArgument<string>("name").ElseRequiredThrow();
+                    var icon = GetArgument<Tex>("icon")
+                        .When<string>(s => new Tex { path = s })
+                        .ElseRequiredThrow()
+                        .path;
+                    var desc = GetArgument<string>("description").ElseDefault("");
+                    var maxTransport = GetArgument<Quantity>("maxTransport")
+                                          .When<int>(i => new Quantity(i))
+                                          .ElseDefault(new Quantity(3));
+                    var packing = GetArgument<CountableProductStackingMode>("packingMode").ElseDefault(CountableProductStackingMode.Auto);
+                    var allowPackingNoise = GetArgument<bool>("allowPackingNoise").ElseDefault(false);
+                    var isStorable = GetArgument<bool>("isStorable").ElseDefault(false);
+                    var isWaste = GetArgument<bool>("isWaste").ElseDefault(false);
+                    var canBeDiscarded = GetArgument<bool>("canBeDiscarded").ElseDefault(true);
+
+                    var color = GetArgument<ColorRgba>("color").ElseDefault(default);
+                    var transportColor = GetArgument<ColorRgba>("transportColor").ElseDefault(default);
+                    var transportAccentColor = GetArgument<ColorRgba>("transportAccentColor").ElseDefault(default);
+
+                    var product = new FluidProductProto(
+                        id: id,
+                        strings: Proto.CreateStr(id, name, desc),
+                        isStorable: isStorable,
+                        canBeDiscarded: canBeDiscarded,
+                        graphics: new FluidProductProto.Gfx(
+                            prefabPath: Option.None,
+                            customIconPath: icon,
+                            color: color,
+                            transportColor: transportColor,
+                            transportAccentColor: transportAccentColor
+                        ),
+                        isWaste: isWaste
+                    );
+                    registrator.PrototypesDb.Add(product, GetArgument<bool>("isLocked").ElseDefault(false));
+                    return product;
+                }, new[] { "productId", "name", "icon", "canBeDiscarded", "packingMode", "allowPackingNoise", "description", "isStorable", "isWaste", "isLocked", "color", "transportColor", "transportAccentColor" })
                 #endregion
             };
 
