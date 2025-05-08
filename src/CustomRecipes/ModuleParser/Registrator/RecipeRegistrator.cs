@@ -41,7 +41,6 @@ namespace CustomRecipes.ModuleParser.Registrator
                 ["Duration"] = typeof(Duration),
                 ["Quantity"] = typeof(Quantity),
                 ["Proto"] = typeof(Proto),
-                ["ResearchCostsTpl"] = typeof(ResearchCostsTpl),
                 ["Vector3i"] = typeof(Vector3i),
                 ["Vector3f"] = typeof(Vector3f),
                 ["Vector2i"] = typeof(Vector2i),
@@ -240,12 +239,8 @@ namespace CustomRecipes.ModuleParser.Registrator
                                   .ElseRequiredThrow(),
                         nodeId: GetArgument<ResearchNodeProto.ID>("researchId")
                                     .When<string>(s => new ResearchNodeProto.ID(s))
-                                    .ElseRequiredThrow());
-
-                    builder.SetCosts(GetArgument<ResearchCostsTpl>("costs")
-                        .When<int>(diff => new ResearchCostsTpl.Builder().SetDifficulty(diff))
-                        .When<List<object>>(list => throw new NotImplementedException())
-                        .ElseDefault(new ResearchCostsTpl.Builder().SetDifficulty(1)));
+                                    .ElseRequiredThrow(),
+                        costMonths: GetArgument<int>("costs").ElseDefault(1));
 
                     builder.SetGridPosition(
                             GetArgument<Vector2i>("position")

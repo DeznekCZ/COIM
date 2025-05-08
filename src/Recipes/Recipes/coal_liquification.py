@@ -7,7 +7,7 @@ research = build_research(
     researchId = "CustomResearch_CoalLiquification",
     name = "Coal liquification",
     description = "Convert small amount of coal while presure is active to heavy oil",
-    position = (20, 15),
+    position = (24, 11),
     parents = [ Ids.Research.Cp2Packing ]
 )
 

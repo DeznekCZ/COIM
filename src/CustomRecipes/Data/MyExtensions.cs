@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using Mafi.Base;
 using Mafi.Collections;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core.Entities;
@@ -9,10 +10,10 @@ using Mafi.Core.Factory.Transports;
 using Mafi.Core.Prototypes;
 using Mafi.Localization;
 using Mafi.Unity;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Style;
+//using Mafi.Unity.UiFramework;
+//using Mafi.Unity.UiFramework.Components;
+//using Mafi.Unity.UserInterface;
+//using Mafi.Unity.UserInterface.Style;
 using System;
 using System.Reflection;
 
@@ -25,29 +26,29 @@ namespace CustomRecipes
             return new Lyst<T>() { option.ValueOrNull }.ToImmutableArray();
         }
 
-        public static T AppendTo<T>(this T element, StackContainer stackContainer, ContainerPosition? containerPosition) where T : IUiElement
-        {
-            stackContainer.Append(element, element.GetSize(), containerPosition, default, false);
-            return element;
-        }
+        //public static T AppendTo<T>(this T element, StackContainer stackContainer, ContainerPosition? containerPosition) where T : IUiElement
+        //{
+        //    stackContainer.Append(element, element.GetSize(), containerPosition, default, false);
+        //    return element;
+        //}
 
-        public static T AddToGrid<T>(this T element, GridContainer gridContainer) where T : IUiElement
-        {
-            gridContainer.Append(element);
-            return element;
-        }
+        //public static T AddToGrid<T>(this T element, GridContainer gridContainer) where T : IUiElement
+        //{
+        //    gridContainer.Append(element);
+        //    return element;
+        //}
 
-        public static T SetSize<T>(this T element, int x, int y) where T : IUiElement
-        {
-            return element.SetSize(new UnityEngine.Vector2(x, y));
-        }
+        //public static T SetSize<T>(this T element, int x, int y) where T : IUiElement
+        //{
+        //    return element.SetSize(new UnityEngine.Vector2(x, y));
+        //}
 
-        public static StackContainer AllignRight<T>(this T element, UiBuilder builder) where T : IUiElement
-        {
-            return builder.NewStackContainer(element.GameObject.name + "_invert")
-                .SetStackingDirection(StackContainer.Direction.RightToLeft)
-                .SetSizeMode(StackContainer.SizeMode.Dynamic);
-        }
+        //public static StackContainer AllignRight<T>(this T element, UiBuilder builder) where T : IUiElement
+        //{
+        //    return builder.NewStackContainer(element.GameObject.name + "_invert")
+        //        .SetStackingDirection(StackContainer.Direction.RightToLeft)
+        //        .SetSizeMode(StackContainer.SizeMode.Dynamic);
+        //}
 
         public static string GetIcon(this IEntity entity)
         {
@@ -61,7 +62,7 @@ namespace CustomRecipes
                 return transportForGraphics.Prototype.Graphics.IconPath;
 
             else
-                return new IconsPaths().Empty;
+                return Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png;
         }
 
         public static bool HasPosition(this IEntity entity, out Tile3f position)
@@ -105,50 +106,50 @@ namespace CustomRecipes
             return "ProgramableNetwork_Module_" + id;
         }
 
-        public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, string toolTip, Offset? offset = null, bool attached = false)
-            where TElement : IUiElementWithHover<TElement>
-        {
-            return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
-        }
+        //public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, string toolTip, Offset? offset = null, bool attached = false)
+        //    where TElement : IUiElementWithHover<TElement>
+        //{
+        //    return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
+        //}
 
-        public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, Func<string> toolTip, Offset? offset = null, bool attached = false)
-            where TElement : IUiElementWithHover<TElement>
-        {
-            return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip(), offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
-        }
+        //public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, Func<string> toolTip, Offset? offset = null, bool attached = false)
+        //    where TElement : IUiElementWithHover<TElement>
+        //{
+        //    return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip(), offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
+        //}
 
-        public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, LocStr toolTip, Offset? offset = null, bool attached = false)
-            where TElement : IUiElementWithHover<TElement>
-        {
-            return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip.TranslatedString, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
-        }
+        //public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, LocStr toolTip, Offset? offset = null, bool attached = false)
+        //    where TElement : IUiElementWithHover<TElement>
+        //{
+        //    return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip.TranslatedString, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
+        //}
 
-        public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, Func<LocStr> toolTip, Offset? offset = null, bool attached = false)
-            where TElement : IUiElementWithHover<TElement>
-        {
-            return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip().TranslatedString, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
-        }
+        //public static TElement ToolTip<TElement>(this TElement element, ITooltipInspector inspector, Func<LocStr> toolTip, Offset? offset = null, bool attached = false)
+        //    where TElement : IUiElementWithHover<TElement>
+        //{
+        //    return element.SetOnMouseEnterLeaveActions(() => inspector.OnMouseIn(toolTip().TranslatedString, offset, attached ? element : (IUiElement)null), inspector.OnMouseOut);
+        //}
 
-        public static Btn SettingFieldNameStyle(this Btn element, UiBuilder builder)
-        {
-            element.SetButtonStyle(
-                builder.Style.Global.GeneralBtn
-                .Extend(
-                    normalMaskClr: builder.Style.Panel.Background,
-                    backgroundClr: builder.Style.Panel.Background,
-                    hoveredClr: builder.Style.Panel.Background,
-                    disabledMaskClr: builder.Style.Panel.Background,
-                    pressedClr: builder.Style.Panel.Background,
-                    foregroundClrWhenDisabled: ColorRgba.White,
-                    border: new Mafi.Unity.UiFramework.Styles.BorderStyle(
-                        ColorRgba.Black, 0
-                    )
-                )
-                .ExtendText(
-                    color: ColorRgba.White
-                ));
-            return element;
-        }
+        //public static Btn SettingFieldNameStyle(this Btn element, UiBuilder builder)
+        //{
+        //    element.SetButtonStyle(
+        //        builder.Style.Global.GeneralBtn
+        //        .Extend(
+        //            normalMaskClr: builder.Style.Panel.Background,
+        //            backgroundClr: builder.Style.Panel.Background,
+        //            hoveredClr: builder.Style.Panel.Background,
+        //            disabledMaskClr: builder.Style.Panel.Background,
+        //            pressedClr: builder.Style.Panel.Background,
+        //            foregroundClrWhenDisabled: ColorRgba.White,
+        //            border: new Mafi.Unity.UiFramework.Styles.BorderStyle(
+        //                ColorRgba.Black, 0
+        //            )
+        //        )
+        //        .ExtendText(
+        //            color: ColorRgba.White
+        //        ));
+        //    return element;
+        //}
 
         public static void SetCategories(this LayoutEntityProto.Gfx gfx, ImmutableArray<ToolbarCategoryProto> toolbarCategories)
         {

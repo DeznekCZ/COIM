@@ -1,10 +1,10 @@
-﻿using Mafi.Core.Entities;
+﻿//using Mafi.Core.Entities;
 
-namespace CustomRecipes
-{
-    public interface IEntitySelector<TEntity>
-        where TEntity : IEntity
-    {
-        bool EntityFilter(TEntity e);
-    }
-}
+//namespace CustomRecipes
+//{
+//    public interface IEntitySelector<TEntity>
+//        where TEntity : IEntity
+//    {
+//        bool EntityFilter(TEntity e);
+//    }
+//}
