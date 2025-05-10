@@ -78,7 +78,7 @@ namespace ProgramableNetwork
                 Row outputsPanel = new Row()
                     .Class(Cls.group)
                     .Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
-                    .BackgroundTint(ColorRgba.DarkRed)
+                    .Background(ColorRgba.DarkRed)
                     .AlignItemsEnd();
                 AddOutputs(uiContext, outputsPanel, module, refresh);
 
@@ -88,7 +88,7 @@ namespace ProgramableNetwork
             private void AddInputs(UiContext uiContext, Row inputsPanel, Module module, Action refresh)
             {
                 var inputs = module.Prototype.Inputs;
-                for (int i = inputs.Count - 1; i >= 0; i--)
+                for (int i = 0; i < inputs.Count; i++)
                 {
                     var input = inputs[i];
                     bool isConnected = module.InputModules.ContainsKey(input.Id);
@@ -159,7 +159,7 @@ namespace ProgramableNetwork
             private void AddOutputs(UiContext uiContext, Row inputsPanel, Module module, Action refresh)
             {
                 var outputs = module.Prototype.Outputs;
-                for (int i = outputs.Count - 1; i >= 0; i--)
+                for (int i = 0; i < outputs.Count; i++)
                 {
                     var output = outputs[i];
                     bool isConnected = module.Controller.Modules
@@ -243,7 +243,7 @@ namespace ProgramableNetwork
             private void AddDisplays(UiContext uiContext, Row displaysPanel, Module module, Action refresh)
             {
                 var displays = module.Prototype.Displays;
-                for (int i = displays.Count - 1; i >= 0; i--)
+                for (int i = 0; i < displays.Count; i++)
                 {
                     var display = displays[i];
 
