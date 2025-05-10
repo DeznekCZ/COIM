@@ -28,12 +28,16 @@ namespace ProgramableNetwork
         {
             var button = new ButtonColumn(new ButtonVariant())
             {
-                new Label(new Mafi.Localization.LocStrFormatted("Module type:")),
-                new Label(Strings.Name),
-                new Label(new Mafi.Localization.LocStrFormatted("Template alias:")),
-                new Label(new Mafi.Localization.LocStrFormatted(item.Value.Name))
+                new Row {
+                    new Label(new Mafi.Localization.LocStrFormatted("Module type:")),
+                    new Label(Strings.Name)
+                }.Height(40),
+                new Row {
+                    new Label(new Mafi.Localization.LocStrFormatted("Template alias:")),
+                    new Label(new Mafi.Localization.LocStrFormatted(item.Value.Name))
+                }.Height(40),
             };
-            return button;
+            return button.Height(80);
         }
 
         public override void Selected()

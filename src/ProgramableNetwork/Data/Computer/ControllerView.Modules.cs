@@ -348,6 +348,7 @@ namespace ProgramableNetwork
         private void AddFreeSlot(Row rowElement, int targetRow, int targetColumn, bool selected)
         {
             ButtonText button = new ButtonText(new LocStrFormatted("+"));
+            button.Size(20, 80);
             button.OnClick(() =>
             {
                 ProtoPickerPopup<AModuleProtoSelector> protoPicker = new ProtoPickerPopup<AModuleProtoSelector>(
@@ -356,12 +357,13 @@ namespace ProgramableNetwork
                     onOptionSelected: (s) => s.Selected(),
                     button: button,
                     title: new LocStrFormatted("Add module"),
-                    config: new ProtoPickerConfig { ItemsPerRow = 1 },
+                    config: new ProtoPickerConfig { ItemsPerRow = 1, ItemSize = new UnityEngine.Vector2(600, Px.Auto) },
                     orderAlphabetically: false,
                     searchable: true
                 );
                 protoPicker.Show();
             });
+            rowElement.Add(button);
         }
 
         private IEnumerable<AModuleProtoSelector> NewModulePicker(int targetRow, int targetColumn)
@@ -383,7 +385,8 @@ namespace ProgramableNetwork
                 }, m_lastCreated);
 
             if (TemplateRegistrator.GetTemplates().Count > 0)
-                foreach (KeyValuePair<string, Template> item in TemplateRegistrator.GetTemplates())
+                foreach (KeyValuePair<string, Template> item in TemplateRegistrator.GetTemplates()
+                                                                    .Where(p => p.Value.ModuleProto.AllowedDevices.Any(e => e.Equals(id))))
                     yield return new TemplateModule(m_controller.Entity, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
                     {
                         if (TryPlaceAt(moduleProto, targetRow, targetColumn))
@@ -398,8 +401,8 @@ namespace ProgramableNetwork
 
             foreach (ModuleProto item in m_controller.Entity.Context.ProtosDb
                                             .All<ModuleProto>()
-                                            .Where(p => p.IsAvailable)
-                                            .Where(p => p.AllowedDevices.Contains(id)))
+                                            //.Where(p => p.IsAvailable)
+                                            .Where(p => p.AllowedDevices.Any(e => e.Equals(id))))
                 yield return new NewModule(m_controller.Entity, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
                 {
                     if (TryPlaceAt(moduleProto, targetRow, targetColumn))

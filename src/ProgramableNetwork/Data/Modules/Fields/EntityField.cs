@@ -144,10 +144,9 @@ namespace ProgramableNetwork
                 });
                 Add(m_btnPreview);
 
-                m_selectionButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png);
+                m_selectionButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Edit_svg);
                 m_selectionButton.Size(40, 40);
                 m_selectionButton.OnClick(PickEntity);
-                m_selectionButton.Visible(false);
                 Add(m_selectionButton);
 
                 m_btnPreview.OnMouseEnterLeave(

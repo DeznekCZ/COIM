@@ -1,4 +1,5 @@
 ﻿using Mafi.Core.Prototypes;
+using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Collections.Generic;
@@ -25,12 +26,12 @@ namespace ProgramableNetwork
 
         public override Button CreateUi()
         {
-            var button = new ButtonColumn(new ButtonVariant())
+            var button = new ButtonRow(new ButtonVariant())
             {
                 new Label(new Mafi.Localization.LocStrFormatted("Copy last created:")),
                 new Label(Strings.Name)
             };
-            return button;
+            return button.Height(40);
         }
 
         public override void Selected()

@@ -50,10 +50,7 @@ namespace ProgramableNetwork
                         () => m_controller.AddPreviewHighlight(module),
                         () => m_controller.ClearPreviewHighlight()
                     );
-                fieldsPanel.OnClick(() =>
-                    {
-                        new ModuleEditDialog(module, m_controller, uiContext, m_controller.m_controller).Show();
-                    });
+                fieldsPanel.OnClick(() => new ModuleEditDialog(module, m_controller, uiContext, m_controller.m_controller));
                 Add(fieldsPanel);
 
                 m_controller.m_updaters.Add(new DataUpdater<(bool selected, ColorRgba color), int>(
