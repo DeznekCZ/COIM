@@ -37,7 +37,7 @@ namespace ProgramableNetwork
             (bool create, Module module) = m_tryCreate(item);
             if (create)
             {
-                module.Prototype.Init(module);
+                module.Prototype.ExecuteInit(module);
             }
         }
     }

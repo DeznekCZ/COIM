@@ -280,8 +280,9 @@ namespace ProgramableNetwork
             private UiComponent ImageDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
                 var text = new DisplayWithIcon(module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png]);
-                //text.Icon.Padding(Sizes.IMAGE_PADDING);
-                text.Icon.Size(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);
+                text.Icon.Margin(Px.Zero);
+                text.Icon.Padding(Px.Zero);
+                text.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                 text.Color(ColorRgba.White);
                 text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
                 text.Observe(() => module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png])

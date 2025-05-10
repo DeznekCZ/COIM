@@ -371,27 +371,26 @@ namespace ProgramableNetwork
                 return;
             }
 
-            if (IsPaused)
-            {
-                CurrentInstruction = 0;
-                PowerRequired = Electricity.Zero;
-                m_electricConsumer.OnPowerRequiredChanged();
-                return;
-            }
-
-            if (Modules.Count == 0)
-            {
-                PowerRequired = Prototype.IddlePower;
-                m_electricConsumer.OnPowerRequiredChanged();
-                return;
-            }
-
             var newCosts = new MaintenanceCosts(Context.ProtosDb.GetOrThrow<VirtualProductProto>(Ids.Products.MaintenanceT1), new PartialQuantity(Modules.Count / 4 + 4));
             if (newCosts.MaintenancePerMonth != MaintenanceCosts.MaintenancePerMonth)
             {
                 MaintenanceCosts = newCosts;
                 Maintenance.RefreshMaintenanceCost();
             }
+
+            if (Modules.Count == 0)
+            {
+                PowerRequired = Prototype.IddlePower;
+                m_electricConsumer.OnPowerRequiredChanged();
+                ComputingRequired = Computing.Zero;
+                m_computingConsumer.OnComputingRequiredChanged();
+                m_notificationErrorManager.Deactivate(this);
+                m_notificationWarningManager.Deactivate(this);
+                m_notificationInfoManager.Deactivate(this);
+                return;
+            }
+
+            if (IsPaused) return;
 
             Electricity requiredRunningPower = GetRequiredRunningPower();
             PowerRequired = Prototype.IddlePower + requiredRunningPower;

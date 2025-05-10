@@ -126,6 +126,9 @@ namespace ProgramableNetwork
                 this.Size(Sizes.BLOCK_SIZE * 4, Sizes.BLOCK_SIZE);
 
                 m_btnPreview = new DisplayWithIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+                m_btnPreview.Icon.Margin(Px.Zero);
+                m_btnPreview.Icon.Padding(Px.Zero);
+                m_btnPreview.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                 m_btnPreview.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                 m_btnPreview.OnClick(() =>
                 {

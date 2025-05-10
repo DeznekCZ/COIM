@@ -44,8 +44,8 @@ namespace ProgramableNetwork
         {
             (bool created, Module module) = m_tryCreate(item.Value.ModuleProto);
             if (created) {
+                module.Prototype.ExecuteInit(module);
                 item.Value.Setting(module);
-                module.Prototype.Init(module);
             }
         }
     }

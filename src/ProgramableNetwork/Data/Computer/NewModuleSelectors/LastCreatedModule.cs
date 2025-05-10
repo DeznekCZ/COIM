@@ -43,7 +43,7 @@ namespace ProgramableNetwork
                     module.NumberData[item.Key] = item.Value;
                 foreach (KeyValuePair<string, string> item in lastCreated.StringData)
                     module.StringData[item.Key] = item.Value;
-                module.Prototype.Init(module);
+                module.Prototype.ExecuteInit(module);
             }
         }
     }
