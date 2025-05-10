@@ -31,16 +31,16 @@ namespace ProgramableNetwork
             m_refresh = refresh;
             m_distanceBoost = distanceBoost;
 
-            this.Size(80, 40);
+            this.Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE);
 
             m_btnPreview = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png)
-                .Size(40, 40)
+                .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
                 .OnClick(FindProduct)
                 .Tooltip(MineInstanceProto.GetStrings(m_fieldId.WorldMapMine, fieldId).Name);
             Add(m_btnPreview);
 
             m_btnClear = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png)
-                .Size(40, 40)
+                .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
                 .OnClick(() =>
                 {
                     m_fieldId.WorldMapMine = null;

@@ -19,6 +19,7 @@ using Mafi.Core.Entities.Static;
 using Mafi.Core.Notifications;
 using ProgramableNetwork.Data.Mod;
 using System.Reflection;
+using Mafi.Localization;
 
 namespace ProgramableNetwork
 {
@@ -421,6 +422,10 @@ namespace ProgramableNetwork
                     UpdateModules(computingConsumed);
                 }
             }
+            else
+            {
+                State = Tr.EntityElectricityConsumptionTooltip__NotEnough;
+            }
         }
 
         private Electricity GetRequiredRunningPower()
@@ -486,12 +491,16 @@ namespace ProgramableNetwork
             bool anyError = false;
             bool anyWarning = false;
             bool anyInfo = false;
+            bool missingComputation = false;
             foreach (Module module in Modules)
             {
                 try
                 {
                     if (module.Prototype.UsedComputing > PartialQuantity.Zero && !computingConsumed)
+                    {
+                        missingComputation = missingComputation || true;
                         continue;
+                    }
 
                     module.Execute();
                 }
@@ -530,6 +539,8 @@ namespace ProgramableNetwork
                 m_notificationWarningManager.Deactivate(this);
                 m_notificationInfoManager.Deactivate(this);
             }
+
+            State = missingComputation ? Tr.EntityStatus__WorkingPartially.Format(Tr.ComputingNotAvailable) : Tr.EntityStatus__Working;
         }
 
         public Quantity ReceiveAsMuchAsFromPort(ProductQuantity pq, IoPortToken sourcePort)
@@ -553,5 +564,6 @@ namespace ProgramableNetwork
         public bool IsCargoAffectedByGeneralPriority => false;
 
         public int Speed { get => m_clockSpeed; set => m_clockSpeed = value; }
+        public LocStrFormatted State { get; private set; }
     }
 }

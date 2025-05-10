@@ -5,9 +5,10 @@ using System;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.Ui;
-using System.Runtime.Remoting.Contexts;
-using System.Drawing.Drawing2D;
 using Mafi.Unity.UiToolkit;
+using Mafi.Unity.Ui.Library;
+using Mafi.Localization;
+using System.Collections.Generic;
 
 namespace ProgramableNetwork
 {
@@ -17,13 +18,13 @@ namespace ProgramableNetwork
 
         public ModuleConnector OutputConnection { get; set; }
 
-        private class ModuleView : UiComponent
+        private class ModuleView : Column
         {
             private readonly Module m_module;
             private readonly ControllerView m_controller;
 
-            public ModuleView(Module module, ControllerView controllerView, UiContext uiContext, bool selected, Action refresh)
-                : base(new UnityEngine.UIElements.VisualElement())
+            public ModuleView(Module module, ControllerView controllerView, UiContext uiContext, Action refresh)
+                : base()
             {
                 this.m_module = module;
                 this.m_controller = controllerView;
@@ -32,20 +33,20 @@ namespace ProgramableNetwork
                 int width = module.Layout.GetWidth(module);
                 bool displaysExists = module.Prototype.Displays.Count > 0;
 
-                this.Size(width * 20, 80);
+                this.Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 4);
+                this.Class(Cls.panel);
 
                 // Add Input panel
-                Row inputsPanel = new Row();
-                inputsPanel.Size((width * 20).px(), 20.px());
-                inputsPanel.Background(ColorRgba.DarkGreen);
+                Row inputsPanel = new Row()
+                    .Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+                    .Background(ColorRgba.DarkGreen)
+                    .AlignItemsEnd();
                 AddInputs(uiContext, inputsPanel, module, refresh);
                 Add(inputsPanel);
 
-                m_controller.m_updaters.Add(new EachFrame(() => module.Prototype.DisplayUpdate(module)));
-
                 // Add Field panel
-                ButtonText fieldsPanel = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Prototype.Symbol));
-                fieldsPanel.Size(width * 20, displaysExists ? 20 : 40);
+                ButtonText fieldsPanel = new ButtonText(module.Prototype.Symbol.AsLoc());
+                fieldsPanel.Size(width * Sizes.BLOCK_SIZE, displaysExists ? Sizes.BLOCK_SIZE : (Sizes.BLOCK_SIZE * 2));
                 fieldsPanel.OnMouseEnterLeave(
                         () => m_controller.AddPreviewHighlight(module),
                         () => m_controller.ClearPreviewHighlight()
@@ -53,41 +54,20 @@ namespace ProgramableNetwork
                 fieldsPanel.OnClick(() => new ModuleEditDialog(module, m_controller, uiContext, m_controller.m_controller));
                 Add(fieldsPanel);
 
-                m_controller.m_updaters.Add(new DataUpdater<(bool selected, ColorRgba color), int>(
-                    (context) =>
+                this.Observe(() => module.Error)
+                    .Do((text) =>
                     {
-                        if (module.Status == ModuleStatus.Error)
-                            return (selected, ColorRgba.DarkRed);
-
-                        return (selected, ColorRgba.DarkGreen);
-                    },
-                    (context, style) => {
-                        fieldsPanel.BackgroundTint(style.color);
-                        fieldsPanel.Selected(style.selected);
-                    },
-                    (styleA, styleB) => styleA.Equals(styleB),
-                    0
-                ));
-
-                DataUpdater<string, int> tooltipUpdater;
-                m_controller.m_updaters.Add(tooltipUpdater = new DataUpdater<string, int>(
-                    // TODO show multiple tooltips
-                    (context) => module.Error,
-                    (context, style) => fieldsPanel.Tooltip(new Mafi.Localization.LocStrFormatted(style), enabled: !string.IsNullOrEmpty(style), isError: true),
-                    (oldError, newError) => oldError != newError,
-                    0
-                ));
-
-                if (selected)
-                {
-                    fieldsPanel.BackgroundTint(ColorRgba.DarkGreen);
-                    fieldsPanel.Selected(selected);
-                }
+                        bool isError = module.Status == ModuleStatus.Error;
+                        fieldsPanel.Tooltip(text.AsLoc(), enabled: !string.IsNullOrEmpty(text), isError: isError);
+                    });
 
                 if (displaysExists)
                 {
+                    this.Observe(() => DateTime.Now)
+                        .Do((time) => module.Prototype.DisplayUpdate(module));
+
                     Row displaysPanel = new Row()
-                        .Size((width * 20).px(), 20.px())
+                        .Size((width * Sizes.BLOCK_SIZE), Sizes.BLOCK_SIZE)
                         .Background(ColorRgba.DarkDarkGray);
                     AddDisplays(uiContext, displaysPanel, module, refresh);
 
@@ -96,8 +76,10 @@ namespace ProgramableNetwork
 
                 // Add Ouptut panel
                 Row outputsPanel = new Row()
-                    .Size(width * 20, 20)
-                    .Background(ColorRgba.DarkRed);
+                    .Class(Cls.group)
+                    .Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+                    .BackgroundTint(ColorRgba.DarkRed)
+                    .AlignItemsEnd();
                 AddOutputs(uiContext, outputsPanel, module, refresh);
 
                 Add(outputsPanel);
@@ -112,9 +94,9 @@ namespace ProgramableNetwork
                     bool isConnected = module.InputModules.ContainsKey(input.Id);
 
                     ButtonText btn = new ButtonText(new Mafi.Localization.LocStrFormatted(isConnected ? "◎" : "○"))
-                        .Background(ColorRgba.DarkRed)
+                        .Background(ColorRgba.Green)
                         .Color(ColorRgba.Gold)
-                        .Size(20.px(), 20.px())
+                        .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
                         .OnRightClick(() =>
                         {
                             if (module.InputModules.TryRemove(input.Id, out _))
@@ -189,9 +171,9 @@ namespace ProgramableNetwork
                                           && c.OutputId == output.Id) != null;
 
                     ButtonText btn = new ButtonText(new Mafi.Localization.LocStrFormatted(isConnected ? "◎" : "○"))
-                        .Background(ColorRgba.DarkRed)
+                        .Background(ColorRgba.Red)
                         .Color(ColorRgba.Gold)
-                        .Size(20.px(), 20.px())
+                        .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
                         .OnRightClick(() =>
                         {
                             if (!isConnected)
@@ -265,10 +247,6 @@ namespace ProgramableNetwork
                 {
                     var display = displays[i];
 
-                    var text = new ButtonText(new Mafi.Localization.LocStrFormatted($""))
-                        .Size((20 * display.Width).px(), 20.px());
-                    displaysPanel.Add(text);
-
                     if (display.DefaultText == "[image]")
                     {
                         displaysPanel.Add(ImageDisplay(uiContext, module, display));
@@ -288,39 +266,26 @@ namespace ProgramableNetwork
                 }
             }
 
-            private Button TextDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
+            private UiComponent TextDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
-                var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, display.DefaultText]));
+                var text = new Display(module.Display[display.Id, display.DefaultText].AsLoc());
+                text.TextAlign(TextAlignment.RightMiddle);
                 text.Color(ColorRgba.White);
-                text.Size((20 * display.Width).px(), 20.px());
-
-                m_controller.m_updaters.Add(new DataUpdater<
-                        string,
-                        (Module module, ButtonText text, ModuleConnectorProto display)
-                    >(
-                    getter: (c) => c.module.Display[c.display.Id, c.display.DefaultText],
-                    setter: (c, t) => c.text.Value(new Mafi.Localization.LocStrFormatted(t)),
-                    comparator: string.Equals,
-                    context: (module, text, display)
-                ));
+                text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
+                text.Observe(() => module.Display[display.Id, display.DefaultText])
+                    .Do((t) => text.Value(t.AsLoc()));
                 return text;
             }
 
-            private Button ImageDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
+            private UiComponent ImageDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
-                var text = new ButtonIcon(module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png]);
+                var text = new DisplayWithIcon(module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png]);
+                //text.Icon.Padding(Sizes.IMAGE_PADDING);
+                text.Icon.Size(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);
                 text.Color(ColorRgba.White);
-                text.Size((20 * display.Width).px(), 20.px());
-
-                m_controller.m_updaters.Add(new DataUpdater<
-                        string,
-                        (Module module, ButtonIcon text, ModuleConnectorProto display)
-                    >(
-                    getter: (c) => c.module.Display[c.display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png],
-                    setter: (c, t) => c.text.Icon.Value(t),
-                    comparator: string.Equals,
-                    context: (module, text, display)
-                ));
+                text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
+                text.Observe(() => module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png])
+                    .Do((t) => text.Icon.Value(t));
                 return text;
             }
 
@@ -345,7 +310,7 @@ namespace ProgramableNetwork
                 {
                     var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, display.DefaultText]));
                     text.Color(ColorRgba.White);
-                    text.Size((20 * display.Width).px(), 20.px());
+                    text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
 
                     m_controller.m_updaters.Add(new DataUpdater<
                             string,
@@ -363,8 +328,11 @@ namespace ProgramableNetwork
             private Button ToggleDisplay_DoubleText(UiContext uiContext, Module module, ModuleConnectorProto display, string[] options)
             {
                 var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, options[0]]));
+                text.TextOverflow(TextOverflow.Clip);
+                text.TextAlign(TextAlignment.RightMiddle);
+                text.FontSize(10);
                 text.Color(ColorRgba.White);
-                text.Size((20 * display.Width).px(), 20.px());
+                text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
 
                 m_controller.m_updaters.Add(new DataUpdater<
                         string,
@@ -389,7 +357,10 @@ namespace ProgramableNetwork
             private Button ToggleDisplay_Symbol(UiContext uiContext, Module module, ModuleConnectorProto display, string symbol, bool click = true)
             {
                 ButtonText text = new ButtonText(new Mafi.Localization.LocStrFormatted(symbol));
-                text.Size((20 * display.Width).px(), 20.px());
+                text.TextOverflow(TextOverflow.Clip);
+                text.TextAlign(TextAlignment.RightMiddle);
+                text.FontSize(10);
+                text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
 
                 //BtnStyle defaultStyle = click
                 //    ? builder.Style.Global.GeneralBtnActive
@@ -437,6 +408,74 @@ namespace ProgramableNetwork
         private void ClearPreviewHighlight()
         {
             m_controller.ClearPreviewHighlight();
+        }
+
+        public void RemoveModule(Module module)
+        {
+            // GUARD
+            if (module.Controller.Id != Entity.Id) return;
+
+            // remove module
+            Entity.Modules.RemoveFirst(m => m.Id == module.Id);
+
+            // remove placements
+            for (int i = 0; i < Entity.Rows.Count; i++)
+            {
+                for (int j = 0; j < Entity.Rows[i].Count; j++)
+                {
+                    if (Entity.Rows[i][j].ModuleId == module.Id)
+                    {
+                        Entity.Rows[i][j] = ModulePlacement.Empty;
+                    }
+                }
+            }
+
+            // Remove connections
+            foreach (Module item in Entity.Modules)
+            {
+                foreach (KeyValuePair<string, ModuleConnector> input in item.InputModules.ToList())
+                {
+                    if (input.Value.ModuleId == module.Id)
+                    {
+                        item.InputModules.Remove(input.Key);
+                    }
+                }
+            }
+
+            RedrawComponents();
+        }
+
+        public bool CanMove(Module module, int x = 0, int y = 0)
+        {
+            // GUARD
+            if (module.Controller.Id != Entity.Id) return false;
+
+            // Read from placement cache
+            if (!ModulePlacementCache.TryGetValue(module.Id, out var placement)) return false;
+
+            return placement.x + x > 0
+                && placement.y + y > 0
+                && placement.x + x + module.Layout.GetWidth(module) < Entity.Prototype.Columns
+                && placement.y + y < Entity.Prototype.Rows;
+        }
+
+        public void Move(Module module, int x = 0, int y = 0)
+        {
+            // MUST BE GUARDED BEFORE
+            RemoveModule(module);
+
+            (int sourceX, int sourceY) = ModulePlacementCache[module.Id];
+            for (int i = sourceX; i < sourceX + module.Layout.GetWidth(module); i++)
+            {
+                Entity.Rows[sourceY][i] = ModulePlacement.Empty;
+            }
+            int targetX = sourceX + x;
+            int targetY = sourceY + y;
+            for (int i = targetX; i < targetX + module.Layout.GetWidth(module); i++)
+            {
+                Entity.Rows[targetY][i] = targetX == i ? ModulePlacement.Origin(module.Id) : ModulePlacement.Rest(module.Id);
+            }
+            RedrawComponents();
         }
     }
 }

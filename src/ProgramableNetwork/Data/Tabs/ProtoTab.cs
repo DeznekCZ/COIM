@@ -44,12 +44,12 @@ namespace ProgramableNetwork
             parentWindow.OnCloseStart += ParentWindow_OnCloseStart;
 
             m_btnPreview = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
-            m_btnPreview.Size(40, 40);
+            m_btnPreview.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
             m_btnPreview.OnClick(FindProduct);
             Add(m_btnPreview);
 
             m_btnClear = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png);
-            m_btnClear.Size(20, 40);
+            m_btnClear.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
             m_btnClear.OnClick(() => {
                 m_module.Field[m_fieldId] = Fix32.Zero;
                 m_module.Field[m_fieldId, false] = "";

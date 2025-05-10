@@ -27,27 +27,21 @@ namespace ProgramableNetwork
         public T Default { get; }
 
         private Action setter;
-        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            Row row = new Row();
-            row.Height(20);
-            fieldContainer.Add(row);
-
-            Label label = new Label();
-            label.Value(new Mafi.Localization.LocStrFormatted(Name));
-            label.Tooltip(new Mafi.Localization.LocStrFormatted(ShortDesc));
-            label.Size(width: 180, height: 40);
-            row.Add(label);
+            Row row = fieldContainer.Row(this);
 
             var numberEditor = new TextField();
             numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
             numberEditor.Width(180);
-            numberEditor.Height(20);
+            numberEditor.Height(Sizes.BLOCK_SIZE);
             row.Add(numberEditor);
 
             var setButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg);
-            setButton.Width(20);
-            setButton.Height(20);
+            setButton.IconSize(32, 32);
+            setButton.Icon.Padding(4);
+            setButton.Width(40);
+            setButton.Height(Sizes.BLOCK_SIZE);
             setButton.Enabled(false);
             row.Add(setButton);
 

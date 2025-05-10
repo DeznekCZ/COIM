@@ -285,7 +285,7 @@ namespace ProgramableNetwork
                 .Action(m => { m.Output["value"] = m.Field["float"]; })
                 .AddDisplay("number", "Value", 1)
                 .Display(m => {
-                    var s = m.Field["float"].ToStringRounded(1).Replace(".", "|");
+                    var s = m.Field["float"].ToStringRounded(1);
                     m.Display["float"] = s.Length > 3 ? s.Substring(s.Length - 3) : s;
                 })
                 .AddControllerDevice()
@@ -1809,7 +1809,7 @@ namespace ProgramableNetwork
                     string fract = floating > 0 ? (value.FractionalPartNonNegative * Math.Pow(10, floating).ToFix32())
                                             .IntegerPart.ToString($"D{floating}") : "";
 
-                    m.Display["a"] = $"{full}|{fract}";
+                    m.Display["a"] = $"{full},{fract}";
                 };
             }
             foreach (int i in new int[] { 2, 4, 8, 16 })

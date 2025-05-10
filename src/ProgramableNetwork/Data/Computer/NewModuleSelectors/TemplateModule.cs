@@ -31,11 +31,11 @@ namespace ProgramableNetwork
                 new Row {
                     new Label(new Mafi.Localization.LocStrFormatted("Module type:")),
                     new Label(Strings.Name)
-                }.Height(40),
+                }.Height(Sizes.BLOCK_SIZE),
                 new Row {
                     new Label(new Mafi.Localization.LocStrFormatted("Template alias:")),
                     new Label(new Mafi.Localization.LocStrFormatted(item.Value.Name))
-                }.Height(40),
+                }.Height(Sizes.BLOCK_SIZE),
             };
             return button.Height(80);
         }
@@ -45,6 +45,7 @@ namespace ProgramableNetwork
             (bool created, Module module) = m_tryCreate(item.Value.ModuleProto);
             if (created) {
                 item.Value.Setting(module);
+                module.Prototype.Init(module);
             }
         }
     }

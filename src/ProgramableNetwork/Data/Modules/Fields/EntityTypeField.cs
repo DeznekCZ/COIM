@@ -30,18 +30,8 @@ namespace ProgramableNetwork
 
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            Row row = new Row();
-            row.Height(40);
-            fieldContainer.Add(row);
-
-            Label label = new Label();
-            label.Value(new Mafi.Localization.LocStrFormatted(Name));
-            label.Tooltip(new Mafi.Localization.LocStrFormatted(ShortDesc));
-            label.Size(width: 180, height: 40);
-            row.Add(label);
-
             ProtoTab<T> protoTab = new ProtoTab<T>(uiContext, module, Id, Filter, updateDialog, parentWindow, inspector);
-            row.Add(protoTab);
+            fieldContainer.Row(this).Add(protoTab);
         }
 
         public void InitData(Module module)

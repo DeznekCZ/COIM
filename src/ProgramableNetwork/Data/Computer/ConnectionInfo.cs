@@ -128,7 +128,7 @@ namespace ProgramableNetwork
                         else
                             m_invalidOpSound.Play();
                     })
-                    .Size(40, 40);
+                    .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                 controllerLine.Add(controllerButton);
 
                 Grid linkcontainer = new Grid(10);
@@ -178,7 +178,7 @@ namespace ProgramableNetwork
                             else
                                 m_invalidOpSound.Play();
                         })
-                        .Size(40, 40);
+                        .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                     entityButton.OnMouseEnter(
                             (e) =>
                             {

@@ -10,46 +10,37 @@ namespace ProgramableNetwork
     public class BooleanField : IField
     {
         public string Id { get; }
-        private string name;
+        public string Name { get; }
         public bool Default { get; }
-        private string shortDesc;
+        public string ShortDesc { get; }
 
         public BooleanField(string id, string name, string shortDesc, bool defaultValue)
         {
             this.Id = id;
-            this.name = name;
+            this.Name = name;
             this.Default = defaultValue;
-            this.shortDesc = shortDesc;
+            this.ShortDesc = shortDesc;
         }
 
-        public string Name => name;
 
         public int Size => 20;
 
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            Row row = new Row();
-            row.Height(20);
-            fieldContainer.Add(row);
-
-            Label label = new Label();
-            label.Value(new Mafi.Localization.LocStrFormatted(Name));
-            label.Tooltip(new Mafi.Localization.LocStrFormatted(shortDesc));
-            label.Size(width: 180, height: 40);
-            row.Add(label);
+            Row row = fieldContainer.Row(this);
 
             bool value = module.Field.Bool[Id];
 
             ButtonText falseSelector = new ButtonText(new Mafi.Localization.LocStrFormatted("OFF"));
-            if (value) falseSelector.Class("selected");
+            if (!value) falseSelector.Class("selected");
             falseSelector.Width(100);
-            falseSelector.Height(20);
+            falseSelector.Height(Sizes.BLOCK_SIZE);
             row.Add(falseSelector);
 
             ButtonText trueSelector = new ButtonText(new Mafi.Localization.LocStrFormatted("ON"));
-            if (!value) trueSelector.Class("selected");
+            if (value) trueSelector.Class("selected");
             trueSelector.Width(100);
-            trueSelector.Height(20);
+            trueSelector.Height(Sizes.BLOCK_SIZE);
             row.Add(trueSelector);
 
             trueSelector.OnClick(() =>

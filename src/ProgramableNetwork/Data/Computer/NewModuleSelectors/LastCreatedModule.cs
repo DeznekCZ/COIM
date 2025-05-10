@@ -31,7 +31,7 @@ namespace ProgramableNetwork
                 new Label(new Mafi.Localization.LocStrFormatted("Copy last created:")),
                 new Label(Strings.Name)
             };
-            return button.Height(40);
+            return button.Height(Sizes.BLOCK_SIZE);
         }
 
         public override void Selected()
@@ -43,6 +43,7 @@ namespace ProgramableNetwork
                     module.NumberData[item.Key] = item.Value;
                 foreach (KeyValuePair<string, string> item in lastCreated.StringData)
                     module.StringData[item.Key] = item.Value;
+                module.Prototype.Init(module);
             }
         }
     }

@@ -8,8 +8,8 @@ namespace ProgramableNetwork
     public interface IField
     {
         string Id { get; }
-        [Obsolete("Usable only in tooltip", true)]
         string Name { get; }
+        string ShortDesc { get; }
         int Size { get; }
 
         void Validate(Module module);

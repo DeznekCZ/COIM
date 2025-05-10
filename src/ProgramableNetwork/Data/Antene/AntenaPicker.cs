@@ -36,7 +36,7 @@ namespace ProgramableNetwork
             m_prototype = antenaProto;
 
             m_btnPreviewHolder = new UiComponent();
-            m_btnPreviewHolder.Size(80.px(), 40.px());
+            m_btnPreviewHolder.Size(Sizes.BLOCK_SIZE * 4, Sizes.BLOCK_SIZE);
             Add(m_btnPreviewHolder);
 
             m_btnPreview = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
@@ -55,7 +55,7 @@ namespace ProgramableNetwork
 
             m_selectionButton = new ButtonText(new Mafi.Localization.LocStrFormatted("Pick"), PickEntity);
             m_selectionButton.Class(Cls.btn_general);
-            m_selectionButton.Size(40.px(), 40.px());
+            m_selectionButton.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
             m_selectionButton.OnMouseEnter(
                 (e) => m_inspector.EntityHighlighter.Highlight(entity, ColorRgba.LightBlue));
             m_selectionButton.OnMouseLeave(

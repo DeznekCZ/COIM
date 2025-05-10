@@ -4,6 +4,7 @@ using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Input;
 using Mafi.Core.Syncers;
+using Mafi.Localization;
 using Mafi.Unity;
 using Mafi.Unity.Audio;
 using Mafi.Unity.Camera;
@@ -69,6 +70,12 @@ namespace ProgramableNetwork
                 .Observe(() => Entity?.Modules)
                 .Observe(() => Entity?.Rows)
                 .Do((entity, module, rows) => Refresh());
+
+            this.Observe(() => Entity?.State)
+                .Do((state) =>
+                {
+                    Status.SetValue(state ?? "".AsLoc());
+                });
         }
 
         private void Refresh()
@@ -243,16 +250,6 @@ namespace ProgramableNetwork
             foreach (var line in m_lines)
                 UnityEngine.Object.Destroy(line.gameObject);
             m_lines.Clear();
-        }
-
-        internal void CreateEditDialog(Module module)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal void AddUpdater(IUiUpdater updaterBuilt)
-        {
-            throw new NotImplementedException();
         }
     }
 }

@@ -11,6 +11,7 @@ using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit;
 using Mafi.Core.Syncers;
+using Mafi.Unity.Ui.Library;
 
 namespace ProgramableNetwork
 {
@@ -87,18 +88,8 @@ namespace ProgramableNetwork
 
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            Row row = new Row();
-            row.Height(40);
-            fieldContainer.Add(row);
-
-            Label label = new Label();
-            label.Value(new Mafi.Localization.LocStrFormatted(Name));
-            label.Tooltip(new Mafi.Localization.LocStrFormatted(ShortDesc));
-            label.Size(width: 180, height: 40);
-            row.Add(label);
-
             Picker picker = new Picker(module, id, entitySelector, distance, updateDialog, parentWindow, inspector);
-            row.Add(picker);
+            fieldContainer.Row(this).Add(picker);
         }
 
         public void InitData(Module module)
@@ -117,7 +108,7 @@ namespace ProgramableNetwork
             private readonly string m_dataName;
             private readonly Fix32 m_distance;
             private readonly ButtonIcon m_selectionButton;
-            private readonly ButtonIcon m_btnPreview;
+            private readonly DisplayWithIcon m_btnPreview;
 
             public Picker(Module module, string dataName, Func<Module, IEntity, bool> filter, Fix32 distance, Action refresh, Window parentWindow, ControllerInspector inspector)
                 : base()
@@ -132,10 +123,10 @@ namespace ProgramableNetwork
                 m_distance = distance;
                 parentWindow.OnCloseStart += ParentWindow_OnCloseStart;
 
-                this.Size(80, 40);
+                this.Size(Sizes.BLOCK_SIZE * 4, Sizes.BLOCK_SIZE);
 
-                m_btnPreview = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
-                m_btnPreview.Size(40, 40);
+                m_btnPreview = new DisplayWithIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+                m_btnPreview.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                 m_btnPreview.OnClick(() =>
                 {
                     Entity entity = m_module.Field.Entity<Entity>(m_dataName);
@@ -145,7 +136,9 @@ namespace ProgramableNetwork
                 Add(m_btnPreview);
 
                 m_selectionButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Edit_svg);
-                m_selectionButton.Size(40, 40);
+                m_selectionButton.Padding(Sizes.IMAGE_PADDING);
+                m_selectionButton.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);
+                m_selectionButton.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                 m_selectionButton.OnClick(PickEntity);
                 Add(m_selectionButton);
 

@@ -29,12 +29,16 @@ namespace ProgramableNetwork
                 new Label(new Mafi.Localization.LocStrFormatted("Module:")),
                 new Label(Strings.Name)
             };
-            return button.Height(40);
+            return button.Height(Sizes.BLOCK_SIZE);
         }
 
         public override void Selected()
         {
-            m_tryCreate(item);
+            (bool create, Module module) = m_tryCreate(item);
+            if (create)
+            {
+                module.Prototype.Init(module);
+            }
         }
     }
 }

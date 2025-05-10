@@ -27,13 +27,13 @@ namespace ProgramableNetwork
             m_window = parentWindow;
             m_window.OnCloseStart += ParentWindow_OnCloseStart;
 
-            this.Size(40, 40);
+            this.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
             this.OnClick(FindProduct);
             this.Tooltip(Tr.Empty);
 
             m_protoPicker = new ProtoPickerPopup<MineActionProto>(
                 optionsProvider: GetOperationTypes,
-                optionViewFactory: (item) => new ButtonIcon(item.IconPath).Size(40.px(), 40.px()),
+                optionViewFactory: (item) => new ButtonIcon(item.IconPath).Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE),
                 onOptionSelected: (product) =>
                 {
                     m_fieldId.Operation = product.Value;
@@ -44,7 +44,7 @@ namespace ProgramableNetwork
                 title: new Mafi.Localization.LocStrFormatted("Pick an operation"),
                 config: new ProtoPickerConfig
                 {
-                    ItemSize = new UnityEngine.Vector2(40, 40),
+                    ItemSize = new UnityEngine.Vector2(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE),
                     ItemsPerRow = 6
                 },
                 orderAlphabetically: false,
