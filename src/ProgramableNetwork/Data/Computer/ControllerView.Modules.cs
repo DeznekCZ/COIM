@@ -125,9 +125,16 @@ namespace ProgramableNetwork
 
         private void AddFreeSlot(Row rowElement, int targetRow, int targetColumn)
         {
-            ButtonText button = new ButtonText(new LocStrFormatted("+"));
-            button.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 4);
-            rowElement.Add(button);
+            Column column = rowElement.AddAndReturn(new Column())
+                .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 4);
+
+            // add filler
+            column.AddAndReturn(new UiComponent())
+                  .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+
+            ButtonText button = column.AddAndReturn(new ButtonText(new LocStrFormatted("+")));
+            button.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 2);
+            column.Add(button);
 
             ProtoPickerPopup<AModuleProtoSelector> protoPicker = new ProtoPickerPopup<AModuleProtoSelector>(
                 optionsProvider: () => NewModulePicker(targetRow, targetColumn),
@@ -139,6 +146,10 @@ namespace ProgramableNetwork
                 orderAlphabetically: false,
                 searchable: true
             );
+
+            // add filler
+            column.AddAndReturn(new UiComponent())
+                  .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
         }
 
         private IEnumerable<AModuleProtoSelector> NewModulePicker(int targetRow, int targetColumn)

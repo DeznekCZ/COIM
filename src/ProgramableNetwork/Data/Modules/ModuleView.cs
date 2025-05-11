@@ -18,7 +18,7 @@ namespace ProgramableNetwork
 
         public ModuleConnector OutputConnection { get; set; }
 
-        private class ModuleView : Column
+        private class ModuleView : Panel
         {
             private readonly Module m_module;
             private readonly ControllerView m_controller;
@@ -26,6 +26,11 @@ namespace ProgramableNetwork
             public ModuleView(Module module, ControllerView controllerView, UiContext uiContext, Action refresh)
                 : base()
             {
+                this.Margin(Px.Zero);
+                this.Body.Padding(Px.Zero);
+                this.Body.Margin(Px.Zero);
+                this.Body.Gap(Px.Zero);
+
                 this.m_module = module;
                 this.m_controller = controllerView;
                 string name = "moduleView_" + module.Id;
@@ -42,7 +47,7 @@ namespace ProgramableNetwork
                     .Background(ColorRgba.DarkGreen)
                     .AlignItemsEnd();
                 AddInputs(uiContext, inputsPanel, module, refresh);
-                Add(inputsPanel);
+                BodyAdd(inputsPanel);
 
                 // Add Field panel
                 ButtonText fieldsPanel = new ButtonText(module.Prototype.Symbol.AsLoc());
@@ -52,7 +57,7 @@ namespace ProgramableNetwork
                         () => m_controller.ClearPreviewHighlight()
                     );
                 fieldsPanel.OnClick(() => new ModuleEditDialog(module, m_controller, uiContext, m_controller.m_controller));
-                Add(fieldsPanel);
+                BodyAdd(fieldsPanel);
 
                 this.Observe(() => module.Error)
                     .Do((text) =>
@@ -71,7 +76,7 @@ namespace ProgramableNetwork
                         .Background(ColorRgba.DarkDarkGray);
                     AddDisplays(uiContext, displaysPanel, module, refresh);
 
-                    Add(displaysPanel);
+                    BodyAdd(displaysPanel);
                 }
 
                 // Add Ouptut panel
@@ -82,12 +87,18 @@ namespace ProgramableNetwork
                     .AlignItemsEnd();
                 AddOutputs(uiContext, outputsPanel, module, refresh);
 
-                Add(outputsPanel);
+                BodyAdd(outputsPanel);
             }
 
             private void AddInputs(UiContext uiContext, Row inputsPanel, Module module, Action refresh)
             {
                 var inputs = module.Prototype.Inputs;
+                if (module.Layout.GetWidth(module) - inputs.Count > 0)
+                {
+                    inputsPanel.AddAndReturn(new UiComponent())
+                        .Width((module.Layout.GetWidth(module) - inputs.Count) * Sizes.BLOCK_SIZE)
+                        .Height(Sizes.BLOCK_SIZE);
+                }
                 for (int i = 0; i < inputs.Count; i++)
                 {
                     var input = inputs[i];
@@ -124,7 +135,7 @@ namespace ProgramableNetwork
                         //    () => { },
                         //    () => { }
                         //)
-                        .Tooltip(new Mafi.Localization.LocStrFormatted((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' ')));
+                        .Tooltip(new LocStrFormatted((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' ')));
                     inputsPanel.Add(btn);
 
                     m_controller.m_updaters.Add(new DataUpdater<(ColorRgba text, ColorRgba background), int>(
@@ -159,6 +170,12 @@ namespace ProgramableNetwork
             private void AddOutputs(UiContext uiContext, Row inputsPanel, Module module, Action refresh)
             {
                 var outputs = module.Prototype.Outputs;
+                if (module.Layout.GetWidth(module) - outputs.Count > 0)
+                {
+                    inputsPanel.AddAndReturn(new UiComponent())
+                        .Width((module.Layout.GetWidth(module) - outputs.Count) * Sizes.BLOCK_SIZE)
+                        .Height(Sizes.BLOCK_SIZE);
+                }
                 for (int i = 0; i < outputs.Count; i++)
                 {
                     var output = outputs[i];
@@ -170,7 +187,7 @@ namespace ProgramableNetwork
                         .FirstOrDefault(c => c.ModuleId == module.Id
                                           && c.OutputId == output.Id) != null;
 
-                    ButtonText btn = new ButtonText(new Mafi.Localization.LocStrFormatted(isConnected ? "◎" : "○"))
+                    ButtonText btn = new ButtonText(new LocStrFormatted(isConnected ? "◎" : "○"))
                         .Background(ColorRgba.Red)
                         .Color(ColorRgba.Gold)
                         .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
@@ -210,7 +227,7 @@ namespace ProgramableNetwork
                             }
                         })
                         .Tooltip(new Mafi.Localization.LocStrFormatted((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' ')));
-                    btn.OnMouseEnterLeave(
+                        btn.OnMouseEnterLeave(
                             () => { m_controller.m_higlighted = new ModuleConnector(module.Id, output.Id); },
                             () => { m_controller.m_higlighted = null; }
                         );
@@ -269,6 +286,7 @@ namespace ProgramableNetwork
             private UiComponent TextDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
                 var text = new Display(module.Display[display.Id, display.DefaultText].AsLoc());
+                text.TextOverflow(TextOverflow.Clip);
                 text.TextAlign(TextAlignment.RightMiddle);
                 text.Color(ColorRgba.White);
                 text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
@@ -290,7 +308,7 @@ namespace ProgramableNetwork
                 return text;
             }
 
-            private Button ToggleDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
+            private UiComponent ToggleDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
                 char separator = display.DefaultText["[toggle]".Length];
                 string[] options = display.DefaultText.Replace($"[toggle]{separator}", "").Split(separator);
@@ -355,32 +373,16 @@ namespace ProgramableNetwork
                 return text;
             }
 
-            private Button ToggleDisplay_Symbol(UiContext uiContext, Module module, ModuleConnectorProto display, string symbol, bool click = true)
+            private UiComponent ToggleDisplay_Symbol(UiContext uiContext, Module module, ModuleConnectorProto display, string symbol, bool click = true)
             {
                 ButtonText text = new ButtonText(new Mafi.Localization.LocStrFormatted(symbol));
                 text.TextOverflow(TextOverflow.Clip);
                 text.TextAlign(TextAlignment.RightMiddle);
                 text.FontSize(10);
                 text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
-
-                //BtnStyle defaultStyle = click
-                //    ? builder.Style.Global.GeneralBtnActive
-                //    : builder.Style.Global.ImageBtn.Extend(border: BorderStyle.DEFAULT);
-
-                if (module.Display[display.Id, ""].Length > 0)
-                    text.Color(ColorRgba.Green);
-                else
-                    text.Color(ColorRgba.Red);
-
-                m_controller.m_updaters.Add(new DataUpdater<
-                        ColorRgba,
-                        (Module module, ButtonText text, ModuleConnectorProto display)
-                    >(
-                    getter: (c) => c.module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red,
-                    setter: (c, t) => c.text.Color(t),
-                    comparator: (a, b) => a == b,
-                    context: (module, text, display)
-                ));
+                text.Color(module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red);
+                text.Observe(() => module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red)
+                    .Do((color) => text.Color(color));
 
                 if (click)
                 {
@@ -395,7 +397,7 @@ namespace ProgramableNetwork
                 return text;
             }
 
-            private Button ToggleDisplay_LED(UiContext uiContext, Module module, ModuleConnectorProto display, bool click = true)
+            private UiComponent ToggleDisplay_LED(UiContext uiContext, Module module, ModuleConnectorProto display, bool click = true)
             {
                 return ToggleDisplay_Symbol(uiContext, module, display, "●", click);
             }

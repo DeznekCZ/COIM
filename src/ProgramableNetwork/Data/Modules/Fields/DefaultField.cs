@@ -10,18 +10,16 @@ namespace ProgramableNetwork
 {
     public static class IFieldExtensions
     {
-        public static Row Row(this UiComponent fieldContainer, IField entityField, Px height)
+        public static RowContainer Row(this UiComponent fieldContainer, IField entityField, Px height)
         {
-            Row row = new Row();
-            row.Class(Cls.groupHeader);
-            row.Height(height);
+            PanelRow row = new PanelRow();
             fieldContainer.Add(row);
 
             Label label = new Label();
             label.Value(entityField.Name.AsLoc());
             label.Tooltip(entityField.ShortDesc.AsLoc());
-            label.Size(width: 180, height: height);
-            row.Add(label);
+            label.Width(180);
+            row.BodyAdd(label);
 
             return row;
         }
@@ -32,7 +30,7 @@ namespace ProgramableNetwork
         /// <param name="fieldContainer"></param>
         /// <param name="entityField"></param>
         /// <returns></returns>
-        public static Row Row(this UiComponent fieldContainer, IField entityField)
+        public static RowContainer Row(this UiComponent fieldContainer, IField entityField)
         {
             return fieldContainer.Row(entityField, Sizes.BLOCK_SIZE);
         }

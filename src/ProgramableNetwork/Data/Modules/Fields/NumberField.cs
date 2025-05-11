@@ -29,18 +29,17 @@ namespace ProgramableNetwork
         private Action setter;
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            Row row = fieldContainer.Row(this);
+            RowContainer row = fieldContainer.Row(this);
 
             var numberEditor = new TextField();
             numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
-            numberEditor.Width(180);
+            numberEditor.Width(200 - Sizes.BLOCK_SIZE * 1.5f);
             numberEditor.Height(Sizes.BLOCK_SIZE);
             row.Add(numberEditor);
 
             var setButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg);
-            setButton.IconSize(32, 32);
-            setButton.Icon.Padding(4);
-            setButton.Width(40);
+            setButton.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);
+            setButton.Width(Sizes.BLOCK_SIZE * 1.5f);
             setButton.Height(Sizes.BLOCK_SIZE);
             setButton.Enabled(false);
             row.Add(setButton);

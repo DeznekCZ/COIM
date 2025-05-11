@@ -273,7 +273,7 @@ namespace ProgramableNetwork
                 .AddBooleanField("boolean", "Boolean")
                 .Action(m => { m.Output["value"] = m.Field["boolean"]; })
                 .AddDisplay("boolean", "On", 1, led: true)
-                .Display(m => { m.Display["boolean"] = m.Output.Bool["boolean"] ? "1" : ""; })
+                .Display(m => { m.Display["boolean"] = m.Field.Bool["boolean"] ? "1" : ""; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 

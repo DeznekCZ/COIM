@@ -27,34 +27,19 @@ namespace ProgramableNetwork
 
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            Row row = fieldContainer.Row(this);
+            RowContainer row = fieldContainer.Row(this);
 
             bool value = module.Field.Bool[Id];
 
-            ButtonText falseSelector = new ButtonText(new Mafi.Localization.LocStrFormatted("OFF"));
-            if (!value) falseSelector.Class("selected");
-            falseSelector.Width(100);
-            falseSelector.Height(Sizes.BLOCK_SIZE);
-            row.Add(falseSelector);
+            Toggle toggle = new Toggle()
+                .Value(value)
+                .Width(200)
+                .Height(Sizes.BLOCK_SIZE);
+            row.Add(toggle);
 
-            ButtonText trueSelector = new ButtonText(new Mafi.Localization.LocStrFormatted("ON"));
-            if (value) trueSelector.Class("selected");
-            trueSelector.Width(100);
-            trueSelector.Height(Sizes.BLOCK_SIZE);
-            row.Add(trueSelector);
-
-            trueSelector.OnClick(() =>
+            toggle.OnValueChanged((v) =>
             {
-                module.Field[Id] = 1;
-                trueSelector.Class("selected");
-                falseSelector.ClassRemove("selected");
-            });
-
-            falseSelector.OnClick(() =>
-            {
-                module.Field[Id] = 0;
-                trueSelector.ClassRemove("selected");
-                falseSelector.Class("selected");
+                module.Field[Id] = v ? 1 : 0;
             });
         }
 
