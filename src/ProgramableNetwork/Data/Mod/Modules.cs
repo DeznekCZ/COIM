@@ -1,5 +1,6 @@
 ﻿using Mafi;
 using Mafi.Base;
+using Mafi.Base.Prototypes.Trains;
 using Mafi.Core.Buildings.Cargo;
 using Mafi.Core.Buildings.Cargo.Modules;
 using Mafi.Core.Buildings.Farms;
@@ -908,7 +909,8 @@ namespace ProgramableNetwork
                                       e is SettlementFoodModule ||
                                       e is Hospital ||
                                       e is SettlementModuleProto ||
-                                      e is IVirtualResourceMiningEntity
+                                      e is IVirtualResourceMiningEntity ||
+                                      e is TrainStationModule
                     )
                 .Action(m =>
                 {
@@ -925,6 +927,12 @@ namespace ProgramableNetwork
                         else
                             m.Output["product"] = Fix32.Zero;
                         return ModuleStatus.Running;
+                    }
+
+                    if (entity is TrainStationModule stationModule)
+                    {
+                        ProductProto product = m.Input.Product("product");
+                        return StorageValueFromBuffer(m, product, stationModule.Buffer.ValueOrNull);
                     }
 
                     if (entity is SettlementFoodModule foodModule)
