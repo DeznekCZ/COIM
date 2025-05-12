@@ -62,9 +62,20 @@ namespace ProgramableNetwork
             }
         }
 
-        public UiComponent CreateUI(Antena antena, IDataBand databand, IDataBandChannel channel, Action remove)
+        public UiComponent CreateUI(AntenaInspector antenaInspector, IDataBandChannel channel)
         {
-            throw new NotImplementedException("FM ui is not finished");
+            return OriginalDataBand.Prototype.Buttons(antenaInspector, channel);
+        }
+
+        public void Move(int v)
+        {
+            int newIndex = Index + v;
+            if (newIndex < 0)
+                Index = OriginalDataBand.Prototype.Channels + newIndex;
+            else if (newIndex >= OriginalDataBand.Prototype.Channels)
+                Index = newIndex - OriginalDataBand.Prototype.Channels;
+            else
+                Index = newIndex;
         }
     }
 }

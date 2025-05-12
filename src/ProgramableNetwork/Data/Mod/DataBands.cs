@@ -11,6 +11,7 @@ using Mafi.Unity;
 using Mafi.Core.Entities;
 using Mafi.Unity.UiToolkit.Library;
 using Mafi.Core.World;
+using ProgramableNetwork.Data.DataBand;
 
 namespace ProgramableNetwork
 {
@@ -42,88 +43,7 @@ namespace ProgramableNetwork
                 FMDataBand.Serialize,
                 FMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((171 + i.Index).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz",
-                buttons: (entity, inspector, uiContext, dataBand, proto) =>
-                {
-                    return new Mafi.Unity.UiToolkit.Component.UiComponent();
-                    //var picker = new AntenaPicker(entity.Prototype, dataBand, value => dataBand.Antena = value,
-                    //    proto.Distance * entity.Prototype.DistanceBoost,
-                    //    () => { }, view, inspector);
-                    //container.Add(picker);
-
-                    //var text = builder.NewTxt("band_channel_value")
-                    //    .SetHeight(40)
-                    //    .SetText(proto.Display(entity.Context, dataBand))
-                    //    .SetAlignment(UnityEngine.TextAnchor.MiddleLeft)
-                    //    .SetText(proto.Display(entity.Context, dataBand))
-                    //    .AppendTo(container);
-
-                    //builder.NewBtnGeneral("NstartkHz")
-                    //    .SetText("|<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        dataBand.Index = 0;
-                    //        text.SetText(proto.Display(entity.Context, dataBand));
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(container);
-                    //builder.NewBtnGeneral("N-5kHz")
-                    //    .SetText("<<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        dataBand.Index -= 10;
-                    //        if (dataBand.Index < 0)
-                    //            dataBand.Index += 46;
-                    //        text.SetText(proto.Display(entity.Context, dataBand));
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(container);
-
-                    //builder.NewBtnGeneral("N-0.5kHz")
-                    //    .SetText("<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        dataBand.Index -= 1;
-                    //        if (dataBand.Index < 0)
-                    //            dataBand.Index += 46;
-                    //        text.SetText(proto.Display(entity.Context, dataBand));
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(container);
-
-                    //builder.NewBtnGeneral("N+0.5kHz")
-                    //    .SetText(">")
-                    //    .OnClick(() =>
-                    //    {
-                    //        dataBand.Index += 1;
-                    //        if (dataBand.Index > 45)
-                    //            dataBand.Index -= 46;
-                    //        text.SetText(proto.Display(entity.Context, dataBand));
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(container);
-
-                    //builder.NewBtnGeneral("N+5kHz")
-                    //    .SetText(">>")
-                    //    .OnClick(() =>
-                    //    {
-                    //        dataBand.Index += 10;
-                    //        if (dataBand.Index > 45)
-                    //            dataBand.Index -= 46;
-                    //        text.SetText(proto.Display(entity.Context, dataBand));
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(container);
-
-                    //builder.NewBtnGeneral("NendkHz")
-                    //    .SetText(">|")
-                    //    .OnClick(() =>
-                    //    {
-                    //        dataBand.Index = 45;
-                    //        text.SetText(proto.Display(entity.Context, dataBand));
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(container);
-                },
+                buttons: (inspector, dataBand) => new FMDataBandChannelView(inspector, dataBand),
                 distance: 500.ToFix32()
                 ));
 
@@ -136,7 +56,7 @@ namespace ProgramableNetwork
                 AMDataBand.Serialize,
                 AMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((53 + i.Index).ToFix32() * 10.ToFix32()).IntegerPart + " kHz",
-                buttons: (entity, inspector, uiContext, dataBand, proto) =>
+                buttons: (inspector, dataBand) =>
                 {
                     return new Mafi.Unity.UiToolkit.Component.UiComponent();
                     //var text = builder.NewTxt("band_channel_value")

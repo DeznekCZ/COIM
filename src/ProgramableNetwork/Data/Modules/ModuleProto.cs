@@ -605,15 +605,15 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddCustomField(string id, string name, Func<int> size, Action<CustomField> ui, Action<CustomField> data = null)
+            public Builder AddCustomField(string id, string name, CustomFieldConstructor ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, null, size, ui, data ?? ((field) => { })));
+                m_fields.Add(new CustomField(id, name, null, ui, data ?? ((field) => { })));
                 return this;
             }
 
-            public Builder AddCustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui, Action<CustomField> data = null)
+            public Builder AddCustomField(string id, string name, string shortDesc, CustomFieldConstructor ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, shortDesc, size, ui, data ?? ((field) => { })));
+                m_fields.Add(new CustomField(id, name, shortDesc, ui, data ?? ((field) => { })));
                 return this;
             }
 

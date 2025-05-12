@@ -162,7 +162,7 @@ namespace ProgramableNetwork
             return mine?.Location.Position.DistanceTo(HomeLocation) ?? Fix32.MaxValue;
         }
 
-        public UiComponent CreateUI(Antena antena, IDataBand databand, IDataBandChannel channel, Action remove)
+        public UiComponent CreateUI(AntenaInspector antenaInspector, IDataBandChannel channel)
         {
             throw new NotImplementedException("Display of channel is finalized");
         }

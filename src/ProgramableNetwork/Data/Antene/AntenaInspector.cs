@@ -56,29 +56,7 @@ namespace ProgramableNetwork
             CameraController = cameraController;
             m_invalidOpSound = Context.AudioDb.InvalidOp();
 
-            //var status = AddStatusInfoPanel();
-            //updaterBuilder.Observe(() =>
-            //        (m_inspector.SelectedEntity?.ElectricityConsumer.ValueOrNull?.NotEnoughPower ?? false) ||
-            //        (m_inspector.SelectedEntity?.IsPaused ?? false)
-            //    )
-            //    .Do(noElectricityOrError => {
-            //        if (!noElectricityOrError)
-            //            status.SetStatusWorking();
-            //        else if (m_inspector.SelectedEntity.IsPaused)
-            //            status.SetStatus(Tr.EntityStatus__Working, StatusPanel.State.Critical);
-            //        else
-            //            status.SetStatusWorking();
-            //    });
-
-
-            //AddGeneralPriorityPanel(m_inspector.Context, () => m_inspector.SelectedEntity);
-
-            //itemContainer.AppendDivider(5, Style.EntitiesMenu.MenuBg);
-
-            //selectionchanged = updaterBuilder.CreateSyncer(() => m_inspector.SelectedEntity);
             AddBandDisplay();
-
-            //AddUpdater(updaterBuilder.Build(SyncFrequency.Critical));
         }
 
         public CursorManager CursorManager { get; }
@@ -198,11 +176,28 @@ namespace ProgramableNetwork
         private void AddBandDisplay()
         {
             m_bandPanel = AddPanelWithHeader();
-            m_bandPanel.Header.Add(new Title(new Mafi.Localization.LocStrFormatted("Bands")));
+            m_bandPanel.Header.Add(new Label(new Mafi.Localization.LocStrFormatted("Bands")));
 
             TabContainer tabContainer = new TabContainer();
             m_bandPanel.Add(tabContainer);
             m_databands = Context.ProtosDb.All<DataBandProto>().ToArray();
+
+            m_signalPanel = AddPanelWithHeader();
+            m_signalPanel.Collapsed(true);
+            m_signalPanel.Header.Add(new UiComponent().FlexGrow(1)); // filler
+            m_signalPanel.Header.Add(new Label(new Mafi.Localization.LocStrFormatted("Redirected signals")));
+            m_signalPanel.Header.Add(new UiComponent().FlexGrow(1)); // filler
+            m_signalPanel.Header.AddAndReturn(new ButtonText(new Mafi.Localization.LocStrFormatted("+")))
+                .OnClick(() => {
+                    Entity.DataBand.CreateChannel();
+                    m_signalPanel.Collapsed(false);
+                    RefreshRedirections(Entity.DataBand);
+                })
+                .Height(Sizes.BLOCK_SIZE);
+            m_signalList = m_signalPanel.Body.AddAndReturn(new ScrollColumn());
+            m_signalList.Gap(5.px());
+            m_signalList.MaxHeight(400.px());
+            m_signalList.MinHeight(100.px());
 
             foreach (DataBandProto item in m_databands)
             {
@@ -211,10 +206,11 @@ namespace ProgramableNetwork
 
             this.Observe(() => Entity)
                 .Observe(() => Entity?.Prototype)
-                .Observe(() => Entity?.DataBand)
-                .DoOnSync((antena, proto, databand) =>
+                .DoOnSync((antena, proto) =>
                 {
                     if (antena == null) return;
+
+                    m_signalPanel.Collapsed(antena.DataBand?.Channels?.Count() == 0);
 
                     for (int i = 0; i < m_databands.Length; i++)
                     {
@@ -228,16 +224,8 @@ namespace ProgramableNetwork
                     }
 
                     m_signalList.Clear();
-                    m_signalList.Add(new ButtonText(new Mafi.Localization.LocStrFormatted("+"), () =>
-                    {
-                        Entity.DataBand.CreateChannel();
-                    }));
-
-                    if (databand == null) return;
-                    foreach (var channel in databand.Channels)
-                    {
-                        m_signalList.Add(channel.CreateUI(antena, databand, channel, () => databand.RemoveChannel(channel)));
-                    }
+                    if (antena.DataBand == null) return;
+                    RefreshRedirections(antena.DataBand);
                 });
 
             tabContainer.OnTabActivate(() =>
@@ -247,19 +235,24 @@ namespace ProgramableNetwork
 
                 Entity.DataBand = m_databands[tabContainer.ActiveTabIndex ?? 0]
                                         .Constructor(Entity, Entity.Context, m_databands[tabContainer.ActiveTabIndex ?? 0]);
-            });
 
-            m_signalPanel = AddPanelWithHeader();
-            m_signalPanel.Header.Add(new Title(new Mafi.Localization.LocStrFormatted("Redirected signals")));
-            m_signalList = new ScrollColumn();
-            m_signalPanel.Add(m_signalList);
+                RefreshRedirections(Entity.DataBand);
+            });
+        }
+
+        private void RefreshRedirections(IDataBand databand)
+        {
+            m_signalList.Clear();
+
+            foreach (var channel in databand.Channels)
+            {
+                m_signalList.Add(databand.Prototype.Buttons(this, channel));
+            }
         }
 
         private UiComponent GetTabContent(DataBandProto item)
         {
-            return new Label(new Mafi.Localization.LocStrFormatted("TODO"));
-            // TODO
-            //throw new NotImplementedException();
+            return new Label(item.Strings.DescShort);
         }
     }
 }
