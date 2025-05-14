@@ -123,13 +123,12 @@ namespace ProgramableNetwork
                 m_distance = distance;
                 parentWindow.OnCloseStart += ParentWindow_OnCloseStart;
 
-                this.Size(Sizes.BLOCK_SIZE * 4, Sizes.BLOCK_SIZE);
-
                 m_btnPreview = new DisplayWithIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
-                m_btnPreview.Icon.Margin(Px.Zero);
-                m_btnPreview.Icon.Padding(Px.Zero);
-                m_btnPreview.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
-                m_btnPreview.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+                m_btnPreview.Icon.Margin(0);
+                m_btnPreview.Icon.Size(Sizes.IMAGE_SIZE * 1.5f, Sizes.IMAGE_SIZE * 1.5f);
+                m_btnPreview.Icon.Padding(0);
+                m_btnPreview.Margin(0);
+                m_btnPreview.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE * 1.5f);
                 m_btnPreview.OnClick(() =>
                 {
                     Entity entity = m_module.Field.Entity<Entity>(m_dataName);
@@ -139,9 +138,7 @@ namespace ProgramableNetwork
                 Add(m_btnPreview);
 
                 m_selectionButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Edit_svg);
-                m_selectionButton.Padding(Sizes.IMAGE_PADDING);
-                m_selectionButton.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);
-                m_selectionButton.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+                m_selectionButton.Height(Sizes.BLOCK_SIZE * 1.5f);
                 m_selectionButton.OnClick(PickEntity);
                 Add(m_selectionButton);
 

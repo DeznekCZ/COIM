@@ -26,7 +26,7 @@ namespace ProgramableNetwork
             registrator.PrototypesDb.Add(DataBandProto.Create<UnkownnDataBandType, IDataBandChannel>(
                 id: DataBand_Unknown,
                 strings: Proto.CreateStr(DataBand_Unknown, "Unknown", "Received signal is unrecognizable", "unkonwn band description"),
-                (antena, context, proto) => new UnkownnDataBandType(context, proto),
+                (antena, context, proto) => new UnkownnDataBandType(context, proto, antena),
                 channels: 0,
                 (c0, c1) => false,
                 UnkownnDataBandType.Serialize,

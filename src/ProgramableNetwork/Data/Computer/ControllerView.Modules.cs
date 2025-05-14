@@ -134,7 +134,6 @@ namespace ProgramableNetwork
 
             ButtonText button = column.AddAndReturn(new ButtonText(new LocStrFormatted("+")));
             button.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 2);
-            column.Add(button);
 
             ProtoPickerPopup<AModuleProtoSelector> protoPicker = new ProtoPickerPopup<AModuleProtoSelector>(
                 optionsProvider: () => NewModulePicker(targetRow, targetColumn),

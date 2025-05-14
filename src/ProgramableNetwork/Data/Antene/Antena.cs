@@ -41,7 +41,7 @@ namespace ProgramableNetwork
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
             m_maintenanceConsumer = maintenanceProvidersFactory.CreateFor(this);
 
-            DataBand = new UnkownnDataBandType(Context, Context.ProtosDb.Get<DataBandProto>(DataBand_Unknown).ValueOrThrow("Unknown signal not found"));
+            DataBand = new UnkownnDataBandType(Context, Context.ProtosDb.Get<DataBandProto>(DataBand_Unknown).ValueOrThrow("Unknown signal not found"), this);
         }
 
         [DoNotSave(0, null)]
@@ -109,7 +109,7 @@ namespace ProgramableNetwork
 
             if (DataBand == null)
             {
-                DataBand = new UnkownnDataBandType(Context, Context.ProtosDb.Get<DataBandProto>(DataBand_Unknown).ValueOrThrow("Unknown signal not found"));
+                DataBand = new UnkownnDataBandType(Context, Context.ProtosDb.Get<DataBandProto>(DataBand_Unknown).ValueOrThrow("Unknown signal not found"), this);
             }
             else
             {

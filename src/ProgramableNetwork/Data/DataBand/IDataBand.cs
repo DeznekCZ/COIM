@@ -7,6 +7,7 @@ namespace ProgramableNetwork
     public interface IDataBand
     {
         EntityContext Context { set; get; }
+        Antena Antena { get; set; }
         DataBandProto Prototype { get; }
         IEnumerable<IDataBandChannel> Channels { get; }
         Computing RequiredComputation { get; }

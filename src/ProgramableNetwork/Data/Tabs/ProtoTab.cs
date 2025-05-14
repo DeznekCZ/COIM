@@ -27,7 +27,7 @@ namespace ProgramableNetwork
         private readonly Action m_refresh;
         private readonly Window m_window;
         private readonly UiContext m_UiContext;
-        private ButtonIcon m_btnPreview;
+        private DisplayWithIcon m_btnPreview;
         private ButtonIcon m_btnClear;
         private ProtoPickerPopup<T> m_protoPicker;
 
@@ -43,13 +43,21 @@ namespace ProgramableNetwork
             m_UiContext = uiContext;
             parentWindow.OnCloseStart += ParentWindow_OnCloseStart;
 
-            m_btnPreview = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
-            m_btnPreview.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
-            m_btnPreview.OnClick(FindProduct);
+            m_btnPreview = new DisplayWithIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+            m_btnPreview.Icon.Margin(0);
+            m_btnPreview.Icon.Size(Sizes.IMAGE_SIZE * 1.5f, Sizes.IMAGE_SIZE * 1.5f);
+            m_btnPreview.Icon.Padding(0);
+            m_btnPreview.Margin(0);
+            m_btnPreview.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE * 1.5f);
             Add(m_btnPreview);
 
+            ButtonIcon selectionButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Edit_svg);
+            selectionButton.Height(Sizes.BLOCK_SIZE * 1.5f);
+            selectionButton.OnClick(FindProduct);
+            Add(selectionButton);
+
             m_btnClear = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png);
-            m_btnClear.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+            m_btnClear.Height(Sizes.BLOCK_SIZE * 1.5f);
             m_btnClear.OnClick(() => {
                 m_module.Field[m_fieldId] = Fix32.Zero;
                 m_module.Field[m_fieldId, false] = "";
@@ -67,11 +75,11 @@ namespace ProgramableNetwork
                     m_module.Field[m_fieldId, false] = product.Id.Value;
                     m_refresh();
                 },
-                button: m_btnPreview,
+                button: selectionButton,
                 title: Tr.ProductSelectorTitle,
                 config: new ProtoPickerConfig
                 {
-                    ItemSize = new Vector2(60, 60),
+                    ItemSize = new Vector2(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2),
                     ItemsPerRow = 6,
                 }
             );

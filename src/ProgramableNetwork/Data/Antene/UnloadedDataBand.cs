@@ -11,13 +11,15 @@ namespace ProgramableNetwork
         private string protoId;
         private byte[] bandData;
 
-        public UnloadedDataBand(string protoId, byte[] bandData)
+        public UnloadedDataBand(string protoId, byte[] bandData, Antena antena)
         {
             this.protoId = protoId;
             this.bandData = bandData;
+            this.Antena = antena;
         }
 
         public EntityContext Context { get; set; }
+        public Antena Antena { get; set; }
 
         public DataBandProto Prototype { get; set; }
 

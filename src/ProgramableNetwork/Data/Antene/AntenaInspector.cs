@@ -228,16 +228,20 @@ namespace ProgramableNetwork
                     RefreshRedirections(antena.DataBand);
                 });
 
+            m_onLoading = true;
             tabContainer.OnTabActivate(() =>
             {
                 if (tabContainer.ActiveTabIndex is null) return;
-                if (m_onLoading) return;
 
-                Entity.DataBand = m_databands[tabContainer.ActiveTabIndex ?? 0]
-                                        .Constructor(Entity, Entity.Context, m_databands[tabContainer.ActiveTabIndex ?? 0]);
+                if (!m_onLoading)
+                {
+                    Entity.DataBand = m_databands[tabContainer.ActiveTabIndex ?? 0]
+                                            .Constructor(Entity, Entity.Context, m_databands[tabContainer.ActiveTabIndex ?? 0]);
+                }
 
                 RefreshRedirections(Entity.DataBand);
             });
+            m_onLoading = false;
         }
 
         private void RefreshRedirections(IDataBand databand)

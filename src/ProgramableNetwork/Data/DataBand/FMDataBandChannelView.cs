@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace ProgramableNetwork.Data.DataBand
 {
-    public class FMDataBandChannelView : Panel
+    public class FMDataBandChannelView : PanelRow
     {
         /// <summary>
         /// Used for common channels
@@ -24,20 +24,11 @@ namespace ProgramableNetwork.Data.DataBand
         /// <param name="channel"></param>
         public FMDataBandChannelView(AntenaInspector antenaInspector, FMDataBandChannel channel)
         {
+            Column frequency = Body.AddAndReturn(new Column());
 
-            Row firstRow = Body.AddAndReturn(new Row()).Width(400);
+            Row firstRow = frequency.AddAndReturn(new Row()).Width(400);
 
-            Display display = firstRow.AddAndReturn(new Display())
-                .FlexGrow(1)
-                .OnClick(() =>
-                {
-                    antenaInspector.EntitySelectionInput = new AntenaSelector(
-                        distance: channel.OriginalDataBand.Prototype.Distance * channel.OriginalDataBand.Antena.Prototype.DistanceBoost,
-                        refresh: () => { },
-                        filter: (antena) => true,
-                        selected: (antena) => channel.Antena = antena
-                    );
-                });
+            Display display = firstRow.AddAndReturn(new Display()).FlexGrow(1);
             display.OnMouseEnterLeave(
                 () =>
                 {
@@ -77,7 +68,7 @@ namespace ProgramableNetwork.Data.DataBand
                 .Icon.Padding(Sizes.IMAGE_PADDING)
                         .Margin(Px.Zero);
 
-            Row secondRow = Body.AddAndReturn(new Row()).Width(400);
+            Row secondRow = frequency.AddAndReturn(new Row()).Width(400);
 
             // move to beginning
             secondRow.AddAndReturn(new ButtonText("|<<".AsLoc()))
@@ -128,6 +119,22 @@ namespace ProgramableNetwork.Data.DataBand
                 .FlexGrow(1)
                 .OnClick(() => channel.Index = channel.OriginalDataBand.Prototype.Channels - 1)
                 .ObserveEnabled(() => channel.Index < channel.OriginalDataBand.Prototype.Channels - 2);
+
+            try
+            {
+                Body.Add(
+                    new AntenaPicker(
+                        module: channel,
+                        distance: channel.OriginalDataBand.Prototype.Distance * channel.OriginalDataBand.Antena.Prototype.DistanceBoost,
+                        refresh: () => { },
+                        inspector: antenaInspector
+                    ));
+            }
+            catch (Exception e)
+            {
+                Log.Exception(e, "Failed to get instance of antena");
+                // ignore missing value
+            }
         }
 
         public FMDataBandChannelView(ControllerInspector controllerInspector, Action refresh, Reference reference)
