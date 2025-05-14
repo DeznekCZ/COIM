@@ -85,6 +85,17 @@ namespace ProgramableNetwork
             manager.TryGetEntity(m_mineId, out m_mine);
         }
 
+        public void Move(int v)
+        {
+            int newIndex = Index + v;
+            if (newIndex < 0)
+                Index = OriginalDataBand.Prototype.Channels + newIndex;
+            else if (newIndex >= OriginalDataBand.Prototype.Channels)
+                Index = newIndex - OriginalDataBand.Prototype.Channels;
+            else
+                Index = newIndex;
+        }
+
         public enum AMOperation
         {
             // ALTERNATE

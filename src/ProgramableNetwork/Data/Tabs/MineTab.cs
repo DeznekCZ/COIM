@@ -1,5 +1,7 @@
 ﻿using Mafi;
+using Mafi.Core.Syncers;
 using Mafi.Core.World.Entities;
+using Mafi.Localization;
 using Mafi.Unity.Ui;
 using Mafi.Unity.Ui.Library;
 using Mafi.Unity.UiToolkit.Component;
@@ -9,105 +11,56 @@ using System.Linq;
 
 namespace ProgramableNetwork
 {
-    public class MineTab : Row/*, IRefreshable*/
+    public class MineTab : ButtonIcon/*, IRefreshable*/
     {
-        private readonly AMDataBandChannel m_fieldId;
-        private readonly Antena m_module;
-        private readonly AntenaInspector m_inspector;
-        private readonly Action m_refresh;
-        private readonly Fix32 m_distanceBoost;
-        private readonly Row m_btnPreviewHolder;
-        private ButtonIcon m_btnPreview;
-        private ButtonIcon m_btnClear;
-        private ProtoPickerPopup<MineInstanceProto> m_protoPicker;
-
         public MineTab(UiContext uiContext, Antena module, AMDataBandChannel fieldId, Fix32 distanceBoost,
-            Window parentWindow, AntenaInspector inspector, Action refresh)
-            : base()
+            Window parentWindow, AntenaInspector inspector)
+            : base(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png)
         {
-            m_fieldId = fieldId;
-            m_module = module;
-            m_inspector = inspector;
-            m_refresh = refresh;
-            m_distanceBoost = distanceBoost;
+            this.Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2);
+            Icon.Size(Percent.Eighty, Percent.Eighty);
 
-            this.Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE);
-
-            m_btnPreview = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png)
-                .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
-                .OnClick(FindProduct)
-                .Tooltip(MineInstanceProto.GetStrings(m_fieldId.WorldMapMine, fieldId).Name);
-            Add(m_btnPreview);
-
-            m_btnClear = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png)
-                .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
-                .OnClick(() =>
-                {
-                    m_fieldId.WorldMapMine = null;
-                    m_btnPreview.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
-                    m_btnClear.Visible(false);
-                    m_refresh();
-                });
-            Add(m_btnClear);
-
-            m_protoPicker = new ProtoPickerPopup<MineInstanceProto>(
-                optionsProvider: () => m_module.Context.EntitiesManager
+            var protoPicker = new ProtoPickerPopup<MineInstanceProto>(
+                optionsProvider: () => module.Context.EntitiesManager
                     .GetAllEntitiesOfType<WorldMapMine>()
                     .Where(p => p.IsOwnedByPlayer)
-                    .Select(p => new MineInstanceProto(p, m_fieldId))
+                    .Select(p => new MineInstanceProto(p, fieldId))
                     .ToList(),
-                optionViewFactory: (product) =>
-                {
-                    return new ButtonIconText(product.IconPath, product.Strings.Name)
-                        .Tooltip(MineInstanceProto.GetStrings(m_fieldId.WorldMapMine, fieldId).DescShort)
-                        .Size(height: 60.px());
-                },
-                onOptionSelected: (product) =>
-                {
-                    m_fieldId.WorldMapMine = product.Mine;
-                    m_refresh();
-                },
-                button: m_btnPreview,
-                title: new Mafi.Localization.LocStrFormatted("Select mine"),
+                optionViewFactory: (product) => new ButtonRow()
+                                                    .Gap(5.px())
+                                                    .AddAndReturn(new Icon(product.IconPath))
+                                                        .Width(Sizes.BLOCK_SIZE * 2)
+                                                        .Parent.As<ButtonRow>().Value
+                                                    .AddAndReturn(new Label(product.Strings.Name))
+                                                        .Width(Sizes.BLOCK_SIZE * 6)
+                                                        .Parent.As<ButtonRow>().Value
+                                                    .Tooltip(MineInstanceProto.GetStrings(fieldId.WorldMapMine, fieldId).DescShort)
+                                                    .Height(Sizes.BLOCK_SIZE * 2)
+                                                    .Width(Sizes.BLOCK_SIZE * 8),
+                onOptionSelected: (product) => fieldId.WorldMapMine = product.Mine,
+                button: this,
+                title: LocStrFormatted.Empty,
                 config: new ProtoPickerConfig
                 {
-                    ItemSize = new UnityEngine.Vector2(60, 60),
-                    ItemsPerRow = 5
+                    ItemSize = new UnityEngine.Vector2(Sizes.BLOCK_SIZE * 8, Sizes.BLOCK_SIZE * 2),
+                    ItemsPerRow = 1
                 },
                 orderAlphabetically: true,
                 searchable: true
             );
 
-            Refresh();
-        }
+            this.Observe(() => fieldId.WorldMapMine)
+                .Do((mine) =>
+                {
+                    if (mine is null)
+                    {
+                        Icon.Empty();
+                        return;
+                    }
 
-        private void FindProduct()
-        {
-            m_protoPicker.Show();
-        }
-
-        public void Refresh()
-        {
-            if (m_fieldId.WorldMapMine is null)
-            {
-                m_btnPreview.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
-                m_btnClear.Visible(false);
-                m_refresh();
-                return;
-            }
-
-            if (!m_fieldId.WorldMapMine.IsOwnedByPlayer)
-            {
-                m_fieldId.WorldMapMine = null;
-                m_btnPreview.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
-                m_btnClear.Visible(false);
-                m_refresh();
-                return;
-            }
-
-            m_btnPreview.Icon.Value(m_fieldId.WorldMapMine.Prototype.IconPath);
-            m_btnClear.Visible(true);
-            m_refresh();
+                    Icon.Value(fieldId.WorldMapMine.Prototype.IconPath);
+                    Icon.Tooltip(MineInstanceProto.GetStrings(fieldId.WorldMapMine, fieldId).Name);
+                });
         }
     }
 }

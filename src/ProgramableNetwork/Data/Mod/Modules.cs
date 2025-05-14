@@ -1988,7 +1988,7 @@ namespace ProgramableNetwork
                     .AddCategory(Category.Antene)
                     .AddCategory(Category.AnteneFM)
                     .AddCustomField("fm", "FM", "Broadcasting frequency",
-                        (inspector, settings, refresh, reference) => settings.Add(new FMDataBandChannelView(inspector, refresh, reference))
+                        (inspector, settings, refresh, reference) => settings.Add(new AMDataBandChannelView(inspector, refresh, reference))
                     )
                     .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                     .AddDisplay("fm", "Frequency", i)

@@ -18,7 +18,7 @@ namespace ProgramableNetwork
         public MineActionProto(AMOperation item, AMDataBandChannel channel)
         {
             Id = new Proto.ID("Progrmable_Network_AM_" + item.ToString());
-            Strings = new Proto.Str(LocalizationManager.GetLocalizedString0Arg(Id.Value, GetName(item, channel), "", true, true));
+            Strings = new Proto.Str(LocalizationManager.GetLocalizedString0Arg(Id.Value, GetName(item, channel).Value, "", true, true));
             Value = item;
             IconPath = GetIconPath(item, channel);
         }
@@ -48,20 +48,20 @@ namespace ProgramableNetwork
             }
         }
 
-        public static string GetName(AMOperation item, AMDataBandChannel channel)
+        public static LocStrFormatted GetName(AMOperation item, AMDataBandChannel channel)
         {
             switch (item)
             {
                 case AMOperation.ReadProduct:
                     if (channel.WorldMapMine is null || !channel.WorldMapMine.CustomTitle.HasValue)
-                        return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name;
+                        return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name.AsLoc();
                     else
                         return channel.WorldMapMine.CustomTitle.HasValue
-                            ? channel.WorldMapMine.CustomTitle.Value
-                            : channel.WorldMapMine.Prototype.Strings.Name.TranslatedString;
+                            ? channel.WorldMapMine.CustomTitle.Value.AsLoc()
+                            : channel.WorldMapMine.Prototype.Strings.Name.TranslatedString.AsLoc();
 
                 default:
-                    return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name;
+                    return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name.AsLoc();
             }
         }
 
