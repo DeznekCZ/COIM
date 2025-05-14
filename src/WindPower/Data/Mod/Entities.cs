@@ -1,5 +1,6 @@
 ﻿using Mafi;
 using Mafi.Base;
+using Mafi.Collections.ImmutableCollections;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Mods;
@@ -30,7 +31,12 @@ namespace WindPower
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: "Assets/WindPower/WindTurbine_T1.prefab",
                     customIconPath: "Assets/WindPower/WindTurbine_T1_Icon.png",
-                    categories: registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(Ids.ToolbarCategories.MachinesElectricity).SomeOption().ToImmutableArray()),
+                    categories: new ToolbarCategoryProto[]
+                    {
+                        registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(Ids.ToolbarCategories.Power),
+                        registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(Ids.ToolbarCategories.Power_General)
+                    }.ToImmutableArray()
+                ),
                 generatedPower: 1200.Kw(),
                 brakingPower: 500.KwMech(),
                 gondolaHeight: new HeightTilesF(16 / 2),

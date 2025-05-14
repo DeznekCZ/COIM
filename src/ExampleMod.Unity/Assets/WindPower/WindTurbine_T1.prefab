@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6857548233709984542}
   - component: {fileID: 5954413264268393608}
+  - component: {fileID: 3120887791225990294}
   m_Layer: 0
   m_Name: WindTurbine_T1
   m_TagString: Untagged
@@ -47,6 +48,22 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 2, y: 16, z: 2}
   m_Center: {x: 0, y: 8, z: 0}
+--- !u!111 &3120887791225990294
+Animation:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6857548233709984543}
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Animation: {fileID: 7400000, guid: 19979d507c8f5cf48833c2ecbc490589, type: 2}
+  m_Animations:
+  - {fileID: 7400000, guid: 19979d507c8f5cf48833c2ecbc490589, type: 2}
+  m_WrapMode: 0
+  m_PlayAutomatically: 1
+  m_AnimatePhysics: 0
+  m_CullingType: 0
 --- !u!1001 &1126123939820536311
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -150,6 +167,18 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 2534964839176971238, guid: 45e229e67ab8af64696236202303a854, type: 3}
+    - target: {fileID: 4798689472927626200, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.49999994
+      objectReference: {fileID: 0}
+    - target: {fileID: 4798689472927626200, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.86602545
+      objectReference: {fileID: 0}
+    - target: {fileID: 4798689472927626200, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 156
+      objectReference: {fileID: 0}
     - target: {fileID: 4798689472978698109, guid: 6ca1a765cb0f9454092d6faa6138814b, type: 3}
       propertyPath: m_Name
       value: Gondola
