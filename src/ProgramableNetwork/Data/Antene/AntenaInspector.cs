@@ -4,43 +4,59 @@ using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Input;
+using Mafi.Core.Syncers;
 using Mafi.Unity;
+using Mafi.Unity.Audio;
+using Mafi.Unity.Camera;
 using Mafi.Unity.Entities;
 using Mafi.Unity.InputControl;
-using Mafi.Unity.InputControl.Cursors;
 using Mafi.Unity.InputControl.Inspectors;
+using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Library.Inspectors;
+using Mafi.Unity.UiStatic.Cursors;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 namespace ProgramableNetwork
 {
     [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
-    public class AntenaInspector : EntityInspector<Antena, AntenaView>, ISelectionInspector<Antena, AntenaSelector, Antena>
+    public class AntenaInspector : BaseInspector<Antena>, ISelectionInspector<Antena, AntenaSelector, Antena>
     {
-        private readonly AntenaView m_windowView;
         private readonly AudioSource m_invalidOpSound;
+        private PanelWithHeader m_bandPanel;
         private bool m_highlightSearched;
         private IRenderedEntity m_hoveredEntity;
+        private DataBandProto[] m_databands;
+        private bool m_onLoading;
+        private PanelWithHeader m_signalPanel;
+        private ScrollColumn m_signalList;
 
         public AntenaInspector(
-            InspectorContext context,
+            UiContext context,
             CursorManager cursorManager,
             CursorPickingManager cursorPickingManager,
             ShortcutsManager shortcutsManager,
+            CameraController cameraController,
             //TerrainCursor terrainCursor,
             NewInstanceOf<EntityHighlighter> entityHighlighter,
             NewInstanceOf<EntityHighlighter> entityHighlighterSelectable
             ) : base(context)
         {
-            m_windowView = new AntenaView(this);
             CursorManager = cursorManager;
             CursorPickingManager = cursorPickingManager;
             //TerrainCursor = terrainCursor;
             EntityHighlighter = entityHighlighter.Instance;
             EntityHighlighterSelectable = entityHighlighterSelectable.Instance;
             ShortcutsManager = shortcutsManager;
-            m_invalidOpSound = Context.Builder.AudioDb.GetSharedAudio(Context.Builder.Audio.InvalidOp);
+            CameraController = cameraController;
+            m_invalidOpSound = Context.AudioDb.InvalidOp();
+
+            AddBandDisplay();
         }
 
         public CursorManager CursorManager { get; }
@@ -49,14 +65,10 @@ namespace ProgramableNetwork
         public EntityHighlighter EntityHighlighter { get; }
         public EntityHighlighter EntityHighlighterSelectable { get; }
         public ShortcutsManager ShortcutsManager { get; }
+        public CameraController CameraController { get; }
         public AntenaSelector EntitySelectionInput { get; set; }
 
-        public override AntenaView GetView()
-        {
-            return m_windowView;
-        }
-
-        public override bool InputUpdate(IInputScheduler inputScheduler)
+        public override bool InputUpdate()
         {
             if (EntitySelectionInput != null)
             {
@@ -65,7 +77,7 @@ namespace ProgramableNetwork
 
                 if (ShortcutsManager.IsPrimaryActionDown)
                 {
-                    Tile3f source = SelectedEntity.Position3f;
+                    Tile3f source = Entity.Position3f;
 
                     Option<Antena> pickedEntity = CursorPickingManager.PickEntity<Antena>(e => EntitySelectionInput.EntityFilter(e));
                     if (pickedEntity.HasValue
@@ -86,12 +98,12 @@ namespace ProgramableNetwork
                     return true;
                 }
             }
-            return base.InputUpdate(inputScheduler);
+            return base.InputUpdate();
         }
 
-        public override void RenderUpdate(GameTime gameTime)
+        protected override void SyncUpdate(GameTime gameTime)
         {
-            base.RenderUpdate(gameTime);
+            base.SyncUpdate(gameTime);
 
             if (EntitySelectionInput != null)
             {
@@ -99,7 +111,7 @@ namespace ProgramableNetwork
                 {
                     m_highlightSearched = true;
             
-                    Tile3f source = SelectedEntity.Position3f;
+                    Tile3f source = Entity.Position3f;
                     Fix32 innerDistance = EntitySelectionInput.EntitySearchDistance;
             
                     Context.EntitiesManager.GetAllEntitiesOfType<Antena>()
@@ -120,7 +132,7 @@ namespace ProgramableNetwork
                 if (pickedEntity.HasValue)
                 {
                     m_hoveredEntity = pickedEntity.Value;
-                    Tile3f source = SelectedEntity.Position3f;
+                    Tile3f source = Entity.Position3f;
             
                     if (IsWithingDistance(source, pickedEntity.Value, EntitySelectionInput.EntitySearchDistance))
                     {
@@ -159,6 +171,92 @@ namespace ProgramableNetwork
         {
             base.OnDeactivated();
             //EntitySelectionInput = null;
+        }
+
+        private void AddBandDisplay()
+        {
+            m_bandPanel = AddPanelWithHeader();
+            m_bandPanel.Header.Add(new Label(new Mafi.Localization.LocStrFormatted("Bands")));
+
+            TabContainer tabContainer = new TabContainer();
+            m_bandPanel.Add(tabContainer);
+            m_databands = Context.ProtosDb.All<DataBandProto>().ToArray();
+
+            m_signalPanel = AddPanelWithHeader();
+            m_signalPanel.Collapsed(true);
+            m_signalPanel.Header.Add(new UiComponent().FlexGrow(1)); // filler
+            m_signalPanel.Header.Add(new Label(new Mafi.Localization.LocStrFormatted("Redirected signals")));
+            m_signalPanel.Header.Add(new UiComponent().FlexGrow(1)); // filler
+            m_signalPanel.Header.AddAndReturn(new ButtonText(new Mafi.Localization.LocStrFormatted("+")))
+                .OnClick(() => {
+                    Entity.DataBand.CreateChannel();
+                    m_signalPanel.Collapsed(false);
+                    RefreshRedirections(Entity.DataBand);
+                })
+                .Height(Sizes.BLOCK_SIZE);
+            m_signalList = m_signalPanel.Body.AddAndReturn(new ScrollColumn());
+            m_signalList.Gap(5.px());
+            m_signalList.MaxHeight(400.px());
+            m_signalList.MinHeight(100.px());
+
+            foreach (DataBandProto item in m_databands)
+            {
+                tabContainer.AddTab(item.Strings.Name, GetTabContent(item), iconAssetPath: null);
+            }
+
+            this.Observe(() => Entity)
+                .Observe(() => Entity?.Prototype)
+                .DoOnSync((antena, proto) =>
+                {
+                    if (antena == null) return;
+
+                    m_signalPanel.Collapsed(antena.DataBand?.Channels?.Count() == 0);
+
+                    for (int i = 0; i < m_databands.Length; i++)
+                    {
+                        if (antena.DataBand?.Prototype == m_databands[i])
+                        {
+                            m_onLoading = true;
+                            tabContainer.SwitchToTab(i);
+                            m_onLoading = false;
+                            return;
+                        }
+                    }
+
+                    m_signalList.Clear();
+                    if (antena.DataBand == null) return;
+                    RefreshRedirections(antena.DataBand);
+                });
+
+            m_onLoading = true;
+            tabContainer.OnTabActivate(() =>
+            {
+                if (tabContainer.ActiveTabIndex is null) return;
+
+                if (!m_onLoading)
+                {
+                    Entity.DataBand = m_databands[tabContainer.ActiveTabIndex ?? 0]
+                                            .Constructor(Entity, Entity.Context, m_databands[tabContainer.ActiveTabIndex ?? 0]);
+                }
+
+                RefreshRedirections(Entity.DataBand);
+            });
+            m_onLoading = false;
+        }
+
+        private void RefreshRedirections(IDataBand databand)
+        {
+            m_signalList.Clear();
+
+            foreach (var channel in databand.Channels)
+            {
+                m_signalList.Add(databand.Prototype.Buttons(this, channel));
+            }
+        }
+
+        private UiComponent GetTabContent(DataBandProto item)
+        {
+            return new Label(item.Strings.DescShort);
         }
     }
 }

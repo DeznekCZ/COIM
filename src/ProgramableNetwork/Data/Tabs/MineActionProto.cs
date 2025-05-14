@@ -4,7 +4,6 @@ using Mafi.Core.Mods;
 using Mafi.Core.Prototypes;
 using Mafi.Core.World.Entities;
 using Mafi.Localization;
-using Mafi.Unity.UserInterface.Style;
 using System;
 using System.Reflection;
 using static Mafi.Base.Assets.Base;
@@ -19,7 +18,7 @@ namespace ProgramableNetwork
         public MineActionProto(AMOperation item, AMDataBandChannel channel)
         {
             Id = new Proto.ID("Progrmable_Network_AM_" + item.ToString());
-            Strings = new Proto.Str(LocalizationManager.GetLocalizedString0Arg(Id.Value, GetName(item, channel), "", true, true));
+            Strings = new Proto.Str(LocalizationManager.GetLocalizedString0Arg(Id.Value, GetName(item, channel).Value, "", true, true));
             Value = item;
             IconPath = GetIconPath(item, channel);
         }
@@ -49,20 +48,20 @@ namespace ProgramableNetwork
             }
         }
 
-        public static string GetName(AMOperation item, AMDataBandChannel channel)
+        public static LocStrFormatted GetName(AMOperation item, AMDataBandChannel channel)
         {
             switch (item)
             {
                 case AMOperation.ReadProduct:
                     if (channel.WorldMapMine is null || !channel.WorldMapMine.CustomTitle.HasValue)
-                        return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name;
+                        return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name.AsLoc();
                     else
                         return channel.WorldMapMine.CustomTitle.HasValue
-                            ? channel.WorldMapMine.CustomTitle.Value
-                            : channel.WorldMapMine.Prototype.Strings.Name.TranslatedString;
+                            ? channel.WorldMapMine.CustomTitle.Value.AsLoc()
+                            : channel.WorldMapMine.Prototype.Strings.Name.TranslatedString.AsLoc();
 
                 default:
-                    return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name;
+                    return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name.AsLoc();
             }
         }
 
@@ -79,6 +78,8 @@ namespace ProgramableNetwork
         public IMod Mod => null;
 
         public AMOperation Value { get; }
+
+        public bool IsInitialized => true;
 
         public bool TryGetParam<T>(out T paramValue) where T : class
         {

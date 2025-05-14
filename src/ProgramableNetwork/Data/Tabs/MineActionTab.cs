@@ -1,139 +1,72 @@
 ﻿using Mafi;
-using Mafi.Core.Products;
+using Mafi.Core;
+using Mafi.Core.Syncers;
 using Mafi.Core.World.Entities;
-using Mafi.Unity;
-using Mafi.Unity.InputControl.Inspectors;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
+using Mafi.Localization;
+using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Library;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using static ProgramableNetwork.AMDataBandChannel;
 
 namespace ProgramableNetwork
 {
-    public class MineActionTab : StackContainer/*, IRefreshable*/
+    public class MineActionTab : ButtonIcon/*, IRefreshable*/
     {
-        private readonly UiBuilder m_builder;
-        private readonly AMDataBandChannel m_fieldId;
-        private readonly ItemDetailWindowView m_window;
-        private readonly AntenaInspector m_inspector;
-        private readonly StackContainer m_btnPreviewHolder;
-        private Btn m_btnPreview;
-        private ProtoPicker<MineActionProto> m_protoPicker;
-
-        public MineActionTab(UiBuilder builder, Antena module, AMDataBandChannel fieldId, Func<Antena, WorldMapMine, bool> filter,
-            ItemDetailWindowView parentWindow, AntenaInspector antenaInspector)
-            : base(builder, "product_" + DateTime.Now.Ticks)
+        public MineActionTab(UiContext uiContext, Antena module, AMDataBandChannel fieldId, Func<Antena, WorldMapMine, bool> filter,
+            Window parentWindow, AntenaInspector antenaInspector)
+            : base(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png)
         {
-            m_builder = builder;
-            m_fieldId = fieldId;
-            m_window = parentWindow;
-            m_inspector = antenaInspector;
+            this.Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2);
+            Icon.Size(Percent.Eighty, Percent.Eighty);
 
-            m_btnPreviewHolder = m_builder
-                .NewStackContainer("picker_holder_" + DateTime.Now.Ticks)
-                .SetSize(40, 40)
-                .AppendTo(this);
-
-            m_btnPreview = m_builder
-                .NewBtnGeneral("picker_" + DateTime.Now.Ticks)
-                .SetButtonStyle(m_builder.Style.Global.ImageBtn)
-                .SetSize(40, 40)
-                .SetIcon(m_builder.Style.Icons.Empty)
-                .ToolTip(antenaInspector, () => MineActionProto.GetName(m_fieldId.Operation, m_fieldId))
-                .OnClick(FindProduct)
-                .AppendTo(m_btnPreviewHolder);
-
-            SetSizeMode(SizeMode.Dynamic);
-            this.SetHeight(40);
-            this.SetWidth(40);
-
-            Refresh();
-        }
-
-        private void FindProduct()
-        {
-            if (m_protoPicker == null)
-            {
-                m_protoPicker = new ProtoPicker<MineActionProto>(
-                    (product) =>
+            this.Observe(() => fieldId.Operation)
+                .Do(operation => {
+                    if (fieldId.Operation == 0)
                     {
-                        m_fieldId.Operation = product.Value;
-                        m_window.OnHide -= protoPicker_Hide;
-                        m_protoPicker.Hide();
-                        try
-                        {
-                            m_btnPreviewHolder.ClearAndDestroyAll();
-                            m_btnPreview = m_builder
-                                .NewBtnGeneral("picker_" + DateTime.Now.Ticks)
-                                .SetButtonStyle(m_builder.Style.Global.ImageBtn)
-                                .SetSize(40, 40)
-                                .SetIcon(product.IconPath)
-                                .ToolTip(m_inspector, () => MineActionProto.GetName(m_fieldId.Operation, m_fieldId))
-                                .OnClick(FindProduct)
-                                .AppendTo(m_btnPreviewHolder);
-                        }
-                        catch (Exception)
-                        {
-                            // gui issue
-                        }
-                    },
-                    (product) => product.Strings.DescShort,
-                    false);
+                        Icon.Empty();
+                        return;
+                    }
 
-                m_protoPicker.BuildIfNeeded(m_builder);
-                m_protoPicker.SetSize(400, 400);
-                m_protoPicker.SetTitle(Tr.ProductsToFilter);
+                    Icon.Value(MineActionProto.GetIconPath(fieldId.Operation, fieldId));
+                    Icon.Tooltip(MineActionProto.GetName(fieldId.Operation, fieldId));
+                });
 
-                m_window.SetupInnerWindowWithButton(m_protoPicker, m_btnPreviewHolder, m_btnPreview, () => {
-                    m_btnPreview.SetParent(m_btnPreviewHolder);
-                }, () => { });
-            }
-
-            m_protoPicker.SetVisibleProtos(GetOperationTypes().ToList());
-
-            m_window.OnHide += protoPicker_Hide;
-            m_protoPicker.Show();
+            var protoPicker = new ProtoPickerPopup<MineActionProto>(
+                optionsProvider: () => GetOperationTypes(fieldId),
+                optionViewFactory: (item) => new ButtonRow()
+                                                .Gap(5.px())
+                                                .AddAndReturn(new Icon(item.IconPath))
+                                                    .Width(Sizes.BLOCK_SIZE * 2)
+                                                    .Parent.As<ButtonRow>().Value
+                                                .AddAndReturn(new Label(item.Strings.Name)
+                                                    .Width(Sizes.BLOCK_SIZE * 6))
+                                                    .Parent.As<ButtonRow>().Value
+                                                .Tooltip(item.Strings.DescShort)
+                                                .Height(Sizes.BLOCK_SIZE * 2)
+                                                .Width(Sizes.BLOCK_SIZE * 8),
+                onOptionSelected: (product) => fieldId.Operation = product.Value,
+                button: this,
+                title: LocStrFormatted.Empty,
+                config: new ProtoPickerConfig
+                {
+                    ItemSize = new UnityEngine.Vector2(Sizes.BLOCK_SIZE * 8, Sizes.BLOCK_SIZE * 2),
+                    ItemsPerRow = 1
+                },
+                orderAlphabetically: false,
+                searchable: false
+            );
         }
 
-        private IEnumerable<MineActionProto> GetOperationTypes()
+        private IEnumerable<MineActionProto> GetOperationTypes(AMDataBandChannel fieldId)
         {
             Type am = typeof(AMOperation);
             foreach (AMOperation item in Enum.GetValues(am))
             {
-                yield return new MineActionProto(item, m_fieldId);
+                yield return new MineActionProto(item, fieldId);
             }
-        }
-
-        private void protoPicker_Hide()
-        {
-            try
-            {
-                m_protoPicker.Hide();
-            }
-            catch (Exception)
-            {
-                // ignore
-            }
-            finally
-            {
-                m_window.OnHide -= protoPicker_Hide;
-            }
-        }
-
-        public void Refresh()
-        {
-            if (m_fieldId.Operation == 0)
-            {
-                m_btnPreview.SetIcon(m_builder.Style.Icons.Empty);
-                return;
-            }
-
-            m_btnPreview.SetIcon(MineActionProto.GetIconPath(m_fieldId.Operation, m_fieldId));
         }
     }
 }

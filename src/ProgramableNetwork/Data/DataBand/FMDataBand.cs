@@ -90,7 +90,9 @@ namespace ProgramableNetwork
 
         public void initContext(Antena antena)
         {
+            Antena = antena;
             Log.Info($"Initializing FM BandData");
+
             var optional = Context.ProtosDb.Get<DataBandProto>(m_protoId);
             if (optional.HasValue)
             {

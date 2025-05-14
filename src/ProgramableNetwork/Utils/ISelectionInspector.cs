@@ -1,4 +1,6 @@
 ﻿using Mafi.Core.Entities;
+using Mafi.Unity.Camera;
+using Mafi.Unity.Entities;
 
 namespace ProgramableNetwork
 {
@@ -8,6 +10,8 @@ namespace ProgramableNetwork
         where TEntitySelector : IEntitySelector<TEntity>
     {
         TEntitySelector EntitySelectionInput { get; set; }
-        TTarget SelectedEntity { get; }
+        TTarget Entity { get; }
+        EntityHighlighter EntityHighlighter { get; }
+        CameraController CameraController { get; }
     }
 }

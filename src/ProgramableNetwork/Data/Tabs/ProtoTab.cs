@@ -1,162 +1,115 @@
 ﻿using Mafi;
+using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
+using Mafi.Core.Syncers;
 using Mafi.Unity;
 using Mafi.Unity.InputControl.Inspectors;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
+using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Library;
+using Mafi.Unity.UiToolkit;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace ProgramableNetwork
 {
-    public class ProtoTab<T> : StackContainer/*, IRefreshable*/
+    public class ProtoTab<T> : Row/*, IRefreshable*/
         where T : EntityProto, IProtoWithIcon
     {
-        private readonly UiBuilder m_builder;
         private readonly string m_fieldId;
         private readonly Module m_module;
         private readonly Func<T, bool> m_filter;
         private readonly Action m_refresh;
-        private readonly ItemDetailWindowView m_window;
-        private readonly InspectorContext m_inspectorContext;
-        private readonly StackContainer m_btnPreviewHolder;
-        private Btn m_btnPreview;
-        private Btn m_btnClear;
-        private ProtoPicker<T> m_protoPicker;
+        private readonly Window m_window;
+        private readonly UiContext m_UiContext;
+        private DisplayWithIcon m_btnPreview;
+        private ButtonIcon m_btnClear;
+        private ProtoPickerPopup<T> m_protoPicker;
 
-        public ProtoTab(UiBuilder builder, Module module, string fieldId, Func<Module, T, bool> filter,
-            Action refresh, ItemDetailWindowView parentWindow, InspectorContext inspectorContext)
-            : base(builder, "product_" + DateTime.Now.Ticks)
+        public ProtoTab(UiContext uiContext, Module module, string fieldId, Func<Module, T, bool> filter,
+            Action refresh, Window parentWindow, ControllerInspector inspector)
+            : base()
         {
-            m_builder = builder;
             m_fieldId = fieldId;
             m_module = module;
             m_filter = (e) => filter.Invoke(m_module, e);
             m_refresh = refresh;
             m_window = parentWindow;
-            m_inspectorContext = inspectorContext;
+            m_UiContext = uiContext;
+            parentWindow.OnCloseStart += ParentWindow_OnCloseStart;
 
-            m_btnPreviewHolder = m_builder
-                .NewStackContainer("picker_holder_" + DateTime.Now.Ticks)
-                .SetSize(40, 40)
-                .AppendTo(this);
+            m_btnPreview = new DisplayWithIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+            m_btnPreview.Icon.Margin(0);
+            m_btnPreview.Icon.Size(Sizes.IMAGE_SIZE * 1.5f, Sizes.IMAGE_SIZE * 1.5f);
+            m_btnPreview.Icon.Padding(0);
+            m_btnPreview.Margin(0);
+            m_btnPreview.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE * 1.5f);
+            Add(m_btnPreview);
 
-            m_btnPreview = m_builder
-                .NewBtnGeneral("picker_" + DateTime.Now.Ticks)
-                .SetButtonStyle(m_builder.Style.Global.ImageBtn)
-                .SetSize(40, 40)
-                .SetIcon(m_builder.Style.Icons.Empty)
-                .OnClick(FindProduct)
-                .AppendTo(m_btnPreviewHolder);
+            ButtonIcon selectionButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Edit_svg);
+            selectionButton.Height(Sizes.BLOCK_SIZE * 1.5f);
+            selectionButton.OnClick(FindProduct);
+            Add(selectionButton);
 
-            m_btnClear = m_builder
-                .NewBtnGeneral("clear_" + DateTime.Now.Ticks)
-                .SetSize(20, 40)
-                .SetText("X")
-                .OnClick(() => {
-                    m_module.Field[m_fieldId] = Fix32.Zero;
-                    m_module.Field[m_fieldId, false] = "";
+            m_btnClear = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png);
+            m_btnClear.Height(Sizes.BLOCK_SIZE * 1.5f);
+            m_btnClear.OnClick(() => {
+                m_module.Field[m_fieldId] = Fix32.Zero;
+                m_module.Field[m_fieldId, false] = "";
+                m_refresh();
+            });
+            m_btnClear.Visible(false);
+            Add(m_btnClear);
+
+            m_protoPicker = new ProtoPickerPopup<T>(
+                optionsProvider: GetItems,
+                optionViewFactory: (item) => new ButtonIcon(item.IconPath).Tooltip(item.Strings.Name),
+                onOptionSelected: (product) =>
+                {
+                    m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
+                    m_module.Field[m_fieldId, false] = product.Id.Value;
                     m_refresh();
-                })
-                .AppendTo(m_btnPreviewHolder);
+                },
+                button: selectionButton,
+                title: Tr.ProductSelectorTitle,
+                config: new ProtoPickerConfig
+                {
+                    ItemSize = new Vector2(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2),
+                    ItemsPerRow = 6,
+                }
+            );
 
-            SetSizeMode(SizeMode.Dynamic);
-            this.SetHeight(40);
-            this.SetWidth(60);
+            this.Observe(() => m_module.Field[m_fieldId])
+                .Do((item) => Refresh());
+        }
 
-            Refresh();
+        private void ParentWindow_OnCloseStart(Window obj)
+        {
+            m_protoPicker.Close();
+        }
+
+        protected override void OnDetached()
+        {
+            m_window.OnCloseStart -= ParentWindow_OnCloseStart;
+            base.OnDetached();
+        }
+
+        private IEnumerable<T> GetItems()
+        {
+            return m_UiContext.ProtosDb
+                .All<T>()
+                .Where(p => p.IsAvailable)
+                .Where(m_filter);
         }
 
         private void FindProduct()
         {
-            if (m_protoPicker == null)
-            {
-                m_protoPicker = new ProtoPicker<T>(
-                    (product) =>
-                    {
-                        m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
-                        m_module.Field[m_fieldId, false] = product.Id.Value;
-                        m_window.OnHide -= protoPicker_Hide;
-                        m_protoPicker.Hide();
-                        try
-                        {
-                            m_btnPreviewHolder.ClearAndDestroyAll();
-                            m_btnPreview = new Btn(m_builder, "picker_" + DateTime.Now.Ticks)
-                                .SetButtonStyle(m_builder.Style.Global.ImageBtn)
-                                .SetSize(40, 40)
-                                .SetIcon(product.IconPath)
-                                .OnClick(FindProduct)
-                                .AppendTo(m_btnPreviewHolder);
-
-                            m_btnClear = m_builder
-                                .NewBtnGeneral("clear_" + DateTime.Now.Ticks)
-                                .SetSize(20, 40)
-                                .SetText("X")
-                                .OnClick(() => {
-                                    m_module.Field[m_fieldId] = Fix32.Zero;
-                                    m_module.Field[m_fieldId, false] = "";
-                                    m_refresh();
-                                })
-                                .AppendTo(m_btnPreviewHolder);
-                        }
-                        catch (Exception)
-                        {
-                            // gui issue
-                        }
-                        m_refresh();
-                    },
-                    (product) => product.Strings.DescShort,
-                    false);
-
-                m_protoPicker.BuildIfNeeded(m_builder);
-                m_protoPicker.SetSize(400, 400);
-                m_protoPicker.SetTitle(Tr.SelectVehicle_Title);
-
-                m_window.SetupInnerWindowWithButton(m_protoPicker, m_btnPreviewHolder, m_btnPreview, () => {
-                    try {
-                        m_btnPreviewHolder.ClearAndDestroyAll();
-                        m_btnPreview = new Btn(m_builder, "picker_" + DateTime.Now.Ticks)
-                            .SetButtonStyle(m_builder.Style.Global.ImageBtn)
-                            .SetSize(40, 40)
-                            .SetIcon(m_builder.Style.Icons.Empty)
-                            .OnClick(FindProduct)
-                            .AppendTo(m_btnPreviewHolder);
-                    }
-                    catch (Exception)
-                    {
-                        // gui issue
-                    }
-                }, () => { });
-            }
-
-            m_protoPicker.SetVisibleProtos(m_inspectorContext.ProtosDb
-                .All<T>()
-                .Where(p => p.IsAvailable)
-                .Where(m_filter)
-                .ToList());
-
-            m_window.OnHide += protoPicker_Hide;
             m_protoPicker.Show();
-        }
-
-        private void protoPicker_Hide()
-        {
-            try
-            {
-                m_protoPicker.Hide();
-            }
-            catch (Exception)
-            {
-                // ignore
-            }
-            finally
-            {
-                m_window.OnHide -= protoPicker_Hide;
-            }
         }
 
         public void Refresh()
@@ -165,8 +118,8 @@ namespace ProgramableNetwork
 
             if (string.IsNullOrEmpty(slimId))
             {
-                m_btnPreview.SetIcon(m_builder.Style.Icons.Empty);
-                m_btnClear.SetVisibility(false);
+                m_btnPreview.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+                m_btnClear.Visible(false);
                 return;
             }
 
@@ -176,13 +129,13 @@ namespace ProgramableNetwork
             if (foundProduct == null)
             {
                 m_module.Field[m_fieldId] = Fix32.Zero;
-                m_btnPreview.SetIcon(m_builder.Style.Icons.Empty);
-                m_btnClear.SetVisibility(false);
+                m_btnPreview.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+                m_btnClear.Visible(false);
                 return;
             }
 
-            m_btnPreview.SetIcon(foundProduct.IconPath);
-            m_btnClear.SetVisibility(true);
+            m_btnPreview.Icon.Value(foundProduct.IconPath);
+            m_btnClear.Visible(true);
         }
     }
 }

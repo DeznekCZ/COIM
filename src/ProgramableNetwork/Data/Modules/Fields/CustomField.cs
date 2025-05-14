@@ -1,7 +1,7 @@
 ﻿using Mafi;
-using Mafi.Unity;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
+using Mafi.Unity.Ui;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
 
 namespace ProgramableNetwork
@@ -11,40 +11,26 @@ namespace ProgramableNetwork
         private string id;
         private string name;
         private string shortDesc;
-        private Action<CustomField> ui;
+        private CustomFieldConstructor ui;
         private Action<CustomField> data;
-        private Func<int> size;
 
-        public CustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui, Action<CustomField> data)
+        public CustomField(string id, string name, string shortDesc, CustomFieldConstructor ui, Action<CustomField> data)
         {
             this.id = id;
             this.name = name;
             this.shortDesc = shortDesc;
             this.ui = ui;
             this.data = data;
-            this.size = size;
         }
 
         public string Id => id;
         public string Name => name;
         public string ShortDesc => shortDesc;
 
-        public int Size => size();
-
-        public ITooltipInspector Inspector { get; private set; }
-        public UiBuilder Builder { get; private set; }
-        public StackContainer Container { get; private set; }
-        public Action Refresh { get; private set; }
-        public Reference Reference { get; private set; }
-
-        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public int Size => 1;
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            Inspector = inspector;
-            Builder = uiBuilder;
-            Container = fieldContainer;
-            Refresh = updateDialog;
-            Reference = new Reference((v) => module.Field[id] = v, () => module.Field[id, Fix32.Zero]);
-            ui.Invoke(this);
+            ui.Invoke(inspector, fieldContainer, updateDialog, new Reference((v) => module.Field[id] = v, () => module.Field[id, Fix32.Zero]));
         }
 
         public void InitData(Module module)
@@ -57,4 +43,6 @@ namespace ProgramableNetwork
             // do nothing
         }
     }
+
+    public delegate void CustomFieldConstructor(ControllerInspector Inspector, UiComponent Container, Action Refresh, Reference reference);
 }

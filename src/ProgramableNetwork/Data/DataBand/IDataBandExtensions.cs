@@ -27,7 +27,7 @@ namespace ProgramableNetwork
             string protoId = reader.ReadString();
             byte[] data = reader.ReadArray<byte>();
             Log.Info($"Databand {protoId} was loaded with {data.Length} bytes");
-            return new UnloadedDataBand(protoId, data);
+            return new UnloadedDataBand(protoId, data, null);
         }
     }
 }

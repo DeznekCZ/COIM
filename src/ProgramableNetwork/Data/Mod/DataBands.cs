@@ -7,14 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Mafi;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface.Components;
 using Mafi.Unity;
-using Mafi.Unity.UiFramework;
 using Mafi.Core.Entities;
 using Mafi.Unity.UiToolkit.Library;
 using Mafi.Core.World;
+using ProgramableNetwork.Data.DataBand;
 
 namespace ProgramableNetwork
 {
@@ -29,7 +26,7 @@ namespace ProgramableNetwork
             registrator.PrototypesDb.Add(DataBandProto.Create<UnkownnDataBandType, IDataBandChannel>(
                 id: DataBand_Unknown,
                 strings: Proto.CreateStr(DataBand_Unknown, "Unknown", "Received signal is unrecognizable", "unkonwn band description"),
-                (antena, context, proto) => new UnkownnDataBandType(context, proto),
+                (antena, context, proto) => new UnkownnDataBandType(context, proto, antena),
                 channels: 0,
                 (c0, c1) => false,
                 UnkownnDataBandType.Serialize,
@@ -46,87 +43,7 @@ namespace ProgramableNetwork
                 FMDataBand.Serialize,
                 FMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((171 + i.Index).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz",
-                buttons: (entity, inspector, view, builder, container, dataBand, proto) =>
-                {
-                    new AntenaPicker(builder, entity.Prototype, dataBand, value => dataBand.Antena = value,
-                        proto.Distance * entity.Prototype.DistanceBoost,
-                        () => { }, view, inspector)
-                        .AppendTo(container);
-
-                    var text = builder.NewTxt("band_channel_value")
-                        .SetHeight(40)
-                        .SetText(proto.Display(entity.Context, dataBand))
-                        .SetAlignment(UnityEngine.TextAnchor.MiddleLeft)
-                        .SetText(proto.Display(entity.Context, dataBand))
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("NstartkHz")
-                        .SetText("|<")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index = 0;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-                    builder.NewBtnGeneral("N-5kHz")
-                        .SetText("<<")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index -= 10;
-                            if (dataBand.Index < 0)
-                                dataBand.Index += 46;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("N-0.5kHz")
-                        .SetText("<")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index -= 1;
-                            if (dataBand.Index < 0)
-                                dataBand.Index += 46;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("N+0.5kHz")
-                        .SetText(">")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index += 1;
-                            if (dataBand.Index > 45)
-                                dataBand.Index -= 46;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("N+5kHz")
-                        .SetText(">>")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index += 10;
-                            if (dataBand.Index > 45)
-                                dataBand.Index -= 46;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("NendkHz")
-                        .SetText(">|")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index = 45;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-                },
+                buttons: (inspector, dataBand) => new FMDataBandChannelView(inspector, dataBand),
                 distance: 500.ToFix32()
                 ));
 
@@ -139,95 +56,7 @@ namespace ProgramableNetwork
                 AMDataBand.Serialize,
                 AMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((53 + i.Index).ToFix32() * 10.ToFix32()).IntegerPart + " kHz",
-                buttons: (entity, inspector, view, builder, container, dataBand, proto) =>
-                {
-                    var text = builder.NewTxt("band_channel_value")
-                        .SetHeight(20)
-                        .SetText(proto.Display(entity.Context, dataBand))
-                        .SetWidth(180)
-                        .SetAlignment(UnityEngine.TextAnchor.MiddleLeft);
-
-                    var action = new MineActionTab(builder, entity, dataBand, (a, m) => true, view, inspector)
-                        .AppendTo(container);
-
-                    new MineTab(builder, entity, dataBand,
-                        entity.Prototype.DistanceBoost,
-                        view, inspector,
-                        () => {
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                            action.Refresh(); // for update of product
-                        })
-                        .AppendTo(container);
-
-                    text.AppendTo(container);
-
-                    builder.NewBtnGeneral("NstartkHz")
-                        .SetText("|<")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index = 0;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-                    builder.NewBtnGeneral("N-5kHz")
-                        .SetText("<<")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index -= 10;
-                            if (dataBand.Index < 0)
-                                dataBand.Index += 118;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("N-0.5kHz")
-                        .SetText("<")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index -= 1;
-                            if (dataBand.Index < 0)
-                                dataBand.Index += 118;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("N+0.5kHz")
-                        .SetText(">")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index += 1;
-                            if (dataBand.Index > 117)
-                                dataBand.Index -= 118;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("N+5kHz")
-                        .SetText(">>")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index += 10;
-                            if (dataBand.Index > 117)
-                                dataBand.Index -= 118;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-
-                    builder.NewBtnGeneral("NendkHz")
-                        .SetText(">|")
-                        .OnClick(() =>
-                        {
-                            dataBand.Index = 117;
-                            text.SetText(proto.Display(entity.Context, dataBand));
-                        })
-                        .SetSize(20, 20)
-                        .AppendTo(container);
-                },
+                buttons: (inspector, dataBand) => new AMDataBandChannelView(inspector, dataBand),
                 distance: 500.ToFix32()
                 ));
         }

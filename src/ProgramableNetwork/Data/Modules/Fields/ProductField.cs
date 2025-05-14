@@ -1,9 +1,12 @@
-﻿using Mafi.Core.Products;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
+﻿using Mafi;
+using Mafi.Core;
+using Mafi.Core.Products;
+using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Library;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
+using System.Linq;
 
 namespace ProgramableNetwork
 {
@@ -15,34 +18,33 @@ namespace ProgramableNetwork
         {
             this.Id = id;
             this.Name = name;
-            this.shortDesc = shortDesc;
+            this.ShortDesc = shortDesc;
             this.filter = filter;
         }
 
         public string Id { get; }
 
         public string Name { get; }
-        public string shortDesc { get; }
+        public string ShortDesc { get; }
 
         public int Size => 40;
 
-        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
-            fieldContainer.SetHeight(40);
+            SingleProductPickerUi productPicker = new SingleProductPickerUi(
+                allAvailableProducts: () => uiContext.ProtosDb
+                        .All<ProductProto>()
+                        .Where(p => p.IsAvailable)
+                        .Where(p => filter.Invoke(module, p)),
+                onProductSelected: (product) =>
+                {
+                    module.Field[Id] = Fix32.FromRaw(product.SlimId.Value);
+                    updateDialog();
+                },
+                selectedProduct: () => module.Field.Product(Id).CreateOption()
+            );
 
-            var txt = uiBuilder
-                .NewBtnGeneral("name")
-                .SettingFieldNameStyle(uiBuilder)
-                .SetParent(fieldContainer, true)
-                .SetWidth(180)
-                .SetHeight(40)
-                .SetText(Name)
-                .ToolTip(inspector, shortDesc, attached: true)
-                .AppendTo(fieldContainer);
-
-            ProductTab productTab = new ProductTab(uiBuilder, module, Id, filter, updateDialog, parentWindow, inspector.Context);
-            productTab.AppendTo(fieldContainer);
+            fieldContainer.Row(this).Add(productPicker);
         }
 
         public void InitData(Module module)

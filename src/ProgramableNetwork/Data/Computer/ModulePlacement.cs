@@ -1,9 +1,12 @@
 ﻿using Mafi.Serialization;
+using System;
 
 namespace ProgramableNetwork
 {
     public struct ModulePlacement
     {
+        public static ModulePlacement Empty = new ModulePlacement(0, true);
+
         public long ModuleId;
         public bool Placement;
 
@@ -59,6 +62,16 @@ namespace ProgramableNetwork
         public static ModulePlacement Deserialize(BlobReader reader)
         {
             return (reader.ReadLong(), reader.ReadBool());
+        }
+
+        public static ModulePlacement Origin(long id)
+        {
+            return new ModulePlacement(id, true);
+        }
+
+        public static ModulePlacement Rest(long id)
+        {
+            return new ModulePlacement(id, false);
         }
     }
 }

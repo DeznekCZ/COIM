@@ -1,4 +1,4 @@
-﻿using Mafi.Unity.UiFramework.Components;
+﻿using Mafi.Unity.UiToolkit.Component;
 using System;
 using System.Linq;
 
@@ -26,7 +26,7 @@ namespace ProgramableNetwork
         public int Outputs { get; }
         public int Displays { get; }
         public int Fields { get; }
-        public Action<Module, StackContainer> Display { get; }
+        public Action<Module, UiComponent> Display { get; }
         public Func<Module, int> DynamicWidth { get; }
 
         /// <summary>

@@ -25,7 +25,7 @@ namespace ProgramableNetwork
             Electricity? iddlePower = default,
             Func<ModuleProto, bool> allowedModules = null,
             IEnumerable<Tag> tags = null)
-            : base(id, strings, layout, costs, graphics, constructionDurationPerProduct: Duration.FromSec(10), boostCost ?? 0.25.Upoints(), cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags)
+            : base(id, strings, layout, costs, graphics, constructionDurationPerProduct: Duration.FromSec(10), boostCost ?? 0.25.Upoints(), cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
         {
             this.WorkingPower = workingPower ?? Electricity.FromKw(5);
             this.IddlePower = iddlePower ?? Electricity.FromKw(2);

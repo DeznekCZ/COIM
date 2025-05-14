@@ -10,13 +10,15 @@ namespace ProgramableNetwork
     {
         public class UnkownnDataBandType : IDataBand, IDataBandTyped<IDataBandChannel>
         {
-            public UnkownnDataBandType(EntityContext context, DataBandProto proto)
+            public UnkownnDataBandType(EntityContext context, DataBandProto proto, Antena antena)
             {
                 Context = context;
                 Prototype = proto;
+                Antena = antena;
             }
 
             public EntityContext Context { set; get; }
+            public Antena Antena { get; set; }
             public DataBandProto Prototype { get; private set; }
 
             public IEnumerable<IDataBandChannel> Channels { get; } = new Lyst<IDataBandChannel>();
@@ -45,7 +47,7 @@ namespace ProgramableNetwork
 
             public static UnkownnDataBandType Deserialize(BlobReader reader)
             {
-                return new UnkownnDataBandType(null, null);
+                return new UnkownnDataBandType(null, null, null);
             }
 
             public void RemoveChannel(IDataBandChannel channel)

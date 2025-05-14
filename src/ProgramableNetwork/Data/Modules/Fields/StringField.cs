@@ -1,75 +1,57 @@
-﻿using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
+﻿using Mafi.Unity.Ui;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
+using System.Linq;
 
 namespace ProgramableNetwork
 {
     public class StringField : IField
     {
         public string Id { get; }
-        private string name;
-        private string shortDesc;
+        public string Name { get; }
+        public string ShortDesc { get; }
 
         public string Default { get; }
 
         public StringField(string id, string name, string shortDesc, string defaultValue)
         {
             this.Id = id;
-            this.name = name;
-            this.shortDesc = shortDesc;
+            this.Name = name;
+            this.ShortDesc = shortDesc;
             this.Default = defaultValue;
         }
 
-        public string Name => name;
-
         public int Size => 20;
 
-        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
-            fieldContainer.SetHeight(20);
+            RowContainer row = fieldContainer.Row(this);
 
-            var txt = uiBuilder
-                .NewBtnGeneral("name")
-                .SettingFieldNameStyle(uiBuilder)
-                .SetParent(fieldContainer, true)
-                .SetWidth(180)
-                .SetHeight(40)
-                .SetText(Name)
-                .ToolTip(inspector, shortDesc, attached: true)
-                .AppendTo(fieldContainer);
+            var numberEditor = new TextField();
+            numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
+            numberEditor.Width(200 - Sizes.BLOCK_SIZE * 1.5f);
+            numberEditor.Height(Sizes.BLOCK_SIZE);
+            row.Add(numberEditor);
 
-            var numberEditor = uiBuilder
-                .NewTxtField("value")
-                .SetParent(fieldContainer, true)
-                .SetWidth(180)
-                .SetHeight(20)
-                .AppendTo(fieldContainer);
-
-            var setButton = uiBuilder
-                .NewBtnPrimary("set")
-                .SetParent(fieldContainer, true)
-                .SetWidth(20)
-                .SetHeight(20)
-                .SetText("✓")
-                .SetEnabled(false)
-                .AppendTo(fieldContainer);
+            var setButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg);
+            setButton.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);
+            setButton.Width(Sizes.BLOCK_SIZE * 1.5f);
+            setButton.Height(Sizes.BLOCK_SIZE);
+            setButton.Enabled(false);
+            row.Add(setButton);
 
             setButton.OnClick(() =>
             {
                 string changeValue = numberEditor.GetText();
                 module.Field[Id, false] = changeValue;
-                setButton.SetEnabled(false);
+                setButton.Enabled(false);
             });
 
-            numberEditor.SetOnValueChangedAction(() =>
+            numberEditor.OnValueChanged((e) =>
             {
-                setButton.SetEnabled(true);
+                setButton.Enabled(true);
             });
-
-            numberEditor.SetText(module.Field[Id, false]);
         }
 
         public void Validate(Module module)

@@ -3,11 +3,20 @@ using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Input;
+using Mafi.Core.Syncers;
+using Mafi.Localization;
 using Mafi.Unity;
+using Mafi.Unity.Audio;
+using Mafi.Unity.Camera;
 using Mafi.Unity.Entities;
 using Mafi.Unity.InputControl;
-using Mafi.Unity.InputControl.Cursors;
 using Mafi.Unity.InputControl.Inspectors;
+using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Library.Inspectors;
+using Mafi.Unity.UiStatic.Cursors;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -15,38 +24,69 @@ using UnityEngine;
 namespace ProgramableNetwork
 {
     [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
-    public class ControllerInspector : EntityInspector<Controller, ControllerView>, ISelectionInspector<IEntity, EntitySelector, Controller>
+    public partial class ControllerInspector : BaseInspector<Controller>, ISelectionInspector<IEntity, EntitySelector, Controller>
     {
-        private readonly ControllerView m_windowView;
         private readonly AudioSource m_invalidOpSound;
         private bool m_highlightSearched;
         private IRenderedEntity m_hoveredEntity;
+        private readonly PanelWithHeader m_modulesPanel;
         private readonly LinesFactory m_linesFactory;
         private readonly List<LineMb> m_lines = new List<LineMb>();
         private readonly Material m_movingArrowsLineMaterialShared;
+        private readonly ControllerView m_view;
+
+        // TODO
+        public ModuleConnector m_higlighted;
 
         public ControllerInspector(
-            InspectorContext context,
+            UiContext context,
             CursorManager cursorManager,
             CursorPickingManager cursorPickingManager,
             ShortcutsManager shortcutsManager,
             //TerrainCursor terrainCursor,
+            CameraController cameraController,
             NewInstanceOf<EntityHighlighter> entityHighlighter,
             NewInstanceOf<EntityHighlighter> entityHighlighterSelectable,
             LinesFactory linesFactory,
             AssetsDb assetsDb
             ) : base(context)
         {
-            m_windowView = new ControllerView(this);
             m_linesFactory = linesFactory;
             m_movingArrowsLineMaterialShared = assetsDb.GetSharedMaterial("Assets/Core/Materials/MovingArrowsLine.mat");
             CursorManager = cursorManager;
+            CameraController = cameraController;
             CursorPickingManager = cursorPickingManager;
             //TerrainCursor = terrainCursor;
             EntityHighlighter = entityHighlighter.Instance;
             EntityHighlighterSelectable = entityHighlighterSelectable.Instance;
             ShortcutsManager = shortcutsManager;
-            m_invalidOpSound = Context.Builder.AudioDb.GetSharedAudio(Context.Builder.Audio.InvalidOp);
+            m_invalidOpSound = context.AudioDb.InvalidOp();
+
+            // UI
+            m_modulesPanel = AddPanelWithHeader();
+            m_modulesPanel.Header.Add(new Label(new Mafi.Localization.LocStrFormatted("Modules")));
+            m_modulesPanel.Add(m_view = new ControllerView(this, Refresh));
+
+            HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, Assets.Unity.UserInterface.General.Connect128_png))
+                .OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Show())
+                .OnMouseEnterLeave(AddPreviewHighlightAll, ClearPreviewHighlight);
+
+            this.Observe(() => Entity)
+                .Observe(() => Entity?.Modules)
+                .Observe(() => Entity?.Rows)
+                .Do((entity, module, rows) => Refresh());
+
+            this.Observe(() => Entity?.State)
+                .Do((state) =>
+                {
+                    Status.SetValue(state ?? "".AsLoc());
+                });
+        }
+
+        private void Refresh()
+        {
+            if (Entity is null)
+                m_view.RedrawComponents();
         }
 
         public CursorManager CursorManager { get; }
@@ -56,13 +96,10 @@ namespace ProgramableNetwork
         public EntityHighlighter EntityHighlighterSelectable { get; }
         public ShortcutsManager ShortcutsManager { get; }
         public EntitySelector EntitySelectionInput { get; set; }
+        public ModuleConnector OutputConnection { get; internal set; }
+        public CameraController CameraController {  get; }
 
-        public override ControllerView GetView()
-        {
-            return m_windowView;
-        }
-
-        public override bool InputUpdate(IInputScheduler inputScheduler)
+        public override bool InputUpdate()
         {
             if (EntitySelectionInput != null)
             {
@@ -71,7 +108,7 @@ namespace ProgramableNetwork
 
                 if (ShortcutsManager.IsPrimaryActionDown)
                 {
-                    Tile3f source = SelectedEntity.Position3f;
+                    Tile3f source = Entity.Position3f;
 
                     Option<IRenderedEntity> pickedEntity = CursorPickingManager.PickEntity<IRenderedEntity>(e => EntitySelectionInput.EntityFilter((Entity)e));
                     if (pickedEntity.HasValue
@@ -92,12 +129,12 @@ namespace ProgramableNetwork
                     return true;
                 }
             }
-            return base.InputUpdate(inputScheduler);
+            return base.InputUpdate();
         }
 
-        public override void RenderUpdate(GameTime gameTime)
+        protected override void SyncUpdate(GameTime gameTime)
         {
-            base.RenderUpdate(gameTime);
+            base.SyncUpdate(gameTime);
 
             if (EntitySelectionInput != null)
             {
@@ -105,7 +142,7 @@ namespace ProgramableNetwork
                 {
                     m_highlightSearched = true;
             
-                    Tile3f source = SelectedEntity.Position3f;
+                    Tile3f source = Entity.Position3f;
                     Fix32 innerDistance = EntitySelectionInput.EntitySearchDistance;
             
                     Context.EntitiesManager.GetAllEntitiesOfType<Entity>()
@@ -126,7 +163,7 @@ namespace ProgramableNetwork
                 if (pickedEntity.HasValue)
                 {
                     m_hoveredEntity = pickedEntity.Value;
-                    Tile3f source = SelectedEntity.Position3f;
+                    Tile3f source = Entity.Position3f;
             
                     if (IsWithingDistance(source, pickedEntity.Value, EntitySelectionInput.EntitySearchDistance))
                     {
@@ -170,7 +207,7 @@ namespace ProgramableNetwork
         internal void AddPreviewHighlightAll()
         {
             Dictionary<EntityId, IEntity> entities = new Dictionary<EntityId, IEntity>();
-            foreach (var module in SelectedEntity.Modules)
+            foreach (var module in Entity.Modules)
             {
                 GetEntitiesOfModule(entities, module);
             }
@@ -207,7 +244,7 @@ namespace ProgramableNetwork
             {
                 EntityHighlighter.Highlight(entity as IRenderedEntity, ColorRgba.CornflowerBlue);
                 entity.HasPosition(out Tile3f position);
-                var line = m_linesFactory.CreateLine(position.ToVector3(), SelectedEntity.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+                var line = m_linesFactory.CreateLine(position.ToVector3(), Entity.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
                 line.SetTextureMode(LineTextureMode.Tile);
                 m_lines.Add(line);
             }
@@ -216,7 +253,7 @@ namespace ProgramableNetwork
         private void ClearAllLines()
         {
             foreach (var line in m_lines)
-                line.gameObject.Destroy();
+                UnityEngine.Object.Destroy(line.gameObject);
             m_lines.Clear();
         }
     }

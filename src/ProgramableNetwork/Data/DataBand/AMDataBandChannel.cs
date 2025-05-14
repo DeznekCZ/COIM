@@ -4,6 +4,7 @@ using Mafi.Core.Entities;
 using Mafi.Core.World;
 using Mafi.Core.World.Entities;
 using Mafi.Serialization;
+using Mafi.Unity.UiToolkit.Component;
 using System;
 using System.Linq;
 
@@ -84,6 +85,17 @@ namespace ProgramableNetwork
             manager.TryGetEntity(m_mineId, out m_mine);
         }
 
+        public void Move(int v)
+        {
+            int newIndex = Index + v;
+            if (newIndex < 0)
+                Index = OriginalDataBand.Prototype.Channels + newIndex;
+            else if (newIndex >= OriginalDataBand.Prototype.Channels)
+                Index = newIndex - OriginalDataBand.Prototype.Channels;
+            else
+                Index = newIndex;
+        }
+
         public enum AMOperation
         {
             // ALTERNATE
@@ -159,6 +171,11 @@ namespace ProgramableNetwork
         public Fix32 Distance(WorldMapMine mine)
         {
             return mine?.Location.Position.DistanceTo(HomeLocation) ?? Fix32.MaxValue;
+        }
+
+        public UiComponent CreateUI(AntenaInspector antenaInspector, IDataBandChannel channel)
+        {
+            throw new NotImplementedException("Display of channel is finalized");
         }
     }
 

@@ -1,9 +1,8 @@
 ﻿using Mafi.Core.Entities;
 using Mafi.Core.Prototypes;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface;
-using Mafi.Unity.UserInterface.Components;
+using Mafi.Unity.Ui;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using System;
 
 namespace ProgramableNetwork
@@ -29,23 +28,10 @@ namespace ProgramableNetwork
         public Func<Module, T, bool> Filter { get; }
         public Type EntityType { get; }
 
-        public void Init(ControllerInspector inspector, ItemDetailWindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
-            fieldContainer.SetHeight(40);
-
-            var txt = uiBuilder
-                .NewBtnGeneral("name")
-                .SettingFieldNameStyle(uiBuilder)
-                .SetParent(fieldContainer, true)
-                .SetWidth(180)
-                .SetHeight(40)
-                .SetText(Name)
-                .ToolTip(inspector, ShortDesc, attached: true)
-                .AppendTo(fieldContainer);
-
-            ProtoTab<T> protoTab = new ProtoTab<T>(uiBuilder, module, Id, Filter, updateDialog, parentWindow, inspector.Context);
-            protoTab.AppendTo(fieldContainer);
+            ProtoTab<T> protoTab = new ProtoTab<T>(uiContext, module, Id, Filter, updateDialog, parentWindow, inspector);
+            fieldContainer.Row(this).Add(protoTab);
         }
 
         public void InitData(Module module)

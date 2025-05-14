@@ -9,10 +9,9 @@ using Mafi;
 using Mafi.Core.Entities;
 using Mafi.Core.Products;
 using Mafi.Base;
-using Mafi.Unity.UserInterface.Style;
-using Mafi.Unity.UiFramework.Components;
 using Mafi.Core.Entities.Static;
 using System.Linq;
+using Mafi.Unity.UiToolkit.Component;
 
 namespace ProgramableNetwork
 {
@@ -131,7 +130,7 @@ namespace ProgramableNetwork
 
             static Gfx()
             {
-                Empty = new Gfx(new UiStyle().Icons.Empty, ColorRgba.Empty);
+                Empty = new Gfx(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png, ColorRgba.Empty);
             }
         }
 
@@ -148,7 +147,7 @@ namespace ProgramableNetwork
         public List<IField> Fields { get; }
         public Electricity UsedPower { get; }
         public PartialQuantity UsedComputing { get; }
-        public Action<Module, StackContainer> DisplayFunction { get; }
+        public Action<Module, UiComponent> DisplayFunction { get; }
         public Func<Module, int> WidthFunction { get; }
 
         public override Type EntityType => typeof(Module);
@@ -227,7 +226,7 @@ namespace ProgramableNetwork
 
         public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> m_init, Action<Module> m_display, bool isInputModule, bool isOutputModule, Electricity usedPower, PartialQuantity usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
-            Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
+            Action<Module, UiComponent> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
             Symbol = m_symbol;
@@ -276,7 +275,7 @@ namespace ProgramableNetwork
             private bool m_customMaintenance;
             private List<Category> m_categories = new List<Category>();
 
-            public Action<Module, StackContainer> m_displayFunction { get; }
+            public Action<Module, UiComponent> m_displayFunction { get; }
             public Func<Module, int> m_widthFunction { get; private set; }
 
             public Builder(ProtoRegistrator registrator, string id, string name, string description, string symbol, Gfx gfx)
@@ -606,15 +605,15 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddCustomField(string id, string name, Func<int> size, Action<CustomField> ui, Action<CustomField> data = null)
+            public Builder AddCustomField(string id, string name, CustomFieldConstructor ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, null, size, ui, data ?? ((field) => { })));
+                m_fields.Add(new CustomField(id, name, null, ui, data ?? ((field) => { })));
                 return this;
             }
 
-            public Builder AddCustomField(string id, string name, string shortDesc, Func<int> size, Action<CustomField> ui, Action<CustomField> data = null)
+            public Builder AddCustomField(string id, string name, string shortDesc, CustomFieldConstructor ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, shortDesc, size, ui, data ?? ((field) => { })));
+                m_fields.Add(new CustomField(id, name, shortDesc, ui, data ?? ((field) => { })));
                 return this;
             }
 

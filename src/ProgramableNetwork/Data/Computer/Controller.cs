@@ -19,12 +19,13 @@ using Mafi.Core.Entities.Static;
 using Mafi.Core.Notifications;
 using ProgramableNetwork.Data.Mod;
 using System.Reflection;
+using Mafi.Localization;
 
 namespace ProgramableNetwork
 {
     [GenerateSerializer(false, null, 0)]
     public class Controller : LayoutEntityBase, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
-        IUnityConsumingEntity, IComputingConsumingEntity, IElectricityConsumingEntity, IMaintainedEntity, IEntityWithCustomTitle
+        IUnityConsumingEntity, IComputingConsumingEntity, IElectricityConsumingEntity, IMaintainedEntity, IObjectWithCustomTitle
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 	    {
@@ -370,27 +371,26 @@ namespace ProgramableNetwork
                 return;
             }
 
-            if (IsPaused)
-            {
-                CurrentInstruction = 0;
-                PowerRequired = Electricity.Zero;
-                m_electricConsumer.OnPowerRequiredChanged();
-                return;
-            }
-
-            if (Modules.Count == 0)
-            {
-                PowerRequired = Prototype.IddlePower;
-                m_electricConsumer.OnPowerRequiredChanged();
-                return;
-            }
-
             var newCosts = new MaintenanceCosts(Context.ProtosDb.GetOrThrow<VirtualProductProto>(Ids.Products.MaintenanceT1), new PartialQuantity(Modules.Count / 4 + 4));
             if (newCosts.MaintenancePerMonth != MaintenanceCosts.MaintenancePerMonth)
             {
                 MaintenanceCosts = newCosts;
                 Maintenance.RefreshMaintenanceCost();
             }
+
+            if (Modules.Count == 0)
+            {
+                PowerRequired = Prototype.IddlePower;
+                m_electricConsumer.OnPowerRequiredChanged();
+                ComputingRequired = Computing.Zero;
+                m_computingConsumer.OnComputingRequiredChanged();
+                m_notificationErrorManager.Deactivate(this);
+                m_notificationWarningManager.Deactivate(this);
+                m_notificationInfoManager.Deactivate(this);
+                return;
+            }
+
+            if (IsPaused) return;
 
             Electricity requiredRunningPower = GetRequiredRunningPower();
             PowerRequired = Prototype.IddlePower + requiredRunningPower;
@@ -420,6 +420,10 @@ namespace ProgramableNetwork
                 {
                     UpdateModules(computingConsumed);
                 }
+            }
+            else
+            {
+                State = Tr.EntityElectricityConsumptionTooltip__NotEnough;
             }
         }
 
@@ -486,12 +490,16 @@ namespace ProgramableNetwork
             bool anyError = false;
             bool anyWarning = false;
             bool anyInfo = false;
+            bool missingComputation = false;
             foreach (Module module in Modules)
             {
                 try
                 {
                     if (module.Prototype.UsedComputing > PartialQuantity.Zero && !computingConsumed)
+                    {
+                        missingComputation = missingComputation || true;
                         continue;
+                    }
 
                     module.Execute();
                 }
@@ -530,6 +538,8 @@ namespace ProgramableNetwork
                 m_notificationWarningManager.Deactivate(this);
                 m_notificationInfoManager.Deactivate(this);
             }
+
+            State = missingComputation ? Tr.EntityStatus__WorkingPartially.Format(Tr.ComputingNotAvailable) : Tr.EntityStatus__Working;
         }
 
         public Quantity ReceiveAsMuchAsFromPort(ProductQuantity pq, IoPortToken sourcePort)
@@ -553,5 +563,6 @@ namespace ProgramableNetwork
         public bool IsCargoAffectedByGeneralPriority => false;
 
         public int Speed { get => m_clockSpeed; set => m_clockSpeed = value; }
+        public LocStrFormatted State { get; private set; }
     }
 }
