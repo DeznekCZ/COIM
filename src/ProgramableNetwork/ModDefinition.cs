@@ -16,9 +16,7 @@ namespace ProgramableNetwork
         public override string Name => ModName;
 
         // Version, currently unused.
-        public override int Version => 9;
-
-        public bool IsBeingLoaded => throw new NotImplementedException();
+        public override int Version => 001001;
 
 
         // Mod constructor that lists mod dependencies as parameters.
