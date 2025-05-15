@@ -21,7 +21,6 @@ namespace MultiplayerContracts
 
         public partial class Research
 		{
-			[ResearchCosts(difficulty: 1)]
 			public static readonly ResNodeID MultiplayerTrade = Ids.Research.CreateId("MultiplayerTrade");
 		}
 	}
@@ -32,13 +31,12 @@ namespace MultiplayerContracts
 		protected override void RegisterDataInternal(ProtoRegistrator registrator)
 		{
 			ResearchNodeProto nodeProto = registrator.ResearchNodeProtoBuilder
-				.Start("Captain trades", NewIds.Research.MultiplayerTrade)
+				.Start("Captain trades", NewIds.Research.MultiplayerTrade, 4)
 				.Description("Unlocks trade with other friendly captains")
-				.SetCosts(ResearchCostsTpl.Build.SetDifficulty(4))
 				.AddLayoutEntityToUnlock(NewIds.MultiplayerTradeDock)
 				.BuildAndAdd();
 			
-			nodeProto.GridPosition = new Vector2i(36, 14);
+			nodeProto.GridPosition = new Vector2i(44, 15);
 			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.CargoDepot));
 
 			MultiplayerTradeManager.Init(registrator.PrototypesDb);

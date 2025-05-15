@@ -39,7 +39,7 @@ namespace MultiplayerContracts
                     default(ColorRgba),
                     hideBlockedPortsIcon: false,
                     null,
-                    registrator.GetCategoriesProtos(Ids.ToolbarCategories.Docks)
+                    registrator.GetCategoriesProtos(Ids.ToolbarCategories.Buildings)
                  )
             ));
         }

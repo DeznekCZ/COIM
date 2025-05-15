@@ -11,10 +11,7 @@ using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Terrain;
 using Mafi.Localization;
-using Mafi.Unity.UiFramework;
-using Mafi.Unity.UiFramework.Components;
-using Mafi.Unity.UserInterface.Style;
-
+using static Mafi.Unity.Assets.Unity;
 namespace MultiplayerContracts
 {
     public static class MyExtensions
@@ -38,35 +35,6 @@ namespace MultiplayerContracts
             return amount.Of(product, protosDb);
         }
 
-        public static T AppendTo<T>(this T element, StackContainer stackContainer, ContainerPosition? containerPosition) where T : IUiElement
-        {
-            stackContainer.Append(element, element.GetSize(), containerPosition, default, false);
-            return element;
-        }
-
-        public static T AddToGrid<T>(this T element, GridContainer gridContainer) where T : IUiElement
-        {
-            gridContainer.Append(element);
-            return element;
-        }
-
-        public static T AppendTo<T>(this T element, MyTabContainer tabContainer, string tabText, out Tab tab) where T : IUiElement
-        {
-            tabContainer.AddTab(new LocStrFormatted(tabText), element, out tab);
-            return element;
-        }
-
-        public static T AppendTo<T>(this T element, MyTabContainer tabContainer, LocStrFormatted tabText, out Tab tab) where T : IUiElement
-        {
-            tabContainer.AddTab(tabText, element, out tab);
-            return element;
-        }
-
-        public static T SetSize<T>(this T element, int x, int y) where T : IUiElement
-        {
-            return element.SetSize(new UnityEngine.Vector2(x, y));
-        }
-
         public static string GetIcon(this IEntity entity)
         {
             if (entity is LayoutEntity positionedForGraphics)
@@ -79,7 +47,7 @@ namespace MultiplayerContracts
                 return transportForGraphics.Prototype.Graphics.IconPath;
 
             else
-                return new UiStyle().Icons.Empty;
+                return UserInterface.General.Empty128_png;
         }
 
         public static bool HasPosition(this IEntity entity, out Tile3f position)

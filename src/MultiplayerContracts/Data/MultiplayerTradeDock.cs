@@ -96,7 +96,7 @@ namespace MultiplayerContracts
             return value;
         }
 
-        private readonly int SerializerVersion = 2;
+        private static readonly int SerializerVersion = 2;
         private readonly Dict<ProductProto, ProductBuffer> m_cargo;
         internal int m_cargoExportPriority = 5;
         private MultiplayerTradeDockProto m_proto;
@@ -131,6 +131,7 @@ namespace MultiplayerContracts
             writer.WriteGeneric(m_markets);
             writer.WriteGeneric(m_marketNames);
             writer.WriteString(m_market);
+            StoredCargoPriorityProvider.Serialize(m_storedCargoPrioProvider, writer);
         }
 
         protected override void DeserializeData(BlobReader reader)
