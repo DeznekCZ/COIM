@@ -109,12 +109,12 @@ namespace MultiplayerContracts
                         if (t.Result.Item1 == HttpStatusCode.OK)
                             return $@"{{""EntityId"":{entityId.Value},""CreationTime"":{t.Result.Item2}}}";
                         else
-                            return authorization;
+                            throw new Exception("Unauthorized");
                     }
                     else
                     {
                         Log.Exception(t.Exception);
-                        return authorization;
+                        throw t.Exception ?? new Exception("Missing error information");
                     }
                 });
         }

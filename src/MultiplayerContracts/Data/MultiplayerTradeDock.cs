@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Collections;
 using Mafi.Core;
+using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Priorities;
 using Mafi.Core.Entities.Static;
@@ -14,7 +15,9 @@ using System.Linq;
 namespace MultiplayerContracts
 {
     [GenerateSerializer(false, null, 0)]
-    internal class MultiplayerTradeDock : LayoutEntity, IEntityWithCustomPriority, IEntity, IIsSafeAsHashKey, IStaticEntityWithReservedOcean, ILayoutEntity, IStaticEntity, IEntityWithPosition, IRenderedEntity, IAreaSelectableEntity, IEntityWithSimUpdate
+    internal class MultiplayerTradeDock : LayoutEntity, IEntityWithCustomPriority, IEntity, IIsSafeAsHashKey,
+        IStaticEntityWithReservedOcean, ILayoutEntity, IStaticEntity, IEntityWithPosition, IRenderedEntity,
+        IAreaSelectableEntity, IEntityWithSimUpdate, IEntityWithSimpleLogisticsControl
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate (object obj, BlobWriter writer)
         {
@@ -64,6 +67,14 @@ namespace MultiplayerContracts
         [DoNotSave(0, null)]
         public Dict<string, string> MarketNames => m_marketNames;
 
+        public LogisticsControl LogisticsInputControl => LogisticsControl.NotAvailable;
+
+        public LogisticsControl LogisticsOutputControl { get; private set; } = LogisticsControl.Enabled;
+
+        public bool IsLogisticsInputDisabled => true;
+
+        public bool IsLogisticsOutputDisabled => LogisticsOutputControl != LogisticsControl.Enabled;
+
         public MultiplayerTradeDock(EntityId id, MultiplayerTradeDockProto proto, TileTransform transform, EntityContext context, IVehicleBuffersRegistry vehicleBuffersRegistry)
             : base(id, proto, transform, context)
         {
@@ -96,7 +107,7 @@ namespace MultiplayerContracts
             return value;
         }
 
-        private static readonly int SerializerVersion = 2;
+        private static readonly int SerializerVersion = 3;
         private readonly Dict<ProductProto, ProductBuffer> m_cargo;
         internal int m_cargoExportPriority = 5;
         private MultiplayerTradeDockProto m_proto;
@@ -128,6 +139,7 @@ namespace MultiplayerContracts
             writer.WriteGeneric(m_vehicleBuffersRegistry);
             ReservedOceanAreaState.Serialize(ReservedOceanAreaState, writer);
             writer.WriteGeneric(ReservedOceanProto);
+            writer.WriteBool(!IsLogisticsOutputDisabled);
             writer.WriteGeneric(m_markets);
             writer.WriteGeneric(m_marketNames);
             writer.WriteString(m_market);
@@ -146,6 +158,11 @@ namespace MultiplayerContracts
             ReservedOceanAreaState = ReservedOceanAreaState.Deserialize(reader);
             ReservedOceanProto = reader.ReadGenericAs<IProtoWithReservedOcean>();
 
+            if (version > 2)
+            {
+                LogisticsOutputControl = reader.ReadBool() ? LogisticsControl.Enabled : LogisticsControl.DisabledButVisible;
+            }
+
             m_markets = Dict<string, string>.Deserialize(reader);
             m_marketNames = Dict<string, string>.Deserialize(reader);
             m_market = reader.ReadString();
@@ -154,6 +171,7 @@ namespace MultiplayerContracts
                 reader.SetField(this, "m_storedCargoPrioProvider", StoredCargoPriorityProvider.Deserialize(reader));
             else
                 reader.SetField(this, "m_storedCargoPrioProvider", new StoredCargoPriorityProvider(this));
+
 
             reader.RegisterInitAfterLoad(this, "initSelf", InitPriority.Normal);
         }
@@ -232,6 +250,16 @@ namespace MultiplayerContracts
         public ProductQuantity[] GetQuantities()
         {
             return m_cargo.Values.Select(v => v.ProductQuantity).ToArray();
+        }
+
+        public void SetLogisticsInputDisabled(bool isDisabled)
+        {
+            // ignore
+        }
+
+        public void SetLogisticsOutputDisabled(bool isDisabled)
+        {
+            LogisticsOutputControl = isDisabled ? LogisticsControl.DisabledButVisible : LogisticsControl.Enabled;
         }
     }
 }
