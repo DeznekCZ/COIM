@@ -135,11 +135,14 @@ namespace ProgramableNetwork
 
         public Fix32[] Read(int index)
         {
-            Fix32[] ints = new Fix32[m_active[index].Value.Length];
             if (m_active[index].ValidIterations > 0)
+            {
+                Fix32[] ints = new Fix32[m_active[index].Value.Length];
                 Array.Copy(m_active[index].Value, ints, ints.Length);
+                return ints;
+            }
             // else only zeros
-            return ints;
+            return Array.Empty<Fix32>();
         }
 
         public void CreateChannel()

@@ -1007,12 +1007,14 @@ namespace ProgramableNetwork
                     m.Output["product"] = -1;
                     return ModuleStatus.Error;
                 })
-                .AddDisplay("fullness", "Fullness", 3)
+                .AddDisplay("quantity", "Quantity", 1.5f.ToFix32())
+                .AddDisplay("fullness", "Fullness", 1.5f.ToFix32())
                 .AddDisplay("product", "Product", 1, image: true)
                 .Display((m) =>
                 {
                     m.Display["product"] = m.Output.Product("product")?.IconPath;
-                    m.Display["fullness"] = m.Output.Integer["fullness"] + "%";
+                    m.Display["quantity"] = Thousands(m.Output.Integer["quantity"]);
+                    m.Display["fullness"] = $"{m.Output.Integer["fullness"]}%";
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -1054,12 +1056,14 @@ namespace ProgramableNetwork
                     m.Output["moving"] = 0;
                     throw new Exception("Entity can not be read");
                 })
-                .AddDisplay("fullness", "Fullness", 3)
+                .AddDisplay("quantity", "Quantity", 1.5f.ToFix32())
+                .AddDisplay("fullness", "Fullness", 1.5f.ToFix32())
                 .AddDisplay("moving", "Is moving", 1, led: true)
                 .Display((m) =>
                 {
                     m.Display["moving"] = m.Output.Bool["moving"] ? "1" : "";
-                    m.Display["fullness"] = m.Output.Integer["fullness"] + "%";
+                    m.Display["quantity"] = Thousands(m.Output.Integer["quantity"]);
+                    m.Display["fullness"] = $"{m.Output.Integer["fullness"]}%";
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -1649,6 +1653,19 @@ namespace ProgramableNetwork
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
+        }
+
+        private static string Thousands(int v)
+        {
+            if (v > 1100000)
+                return (v / 1000000).ToString();
+            if (v > 900000)
+                return $"{(v.ToFix32() / 100000).ToStringRounded(1)}M";
+            if (v > 1100)
+                return (v / 1000000).ToString();
+            if (v > 900)
+                return $"{(v.ToFix32() / 100).ToStringRounded(1)}k";
+            return v.ToString();
         }
 
         private static ModuleStatus GetValueFromBuffers(Module m, ProductProto product, IProductBuffer[] buffers)
