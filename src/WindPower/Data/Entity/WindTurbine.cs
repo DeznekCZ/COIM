@@ -60,6 +60,7 @@ namespace WindPower.Entity
             this.Prototype = proto;
             this.m_weatherManager = weatherManager;
             this.m_generator = generatorRegistratorFactory.CreateAndRegisterFor(this, 0);
+            this.m_generator.IsSurplusGenerator = true;
             this.MaintenanceCosts = Prototype.Costs.Maintenance;
             this.m_maintenance = maintenanceProvidersFactory.CreateFor(this);
             MaxGenerationCapacity = Prototype.GeneratedPower;

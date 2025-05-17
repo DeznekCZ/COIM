@@ -25,7 +25,7 @@ namespace WindPower
             ResearchNodeProto research = registrator.PrototypesDb.Get<ResearchNodeProto>(Ids.Research.Cp2Packing).Value;
 
             var builder = registrator.ResearchNodeProtoBuilder.Start("Wind power", NewIds.Research.Bridges, 20)
-                .SetGridPosition(new Vector2i(20, -2))
+                .SetGridPosition(new Vector2i(24, 0))
                 .AddParents(research);
 
             builder.AddLayoutEntityToUnlock(NewIds.WindPower.WindTurbine_T1);

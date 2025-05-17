@@ -44,15 +44,11 @@ namespace WindPower.Simulation
             m_terrainManager = terrainManager;
             m_entitiesManager = entitiesManager;
 
-            m_terrainManager.HeightChanged.AddNonSaveable(this, heightChanged);
-            m_entitiesManager.StaticEntityAdded.AddNonSaveable(this, entityAdded);
-            m_entitiesManager.StaticEntityRemoved.AddNonSaveable(this, entityRemoved);
-
             m_terrainHeightMap = m_terrainManager.HeightsData.AsEnumerable()
                                 .Select(h => h.Value.ToFloat()).ToArray();
             m_entityHeightMap = new int[m_terrainHeightMap.Length];
 
-            _ = Recalculate(m_cancelationTokenSourceCalculation.Token);
+            // _ = Recalculate(m_cancelationTokenSourceCalculation.Token);
             _ = WindDirection(m_cancellationTokenSourceWindDirection.Token);
         }
 
@@ -99,44 +95,44 @@ namespace WindPower.Simulation
             else if (m_cache.TryGetValue(tile, out Percent power))
                 return power;
 
-            float buildingHeight = 0;
-            float count = 0;
-            for (int x = 1; x <= 10; x++)
-            {
-                for (int y = 1; y <= 10; y++)
-                {
-                    if ((x * y).Sqrt() < 10) continue;
-                    count += 4;
+            //float buildingHeight = 0;
+            //float count = 0;
+            //for (int x = 1; x <= 10; x++)
+            //{
+            //    for (int y = 1; y <= 10; y++)
+            //    {
+            //        if ((x * y).Sqrt() < 10) continue;
+            //        count += 4;
+            //
+            //        int index = m_terrainManager.GetTileIndex(tile.X + x, tile.Y + y).Value;
+            //        buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
+            //
+            //        index = m_terrainManager.GetTileIndex(tile.X - x, tile.Y + y).Value;
+            //        buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
+            //
+            //        index = m_terrainManager.GetTileIndex(tile.X - x, tile.Y - y).Value;
+            //        buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
+            //
+            //        index = m_terrainManager.GetTileIndex(tile.X + x, tile.Y - y).Value;
+            //        buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
+            //
+            //        //Log.Debug($"T:{m_terrainHeightMap[index]}, B:{m_entityHeightMap[index]}");
+            //    }
+            //}
+            //buildingHeight /= count;
 
-                    int index = m_terrainManager.GetTileIndex(tile.X + x, tile.Y + y).Value;
-                    buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
-
-                    index = m_terrainManager.GetTileIndex(tile.X - x, tile.Y + y).Value;
-                    buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
-
-                    index = m_terrainManager.GetTileIndex(tile.X - x, tile.Y - y).Value;
-                    buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
-
-                    index = m_terrainManager.GetTileIndex(tile.X + x, tile.Y - y).Value;
-                    buildingHeight += m_terrainHeightMap[index] + m_entityHeightMap[index];
-
-                    //Log.Debug($"T:{m_terrainHeightMap[index]}, B:{m_entityHeightMap[index]}");
-                }
-            }
-            buildingHeight /= count;
-
-            if (buildingHeight.ToFix32() > tile.Z + (gondola.Value * 2))
-                return m_cache[tile] = Percent.Zero;
+            //if (buildingHeight.ToFix32() > tile.Z + (gondola.Value * 2))
+            //    return m_cache[tile] = Percent.Zero;
 
             // Get partial by terrain height
             Fix32 terrain = 0.5.ToFix32() + (tile.Z.ToFix32() + gondola.Value) / 40.ToFix32() * 0.5.ToFix32();
-            Fix32 building = (tile.Z.ToFix32() + gondola.Value - buildingHeight.ToFix32()) / bladeWidth.Value;
+            //Fix32 building = (tile.Z.ToFix32() + gondola.Value - buildingHeight.ToFix32()) / bladeWidth.Value;
 
-            if (tile.Z.ToFix32() + gondola.Value - buildingHeight.ToFix32() > bladeWidth.Value)
-                return m_cache[tile] = newWind.ToPercent() * terrain.ToPercent();
+            //if (tile.Z.ToFix32() + gondola.Value - buildingHeight.ToFix32() > bladeWidth.Value)
+            //    return m_cache[tile] = newWind.ToPercent() * terrain.ToPercent();
 
 
-            return m_cache[tile] = (newWind * terrain * building).ToPercent();
+            return m_cache[tile] = (newWind * terrain/* * building*/).ToPercent();
         }
 
         public void Dispose()

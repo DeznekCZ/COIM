@@ -48,11 +48,11 @@ namespace WindPower.Unity
             int direction = (m_windTrubine.WindDirection - current).Sign();
             Fix32 abs = (m_windTrubine.WindDirection - current).Abs().Min(1.ToFix32());
             if (abs > 0)
-                m_gondola.Rotate(Vector3.up, time.DeltaTimeMs * 0.01f * direction * abs.ToFloat());
+                m_gondola.Rotate(Vector3.up, time.DeltaTimeMs * time.GameSpeedMult * 0.01f * direction * abs.ToFloat());
 
             // update rotation of blades
             if (m_rotor is null) return;
-            m_rotor.Rotate(Vector3.forward, time.DeltaTimeMs * 0.6f * m_windTrubine.Speed.ToFloat());
+            m_rotor.Rotate(Vector3.forward, time.DeltaTimeMs * time.GameSpeedMult * 0.6f * m_windTrubine.Speed.ToFloat());
         }
     }
 }
