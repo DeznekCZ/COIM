@@ -14,10 +14,6 @@ namespace ProgramableNetwork
 {
     public partial class ControllerView
     {
-        private ModuleConnector m_higlighted;
-
-        public ModuleConnector OutputConnection { get; set; }
-
         private class ModuleView : Panel
         {
             private readonly Module m_module;
@@ -51,6 +47,8 @@ namespace ProgramableNetwork
 
                 // Add Field panel
                 ButtonText fieldsPanel = new ButtonText(module.Prototype.Symbol.AsLoc());
+                fieldsPanel.TextOverflow(TextOverflow.Clip);
+                fieldsPanel.TextAlign(TextAlignment.CenterMiddle);
                 fieldsPanel.Size(width * Sizes.BLOCK_SIZE, displaysExists ? Sizes.BLOCK_SIZE : (Sizes.BLOCK_SIZE * 2));
                 fieldsPanel.OnMouseEnterLeave(
                         () => m_controller.AddPreviewHighlight(module),
@@ -121,13 +119,13 @@ namespace ProgramableNetwork
                         })
                         .OnClick(() =>
                         {
-                            if (m_controller.OutputConnection == null)
+                            if (m_controller.m_controller.OutputConnection == null)
                             {
                                 uiContext.AudioDb.InvalidOp(true).Play();
                             }
                             else
                             {
-                                module.InputModules[input.Id] = m_controller.OutputConnection;
+                                module.InputModules[input.Id] = m_controller.m_controller.OutputConnection;
                                 refresh();
                             }
                         })
@@ -138,32 +136,37 @@ namespace ProgramableNetwork
                         .Tooltip(new LocStrFormatted((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' ')));
                     inputsPanel.Add(btn);
 
-                    m_controller.m_updaters.Add(new DataUpdater<(ColorRgba text, ColorRgba background), int>(
-                        (context) =>
+                    btn .Observe(() =>
                         {
                             var text = ColorRgba.Gold;
                             var background = ColorRgba.DarkGreen;
 
-                            if (isConnected && m_controller.m_higlighted != null &&
+                            if (isConnected && m_controller.m_controller.OutputConnection != null &&
                                 module.InputModules
                                     .Where(pair => pair.Key == input.Id)
                                     .Select(pair => pair.Value)
-                                    .Any(connector => connector.Equals(m_controller.m_higlighted)))
+                                    .Any(connector => connector.Equals(m_controller.m_controller.OutputConnection)))
+                            {
+                                text = ColorRgba.White;
+                                background = ColorRgba.DarkGreen;
+                            }
+
+                            else if (isConnected && m_controller.m_controller.m_higlighted != null && m_controller.m_controller.OutputConnection == null &&
+                                module.InputModules
+                                    .Where(pair => pair.Key == input.Id)
+                                    .Select(pair => pair.Value)
+                                    .Any(connector => connector.Equals(m_controller.m_controller.m_higlighted)))
                             {
                                 text = ColorRgba.White;
                                 background = ColorRgba.DarkGreen;
                             }
 
                             return (text, background);
-                        },
-                        (context, style) =>
+                        })
+                        .Do(pair => 
                         {
-                            btn.Color(style.text);
-
-                        },
-                        (styleA, styleB) => styleA.Equals(styleB),
-                        0
-                    ));
+                            btn.Color(pair.text);
+                        });
                 }
             }
 
@@ -191,6 +194,9 @@ namespace ProgramableNetwork
                         .Background(ColorRgba.Red)
                         .Color(ColorRgba.Gold)
                         .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+                        .With(b => b.ObserveEnabled(() => m_controller.m_controller.OutputConnection == null
+                                                       || (m_controller.m_controller.OutputConnection.ModuleId == module.Id
+                                                        && m_controller.m_controller.OutputConnection.OutputId == output.Id)))
                         .OnRightClick(() =>
                         {
                             if (!isConnected)
@@ -215,45 +221,40 @@ namespace ProgramableNetwork
                         })
                         .OnClick(() =>
                         {
-                            if (m_controller.OutputConnection != null
-                                && m_controller.OutputConnection.ModuleId == module.Id
-                                && m_controller.OutputConnection.OutputId == output.Id)
+                            if (m_controller.m_controller.OutputConnection != null
+                                && m_controller.m_controller.OutputConnection.ModuleId == module.Id
+                                && m_controller.m_controller.OutputConnection.OutputId == output.Id)
                             {
-                                m_controller.OutputConnection = null;
+                                m_controller.m_controller.OutputConnection = null;
                             }
                             else
                             {
-                                m_controller.OutputConnection = new ModuleConnector(module.Id, output.Id);
+                                m_controller.m_controller.OutputConnection = new ModuleConnector(module.Id, output.Id);
                             }
                         })
                         .Tooltip(new Mafi.Localization.LocStrFormatted((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' ')));
                         btn.OnMouseEnterLeave(
-                            () => { m_controller.m_higlighted = new ModuleConnector(module.Id, output.Id); },
-                            () => { m_controller.m_higlighted = null; }
+                            () => { m_controller.m_controller.m_higlighted = new ModuleConnector(module.Id, output.Id); },
+                            () => { m_controller.m_controller.m_higlighted = null; }
                         );
                     inputsPanel.Add(btn);
 
-                    m_controller.m_updaters.Add(new DataUpdater<(ColorRgba text, ColorRgba background), int>(
-                        (context) =>
+                    btn .Observe(() =>
                         {
                             var text = ColorRgba.Gold;
                             var background = ColorRgba.DarkGreen;
 
-                            if (m_controller.OutputConnection != null
-                                && m_controller.OutputConnection.ModuleId == module.Id
-                                && m_controller.OutputConnection.OutputId == output.Id)
+                            if (m_controller.m_controller.OutputConnection != null
+                                && m_controller.m_controller.OutputConnection.ModuleId == module.Id
+                                && m_controller.m_controller.OutputConnection.OutputId == output.Id)
                                 background = ColorRgba.Green;
 
                             return (text, background);
-                        },
-                        (context, style) =>
+                        })
+                        .Do(pairs =>
                         {
-                            btn.Color(style.text);
-
-                        },
-                        (styleA, styleB) => styleA.Equals(styleB),
-                        0
-                    ));
+                            btn.Color(pairs.text);
+                        });
                 }
             }
 
@@ -289,7 +290,7 @@ namespace ProgramableNetwork
                 text.TextOverflow(TextOverflow.Clip);
                 text.TextAlign(TextAlignment.RightMiddle);
                 text.Color(ColorRgba.White);
-                text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
+                text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
                 text.Observe(() => module.Display[display.Id, display.DefaultText])
                     .Do((t) => text.Value(t.AsLoc()));
                 return text;
@@ -302,7 +303,7 @@ namespace ProgramableNetwork
                 text.Icon.Padding(Px.Zero);
                 text.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                 text.Color(ColorRgba.White);
-                text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
+                text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
                 text.Observe(() => module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png])
                     .Do((t) => text.Icon.Value(t));
                 return text;
@@ -329,7 +330,7 @@ namespace ProgramableNetwork
                 {
                     var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, display.DefaultText]));
                     text.Color(ColorRgba.White);
-                    text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
+                    text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
 
                     m_controller.m_updaters.Add(new DataUpdater<
                             string,
@@ -348,10 +349,10 @@ namespace ProgramableNetwork
             {
                 var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, options[0]]));
                 text.TextOverflow(TextOverflow.Clip);
-                text.TextAlign(TextAlignment.RightMiddle);
+                text.TextAlign(TextAlignment.CenterMiddle);
                 text.FontSize(10);
                 text.Color(ColorRgba.White);
-                text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
+                text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
 
                 m_controller.m_updaters.Add(new DataUpdater<
                         string,
@@ -377,9 +378,9 @@ namespace ProgramableNetwork
             {
                 ButtonText text = new ButtonText(new Mafi.Localization.LocStrFormatted(symbol));
                 text.TextOverflow(TextOverflow.Clip);
-                text.TextAlign(TextAlignment.RightMiddle);
+                text.TextAlign(TextAlignment.CenterMiddle);
                 text.FontSize(10);
-                text.Size(Sizes.BLOCK_SIZE * display.Width, Sizes.BLOCK_SIZE);
+                text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
                 text.Color(module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red);
                 text.Observe(() => module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red)
                     .Do((color) => text.Color(color));

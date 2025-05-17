@@ -129,6 +129,14 @@ namespace ProgramableNetwork
                     return true;
                 }
             }
+            if (OutputConnection != null)
+            {
+                if (ShortcutsManager.IsSecondaryActionDown)
+                {
+                    OutputConnection = null;
+                    return true;
+                }
+            }
             return base.InputUpdate();
         }
 

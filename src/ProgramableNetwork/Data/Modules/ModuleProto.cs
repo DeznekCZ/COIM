@@ -387,13 +387,13 @@ namespace ProgramableNetwork
 
             public Builder AddInput(string id, string name)
             {
-                m_inputs.Add(new ModuleConnectorProto(id, m_id.Input(id, name)));
+                m_inputs.Add(new ModuleConnectorProto(id, m_id.Input(id, name), 1));
                 return this;
             }
 
             public Builder AddOutput(string id, string name)
             {
-                m_outputs.Add(new ModuleConnectorProto(id, m_id.Output(id, name)));
+                m_outputs.Add(new ModuleConnectorProto(id, m_id.Output(id, name), 1));
                 return this;
             }
 
@@ -460,13 +460,13 @@ namespace ProgramableNetwork
             /// <param name="name">Displayerd tooltip value</param>
             /// <param name="width">taken module width</param>
             /// <returns></returns>
-            public Builder AddDisplay(string id, string name, int width, bool image = false, string[] toggle = null, bool entity = false, bool led = false)
+            public Builder AddDisplay(string id, string name, Fix32 width, bool image = false, string[] toggle = null, bool entity = false, bool led = false)
             {
                 m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width,
                     image ? "[image]" :
                     led ? "[led]":
                     toggle != null ? "[toggle]" + WriteToggleArray(toggle) :
-                    (new string('0', width * 2) + "|")
+                    (new string('0', width.IntegerPart * 2) + "|")
                     ));
                 return this;
             }

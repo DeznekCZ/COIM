@@ -23,6 +23,12 @@ namespace ProgramableNetwork
             return new Lyst<T>() { option.ValueOrNull }.ToImmutableArray();
         }
 
+        public static T With<T>(this T self, Action<T> action)
+        {
+            action(self);
+            return self;
+        }
+
         public static string GetIcon(this IEntity entity)
         {
             if (entity is LayoutEntityBase positionedForGraphics)
