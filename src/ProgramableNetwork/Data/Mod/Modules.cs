@@ -2005,7 +2005,7 @@ namespace ProgramableNetwork
                     .AddCategory(Category.Antene)
                     .AddCategory(Category.AnteneFM)
                     .AddCustomField("fm", "FM", "Broadcasting frequency",
-                        (inspector, settings, refresh, reference) => settings.Add(new AMDataBandChannelView(inspector, refresh, reference))
+                        (inspector, settings, refresh, reference) => settings.Add(new FMDataBandChannelView(inspector, refresh, reference))
                     )
                     .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                     .AddDisplay("fm", "Frequency", i)
@@ -2028,79 +2028,7 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart($"Radio_In_AM", $"AM receiver", $"AM-R", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Antene)
                 .AddCategory(Category.AnteneAM)
-                //.AddCustomField("am", "AM", "Listening frequency", () => 20, (CustomField field) => {
-                    //field.Builder.NewBtnGeneral("NvaluekHz")
-                    //    .SetText(((53 + field.Reference.Value.IntegerPart).ToFix32() * 10.ToFix32()).ToStringRounded(0))
-                    //    .SetSize(60, 20)
-                    //    .ToolTip(field.Inspector, field.ShortDesc, attached: true)
-                    //    .AppendTo(field.Container);
-                    //field.Builder.NewBtnGeneral("NstartkHz")
-                    //    .SetText("|<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value = 0;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-                    //field.Builder.NewBtnGeneral("N-5kHz")
-                    //    .SetText("<<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value -= 10;
-                    //        if (field.Reference.Value < 0)
-                    //            field.Reference.Value += 118;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-
-                    //field.Builder.NewBtnGeneral("N-0.5kHz")
-                    //    .SetText("<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value -= 1;
-                    //        if (field.Reference.Value < 0)
-                    //            field.Reference.Value += 118;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-
-                    //field.Builder.NewBtnGeneral("N+0.5kHz")
-                    //    .SetText(">")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value += 1;
-                    //        if (field.Reference.Value > 117)
-                    //            field.Reference.Value -= 118;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-
-                    //field.Builder.NewBtnGeneral("N+5kHz")
-                    //    .SetText(">>")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value += 10;
-                    //        if (field.Reference.Value > 117)
-                    //            field.Reference.Value -= 118;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-
-                    //field.Builder.NewBtnGeneral("NendkHz")
-                    //    .SetText(">|")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value = 117;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-                //})
+                .AddCustomField("am", "AM", "Listening frequency", (inspector, settings, refresh, reference) => settings.Add(new AMDataBandChannelView(inspector, refresh, reference)))
                 .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                 .AddDisplay("am", "Frequency", 2)
                 .AddOutput("am", "AM signal")
@@ -2121,8 +2049,9 @@ namespace ProgramableNetwork
                     }
                     else
                     {
+                        m.Display["am"] = "NOA";
+                        m.SetError("No antena connected");
                         m.Output["am"] = Fix32.Zero;
-                        m.Display["am"] = "";
                     }
                 })
                 .BuildAndAdd();
@@ -2131,79 +2060,7 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart($"Radio_Out_AM", $"AM broadcaster", $"AM-B", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Antene)
                 .AddCategory(Category.AnteneAM)
-                //.AddCustomField("am", "AM", "Broadcasting frequency", () => 20, (field) => {
-                    //field.Builder.NewBtnGeneral("NvaluekHz")
-                    //    .SetText(((53 + field.Reference.Value.IntegerPart).ToFix32() * 10.ToFix32()).ToStringRounded(0))
-                    //    .SetSize(60, 20)
-                    //    .ToolTip(field.Inspector, field.ShortDesc, attached: true)
-                    //    .AppendTo(field.Container);
-                    //field.Builder.NewBtnGeneral("NstartkHz")
-                    //    .SetText("|<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value = 0;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-                    //field.Builder.NewBtnGeneral("N-5kHz")
-                    //    .SetText("<<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value -= 10;
-                    //        if (field.Reference.Value < 0)
-                    //            field.Reference.Value += 118;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-
-                    //field.Builder.NewBtnGeneral("N-0.5kHz")
-                    //    .SetText("<")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value -= 1;
-                    //        if (field.Reference.Value < 0)
-                    //            field.Reference.Value += 118;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-
-                    //field.Builder.NewBtnGeneral("N+0.5kHz")
-                    //    .SetText(">")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value += 1;
-                    //        if (field.Reference.Value > 117)
-                    //            field.Reference.Value -= 118;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-
-                    //field.Builder.NewBtnGeneral("N+5kHz")
-                    //    .SetText(">>")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value += 10;
-                    //        if (field.Reference.Value > 117)
-                    //            field.Reference.Value -= 118;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-
-                    //field.Builder.NewBtnGeneral("NendkHz")
-                    //    .SetText(">|")
-                    //    .OnClick(() =>
-                    //    {
-                    //        field.Reference.Value = 117;
-                    //        field.Refresh();
-                    //    })
-                    //    .SetSize(20, 20)
-                    //    .AppendTo(field.Container);
-                //})
+                .AddCustomField("am", "AM", "Listening frequency", (inspector, settings, refresh, reference) => settings.Add(new AMDataBandChannelView(inspector, refresh, reference)))
                 .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                 .AddDisplay("am", "Frequency", 2)
                 .AddInput("am", "AM signal")
@@ -2212,8 +2069,14 @@ namespace ProgramableNetwork
                 .Action((Module m) =>
                 {
                     Antena entity = m.Field.Entity<Antena>("antena");
-                    if (entity.DataBand is AMDataBand am && !entity.IsPaused)
+                    if (entity?.DataBand is AMDataBand am)
                     {
+                        if (!entity.IsEnabled)
+                        {
+                            m.Display["am"] = "OFF";
+                            return;
+                        }
+
                         int value = m.Field.Integer["am"];
                         Fix32 displayValue = (53 + value).ToFix32() * 10.ToFix32();
                         m.Display["am"] = displayValue.ToStringRounded(0);
@@ -2222,6 +2085,12 @@ namespace ProgramableNetwork
                         {
                             am.Update(m.Field.Integer["am"], m.Input["am", Fix32.Zero]);
                         }
+                    }
+                    else
+                    {
+                        m.Display["am"] = "NOA";
+                        m.SetError("No antena connected");
+                        m.Output["am"] = Fix32.Zero;
                     }
                 })
                 .BuildAndAdd();
