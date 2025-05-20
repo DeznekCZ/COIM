@@ -371,7 +371,9 @@ namespace ProgramableNetwork
                 return;
             }
 
-            var newCosts = new MaintenanceCosts(Context.ProtosDb.GetOrThrow<VirtualProductProto>(Ids.Products.MaintenanceT1), new PartialQuantity(Modules.Count / 4 + 4));
+            var slotsMaintenance = 0.01f / Prototype.Columns;
+            var newCosts = new MaintenanceCosts(Context.ProtosDb.GetOrThrow<VirtualProductProto>(Ids.Products.MaintenanceT1),
+                new PartialQuantity((Modules.Select(m => m.Layout.GetWidth(m)).Sum() * slotsMaintenance + 0.01f).ToFix32()));
             if (newCosts.MaintenancePerMonth != MaintenanceCosts.MaintenancePerMonth)
             {
                 MaintenanceCosts = newCosts;

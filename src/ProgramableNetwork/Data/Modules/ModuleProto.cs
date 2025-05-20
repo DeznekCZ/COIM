@@ -285,7 +285,7 @@ namespace ProgramableNetwork
                 m_name = name;
                 m_description = description;
                 m_tags = new List<Tag>();
-                m_usedPower = 1.Kw();
+                m_usedPower = 0.Kw();
                 m_costs = new EntityCostsTpl.Builder();
                 m_gfx = gfx;
                 m_symbol = symbol;
@@ -297,7 +297,7 @@ namespace ProgramableNetwork
                 m_registrator = registrator;
                 m_id = id;
                 m_tags = new List<Tag>();
-                m_usedPower = 1.Kw();
+                m_usedPower = 0.Kw();
                 m_costs = new EntityCostsTpl.Builder();
                 m_allowedDevices = new List<StaticEntityProto.ID>();
             }
@@ -307,7 +307,7 @@ namespace ProgramableNetwork
                 m_registrator = registrator;
                 m_id = new ID(id.ModuleId());
                 m_tags = new List<Tag>();
-                m_usedPower = 1.Kw();
+                m_usedPower = 0.Kw();
                 m_costs = new EntityCostsTpl.Builder();
                 m_allowedDevices = new List<StaticEntityProto.ID>();
             }
