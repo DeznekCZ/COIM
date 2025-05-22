@@ -1,7 +1,10 @@
 ﻿using Mafi.Core.Prototypes;
+using Mafi.Localization;
+using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
+using static ProgramableNetwork.ControllerView;
 
 namespace ProgramableNetwork
 {
@@ -9,7 +12,8 @@ namespace ProgramableNetwork
     {
         private ModuleProto item;
 
-        public NewModule(Controller controller, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate, ModuleProto item) : base(controller, refresh, onSuccess, tryCreate)
+        public NewModule(Controller controller, ControllerView controllerView, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate, ModuleProto item)
+            : base(controller, controllerView, refresh, onSuccess, tryCreate)
         {
             this.item = item;
         }
@@ -24,12 +28,14 @@ namespace ProgramableNetwork
 
         public override Button CreateUi()
         {
-            var button = new ButtonRow(new ButtonVariant())
+            var button = new ButtonRow(new ButtonVariant().Gap(5))
             {
-                new Label(new Mafi.Localization.LocStrFormatted("Module:")),
-                new Label(Strings.Name)
+                new ModuleView(new Module(item, m_controller.Context, m_controller), m_controllerView, m_controllerView.Inspector.Context, true, () => { }),
+                new PanelWithHeader(Strings.Name)
+                    .Height(Sizes.BLOCK_SIZE * 4).FlexGrow(1)
+                    .BodyAdd(new Label(Strings.DescShort).FlexGrow(1).TextAlign(TextAlignment.LeftTop).AlignSelf(Align.Stretch))
             };
-            return button.Height(Sizes.BLOCK_SIZE);
+            return button;
         }
 
         public override void Selected()

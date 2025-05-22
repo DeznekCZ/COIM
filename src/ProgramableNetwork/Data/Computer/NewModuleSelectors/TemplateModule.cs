@@ -1,8 +1,11 @@
 ﻿using Mafi.Core.Prototypes;
+using Mafi.Localization;
+using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Collections.Generic;
+using static ProgramableNetwork.ControllerView;
 
 namespace ProgramableNetwork
 {
@@ -10,8 +13,8 @@ namespace ProgramableNetwork
     {
         private KeyValuePair<string, Template> item;
 
-        public TemplateModule(Controller controller, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate, KeyValuePair<string, Template> item)
-            : base(controller, refresh, onSuccess, tryCreate)
+        public TemplateModule(Controller controller, ControllerView controllerView, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate, KeyValuePair<string, Template> item)
+            : base(controller, controllerView, refresh, onSuccess, tryCreate)
         {
             this.item = item;
         }
@@ -26,18 +29,14 @@ namespace ProgramableNetwork
 
         public override Button CreateUi()
         {
-            var button = new ButtonColumn(new ButtonVariant())
+            var button = new ButtonRow(new ButtonVariant().Gap(5))
             {
-                new Row {
-                    new Label(new Mafi.Localization.LocStrFormatted("Module type:")),
-                    new Label(Strings.Name)
-                }.Height(Sizes.BLOCK_SIZE),
-                new Row {
-                    new Label(new Mafi.Localization.LocStrFormatted("Template alias:")),
-                    new Label(new Mafi.Localization.LocStrFormatted(item.Value.Name))
-                }.Height(Sizes.BLOCK_SIZE),
+                new ModuleView(new Module(item.Value.ModuleProto, m_controller.Context, m_controller), m_controllerView, m_controllerView.Inspector.Context, true, () => { }),
+                new PanelWithHeader($"Template: {Strings.Name.TranslatedString}".AsLoc())
+                    .Height(Sizes.BLOCK_SIZE * 4).FlexGrow(1)
+                    .BodyAdd(new Label(new LocStrFormatted(item.Value.Name)).FlexGrow(1).TextAlign(TextAlignment.LeftTop).AlignSelf(Align.Stretch))
             };
-            return button.Height(80);
+            return button;
         }
 
         public override void Selected()

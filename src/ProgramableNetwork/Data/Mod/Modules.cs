@@ -994,8 +994,8 @@ namespace ProgramableNetwork
 
                     if (entity is IVirtualResourceMiningEntity miner)
                     {
-                        m.Output["quantity"] = miner.CapacityOfMine.Value;
-                        m.Output["capacity"] = miner.QuantityLeftToMine.Value;
+                        m.Output["quantity"] = miner.QuantityLeftToMine.Value;
+                        m.Output["capacity"] = miner.CapacityOfMine.Value;
                         m.Output["fullness"] = (int)(100f * miner.QuantityLeftToMine.Value / miner.CapacityOfMine.Value);
                         m.Output["product"] = Fix32.FromRaw((int)(uint)miner.ProductToMine.SlimId.Value);
                         return ModuleStatus.Running;

@@ -541,7 +541,7 @@ namespace ProgramableNetwork
                 m_notificationInfoManager.Deactivate(this);
             }
 
-            State = missingComputation ? Tr.EntityStatus__WorkingPartially.Format(Tr.ComputingNotAvailable) : Tr.EntityStatus__Working;
+            State = Tr.EntityStatus__Working;
         }
 
         public Quantity ReceiveAsMuchAsFromPort(ProductQuantity pq, IoPortToken sourcePort)

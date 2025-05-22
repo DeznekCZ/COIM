@@ -47,6 +47,7 @@ namespace ProgramableNetwork
         public Controller Entity => m_controller.Entity;
 
         public Dictionary<long, (int x, int y)> ModulePlacementCache { get; } = new Dictionary<long, (int x, int y)>();
+        public ControllerInspector Inspector => m_controller;
 
         private void AddModuleImplementation(Action refresh)
         {
@@ -115,7 +116,7 @@ namespace ProgramableNetwork
                         AddFreeSlot(rowElement, i, j);
                         continue;
                     }
-                    rowElement.Add(new ModuleView(module, this, m_controller.Context, () => RedrawComponents(modules)));
+                    rowElement.Add(new ModuleView(module, this, m_controller.Context, false, () => RedrawComponents(modules)));
                     ModulePlacementCache[module.Id] = (i, j);
                 }
 
@@ -157,7 +158,7 @@ namespace ProgramableNetwork
             StaticEntityProto.ID id = controller.Prototype.Id;
 
             if (m_lastCreated != null && m_lastCreated.Prototype.AllowedDevices.Contains(id))
-                yield return new LastCreatedModule(m_controller.Entity, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+                yield return new LastCreatedModule(m_controller.Entity, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
                 {
                     if (TryPlaceAt(moduleProto, targetRow, targetColumn))
                     {
@@ -172,7 +173,7 @@ namespace ProgramableNetwork
             if (TemplateRegistrator.GetTemplates().Count > 0)
                 foreach (KeyValuePair<string, Template> item in TemplateRegistrator.GetTemplates()
                                                                     .Where(p => p.Value.ModuleProto.AllowedDevices.Any(e => e.Equals(id))))
-                    yield return new TemplateModule(m_controller.Entity, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+                    yield return new TemplateModule(m_controller.Entity, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
                     {
                         if (TryPlaceAt(moduleProto, targetRow, targetColumn))
                         {
@@ -188,7 +189,7 @@ namespace ProgramableNetwork
                                             .All<ModuleProto>()
                                             //.Where(p => p.IsAvailable)
                                             .Where(p => p.AllowedDevices.Any(e => e.Equals(id))))
-                yield return new NewModule(m_controller.Entity, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+                yield return new NewModule(m_controller.Entity, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
                 {
                     if (TryPlaceAt(moduleProto, targetRow, targetColumn))
                     {

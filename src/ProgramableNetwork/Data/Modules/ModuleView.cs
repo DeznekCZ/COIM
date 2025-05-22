@@ -14,12 +14,12 @@ namespace ProgramableNetwork
 {
     public partial class ControllerView
     {
-        private class ModuleView : Panel
+        public class ModuleView : Panel
         {
             private readonly Module m_module;
             private readonly ControllerView m_controller;
 
-            public ModuleView(Module module, ControllerView controllerView, UiContext uiContext, Action refresh)
+            public ModuleView(Module module, ControllerView controllerView, UiContext uiContext, bool preview, Action refresh)
                 : base()
             {
                 this.Margin(Px.Zero);
@@ -42,7 +42,7 @@ namespace ProgramableNetwork
                     .Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
                     .Background(ColorRgba.DarkGreen)
                     .AlignItemsEnd();
-                AddInputs(uiContext, inputsPanel, module, refresh);
+                AddInputs(uiContext, inputsPanel, module, preview, refresh);
                 BodyAdd(inputsPanel);
 
                 // Add Field panel
@@ -54,7 +54,8 @@ namespace ProgramableNetwork
                         () => m_controller.AddPreviewHighlight(module),
                         () => m_controller.ClearPreviewHighlight()
                     );
-                fieldsPanel.OnClick(() => new ModuleEditDialog(module, m_controller, uiContext, m_controller.m_controller));
+                if (!preview)
+                    fieldsPanel.OnClick(() => new ModuleEditDialog(module, m_controller, uiContext, fieldsPanel, m_controller.m_controller));
                 BodyAdd(fieldsPanel);
 
                 this.Observe(() => module.Error)
@@ -72,7 +73,7 @@ namespace ProgramableNetwork
                     Row displaysPanel = new Row()
                         .Size((width * Sizes.BLOCK_SIZE), Sizes.BLOCK_SIZE)
                         .Background(ColorRgba.DarkDarkGray);
-                    AddDisplays(uiContext, displaysPanel, module, refresh);
+                    AddDisplays(uiContext, displaysPanel, module, preview, refresh);
 
                     BodyAdd(displaysPanel);
                 }
@@ -83,12 +84,12 @@ namespace ProgramableNetwork
                     .Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
                     .Background(ColorRgba.DarkRed)
                     .AlignItemsEnd();
-                AddOutputs(uiContext, outputsPanel, module, refresh);
+                AddOutputs(uiContext, outputsPanel, module, preview, refresh);
 
                 BodyAdd(outputsPanel);
             }
 
-            private void AddInputs(UiContext uiContext, Row inputsPanel, Module module, Action refresh)
+            private void AddInputs(UiContext uiContext, Row inputsPanel, Module module, bool preview, Action refresh)
             {
                 var inputs = module.Prototype.Inputs;
                 if (module.Layout.GetWidth(module) - inputs.Count > 0)
@@ -102,75 +103,74 @@ namespace ProgramableNetwork
                     var input = inputs[i];
                     bool isConnected = module.InputModules.ContainsKey(input.Id);
 
-                    ButtonText btn = new ButtonText(new Mafi.Localization.LocStrFormatted(isConnected ? "◎" : "○"))
+                    ButtonText btn = new ButtonText(new LocStrFormatted(isConnected ? "◎" : "○"))
                         .Background(ColorRgba.Green)
                         .Color(ColorRgba.Gold)
                         .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
-                        .OnRightClick(() =>
-                        {
-                            if (module.InputModules.TryRemove(input.Id, out _))
-                            {
-                                refresh();
-                            }
-                            else
-                            {
-                                uiContext.AudioDb.InvalidOp(true).Play();
-                            }
-                        })
-                        .OnClick(() =>
-                        {
-                            if (m_controller.m_controller.OutputConnection == null)
-                            {
-                                uiContext.AudioDb.InvalidOp(true).Play();
-                            }
-                            else
-                            {
-                                module.InputModules[input.Id] = m_controller.m_controller.OutputConnection;
-                                refresh();
-                            }
-                        })
-                        //.OnMouseEnterLeave(
-                        //    () => { },
-                        //    () => { }
-                        //)
                         .Tooltip(new LocStrFormatted((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' ')));
                     inputsPanel.Add(btn);
 
-                    btn .Observe(() =>
-                        {
-                            var text = ColorRgba.Gold;
-                            var background = ColorRgba.DarkGreen;
-
-                            if (isConnected && m_controller.m_controller.OutputConnection != null &&
-                                module.InputModules
-                                    .Where(pair => pair.Key == input.Id)
-                                    .Select(pair => pair.Value)
-                                    .Any(connector => connector.Equals(m_controller.m_controller.OutputConnection)))
+                    if (!preview)
+                    {
+                        btn .OnRightClick(() =>
                             {
-                                text = ColorRgba.White;
-                                background = ColorRgba.DarkGreen;
-                            }
-
-                            else if (isConnected && m_controller.m_controller.m_higlighted != null && m_controller.m_controller.OutputConnection == null &&
-                                module.InputModules
-                                    .Where(pair => pair.Key == input.Id)
-                                    .Select(pair => pair.Value)
-                                    .Any(connector => connector.Equals(m_controller.m_controller.m_higlighted)))
+                                if (module.InputModules.TryRemove(input.Id, out _))
+                                {
+                                    refresh();
+                                }
+                                else
+                                {
+                                    uiContext.AudioDb.InvalidOp(true).Play();
+                                }
+                            })
+                            .OnClick(() =>
                             {
-                                text = ColorRgba.White;
-                                background = ColorRgba.DarkGreen;
-                            }
+                                if (m_controller.m_controller.OutputConnection == null)
+                                {
+                                    uiContext.AudioDb.InvalidOp(true).Play();
+                                }
+                                else
+                                {
+                                    module.InputModules[input.Id] = m_controller.m_controller.OutputConnection;
+                                    refresh();
+                                }
+                            })
+                            .Observe(() =>
+                            {
+                                var text = ColorRgba.Gold;
+                                var background = ColorRgba.DarkGreen;
 
-                            return (text, background);
-                        })
-                        .Do(pair => 
-                        {
-                            btn.Color(pair.text);
-                        });
+                                if (isConnected && m_controller.m_controller.OutputConnection != null &&
+                                    module.InputModules
+                                        .Where(pair => pair.Key == input.Id)
+                                        .Select(pair => pair.Value)
+                                        .Any(connector => connector.Equals(m_controller.m_controller.OutputConnection)))
+                                {
+                                    text = ColorRgba.White;
+                                    background = ColorRgba.DarkGreen;
+                                }
+
+                                else if (isConnected && m_controller.m_controller.m_higlighted != null && m_controller.m_controller.OutputConnection == null &&
+                                    module.InputModules
+                                        .Where(pair => pair.Key == input.Id)
+                                        .Select(pair => pair.Value)
+                                        .Any(connector => connector.Equals(m_controller.m_controller.m_higlighted)))
+                                {
+                                    text = ColorRgba.White;
+                                    background = ColorRgba.DarkGreen;
+                                }
+
+                                return (text, background);
+                            })
+                            .Do(pair => 
+                            {
+                                btn.Color(pair.text);
+                            });
+                    }
                 }
             }
 
-            private void AddOutputs(UiContext uiContext, Row inputsPanel, Module module, Action refresh)
+            private void AddOutputs(UiContext uiContext, Row inputsPanel, Module module, bool preview, Action refresh)
             {
                 var outputs = module.Prototype.Outputs;
                 if (module.Layout.GetWidth(module) - outputs.Count > 0)
@@ -197,68 +197,74 @@ namespace ProgramableNetwork
                         .With(b => b.ObserveEnabled(() => m_controller.m_controller.OutputConnection == null
                                                        || (m_controller.m_controller.OutputConnection.ModuleId == module.Id
                                                         && m_controller.m_controller.OutputConnection.OutputId == output.Id)))
-                        .OnRightClick(() =>
-                        {
-                            if (!isConnected)
-                            {
-                                // module not found, is not unassignable
-                                uiContext.AudioDb.InvalidOp(true).Play();
-                                return;
-                            }
+                        .Tooltip(new LocStrFormatted((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' ')));
 
-                            foreach (var target in m_controller.Entity.Modules)
-                            {
-                                foreach (var connection in target.InputModules)
-                                {
-                                    if (connection.Value.ModuleId == module.Id)
-                                    {
-                                        target.InputModules.TryRemove(connection.Key, out _);
-                                        refresh();
-                                        return;
-                                    }
-                                }
-                            }
-                        })
-                        .OnClick(() =>
-                        {
-                            if (m_controller.m_controller.OutputConnection != null
-                                && m_controller.m_controller.OutputConnection.ModuleId == module.Id
-                                && m_controller.m_controller.OutputConnection.OutputId == output.Id)
-                            {
-                                m_controller.m_controller.OutputConnection = null;
-                            }
-                            else
-                            {
-                                m_controller.m_controller.OutputConnection = new ModuleConnector(module.Id, output.Id);
-                            }
-                        })
-                        .Tooltip(new Mafi.Localization.LocStrFormatted((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' ')));
-                        btn.OnMouseEnterLeave(
-                            () => { m_controller.m_controller.m_higlighted = new ModuleConnector(module.Id, output.Id); },
-                            () => { m_controller.m_controller.m_higlighted = null; }
-                        );
+
                     inputsPanel.Add(btn);
 
-                    btn .Observe(() =>
-                        {
-                            var text = ColorRgba.Gold;
-                            var background = ColorRgba.DarkGreen;
+                    if (!preview)
+                    {
+                        btn .OnRightClick(() =>
+                            {
+                                if (!isConnected)
+                                {
+                                    // module not found, is not unassignable
+                                    uiContext.AudioDb.InvalidOp(true).Play();
+                                    return;
+                                }
 
-                            if (m_controller.m_controller.OutputConnection != null
-                                && m_controller.m_controller.OutputConnection.ModuleId == module.Id
-                                && m_controller.m_controller.OutputConnection.OutputId == output.Id)
-                                background = ColorRgba.Green;
+                                foreach (var target in m_controller.Entity.Modules)
+                                {
+                                    foreach (var connection in target.InputModules)
+                                    {
+                                        if (connection.Value.ModuleId == module.Id)
+                                        {
+                                            target.InputModules.TryRemove(connection.Key, out _);
+                                            refresh();
+                                            return;
+                                        }
+                                    }
+                                }
+                            })
+                            .OnClick(() =>
+                            {
+                                if (m_controller.m_controller.OutputConnection != null
+                                    && m_controller.m_controller.OutputConnection.ModuleId == module.Id
+                                    && m_controller.m_controller.OutputConnection.OutputId == output.Id)
+                                {
+                                    m_controller.m_controller.OutputConnection = null;
+                                }
+                                else
+                                {
+                                    m_controller.m_controller.OutputConnection = new ModuleConnector(module.Id, output.Id);
+                                }
+                            });
+                            btn.OnMouseEnterLeave(
+                                () => { m_controller.m_controller.m_higlighted = new ModuleConnector(module.Id, output.Id); },
+                                () => { m_controller.m_controller.m_higlighted = null; }
+                            );
 
-                            return (text, background);
-                        })
-                        .Do(pairs =>
-                        {
-                            btn.Color(pairs.text);
-                        });
+                        btn .Observe(() =>
+                            {
+                                var text = ColorRgba.Gold;
+                                var background = ColorRgba.DarkGreen;
+
+                                if (m_controller.m_controller.OutputConnection != null
+                                    && m_controller.m_controller.OutputConnection.ModuleId == module.Id
+                                    && m_controller.m_controller.OutputConnection.OutputId == output.Id)
+                                    background = ColorRgba.Green;
+
+                                return (text, background);
+                            })
+                            .Do(pairs =>
+                            {
+                                btn.Color(pairs.text);
+                            });
+                    }
                 }
             }
 
-            private void AddDisplays(UiContext uiContext, Row displaysPanel, Module module, Action refresh)
+            private void AddDisplays(UiContext uiContext, Row displaysPanel, Module module, bool preview, Action refresh)
             {
                 var displays = module.Prototype.Displays;
                 for (int i = 0; i < displays.Count; i++)
@@ -271,20 +277,20 @@ namespace ProgramableNetwork
                     }
                     else if (display.DefaultText.StartsWith("[toggle]"))
                     {
-                        displaysPanel.Add(ToggleDisplay(uiContext, module, display));
+                        displaysPanel.Add(ToggleDisplay(uiContext, module, display, preview));
                     }
                     else if (display.DefaultText.StartsWith("[led]"))
                     {
-                        displaysPanel.Add(ToggleDisplay_LED(uiContext, module, display, click : false));
+                        displaysPanel.Add(ToggleDisplay_LED(uiContext, module, display, preview, click : false));
                     }
                     else
                     {
-                        displaysPanel.Add(TextDisplay(uiContext, module, display));
+                        displaysPanel.Add(TextDisplay(uiContext, module, display, preview));
                     }
                 }
             }
 
-            private UiComponent TextDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
+            private UiComponent TextDisplay(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview)
             {
                 var text = new Display(module.Display[display.Id, display.DefaultText].AsLoc());
                 text.TextOverflow(TextOverflow.Clip);
@@ -309,22 +315,22 @@ namespace ProgramableNetwork
                 return text;
             }
 
-            private UiComponent ToggleDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
+            private UiComponent ToggleDisplay(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview)
             {
                 char separator = display.DefaultText["[toggle]".Length];
                 string[] options = display.DefaultText.Replace($"[toggle]{separator}", "").Split(separator);
 
                 if (options.Length == 1 && options[0].Length == 0)
                 {
-                    return ToggleDisplay_LED(uiContext, module, display);
+                    return ToggleDisplay_LED(uiContext, module, display, preview);
                 }
                 else if (options.Length == 1)
                 {
-                    return ToggleDisplay_Symbol(uiContext, module, display, options[0]);
+                    return ToggleDisplay_Symbol(uiContext, module, display, preview, options[0]);
                 }
                 else if (options.Length == 2)
                 {
-                    return ToggleDisplay_DoubleText(uiContext, module, display, options);
+                    return ToggleDisplay_DoubleText(uiContext, module, display, preview, options);
                 }
                 else
                 {
@@ -345,7 +351,7 @@ namespace ProgramableNetwork
                 }
             }
 
-            private Button ToggleDisplay_DoubleText(UiContext uiContext, Module module, ModuleConnectorProto display, string[] options)
+            private Button ToggleDisplay_DoubleText(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview, string[] options)
             {
                 var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, options[0]]));
                 text.TextOverflow(TextOverflow.Clip);
@@ -354,27 +360,21 @@ namespace ProgramableNetwork
                 text.Color(ColorRgba.White);
                 text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
 
-                m_controller.m_updaters.Add(new DataUpdater<
-                        string,
-                        (Module module, ButtonText text, ModuleConnectorProto display)
-                    >(
-                    getter: (c) => c.module.Display[display.Id, options[0]],
-                    setter: (c, t) => c.text.Value(new Mafi.Localization.LocStrFormatted(t)),
-                    comparator: string.Equals,
-                    context: (module, text, display)
-                ));
+                text.Observe(() => module.Display[display.Id, options[0]])
+                    .Do(t => text.Value(t.AsLoc()));
 
-                text.OnClick(() =>
-                {
-                    if (module.Display[display.Id, options[0]] == options[0])
-                        module.Display[display.Id] = options[1];
-                    else
-                        module.Display[display.Id] = options[0];
-                });
+                if (!preview)
+                    text.OnClick(() =>
+                    {
+                        if (module.Display[display.Id, options[0]] == options[0])
+                            module.Display[display.Id] = options[1];
+                        else
+                            module.Display[display.Id] = options[0];
+                    });
                 return text;
             }
 
-            private UiComponent ToggleDisplay_Symbol(UiContext uiContext, Module module, ModuleConnectorProto display, string symbol, bool click = true)
+            private UiComponent ToggleDisplay_Symbol(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview, string symbol, bool click = true)
             {
                 ButtonText text = new ButtonText(new Mafi.Localization.LocStrFormatted(symbol));
                 text.TextOverflow(TextOverflow.Clip);
@@ -385,7 +385,7 @@ namespace ProgramableNetwork
                 text.Observe(() => module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red)
                     .Do((color) => text.Color(color));
 
-                if (click)
+                if (click && !preview)
                 {
                     text.OnClick(() =>
                     {
@@ -398,9 +398,9 @@ namespace ProgramableNetwork
                 return text;
             }
 
-            private UiComponent ToggleDisplay_LED(UiContext uiContext, Module module, ModuleConnectorProto display, bool click = true)
+            private UiComponent ToggleDisplay_LED(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview, bool click = true)
             {
-                return ToggleDisplay_Symbol(uiContext, module, display, "●", click);
+                return ToggleDisplay_Symbol(uiContext, module, display, preview, "●", click);
             }
         }
 
@@ -457,25 +457,36 @@ namespace ProgramableNetwork
             // Read from placement cache
             if (!ModulePlacementCache.TryGetValue(module.Id, out var placement)) return false;
 
-            return placement.x + x > 0
-                && placement.y + y > 0
-                && placement.x + x + module.Layout.GetWidth(module) < Entity.Prototype.Columns
-                && placement.y + y < Entity.Prototype.Rows;
+            if (y > 0 && placement.y + y >= Entity.Prototype.Rows - 1) return false;
+            if (y < 0 && placement.y + y <= 0) return false;
+
+            int len = module.Layout.GetWidth(module);
+            if (x > 0 && placement.x + y + len >= Entity.Prototype.Columns - 1) return false;
+            if (x < 0 && placement.x + y <= 0) return false;
+
+            for (int i = 0; i < len; i++)
+            {
+                var place = module.Controller.Rows[placement.y + y][placement.x + x + i];
+                if (place.ModuleId != 0 && place.ModuleId != module.Id)
+                    return false;
+            }
+
+            return true;
         }
 
         public void Move(Module module, int x = 0, int y = 0)
         {
             // MUST BE GUARDED BEFORE
-            RemoveModule(module);
+            int width = module.Layout.GetWidth(module);
 
             (int sourceX, int sourceY) = ModulePlacementCache[module.Id];
-            for (int i = sourceX; i < sourceX + module.Layout.GetWidth(module); i++)
+            for (int i = sourceX; i < sourceX + width; i++)
             {
                 Entity.Rows[sourceY][i] = ModulePlacement.Empty;
             }
             int targetX = sourceX + x;
             int targetY = sourceY + y;
-            for (int i = targetX; i < targetX + module.Layout.GetWidth(module); i++)
+            for (int i = targetX; i < targetX + width; i++)
             {
                 Entity.Rows[targetY][i] = targetX == i ? ModulePlacement.Origin(module.Id) : ModulePlacement.Rest(module.Id);
             }

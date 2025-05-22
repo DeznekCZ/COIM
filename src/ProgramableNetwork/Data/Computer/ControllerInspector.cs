@@ -65,11 +65,13 @@ namespace ProgramableNetwork
             // UI
             m_modulesPanel = AddPanelWithHeader();
             m_modulesPanel.Header.Add(new Label(new Mafi.Localization.LocStrFormatted("Modules")));
-            m_modulesPanel.Add(m_view = new ControllerView(this, Refresh));
+            m_modulesPanel.Add(m_view = new ControllerView(this, Refresh).AlignSelfCenter());
 
             HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, Assets.Unity.UserInterface.General.Connect128_png))
                 .OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Show())
                 .OnMouseEnterLeave(AddPreviewHighlightAll, ClearPreviewHighlight);
+
+            EmbedStatusToTheTop();
 
             this.Observe(() => Entity)
                 .Observe(() => Entity?.Modules)
@@ -79,7 +81,7 @@ namespace ProgramableNetwork
             this.Observe(() => Entity?.State)
                 .Do((state) =>
                 {
-                    Status.SetValue(state ?? "".AsLoc());
+                    Status.As(state ?? Tr.EntityStatus__Working, DisplayState.Positive);
                 });
         }
 

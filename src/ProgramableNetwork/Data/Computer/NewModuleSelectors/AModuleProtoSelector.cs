@@ -8,6 +8,7 @@ namespace ProgramableNetwork
     public abstract class AModuleProtoSelector : IProtoWithIcon
     {
         protected readonly Controller m_controller;
+        protected readonly ControllerView m_controllerView;
         protected readonly Action m_refresh;
         protected readonly Func<ModuleProto, (bool, Module)> m_tryCreate;
         protected readonly Action<Module> m_onSuccess;
@@ -26,9 +27,10 @@ namespace ProgramableNetwork
 
         public IMod Mod { get; }
 
-        protected AModuleProtoSelector(Controller controller, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate)
+        protected AModuleProtoSelector(Controller controller, ControllerView controllerView, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate)
         {
             m_controller = controller;
+            m_controllerView = controllerView;
             m_refresh = refresh;
             m_tryCreate = tryCreate;
             m_onSuccess = onSuccess;
