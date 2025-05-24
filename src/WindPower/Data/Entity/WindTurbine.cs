@@ -106,6 +106,7 @@ namespace WindPower.Entity
         {
             canGenerate = m_canGenerate;
             return m_power;
+            // return m_power.ScaledBy(Speed);
         }
 
         public static void Serialize(WindTurbine value, BlobWriter writer)
@@ -182,34 +183,26 @@ namespace WindPower.Entity
 
             if (TargetPower == Percent.Zero && StoredPower == Percent.Zero)
             {
+                Speed = Percent.Zero;
+
                 m_canGenerate = false;
-                Speed = StoredPower;
-                m_power = Electricity.Zero;
-                MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
-                return;
+
+                m_maintenance.SetCurrentMaintenanceTo(Percent.Zero);
+                m_maintenance.RefreshMaintenanceCost();
             }
 
             else if (TargetPower > StoredPower)
             {
-                float powerUnit = Prototype.BrakingPower.Value * WindPower.ToFloat() / Prototype.GeneratedPower.Value * 0.0625f;
+                float windPowerMultiplier = WindPower == Percent.Zero ? 1 : WindPower.ToFloat();
+                float powerUnit = Prototype.BrakingPower.Value * windPowerMultiplier / Prototype.GeneratedPower.Value * 0.0625f;
 
-                StoredPower += Percent.FromFloat(powerUnit);
-                StoredPower = StoredPower.Min(TargetPower).Clamp0To100();
+                Percent old = StoredPower;
+                Percent tmp = StoredPower + Percent.FromFloat(powerUnit);
+                StoredPower = tmp.Clamp(StoredPower, TargetPower);
+                Speed = StoredPower.Max(Percent.Zero);
+                StoredPower = StoredPower.Clamp0To100();
 
                 m_canGenerate = StoredPower > Percent.Zero;
-                if (!m_canGenerate)
-                {
-                    Speed = StoredPower;
-                    m_power = Electricity.Zero;
-                    MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
-                    return;
-                }
-
-                Speed = StoredPower;
-                float partial = StoredPower.ToFloat() / Prototype.GeneratedPower.Quantity.Value;
-                m_power = Electricity.FromKw((int)(Prototype.GeneratedPower.Value * partial));
-                MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
-                return;
             }
 
             else if (TargetPower < StoredPower)
@@ -217,38 +210,26 @@ namespace WindPower.Entity
                 float windPowerMultiplier = WindPower == Percent.Zero ? 1 : WindPower.ToFloat();
                 float powerUnit = Prototype.BrakingPower.Value / windPowerMultiplier / Prototype.GeneratedPower.Value * 0.0625f;
 
-                StoredPower -= Percent.FromFloat(powerUnit);
-                StoredPower = StoredPower.Max(TargetPower).Clamp0To100();
+                Percent old = StoredPower;
+                Percent tmp = StoredPower - Percent.FromFloat(powerUnit);
+                StoredPower = tmp.Clamp(TargetPower, StoredPower);
+                Speed = StoredPower.Max(Percent.Zero);
+                StoredPower = StoredPower.Clamp0To100();
 
                 m_canGenerate = StoredPower > Percent.Zero;
-                if (!m_canGenerate)
-                {
-                    Speed = StoredPower;
-                    m_power = Electricity.Zero;
-                    MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
-                    return;
-                }
-                if (StoredPower == Percent.Hundred)
-                {
-                    Speed = StoredPower;
-                    m_power = Prototype.GeneratedPower;
-                    MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
-                    return;
-                }
-
-                float partial = StoredPower.ToFloat() / Prototype.GeneratedPower.Quantity.Value;
-                Speed = StoredPower;
-                m_canGenerate = true;
-                m_power = Electricity.FromKw((int)(Prototype.GeneratedPower.Value * partial));
-                MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
-                return;
             }
 
-            // else power is same
-            m_canGenerate = true;
-            Speed = StoredPower;
-            m_power = Prototype.GeneratedPower;
-            MaxGenerationCapacity = Prototype.GeneratedPower.Min(m_power);
+            else
+            {
+                m_canGenerate = true;
+            }
+
+            MaxGenerationCapacity = m_power = Electricity
+                .FromKw((int)(Prototype.GeneratedPower.Value * StoredPower.ToFloat()))
+                .Clamp(Electricity.Zero, Prototype.GeneratedPower);
+
+            m_maintenance.SetCurrentMaintenanceTo(Speed);
+            m_maintenance.RefreshMaintenanceCost();
         }
     }
 }

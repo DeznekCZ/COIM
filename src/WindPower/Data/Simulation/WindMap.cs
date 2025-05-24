@@ -23,8 +23,8 @@ namespace WindPower.Simulation
         private IWeatherManager m_weatherManager;
         private TerrainManager m_terrainManager;
         private IEntitiesManager m_entitiesManager;
-        private float[] m_terrainHeightMap;
-        private int[] m_entityHeightMap;
+        //private float[] m_terrainHeightMap;
+        //private int[] m_entityHeightMap;
         private Fix32 m_windDirection;
         private Fix32 m_oldWind;
 
@@ -44,9 +44,9 @@ namespace WindPower.Simulation
             m_terrainManager = terrainManager;
             m_entitiesManager = entitiesManager;
 
-            m_terrainHeightMap = m_terrainManager.HeightsData.AsEnumerable()
-                                .Select(h => h.Value.ToFloat()).ToArray();
-            m_entityHeightMap = new int[m_terrainHeightMap.Length];
+            //m_terrainHeightMap = m_terrainManager.HeightsData.AsEnumerable()
+            //                    .Select(h => h.Value.ToFloat()).ToArray();
+            //m_entityHeightMap = new int[m_terrainHeightMap.Length];
 
             // _ = Recalculate(m_cancelationTokenSourceCalculation.Token);
             _ = WindDirection(m_cancellationTokenSourceWindDirection.Token);
@@ -165,33 +165,33 @@ namespace WindPower.Simulation
 
         private async Task Recalculate(CancellationToken token)
         {
-            Log.Debug("[WindPower] Creation of height map of entities - STARTED");
-            int[] entityHeightMap = new int[m_entityHeightMap.Length];
-            foreach (IStaticEntity entity
-                in m_entitiesManager.Entities
-                                    .Where(e => (e is IStaticEntity && !(e is WindTurbine)))
-                                    .Cast<IStaticEntity>())
-            {
-                foreach (OccupiedTileRelative tileRef in entity.OccupiedTiles)
-                {
-                    Tile2i coord = entity.Position2f.Tile2i + tileRef.RelCoord;
-                    int index = m_terrainManager.GetTileIndex(coord).Value;
-                    int height = tileRef.FromHeightRel.Value;
-                    entityHeightMap[index] = entityHeightMap[index].Max(height);
-                }
-                if (token.IsCancellationRequested)
-                    break; // apply partial cache
+            //Log.Debug("[WindPower] Creation of height map of entities - STARTED");
+            //int[] entityHeightMap = new int[m_entityHeightMap.Length];
+            //foreach (IStaticEntity entity
+            //    in m_entitiesManager.Entities
+            //                        .Where(e => (e is IStaticEntity && !(e is WindTurbine)))
+            //                        .Cast<IStaticEntity>())
+            //{
+            //    foreach (OccupiedTileRelative tileRef in entity.OccupiedTiles)
+            //    {
+            //        Tile2i coord = entity.Position2f.Tile2i + tileRef.RelCoord;
+            //        int index = m_terrainManager.GetTileIndex(coord).Value;
+            //        int height = tileRef.FromHeightRel.Value;
+            //        entityHeightMap[index] = entityHeightMap[index].Max(height);
+            //    }
+            //    if (token.IsCancellationRequested)
+            //        break; // apply partial cache
 
-                await Task.Yield();
-            }
-            m_entityHeightMap = entityHeightMap;
-            m_cache.Clear();
-            Log.Debug("[WindPower] Creation of height map of entities - " + (token.IsCancellationRequested ? "CANCELED" : "DONE"));
+            //    await Task.Yield();
+            //}
+            //m_entityHeightMap = entityHeightMap;
+            //m_cache.Clear();
+            //Log.Debug("[WindPower] Creation of height map of entities - " + (token.IsCancellationRequested ? "CANCELED" : "DONE"));
         }
 
         private void heightChanged(Tile2iAndIndex index)
         {
-            m_terrainHeightMap[index.IndexRaw] = m_terrainManager.GetHeight(index.Index).Value.ToFloat();
+            //m_terrainHeightMap[index.IndexRaw] = m_terrainManager.GetHeight(index.Index).Value.ToFloat();
         }
     }
 }

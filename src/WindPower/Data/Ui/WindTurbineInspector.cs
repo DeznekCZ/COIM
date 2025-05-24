@@ -37,6 +37,24 @@ namespace WindPower.Ui
             //PropertyModifiersFloater powerMultFloater = new PropertyModifiersFloater(context, IdsCore.PropertyIds.SolarPowerMultiplier);
             //powerMultFloater.AddBaseVal(() => Entity.Prototype.OutputElectricity.ToString());
 
+            EmbedStatusToTheTop();
+            this.Observe(() => Entity?.Speed)
+                .Do((speed) =>
+                {
+                    if (speed > Percent.Hundred)
+                    {
+                        Status.As("Overheating".AsLoc(), DisplayState.Danger);
+                    }
+                    else if (speed > Percent.Eighty)
+                    {
+                        Status.As("Overheating".AsLoc(), DisplayState.Warning);
+                    }
+                    else
+                    {
+                        Status.AsWorking();
+                    }
+                });
+
             AddPanelWithHeader(new Row(2.pt())
             {
                 new Column(2.pt())
@@ -57,11 +75,11 @@ namespace WindPower.Ui
             }.AlignSelfCenter()).Title(Tr.Production);
 
             this.Observe(() => Entity?.StoredPower ?? Percent.Zero)
-                .Observe(() => Entity?.Prototype.GeneratedPower ?? Electricity.Zero)
+                .Observe(() => Entity?.GetCurrentMaxGeneration(out bool generating) ?? Electricity.Zero)
                 .Do((wind, generable) =>
                 {
                     bar.Value(wind.Min(Percent.Hundred));
-                    outputDisplayAct.Value(generable.ScaledBy(wind).Value);
+                    outputDisplayAct.Value(generable.Value);
                     if (wind == Percent.Hundred)
                     {
                         bar.Color(ColorRgba.Red);
