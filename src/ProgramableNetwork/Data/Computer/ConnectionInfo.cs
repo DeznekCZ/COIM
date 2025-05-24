@@ -24,8 +24,6 @@ namespace ProgramableNetwork
     {
         private ScrollColumn m_scrollableStackContainer;
         private UiComponent m_stackContainer;
-        private Option<Controller> m_selected;
-        private IUiUpdater updater;
         private readonly Material m_movingArrowsLineMaterialShared;
         private readonly List<IDataUpdater> m_updaters;
         private readonly UiContext m_UiContext;
@@ -48,26 +46,28 @@ namespace ProgramableNetwork
                 m => KeyBindings.FromPrimaryKeys(KbCategory.General, ShortcutMode.Game, KeyCode.LeftControl, KeyCode.W),
                 () =>
                 {
-                    this.Show();
+                    this.Open(UiContext.UiRoot);
+                    return true;
                 });
             OnOpenStart += VariableWindow_OnOpenStart;
             OnCloseStart += VariableWindow_OnCloseStart;
 
+            ShortcutToShow(KeyBindings.FromPrimaryKeys(KbCategory.General, ShortcutMode.Game, KeyCode.LeftControl, KeyCode.W));
 
-            this.AbsolutePositionCenter();
+            //this.AbsolutePositionCenter();
             MakeMovable();
 
             UpdaterBuilder updaterBuilder = UpdaterBuilder.Start();
 
-            m_scrollableStackContainer = new ScrollColumn();
-            Add(m_scrollableStackContainer);
+            Body.AddAndReturn(new Panel())
+                .AddAndReturn(m_scrollableStackContainer = new ScrollColumn());
 
             m_stackContainer = new UiComponent();
-            m_stackContainer.Size(width: 500.px());
+            m_stackContainer.Size(width: 100.Percent());
             m_scrollableStackContainer.Add(m_stackContainer);
-            m_scrollableStackContainer.Size(width: 500.px());
+            m_scrollableStackContainer.Size(width: 100.Percent());
 
-            WindowSize(500.px(), 100.Percent());
+            WindowSize(800.px(), 600.px());
 
             // TODO search bar
 
@@ -114,24 +114,26 @@ namespace ProgramableNetwork
             foreach (var controller in controllers)
             {
                 Row controllerLine = new Row();
-                controllerLine.Size(width: 500.px());
+                controllerLine.Size(width: 100.Percent());
 
                 var controllerButton = new ButtonIcon(controller.Prototype.IconPath)
                     //.ToolTip(this, item.CustomTitle.ValueOrNull ?? item.DefaultTitle.Value)
                     .OnClick(() => m_UiContext.CameraController.PanTo(controller.Position2f))
                     .OnDoubleClick(() =>
                     {
-                        m_selected = controller;
                         UiContext UiContext = GlobalDependencyResolver.Get<UiContext>();
                         if (UiContext.InspectorsManager.TryActivateFor(controller, out var inspectorController))
                             UiContext.InputMgr.ActivateNewController(inspectorController);
                         else
                             m_invalidOpSound.Play();
                     })
-                    .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+                    .Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2);
+                controllerButton.IconSize(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE * 1.5f);
+
                 controllerLine.Add(controllerButton);
 
-                Grid linkcontainer = new Grid(10);
+                Grid linkcontainer = new Grid(8);
+                linkcontainer.Component.FlexGrow(1);
                 controllerLine.Add(linkcontainer.Component);
 
                 List<(Module module, List<EntityField> fields)> list = controller.Modules
@@ -178,7 +180,8 @@ namespace ProgramableNetwork
                             else
                                 m_invalidOpSound.Play();
                         })
-                        .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+                        .Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2);
+                    entityButton.IconSize(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE * 1.5f);
                     entityButton.OnMouseEnter(
                             (e) =>
                             {
@@ -224,7 +227,7 @@ namespace ProgramableNetwork
                         }
                     );
 
-                Add(controllerLine);
+                m_scrollableStackContainer.Add(controllerLine);
             }
         }
     }

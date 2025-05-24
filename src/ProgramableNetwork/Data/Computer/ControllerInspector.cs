@@ -68,7 +68,7 @@ namespace ProgramableNetwork
             m_modulesPanel.Add(m_view = new ControllerView(this, Refresh).AlignSelfCenter());
 
             HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, Assets.Unity.UserInterface.General.Connect128_png))
-                .OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Show())
+                .OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Open(context.UiRoot))
                 .OnMouseEnterLeave(AddPreviewHighlightAll, ClearPreviewHighlight);
 
             EmbedStatusToTheTop();
