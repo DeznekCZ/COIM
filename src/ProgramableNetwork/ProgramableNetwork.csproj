@@ -26,6 +26,9 @@
 
   <ItemGroup>
     <Compile Remove="Data\Tabs\NewIds.Texts.cs" />
+    <Content Include="..\ExampleMod.Unity\AssetBundles\**">
+        <Link>AssetBundles\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -105,6 +108,6 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\Newtonsoft.Json.dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;robocopy .\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo&#xD;&#xA;robocopy .\..\ProgramableNetwork.Modules\Custom &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules&quot; | echo&#xD;&#xA;robocopy .\..\ProgramableNetwork.Modules\Core &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules\Core&quot; | echo" />
+    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\Newtonsoft.Json.dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo&#xD;&#xA;robocopy .\..\ProgramableNetwork.Modules\Custom &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules&quot; | echo&#xD;&#xA;robocopy .\..\ProgramableNetwork.Modules\Core &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules\Core&quot; | echo" />
   </Target>
 </Project>

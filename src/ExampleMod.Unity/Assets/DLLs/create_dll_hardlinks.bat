@@ -9,3 +9,8 @@ for %%s in ("Mafi.dll" "Mafi.Core.dll" "Mafi.Base.dll" "Mafi.Unity.dll", "Mafi.M
 	IF EXIST "%~dp0\%%s" del "%~dp0\%%s"
 	mklink "%~dp0\%%s" "%COI_ROOT%\Captain of Industry_Data\Managed\%%s"
 )
+
+for %%s in ("ProgramableNetwork.dll" "Newtonsoft.Json.dll") do (
+	IF EXIST "%~dp0\%%s" del "%~dp0\%%s"
+	mklink "%~dp0\%%s" "..\..\..\ProgramableNetwork\bin\Debug\net48\%%s"
+)
