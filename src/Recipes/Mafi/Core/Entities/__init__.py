@@ -1,4 +1,20 @@
 
+class DefaultLogisticsModeManager:
+    def __init__(self):
+        self.DisableLogisticsOnPlacement = False
+
+class ToggleDefaultLogisticsMode:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+
 class EntitiesCommandsProcessor:
     UnityPerSurfaceTile = None
     def __init__(self):
@@ -231,6 +247,13 @@ class EntityConfigData:
         self.AssignedInputs = None
         self.NotifyOnLowReserve = None
         self.AllowedProducts = None
+        self.AssignedProducts = None
+        self.TrackDirection = None
+        self.TrackPillarBlocksBitmap = None
+        self.TrackFlags = None
+        self.TrackCriticalBlocksBitmap = None
+        self.TrackSuperBlocksBitmap = None
+        self.TrackSuperBlocksExplicitBitmap = None
         self.Prototype = Option()
 
     class EntityIdsHolder:
@@ -261,7 +284,9 @@ class EntityContext:
         self.UnlockedProtosDb = None
         self.PortIdFactory = None
         self.TerrainManager = None
+        self.OccupancyManager = None
         self.AirPollutionManager = None
+        self.SimLoopEvents = None
 
 class EntityLogisticsMode:
     Auto = None
@@ -280,6 +305,7 @@ class IEntityProto:
 
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class EntityProto:
@@ -291,6 +317,7 @@ class EntityProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -298,7 +325,6 @@ class EntityProto:
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):
@@ -318,10 +344,6 @@ class EntityValidators:
 class IAssignableToFuelStation:
     def __init__(self):
         self.AssignedFuelStations = None
-
-class IDynamicCostProvider:
-    def __init__(self):
-        self.ManagedProtoType = None
 
 class IEntity:
     def __init__(self):
@@ -361,15 +383,6 @@ class IEntityWithPosition:
     def __init__(self):
         self.Position2f = None
         self.Position3f = None
-        self.RendererData = None
-        self.DefaultTitle = None
-        self.Id = None
-        self.Prototype = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
 
 class IAreaSelectableEntity:
     def __init__(self):
@@ -398,6 +411,7 @@ class IAreaSelectableStaticEntity:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -507,18 +521,11 @@ class IEntityWithCloneableConfig:
         pass
 
 
-class IEntityWithCustomTitle:
+class IObjectWithCustomTitle:
     def __init__(self):
+        self.DefaultTitle = None
         from Mafi import Option
         self.CustomTitle = Option()
-        self.DefaultTitle = None
-        self.Id = None
-        self.Prototype = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
 
 class EntityNameExtensions:
     def __init__(self):
@@ -603,6 +610,7 @@ class IEntityWithOutputToTerrain:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -653,6 +661,7 @@ class SoundParams:
         self.DoNotLimit = False
 
 class SoundSignificance:
+    VerySmall = None
     Small = None
     Normal = None
     Medium = None
@@ -660,10 +669,26 @@ class SoundSignificance:
     def __init__(self):
         self.value__ = 0
 
+class IObjectWithNestedNotificationTarget:
+    def __init__(self):
+        pass
+
+
+class IObjectWithTitle:
+    def __init__(self):
+        self.DefaultTitle = None
+
 class IUpgradableEntity:
     def __init__(self):
         self.Upgrader = None
+        self.DefaultTitle = None
+        self.Id = None
         self.Prototype = None
+        self.Context = None
+        self.IsEnabled = False
+        self.IsPaused = False
+        self.CanBePaused = False
+        self.IsDestroyed = False
         self.CenterTile = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -676,13 +701,19 @@ class IUpgradableEntity:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
+
+class IEntityWithUpgrader:
+    def __init__(self):
+        self.Upgrader = None
         self.DefaultTitle = None
         self.Id = None
+        self.Prototype = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False

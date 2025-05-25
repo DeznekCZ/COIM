@@ -23,6 +23,7 @@ class TreeHarvester:
         self.TruckQueue = None
         self.DidNotFindTreeToHarvest = False
         self.MaxServiceRadius = None
+        self.LifetimeTreesHarvested = 0
         self.CanBePaused = False
         self.CustomTitle = Option()
         self.AssignedTo = Option()
@@ -43,6 +44,7 @@ class TreeHarvester:
         self.HasTrueJob = False
         self.CurrentJob = Option()
         self.IsIdle = False
+        self.IsEngineIdle = False
         self.CurrentJobInfo = None
         self.IsStuck = False
         self.Maintenance = None
@@ -73,6 +75,8 @@ class TreeHarvester:
         self.SteeringAngle = None
         self.SteeringAccelerationPercent = None
         self.DistanceToFullStop = None
+        from Mafi import Fix64
+        self.LifetimeDistanceTraveled = Fix64()
         self.TargetIsTerminal = False
         self.DrivingState = None
         self.SpeedFactor = None
@@ -132,6 +136,8 @@ class TreeHarvesterState:
 class TreeHarvesterProto:
     def __init__(self):
         self.EntityType = None
+        from Mafi import Option
+        self.FuelTankProto = Option()
         self.CostToBuild = None
         self.DisruptsSurface = False
         self.IconPath = ""
@@ -141,6 +147,7 @@ class TreeHarvesterProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -151,8 +158,6 @@ class TreeHarvesterProto:
         self.TreeHarvestDistance = None
         self.Graphics = None
         self.DrivingData = None
-        from Mafi import Option
-        self.FuelTankProto = Option()
         self.PathFindingParams = None
         self.NextTier = Option()
         self.UIOrder = 0.0
@@ -163,7 +168,6 @@ class TreeHarvesterProto:
         self.BuildExtraDuration = None
         self.VehicleQuotaCost = 0
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Timings:
         def __init__(self):

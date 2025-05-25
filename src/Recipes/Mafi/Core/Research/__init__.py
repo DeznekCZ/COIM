@@ -1,15 +1,16 @@
 
 class ResearchNodeProto:
+    DEFAULT_COST_FN = None
+    DEFAULT_DESC_FN = None
     def __init__(self):
         from Mafi.Core.Research import ResearchNodeProto
         self.Id = ResearchNodeProto.ID()
 
         self.IsUnlockedFromStart = False
         self.Parents = None
-        self.Difficulty = 0
-        self.TotalStepsRequired = 0
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -17,16 +18,30 @@ class ResearchNodeProto:
         self.IsObsolete = False
         self.Units = None
         self.UnlockingConditions = None
+        self.ResearchDuration = None
         self.GridPosition = None
         self.AnyParentCanUnlock = False
         self.Graphics = None
         self.ResolvedDescription = None
+        self.SpacePointsRequiredFromLevel = 0
+        self.MaxResearchCount = 0
+        self.PropertiesPerIncrement = None
+        self.CostFn = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):
             self.Value = ""
+
+    class CostPerLevelFunc:
+        def __init__(self):
+            self.Method = None
+            self.Target = None
+
+    class DescPerTimesDoneFunc:
+        def __init__(self):
+            self.Method = None
+            self.Target = None
 
     class Gfx:
         Empty = None
@@ -110,6 +125,8 @@ class ResearchNode:
     def __init__(self):
         from Mafi import Fix32
         self.RemainingSteps = Fix32()
+        self.ScienceCost = 0
+        self.ScienceCostLocStr = None
         self.Proto = None
         self.StepsDone = Fix32()
         self.State = None
@@ -129,6 +146,8 @@ class ResearchNode:
         self.CanBeEnqueuedDirect = False
         self.CanBeDequeued = False
         self.IndexInQueue = 0
+        self.RequiresSpacePoints = False
+        self.TimesResearched = 0
 
     class InfoForUi:
         def __init__(self):
@@ -144,8 +163,7 @@ class ResearchNode:
 
 class IResearchNodeFriend:
     def __init__(self):
-        pass
-
+        self.Parents = None
 
 class ResearchNodeProtoBuilder:
     def __init__(self):
@@ -156,22 +174,6 @@ class ResearchNodeProtoBuilder:
         def __init__(self):
             self.Units = None
             self.Builder = None
-
-class ResearchCostsTpl:
-    Build = None
-    UnlockedFromStart = None
-    def __init__(self):
-        self.Difficulty = 0
-
-    class Builder:
-        def __init__(self):
-            pass
-
-
-class ResearchCostsAttribute:
-    def __init__(self):
-        self.TypeId = None
-        self.Difficulty = 0
 
 class ResearchNodeProtoBuilderExtensions:
     def __init__(self):
@@ -186,6 +188,7 @@ class TechnologyProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -193,7 +196,6 @@ class TechnologyProto:
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -216,6 +218,16 @@ class UnlockingConditionGlobalStats:
 class UnlockingConditionProtoRequired:
     def __init__(self):
         self.ProtoRequired = None
+
+    class Manager:
+        def __init__(self):
+            pass
+
+
+class UnlockingConditionSpaceStation:
+    def __init__(self):
+        self.IsSatisfied = False
+        self.MinTierRequired = 0
 
     class Manager:
         def __init__(self):

@@ -1,27 +1,17 @@
 
 class AlphaStaticIslandMap:
-    LocName = None
-    LocDescription = None
-    ArmageddonLocName = None
-    ArmageddonLocDescription = None
     def __init__(self):
         self.Name = ""
 
 class BeachStaticIslandMap:
-    LocName = None
-    LocDescription = None
     def __init__(self):
         self.Name = ""
 
 class CurlandMap:
-    LocName = None
-    LocDescription = None
     def __init__(self):
         self.Name = ""
 
 class GoldenPeakStaticIslandMap:
-    LocName = None
-    LocDescription = None
     def __init__(self):
         self.Name = ""
 

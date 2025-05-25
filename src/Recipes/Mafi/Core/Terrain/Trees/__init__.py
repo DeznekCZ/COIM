@@ -60,15 +60,14 @@ class TreeData:
         from Mafi.Core.Products import ProductProto
         self.HarvestedProductId = ProductProto.ID()
 
-        self.Position = None
+        self.Position2i = None
+        self.Position2f = None
+        self.Position3f = None
         self.Id = None
         self.Proto = None
-        self.PositionWithinTile = None
-        self.Rotation = None
-        self.BaseScale = None
         self.CreatedByTerrainGenerator = False
         self.PlantedAtHeight = None
-        self.PlantedAtTick = 0
+        self.PlantedAtTick = None
 
 class TreeDataBase:
     def __init__(self):
@@ -78,7 +77,7 @@ class TreeDataBase:
         self.Scale = None
 
 class TreesManager:
-    GENERATED_TREE_PLANTED_AT_TICK = 0
+    GENERATED_TREE_PLANTED_AT_TICK = None
     from Mafi import Fix32
     STUMP_SINK_RATE_PER_MONTH = Fix32()
     MAX_FLOOR_THICKNESS_TOTAL = None
@@ -92,6 +91,7 @@ class TreesManager:
         self.TreeAddedToHarvest = None
         self.TreeRemovedFromHarvest = None
         self.ManualTreePlaced = None
+        self.TreeCollapsed = None
         self.Trees = None
         self.TreesCount = 0
         self.Stumps = None
@@ -109,14 +109,15 @@ class TreesManager:
 
 class TreeStumpData:
     def __init__(self):
-        self.Position = None
+        self.IsValid = False
+        self.Position2f = None
+        self.Position3f = None
         self.Id = None
         self.TreeProto = None
-        self.PositionWithinTile = None
-        self.Rotation = None
         self.Scale = None
         self.PlantedAtHeight = None
         self.CreatedAtTick = None
+        self.TreePlantedAtTick = None
 
 class ForestProto:
     def __init__(self):
@@ -125,6 +126,7 @@ class ForestProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -133,7 +135,6 @@ class ForestProto:
         self.ForestFloorMaterial = None
         self.Trees = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class ITreesManager:
     def __init__(self):
@@ -165,10 +166,6 @@ class ITreePlantingManager:
 class TreePlantingGroupProto:
     def __init__(self):
         self.ProductWhenHarvested = None
-        self.TimeTo40PercentGrowth = None
-        self.TimeTo60PercentGrowth = None
-        self.TimeTo80PercentGrowth = None
-        self.TimeTo100PercentGrowth = None
         self.QuantityFormatter = None
         self.IconPath = ""
         from Mafi.Core.Prototypes import Proto
@@ -176,15 +173,20 @@ class TreePlantingGroupProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.Trees = None
-        self.Graphics = None
+        self.YieldAt40PercentGrowth = None
+        self.YieldAt60PercentGrowth = None
+        self.YieldAt80PercentGrowth = None
+        self.QuantityAt40PercentGrowth = None
+        self.QuantityAt60PercentGrowth = None
+        self.QuantityAt80PercentGrowth = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class TreePlantingValidator:
     def __init__(self):
@@ -193,22 +195,12 @@ class TreePlantingValidator:
 class TreeProto:
     MAX_TREE_SPACING = 0
     MAX_BASE_SCALE_DEVIATION = None
-    Percent20 = None
-    Percent40 = None
-    Percent60 = None
-    Percent80 = None
     def __init__(self):
         self.Type = None
         self.EntityType = None
         from Mafi.Core.Entities.Static import StaticEntityProto
         self.Id = StaticEntityProto.ID()
 
-        self.Costs = None
-        self.Ports = None
-        self.CannotBeReflected = False
-        self.IsUnique = False
-        self.AutoBuildMiniZippers = False
-        self.ProductWhenHarvested = None
         self.QuantityFormatter = None
         from Mafi import Option
         self.ForestProto = Option()
@@ -218,13 +210,23 @@ class TreeProto:
         self.IconPath = ""
         self.MapEditorIconPath = ""
         self.Layout = None
+        self.RendererId = 0
+        self.Costs = None
+        self.Ports = None
+        self.CannotBeReflected = False
+        self.IsUnique = False
+        self.AutoBuildMiniZippers = False
+        self.ProductWhenHarvested = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
+        self.AgeAtMaxGrowthBase = None
+        self.MaxStumpAgeBase = None
         self.BaseScaleStdDeviation = None
         self.MinForestFloorRadius = None
         self.MaxForestFloorRadius = None
@@ -232,13 +234,19 @@ class TreeProto:
         self.IsDry = False
         self.ForestFloorMaterial = Option()
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class TreeGfx:
         Empty = None
         def __init__(self):
             self.PrefabPaths = None
+            self.TintColors = None
             from Mafi import Option
             self.TrimmedTreePrefabPath = Option()
             self.TrimmedTreeLength = None
             self.MapEditorIconPath = ""
+
+class TreePrefabs:
+    def __init__(self):
+        self.TreePrefabPath = ""
+        self.TreeCutPrefabPath = ""
+        self.StumpPrefabPath = ""

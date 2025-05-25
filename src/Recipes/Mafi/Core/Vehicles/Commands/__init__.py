@@ -47,6 +47,20 @@ class AssignVehicleTypeToEntityCmd:
         self.EntityId = None
         self.Count = 0
 
+class BuildVehicleForeverCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.ProtoId = None
+        self.VehicleDepotId = None
+
 class CancelReplaceVehicleCmd:
     def __init__(self):
         self.AffectsSaveState = False
@@ -253,6 +267,19 @@ class TogglePartialTrucksLoadCmd:
         self.HasError = False
         self.ErrorMessage = ""
 
+class ToggleVehicleScrapCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.VehicleId = None
+
 class UnassignVehicleCmd:
     def __init__(self):
         self.AffectsSaveState = False
@@ -297,4 +324,10 @@ class VehicleCheatProductCmd:
         self.VehicleId = None
         from Mafi.Core.Products import ProductProto
         self.ProductId = ProductProto.ID()
+
+
+class VehicleCommandsProcessor:
+    COST_TO_DISCARD_CARGO = None
+    def __init__(self):
+        pass
 

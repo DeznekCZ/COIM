@@ -36,6 +36,7 @@ class QuickTradePairProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -52,7 +53,6 @@ class QuickTradePairProto:
         self.MinReputationRequired = 0
         self.IgnoreTradeMultipliers = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class IVirtualProductQuickTradeHandler:
     def __init__(self):

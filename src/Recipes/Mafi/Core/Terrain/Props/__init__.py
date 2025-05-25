@@ -71,6 +71,7 @@ class TerrainPropProto:
         self.Graphics = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -81,7 +82,6 @@ class TerrainPropProto:
         self.AllowRollRandomization = False
         self.DoesNotBlocksVehicles = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class PropGfx:
         Empty = None

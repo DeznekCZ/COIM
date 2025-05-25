@@ -114,11 +114,26 @@ class GoToLocationCmd:
         self.LocationId = None
         self.Reason = None
 
+class TeleportFleetToLocationCheatCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.LocationId = None
+
 class TravelingFleet:
     EXPLORATION_COST_IN_KM = 0
     def __init__(self):
         self.CanBePaused = False
         self.WorkersNeeded = 0
+        from Mafi import Option
+        self.CustomTitle = Option()
         self.OnLocationFullyExplored = None
         self.PreviousLocationId = None
         self.CurrentLocationId = None
@@ -135,7 +150,6 @@ class TravelingFleet:
         self.IsAutoReturnEnabled = False
         self.IsDocked = False
         self.Dock = None
-        from Mafi import Option
         self.PendingDockAssignment = Option()
         self.Direction = None
         self.CrewRequired = 0
@@ -159,7 +173,6 @@ class TravelingFleet:
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
-        self.CustomTitle = Option()
         self.Id = None
         self.DefaultTitle = None
         self.Prototype = None
@@ -347,6 +360,7 @@ class TravelingFleetProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -362,7 +376,6 @@ class TravelingFleetProto:
         self.InitialBridge = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         EMPTY = None

@@ -28,6 +28,7 @@ class Shipyard:
         self.CanApplyModification = False
         self.ModificationProgress = Option()
         self.ModificationState = None
+        self.CurrentModificationRequest = None
         self.DockedFleet = Option()
         self.Upgrader = None
         self.HasHighCargoUnloadPrio = False
@@ -50,6 +51,7 @@ class Shipyard:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -206,6 +208,7 @@ class ShipyardProto:
     def __init__(self):
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ReservedOceanAreasSets = None
         self.MinGroundHeight = None
         self.MaxGroundHeight = None
@@ -224,6 +227,7 @@ class ShipyardProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -237,7 +241,9 @@ class ShipyardProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False

@@ -1,4 +1,11 @@
 
+class AirPollutionCategory:
+    Vehicles = None
+    Ships = None
+    Trains = None
+    def __init__(self):
+        self.value__ = 0
+
 class AirPollutionManager:
     def __init__(self):
         self.ProvidedProducts = None
@@ -6,6 +13,7 @@ class AirPollutionManager:
         self.Stats = None
         self.StatsVehicles = None
         self.StatsShips = None
+        self.StatsTrains = None
 
 class GroundWaterManager:
     def __init__(self):
@@ -63,6 +71,7 @@ class WeatherProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -72,7 +81,6 @@ class WeatherProto:
         self.RainIntensity = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None

@@ -14,6 +14,8 @@ class IShaft:
         self.ConnectedEntities = None
 
 class Shaft:
+    STOP_OUTPUT_BELOW = None
+    START_OUTPUT_ABOVE = None
     def __init__(self):
         self.IsDefaultNoCapacityShaft = False
         self.InertiaBuffer = None

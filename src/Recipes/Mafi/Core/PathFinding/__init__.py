@@ -2,21 +2,31 @@
 class ClearancePathabilityProvider:
     FLAT_STEEPNESS_DELTA = None
     MAX_STEEPNESS_DELTA = None
-    BASIC_HEIGHT_CLEARANCE = None
-    MAX_HEIGHT_CLEARANCE = None
+    TILE_FREE = None
+    TILE_BLOCKED = None
+    STEEPNESS_NO_SLOPE = None
     STEEPNESS_SLIGHT_SLOPE = None
     STEEPNESS_STEEP_SLOPE = None
     ALLOW_SLIGHT_SLOPE = None
     ALLOW_NO_SLOPE = None
-    HEIGHT_CLEARANCE_LOW = None
+    HEIGHT_CLEARANCE_FREE = None
+    HEIGHT_CLEARANCE_7T = None
+    HEIGHT_CLEARANCE_5T = None
+    HEIGHT_CLEARANCE_4T = None
+    HEIGHT_CLEARANCE_3T = None
+    HEIGHT_CLEARANCE_2T = None
+    HEIGHT_CLEARANCE_1T = None
     HEIGHT_CLEARANCE_BLOCKED = None
-    ALLOW_LOW_CLEARANCE = None
-    ALLOW_MAX_CLEARANCE = None
-    TILE_FREE = None
-    TILE_BLOCKED = None
+    REQUIRE_CLEARANCE_INF = None
+    REQUIRE_CLEARANCE_7T = None
+    REQUIRE_CLEARANCE_5T = None
+    REQUIRE_CLEARANCE_4T = None
+    REQUIRE_CLEARANCE_3T = None
+    REQUIRE_CLEARANCE_2T = None
+    REQUIRE_CLEARANCE_1T = None
+    REQUIRE_NO_CLEARANCE = None
     MAX_QUERY_CLEARANCE = 0
     def __init__(self):
-        self.DataChunksCount = 0
         self.RecomputedChunksCount = 0
         self.TerrainManager = None
 
@@ -27,9 +37,9 @@ class ClearancePathabilityProvider:
             self.IsDirtySteepness = False
             self.IsDirtyHeightClearance = False
             self.AllNeighborsEnsured = False
-            self.OriginTile = None
             self.Parent = None
-            self.Data = None
+            self.OriginTileAndIndex = None
+            self.ChunkIndex = None
             from Mafi import Option
             self.PlusXNeighbor = Option()
             self.PlusXyNeighbor = Option()
@@ -40,9 +50,9 @@ class ClearancePathabilityProvider:
 
     class CapabilityChunkData:
         def __init__(self):
+            self.Nodes = None
             self.IsDirty = False
             self.CapabilityIndex = 0
-            self.Nodes = None
 
 class PathabilityBitmap:
     def __init__(self):
@@ -50,10 +60,20 @@ class PathabilityBitmap:
 
 class HeightClearancePathability:
     IgnoreClearance = None
-    CanPassUnder = None
-    NoPassingUnder = None
+    Require1TileClearance = None
+    Require2TilesClearance = None
+    Require3TilesClearance = None
+    Require4TilesClearance = None
+    Require5TilesClearance = None
+    Require7TilesClearance = None
+    RequireInfiniteClearance = None
     def __init__(self):
         self.value__ = None
+
+class HeightClearancePathabilityExtensions:
+    def __init__(self):
+        pass
+
 
 class SteepnessPathability:
     IgnoreSlope = None
@@ -206,13 +226,19 @@ class PfNode:
         self.Area = None
         self.ParentChunk = None
 
+    class PfConnLine:
+        def __init__(self):
+            self.AsToLine2i = None
+            self.From = None
+            self.To = None
+
     class Edge:
         def __init__(self):
             self.OtherConnectionLine = None
             self.Node = None
+            self.ConnectionLine = None
             from Mafi import Fix32
             self.Distance = Fix32()
-            self.ConnectionLine = None
             self.NeighborDirection = None
 
 class IVehiclePathSegment:
@@ -235,7 +261,7 @@ class VehicleRoadPathSegment:
     def __init__(self):
         from Mafi import Option
         self.NextSegment = Option()
-        self.Path = None
+        self.PathReversed = None
 
 class VehiclePathFindingManager:
     DEFAULT_STEPS_PER_UPDATE = 0
@@ -271,8 +297,10 @@ class VehiclePathFindingManager:
 class VehiclePathFindingParams:
     DEFAULT = None
     def __init__(self):
-        self.RequiredClearance = None
+        self.MinSizeClearance = None
+        self.MinHeightClearance = None
         self.SteepnessPathability = None
         self.HeightClearancePathability = None
         self.MaterialTraversalSensitivity = None
         self.PathabilityQueryMask = None
+        self.RoadLaneTypeMask = None

@@ -7,6 +7,7 @@ class IBlueprint:
         self.Surfaces = None
         from Mafi import Option
         self.ProtosThatFailedToLoad = Option()
+        self.AllMajorProtos = None
         self.MostFrequentProtos = None
         self.AllDistinctProtos = None
         self.Name = ""

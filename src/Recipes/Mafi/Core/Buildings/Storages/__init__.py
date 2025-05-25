@@ -49,6 +49,7 @@ class NuclearWasteStorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -64,6 +65,7 @@ class NuclearWasteStorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -80,10 +82,12 @@ class NuclearWasteStorageProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class Storage:
     IMPORT_PRIO_ID = ""
@@ -94,6 +98,7 @@ class Storage:
         self.Upgrader = None
         self.ImportUntilPercent = None
         self.ExportFromPercent = None
+        self.TransportFromPercent = None
         self.CleaningInProgress = False
         self.UsableCapacity = None
         self.AssignedInputs = None
@@ -139,6 +144,7 @@ class Storage:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -263,6 +269,7 @@ class StorageBase:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -298,6 +305,7 @@ class StorageBaseProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -311,10 +319,12 @@ class StorageBaseProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class StorageCheatClearProductCmd:
     def __init__(self):
@@ -406,6 +416,7 @@ class FluidStorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -421,6 +432,7 @@ class FluidStorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -435,10 +447,12 @@ class FluidStorageProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -446,6 +460,7 @@ class FluidStorageProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.SignObjectPath = ""
@@ -470,6 +485,7 @@ class LooseStorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -485,6 +501,7 @@ class LooseStorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -499,10 +516,12 @@ class LooseStorageProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -510,6 +529,7 @@ class LooseStorageProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.SmoothPileObjectPath = ""
@@ -534,6 +554,7 @@ class UnitStorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -549,6 +570,7 @@ class UnitStorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -563,10 +585,12 @@ class UnitStorageProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -578,6 +602,7 @@ class UnitStorageProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.RackPrefabPath = ""
@@ -615,6 +640,7 @@ class StorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -630,6 +656,7 @@ class StorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -644,10 +671,12 @@ class StorageProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class StorageProtoBuilder:
     def __init__(self):
@@ -701,3 +730,4 @@ class StorageSetSliderStepCmd:
         self.StorageId = None
         self.ImportStep = 0
         self.ExportStep = 0
+        self.TransportStep = 0

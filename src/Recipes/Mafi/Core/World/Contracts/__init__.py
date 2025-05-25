@@ -1,5 +1,6 @@
 
 class ContractsManager:
+    CAP_MULTIPLIER_LARGE_SHIPS = None
     def __init__(self):
         self.ActiveContracts = None
         self.ProfitMultiplier = None
@@ -44,11 +45,14 @@ class ToggleContractCmd:
 
 class ContractProto:
     def __init__(self):
+        self.UpointsPerMonth = None
+        self.UpointsPer100ProductsBought = None
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -58,9 +62,8 @@ class ContractProto:
         self.ProductToPayWith = None
         self.QuantityToPayWith = None
         self.AllProducts = None
-        self.UpointsPerMonth = None
-        self.UpointsPer100ProductsBought = None
+        self.UpointsPerMonthBase = None
+        self.UpointsPer100ProductsBoughtBase = None
         self.UpointsToEstablish = None
         self.MinReputationRequired = 0
         self.IsPhantom = False
-        self.IsInitialized = False

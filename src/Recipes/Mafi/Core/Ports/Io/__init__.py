@@ -55,6 +55,7 @@ class IoPortShapeProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -64,7 +65,6 @@ class IoPortShapeProto:
         self.AllowedProductType = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):

@@ -43,28 +43,83 @@ class BattleSimulator:
     def __init__(self):
         from Mafi import Option
         self.OngoingBattle = Option()
+        self.LatestBattle = Option()
         self.AllBattleResults = None
         self.Config = None
 
+class NotifyOnBattleOpenedCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+
 class IBattleState:
     def __init__(self):
+        self.IsStarted = False
         self.Attacker = None
         self.Defender = None
         self.BattleRound = 0
         from Mafi import Option
         self.Result = Option()
+        self.BattleLog = None
+        self.Data = None
 
 class BattleState:
     def __init__(self):
+        self.IsStarted = False
+        self.IsFinished = False
         self.Attacker = None
         self.Defender = None
         from Mafi import Option
         self.Result = Option()
         self.BattleRound = 0
+        self.Data = None
         self.BattleSortedEntities = None
         self.BattleLog = None
         self.BattleSimConfig = None
         self.Random = None
+
+class BattleStateData:
+    def __init__(self):
+        self.Attacker = None
+        self.Defender = None
+
+class FleetBattleData:
+    def __init__(self):
+        self.Entities = None
+
+class FleetEntityBattleData:
+    def __init__(self):
+        self.Name = None
+        self.Hull = None
+        self.Armor = 0
+        self.CurrentHp = 0
+        self.MaxHp = 0
+        self.IsDestroyed = False
+        self.IsEscaping = False
+        self.HasEscaped = False
+        self.Weapons = None
+
+class FleetWeaponBattleData:
+    def __init__(self):
+        self.Proto = None
+        self.ShotsFired = 0
+        self.DamageDealt = 0
+        self.Range = 0
+        self.MaxHp = 0
+        self.CurrentHp = 0
+
+class DestructiblePartBattleData:
+    def __init__(self):
+        self.Proto = None
+        self.MaxHp = 0
+        self.CurrentHp = 0
 
 class IBattleAware:
     def __init__(self):
@@ -79,6 +134,7 @@ class DestructibleFleetPartProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -90,7 +146,6 @@ class DestructibleFleetPartProto:
         self.Graphics = None
         self.ExtraCrew = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class DestructibleFleetPart:
     def __init__(self):
@@ -115,6 +170,7 @@ class FleetBridgePartProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -124,7 +180,6 @@ class FleetBridgePartProto:
         self.Value = None
         self.ExtraCrew = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -142,6 +197,7 @@ class FleetEnginePartProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -155,7 +211,6 @@ class FleetEnginePartProto:
         self.Graphics = None
         self.ExtraCrew = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class FleetEntity:
     RepairCostForValue = None
@@ -164,6 +219,8 @@ class FleetEntity:
     DistancePerStepInBattle = Fix32()
     def __init__(self):
         self.Name = None
+        from Mafi import Option
+        self.EntityName = Option()
         self.BattlePriority = None
         self.HitChanceWeight = None
         self.ExtraRoundsToEscape = None
@@ -192,7 +249,6 @@ class FleetEntity:
         self.DistancePerStep = Fix32()
         self.DistancePerFuel = Fix32()
         self.Armor = None
-        from Mafi import Option
         self.PreviouslyAttackedEntity = Option()
 
 class IFleetEntityFriend:
@@ -229,6 +285,7 @@ class FleetEntityPartProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -238,7 +295,6 @@ class FleetEntityPartProto:
         self.Graphics = None
         self.ExtraCrew = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):
@@ -264,6 +320,7 @@ class FleetEntitySlotProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -273,7 +330,6 @@ class FleetEntitySlotProto:
         self.EligibleItems = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class SlotType:
         None = None
@@ -309,6 +365,7 @@ class FleetFuelTankPartProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -319,7 +376,6 @@ class FleetFuelTankPartProto:
         self.Graphics = None
         self.ExtraCrew = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class FleetEntityHullProto:
     RepairDurationPerProduct = None
@@ -330,6 +386,7 @@ class FleetEntityHullProto:
         self.IconPath = ""
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -345,7 +402,6 @@ class FleetEntityHullProto:
         self.Value = None
         self.ExtraCrew = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -388,6 +444,7 @@ class UpgradeHullProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -397,7 +454,6 @@ class UpgradeHullProto:
         self.Graphics = None
         self.ExtraCrew = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class FleetWeaponProto:
     def __init__(self):
@@ -408,6 +464,7 @@ class FleetWeaponProto:
         self.IconPath = ""
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -424,7 +481,6 @@ class FleetWeaponProto:
         self.Graphics = None
         self.ExtraCrew = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):

@@ -166,6 +166,7 @@ class MapCellSurfaceGeneratorProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -180,7 +181,6 @@ class MapCellSurfaceGeneratorProto:
         self.AltNoiseStartTransition = Fix64()
         self.AltNoiseEndTransition = Fix64()
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):

@@ -27,10 +27,12 @@ class RocketAssemblyBuilding:
         self.VehicleQueue = None
         self.BuildQueue = None
         self.ReplaceQueue = None
+        self.VehicleToReplaceQueue = None
         self.CurrentlyBuildVehicle = Option()
         self.Buffers = None
         self.VehicleConstructionProgress = Option()
         self.DestroyCallbackStarted = False
+        self.ProtoToBuildForever = Option()
         self.CanDisableLogisticsInput = False
         self.CanDisableLogisticsOutput = False
         self.LogisticsInputMode = None
@@ -51,6 +53,7 @@ class RocketAssemblyBuilding:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -75,6 +78,7 @@ class RocketAssemblyBuildingProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ElectricityConsumed = None
         self.BuildableEntities = None
         self.Layout = None
@@ -91,6 +95,7 @@ class RocketAssemblyBuildingProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -113,15 +118,18 @@ class RocketAssemblyBuildingProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class RocketLaunchPad:
     def __init__(self):
         self.CanBePaused = False
         self.State = None
+        self.RocketState = None
         self.RemainingStateDuration = None
         from Mafi import Option
         self.AttachedRocketBase = Option()
@@ -133,9 +141,12 @@ class RocketLaunchPad:
         self.IncomingRocketsQueueLength = 0
         self.AutoLaunch = False
         self.LaunchCountdown = None
+        self.MuteCountdown = False
         self.WaterBuffer = None
         self.IsSprinklingWater = False
         self.IsCrawlerBridgeErected = False
+        self.IsPumpingFuel = False
+        self.CargoBuffers = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
@@ -153,6 +164,7 @@ class RocketLaunchPad:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -181,6 +193,16 @@ class RocketLaunchPadState:
     def __init__(self):
         self.value__ = 0
 
+class RocketLaunchState:
+    None = None
+    WaitingForInstructions = None
+    FuelLow = None
+    WaterLow = None
+    WaitingForCargoAssignment = None
+    AutoLaunchForCargoNotSet = None
+    def __init__(self):
+        self.value__ = 0
+
 class RocketLaunchPadProto:
     def __init__(self):
         self.EntityType = None
@@ -198,6 +220,7 @@ class RocketLaunchPadProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -218,16 +241,19 @@ class RocketLaunchPadProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         def __init__(self):
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.IconIsCustom = False

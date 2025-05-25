@@ -53,6 +53,7 @@ class RegisteredInputBuffer:
         self.VehiclesEnforcer = Option()
         self.AllowDeliveryAtDistanceWhenBlocked = False
         self.NumberOfVehiclesAssigned = 0
+        self.PendingQuantity = None
         self.AllReservedJobs = None
         self.IsAvailableCached = False
         self.OptimalQuantityCached = None
@@ -80,6 +81,7 @@ class RegisteredOutputBuffer:
         self.VehiclesEnforcer = Option()
         self.AllowPickupAtDistanceWhenBlocked = False
         self.NumberOfVehiclesAssigned = 0
+        self.PendingQuantity = None
         self.JobsCount = 0
         self.IsAvailableCached = False
         self.OptimalQuantityCached = None
@@ -134,6 +136,7 @@ class VehicleCargo:
         self.TotalQuantity = None
         self.FirstOrPhantom = None
         self.Count = 0
+        self.LifetimeLoadedQuantity = None
 
 class VehicleJobs:
     def __init__(self):
@@ -191,11 +194,6 @@ class IOutputBufferPriorityProvider:
         pass
 
 
-class DefaultVehicleFactory:
-    def __init__(self):
-        pass
-
-
 class ILogisticsConfig:
     def __init__(self):
         self.InitialVehiclesCap = 0
@@ -227,7 +225,6 @@ class VehicleBuffersRegistryExtensions:
 class IVehicleForCargoJob:
     def __init__(self):
         self.RemainingCapacity = None
-        self.CargoPickupDuration = None
         self.Cargo = None
         self.IsDriving = False
 
@@ -273,6 +270,7 @@ class IVehicleCargo:
         self.TotalQuantity = None
         self.FirstOrPhantom = None
         self.Count = 0
+        self.LifetimeLoadedQuantity = None
 
 class VehicleFuelConsumption:
     None = None

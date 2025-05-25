@@ -20,6 +20,7 @@ class CountableProductProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -35,7 +36,6 @@ class CountableProductProto:
         self.IsWaste = False
         self.IsRecyclable = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -43,6 +43,7 @@ class CountableProductProto:
             self.PackingMode = None
             from Mafi import Option
             self.PrefabsPath = Option()
+            self.IconPath = ""
             self.IconIsCustom = False
             self.StackingOffsets = None
             self.AllowPackingNoise = False
@@ -69,6 +70,7 @@ class DetailLayerSpecProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -86,7 +88,6 @@ class DetailLayerSpecProto:
         self.VariantsTotalWeight = 0
         self.RandomSeed = 0
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class DetailVariant:
         def __init__(self):
@@ -119,6 +120,7 @@ class FluidProductProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -134,7 +136,6 @@ class FluidProductProto:
         self.IsWaste = False
         self.IsRecyclable = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class FluidProductProtoBuilder:
     def __init__(self):
@@ -215,6 +216,7 @@ class LooseProductProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -231,18 +233,20 @@ class LooseProductProto:
         self.IsWaste = False
         self.IsRecyclable = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
         def __init__(self):
             self.DisplayInResources = False
+            self.ParticleColor = None
             from Mafi import Option
             self.PrefabsPath = Option()
+            self.IconPath = ""
             self.IconIsCustom = False
             self.PileMaterialAssetPath = ""
             self.UseRoughPileMeshes = False
             self.ResourcesVizColor = None
+            self.HasPresetParticleColor = False
             self.Color = None
             self.TransportColor = None
             self.TransportAccentColor = None
@@ -282,6 +286,7 @@ class MoltenProductProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -297,13 +302,13 @@ class MoltenProductProto:
         self.IsWaste = False
         self.IsRecyclable = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
         def __init__(self):
             from Mafi import Option
             self.PrefabsPath = Option()
+            self.IconPath = ""
             self.IconIsCustom = False
             self.MaterialPath = ""
             self.Color = None
@@ -374,6 +379,7 @@ class ProductProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -389,7 +395,6 @@ class ProductProto:
         self.IsWaste = False
         self.IsRecyclable = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):
@@ -400,6 +405,7 @@ class ProductProto:
         def __init__(self):
             from Mafi import Option
             self.PrefabsPath = Option()
+            self.IconPath = ""
             self.IconIsCustom = False
             self.Color = None
             self.TransportColor = None
@@ -490,6 +496,7 @@ class TerrainMaterialProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -514,10 +521,11 @@ class TerrainMaterialProto:
         self.CanSpreadToNearbyMaterials = False
         self.IgnoreInEditor = False
         self.GrassGrowthOnTop = None
+        self.AsteroidSpawnWeight = 0
+        self.IsAsteroidFillerMaterial = False
         self.Graphics = None
         self.IsForestFloor = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -579,6 +587,7 @@ class VirtualProductProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -594,7 +603,6 @@ class VirtualProductProto:
         self.IsWaste = False
         self.IsRecyclable = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class VirtualResourceProductProto:
     def __init__(self):
@@ -603,6 +611,7 @@ class VirtualResourceProductProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -612,7 +621,6 @@ class VirtualResourceProductProto:
         self.Graphics = None
         self.IsResourceFinal = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None

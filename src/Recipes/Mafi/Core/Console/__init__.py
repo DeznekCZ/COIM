@@ -29,6 +29,7 @@ class GameCommandResult:
         from Mafi import Option
         self.Result = Option()
         self.ErrorMessage = Option()
+        self.CloseConsole = False
 
 class GameConsole:
     def __init__(self):

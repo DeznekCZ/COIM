@@ -120,6 +120,18 @@ class MechPowerAvgStats:
         self.IsMonthlyEvent = False
         self.AreAnnualDataFull = False
 
+class QuantityAvgStats:
+    def __init__(self):
+        self.LastDay = None
+        self.LastMonth = None
+        self.ThisYear = None
+        self.LastYear = None
+        self.Lifetime = None
+        self.HasAnyData = False
+        self.HasAnyNonZeroData = False
+        self.IsMonthlyEvent = False
+        self.AreAnnualDataFull = False
+
 class QuantityMaxStats:
     def __init__(self):
         self.LastDay = None

@@ -40,6 +40,7 @@ class Hospital:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -75,6 +76,7 @@ class HospitalProto:
         self.PopsNeed = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.AnimationParams = None
         self.Layout = None
         self.Ports = None
@@ -90,6 +92,7 @@ class HospitalProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -104,10 +107,12 @@ class HospitalProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class ISettlementModuleProto:
     def __init__(self):
@@ -125,6 +130,7 @@ class ISettlementModuleProto:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class ISettlementModuleForNeedProto:
@@ -144,6 +150,7 @@ class ISettlementModuleForNeedProto:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class ISettlementServiceModule:
@@ -175,6 +182,7 @@ class ISettlementSquareModule:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -204,6 +212,7 @@ class ISettlementSquareModuleProto:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class Settlement:
@@ -218,7 +227,7 @@ class Settlement:
         self.HousingModules = None
         self.SquareModules = None
         self.MonthsOfFood = 0
-        self.ConsumptionMultiplier = None
+        self.FoodNeed = None
         self.AllFoodModules = None
         self.HasNoFoodModule = False
         self.FoodTypesMap = None
@@ -254,6 +263,8 @@ class Settlement:
             self.PopDaysSupplyTemp = 0
             self.PopsAssignedTemp = 0
             self.SupplyTemp = None
+            self.CapacityTemp = None
+            self.Capacity = None
             self.SupplyLeft = None
             self.EstimatedMonthlyConsumption = None
             self.UpointsGivenLastDay = None
@@ -309,6 +320,7 @@ class SettlementDecorationModule:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -331,6 +343,7 @@ class SettlementDecorationModuleProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.Layout = None
         self.Ports = None
         self.CloningDisabled = False
@@ -345,6 +358,7 @@ class SettlementDecorationModuleProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -357,10 +371,12 @@ class SettlementDecorationModuleProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class SettlementFoodModule:
     def __init__(self):
@@ -393,6 +409,7 @@ class SettlementFoodModule:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -428,6 +445,7 @@ class SettlementFoodModuleProto:
         self.StayConnectedToLogisticsByDefault = False
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.Layout = None
         self.Ports = None
         self.CloningDisabled = False
@@ -442,6 +460,7 @@ class SettlementFoodModuleProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -454,10 +473,12 @@ class SettlementFoodModuleProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class SettlementHousingEntityFactory:
     def __init__(self):
@@ -493,6 +514,7 @@ class SettlementHousingModule:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -515,6 +537,7 @@ class SettlementHousingModuleProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.Layout = None
         self.Ports = None
         self.CloningDisabled = False
@@ -529,6 +552,7 @@ class SettlementHousingModuleProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -543,10 +567,12 @@ class SettlementHousingModuleProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -554,6 +580,7 @@ class SettlementHousingModuleProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.MaterialPaths = None
@@ -580,8 +607,109 @@ class SettlementHousingProtoBuilder:
             self.m_materialPaths = None
             self.Builder = None
 
+class SettlementIspModule:
+    def __init__(self):
+        self.CanBePaused = False
+        self.Maintenance = None
+        self.IsIdleForMaintenance = False
+        self.ProvidedNeed = None
+        self.Settlement = None
+        self.PowerRequired = None
+        from Mafi import Option
+        self.ElectricityConsumer = Option()
+        self.ComputingRequired = None
+        self.ComputingConsumer = Option()
+        self.EmissionIntensity = None
+        self.CurrentState = None
+        self.CustomTitle = Option()
+        self.GeneralPriority = 0
+        self.IsCargoAffectedByGeneralPriority = False
+        self.IsGeneralPriorityVisible = False
+        self.Ports = None
+        self.Value = None
+        self.ConstructionCost = None
+        self.Prototype = None
+        self.Transform = None
+        self.OccupiedTiles = None
+        self.OccupiedVertices = None
+        self.OccupiedVerticesCombinedConstraint = None
+        self.VehicleSurfaceHeights = None
+        self.PfTargetTiles = None
+        self.CenterTile = None
+        self.Position2f = None
+        self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
+        self.ConstructionState = None
+        self.IsConstructed = False
+        self.IsNotConstructed = False
+        self.IsBeingUpgraded = False
+        self.ConstructionProgress = Option()
+        self.DoNotAdjustTerrainDuringConstruction = False
+        self.AreConstructionCubesDisabled = False
+        self.Id = None
+        self.DefaultTitle = None
+        self.Context = None
+        self.IsDestroyed = False
+        self.IsEnabled = False
+        self.IsNotEnabled = False
+        self.IsPaused = False
+        self.IsNotPaused = False
+        self.RendererData = None
+        self.WorkersNeeded = 0
+        self.HasWorkersCached = False
+        self.MaintenanceCosts = None
+
+    class State:
+        Paused = None
+        Broken = None
+        Working = None
+        MissingWorkers = None
+        NotEnoughPower = None
+        NotEnoughComputing = None
+        def __init__(self):
+            self.value__ = 0
+
+class SettlementIspModuleProto:
+    def __init__(self):
+        self.EntityType = None
+        self.PopsNeed = None
+        self.ElectricityConsumed = None
+        self.Layout = None
+        self.Ports = None
+        self.CloningDisabled = False
+        self.IsUnique = False
+        self.CannotBeReflected = False
+        self.AutoBuildMiniZippers = False
+        self.Graphics = None
+        self.IconPath = ""
+        from Mafi.Core.Entities.Static import StaticEntityProto
+        self.Id = StaticEntityProto.ID()
+
+        self.Costs = None
+        self.Strings = None
+        self.IsNotPhantom = False
+        self.IsInitialized = False
+        self.Mod = None
+        self.Tags = None
+        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsObsolete = False
+        self.EmissionIntensity = None
+        self.BoostCost = None
+        self.InputPorts = None
+        self.OutputPorts = None
+        self.CannotBeBuiltByPlayer = False
+        self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
+        self.VehicleGoalHeightAllowedRange = None
+        self.DoNotStartConstructionAutomatically = False
+        self.IsPhantom = False
+
 class SettlementModuleProto:
     def __init__(self):
+        self.PopsNeed = None
         self.EntityType = None
         self.ElectricityConsumed = None
         self.AnimationParams = None
@@ -600,12 +728,12 @@ class SettlementModuleProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
-        self.PopsNeed = None
         self.InputProduct = None
         from Mafi import Option
         self.OutputProduct = Option()
@@ -619,10 +747,12 @@ class SettlementModuleProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class SettlementModuleProtoBuilder:
     def __init__(self):
@@ -675,6 +805,7 @@ class SettlementServiceModule:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -723,6 +854,7 @@ class SettlementsManager:
         self.NumberOfStarvingPopsWithheld = 0
         self.OnWorkersRemoved = None
         self.OnWorkersAdded = None
+        self.ResearchEfficiencyBonus = None
         self.SettlementsCount = 0
         self.MonthsOfFood = 0
         self.Settlements = None
@@ -768,6 +900,7 @@ class SettlementTransformer:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -790,6 +923,7 @@ class SettlementTransformer:
 
 class SettlementTransformerProto:
     def __init__(self):
+        self.PopsNeed = None
         self.EntityType = None
         self.Layout = None
         self.Ports = None
@@ -805,21 +939,23 @@ class SettlementTransformerProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
-        self.PopsNeed = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class SettlementWasteModule:
     def __init__(self):
@@ -856,6 +992,7 @@ class SettlementWasteModule:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -901,6 +1038,7 @@ class SettlementWasteModuleProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -915,7 +1053,9 @@ class SettlementWasteModuleProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False

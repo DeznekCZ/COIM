@@ -16,6 +16,7 @@ class LoadGameArgs:
         self.Stream = None
         self.FsHelper = None
         self.AlreadyReadHeader = None
+        self.ForceSynchronousLoading = False
 
 class LoadGameArgsFromFile:
     def __init__(self):
@@ -102,6 +103,7 @@ class GameDifficultyConfig:
     WorldMinesReservesDefault = None
     DeconstructionRefundDefault = None
     EASY_MECHANICS = None
+    MEDIUM_MECHANICS = None
     HARD_MECHANICS = None
     GameDifficulty__CustomTitle = None
     GameDifficulty__EasyTitle = None
@@ -120,6 +122,7 @@ class GameDifficultyConfig:
     BaseHealthDiffInfo = None
     ResourceMiningDiffInfo = None
     SettlementConsumptionDiffInfo = None
+    SettlementFoodConsumptionDiffInfo = None
     WorldMinesReservesInfo = None
     FarmYieldInfo = None
     UnityProductionDiffInfo = None
@@ -137,6 +140,7 @@ class GameDifficultyConfig:
     StarvationInfo = None
     WorldMinesNoUnityInfo = None
     VehiclesNoFuelInfo = None
+    TrainsNoFuelInfo = None
     ConsumerBrokenInfo = None
     PowerLowInfo = None
     ComputingLowInfo = None
@@ -155,6 +159,7 @@ class GameDifficultyConfig:
         self.BaseHealthDiff = None
         self.ResourceMiningDiff = None
         self.SettlementConsumptionDiff = None
+        self.SettlementFoodConsumptionDiff = None
         self.WorldMinesReservesDiff = None
         self.WorldMinesUnlimited = False
         self.FarmsYieldDiff = None
@@ -174,6 +179,7 @@ class GameDifficultyConfig:
         self.Starvation = None
         self.WorldMinesNoUnity = None
         self.VehiclesNoFuel = None
+        self.TrainsNoFuel = None
         self.ConsumerBroken = None
         self.PowerLow = None
         self.ComputingLow = None
@@ -239,6 +245,12 @@ class GameDifficultyConfig:
             self.value__ = 0
 
     class VehiclesNoFuelSetting:
+        SlowDown = None
+        Stop = None
+        def __init__(self):
+            self.value__ = 0
+
+    class TrainsNoFuelSetting:
         SlowDown = None
         Stop = None
         def __init__(self):

@@ -212,7 +212,42 @@ class RayCaster:
         pass
 
 
+class RotationYawPitchSlim:
+    def __init__(self):
+        self.Yaw = None
+        self.Pitch = None
+
+class UInt128:
+    Zero = None
+    One = None
+    Two = None
+    MaxValue = None
+    def __init__(self):
+        self.IsZero = False
+        self.IsNotZero = False
+        self.ValueHigh = None
+        self.ValueLow = None
+
 class UnitQuaternion4fAssertionExtensions:
     def __init__(self):
         pass
 
+
+class Vector2Float:
+    def __init__(self):
+        self.Length = 0.0
+        self.Normalized = None
+        self.LeftOrthogonalVector = None
+        self.RightOrthogonalVector = None
+        self.InvertedX = None
+        self.X = 0.0
+        self.Y = 0.0
+
+class Vector3Float:
+    def __init__(self):
+        self.Xy = None
+        self.Length = 0.0
+        self.Normalized = None
+        self.X = 0.0
+        self.Y = 0.0
+        self.Z = 0.0

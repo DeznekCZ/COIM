@@ -64,6 +64,17 @@ class CloneConfigBetweenEntitiesCmd:
         self.SourceEntityId = None
         self.TargetEntityId = None
 
+class IStaticEntityBuilderCmd:
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+
 class CreateStaticEntityCmd:
     def __init__(self):
         self.IsProcessed = False

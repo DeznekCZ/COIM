@@ -73,6 +73,7 @@ class MemberRemovedInSaveVersionAttribute:
         self.Type = None
         self.WasNewInVersion = None
         self.WasSerializedUsingNonVariableEncoding = False
+        self.CtorSortingIndex = None
 
 class OnlyForSaveCompatibilityAttribute:
     def __init__(self):
@@ -189,6 +190,7 @@ class BlobReader:
     def __init__(self):
         self.InputStream = None
         self.DelayedDeserializationsCount = 0
+        self.ReadObjectsCount = 0
         self.LoadedSaveVersion = 0
 
 class BlobReaderExtensions:
@@ -202,6 +204,7 @@ class BlobSubReader:
         self.IsNotDone = False
         self.InputStream = None
         self.DelayedDeserializationsCount = 0
+        self.ReadObjectsCount = 0
         self.SubStream = None
         self.LoadedSaveVersion = 0
 
@@ -303,6 +306,16 @@ class GenericSerializersFactory:
 
 
 class IIsSafeAsHashKey:
+    def __init__(self):
+        pass
+
+
+class JsonParser:
+    def __init__(self):
+        pass
+
+
+class JsonWriter:
     def __init__(self):
         pass
 

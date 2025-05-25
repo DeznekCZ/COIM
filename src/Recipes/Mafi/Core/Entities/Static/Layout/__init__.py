@@ -91,6 +91,10 @@ class ILayoutEntityProtoWithElevationValidator:
     def __init__(self):
         self.Priority = None
 
+class CanBuildPillarValidationMetadata:
+    def __init__(self):
+        self.TilesWithPossiblePillars = None
+
 class InvalidEntityLayoutException:
     def __init__(self):
         self.Message = ""
@@ -122,6 +126,7 @@ class LayoutEntity:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -154,6 +159,7 @@ class LayoutEntityBase:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -230,6 +236,7 @@ class ILayoutEntityProto:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class LayoutEntityProto:
@@ -250,6 +257,7 @@ class LayoutEntityProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -260,10 +268,12 @@ class LayoutEntityProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -271,6 +281,7 @@ class LayoutEntityProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.IconIsCustom = False
@@ -308,6 +319,7 @@ class LayoutEntitySlot:
 class LayoutTile:
     def __init__(self):
         self.Coord = None
+        self.SourceStrIndex = 0
         self.OccupiedThickness = None
         self.TerrainHeight = None
         self.MinTerrainHeight = None
@@ -336,6 +348,8 @@ class LayoutTileConstraintExtensions:
 class OccupiedTileRelative:
     def __init__(self):
         self.RelCoord = None
+        self.RelCoordBottom3i = None
+        self.RelCoordTop3i = None
         self.FromHeightRel = None
         self.ToHeightRelExcl = None
         self.VerticalSize = None
@@ -377,10 +391,15 @@ class ToolbarCategoryProto:
     PHANTOM_CATEGORY_ID = Proto.ID('__PHANTOM__TOOLBAR_CAT__')
     Phantom = None
     def __init__(self):
+        self.Subcategories = None
+        from Mafi import Option
+        self.ParentCategory = Option()
+        self.UnlockedBy = None
         self.Id = Proto.ID()
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -390,6 +409,5 @@ class ToolbarCategoryProto:
         self.ShortcutId = ""
         self.IconPath = ""
         self.IsTransportBuildAllowed = False
-        self.ContainsTransports = False
+        self.IncludeAllSubcategory = False
         self.IsPhantom = False
-        self.IsInitialized = False

@@ -12,6 +12,7 @@ class DataCenter:
         self.ElectricityConsumer = Option()
         self.Maintenance = None
         self.MaintenanceCosts = None
+        self.RacksMaintenance = None
         self.WorkersNeeded = 0
         self.CoolantInBuffer = None
         self.CoolantOutBuffer = None
@@ -33,6 +34,7 @@ class DataCenter:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -81,6 +83,7 @@ class DataCenterProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -97,10 +100,12 @@ class DataCenterProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -108,6 +113,7 @@ class DataCenterProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.RackPositions = None
@@ -162,11 +168,13 @@ class DataCenterToggleRackCmd:
 
 class ServerRackProto:
     def __init__(self):
+        self.IconPath = ""
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -181,7 +189,6 @@ class ServerRackProto:
         self.Maintenance = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None

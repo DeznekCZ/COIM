@@ -1,18 +1,31 @@
 
-class ElectricityGeneratorFromMechPower:
+class TrainStationFuel:
     def __init__(self):
-        self.SoundParams = None
-        self.IsSoundOn = False
+        self.Prototype = None
+        self.CapacityPrimary = None
+        self.CurrentPrimaryQuantity = None
+        self.CapacitySecondary = None
+        self.CurrentSecondaryQuantity = None
+        self.IsWorking = False
+        self.CanChangeRailTrackDirection = False
+        self.CanChangeCriticality = False
+        self.CanAddToSuperBlock = False
+        self.CanRemoveFromSuperBlock = False
+        self.IsDefaultCritical = False
         self.CanBePaused = False
-        self.ElectricityGenerator = None
-        self.Maintenance = None
-        self.MaxGenerationCapacity = None
-        self.UsedMechPowerThisTick = None
-        self.GeneratedElectricityThisTick = None
-        self.AnimationParams = None
-        self.AnimationStatesProvider = None
-        self.CurrentState = None
         from Mafi import Option
+        self.ElectricityConsumer = Option()
+        self.CanWorkOnLowPower = False
+        self.TrackProto = None
+        self.TrainTrackId = None
+        self.Direction = None
+        self.TrackEntityId = None
+        self.TrackTransform = None
+        self.TrackCenterTile = None
+        self.TrackPosition2f = None
+        self.TrackPosition3f = None
+        self.IsTrackConstructed = False
+        self.Waypoints = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
@@ -20,7 +33,6 @@ class ElectricityGeneratorFromMechPower:
         self.Ports = None
         self.Value = None
         self.ConstructionCost = None
-        self.Prototype = None
         self.Transform = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -47,131 +59,48 @@ class ElectricityGeneratorFromMechPower:
         self.IsPaused = False
         self.IsNotPaused = False
         self.RendererData = None
-        self.MaintenanceCosts = None
-        self.IsIdleForMaintenance = False
+        self.WorkersNeeded = 0
+        self.HasWorkersCached = False
+        self.PowerRequired = None
 
-class ElectricityGeneratorFromProduct:
+class TrainStationModule:
     def __init__(self):
-        self.SoundParams = None
-        self.IsSoundOn = False
-        self.ElectricityGenerator = None
-        self.Maintenance = None
+        self.Prototype = None
+        self.IsForLoading = False
+        self.ProductType = None
+        self.ConnectionPercent = None
+        self.LoadUnloadPercent = None
+        self.CanReleaseWagon = False
+        self.IsFull = False
+        self.IsEmpty = False
+        self.IsConnected = False
+        self.IsLoading = False
+        self.IsUnloading = False
+        self.ShouldConnectToWagon = False
+        self.ShouldDisconnectFromWagon = False
         self.AreParticlesEnabled = False
-        self.MaxGenerationCapacity = None
-        self.CanBePaused = False
-        self.IsCargoAffectedByGeneralPriority = False
-        self.CurrentProductLeft = None
-        self.CurrentProgress = None
-        self.CurrentFuelUsage = None
-        self.InputBuffer = None
         from Mafi import Option
-        self.OutputBuffer = Option()
-        self.AnimationParams = None
-        self.AnimationStatesProvider = None
-        self.CanDisableLogisticsInput = False
-        self.CanDisableLogisticsOutput = False
-        self.LogisticsInputMode = None
-        self.LogisticsOutputMode = None
-        self.CustomTitle = Option()
-        self.GeneralPriority = 0
-        self.IsGeneralPriorityVisible = False
-        self.Ports = None
-        self.Value = None
-        self.ConstructionCost = None
-        self.Prototype = None
-        self.Transform = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.PfTargetTiles = None
-        self.CenterTile = None
-        self.Position2f = None
-        self.Position3f = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.ConstructionState = None
-        self.IsConstructed = False
-        self.IsNotConstructed = False
-        self.IsBeingUpgraded = False
-        self.ConstructionProgress = Option()
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.AreConstructionCubesDisabled = False
-        self.Id = None
-        self.DefaultTitle = None
-        self.Context = None
-        self.IsDestroyed = False
-        self.IsEnabled = False
-        self.IsNotEnabled = False
-        self.IsPaused = False
-        self.IsNotPaused = False
-        self.RendererData = None
-        self.WorkersNeeded = 0
-        self.HasWorkersCached = False
-        self.MaintenanceCosts = None
-        self.IsIdleForMaintenance = False
-
-class FlyWheelEntity:
-    def __init__(self):
-        self.Prototype = None
+        self.Buffer = Option()
+        self.StoredProduct = Option()
+        self.StoredProductQuantity = None
+        self.CanChangeRailTrackDirection = False
+        self.CanChangeCriticality = False
+        self.CanAddToSuperBlock = False
+        self.CanRemoveFromSuperBlock = False
+        self.IsDefaultCritical = False
         self.CanBePaused = False
-        self.SoundParams = None
-        self.IsSoundOn = False
-        self.AnimationParams = None
-        self.AnimationStatesProvider = None
-        from Mafi import Option
-        self.CustomTitle = Option()
-        self.GeneralPriority = 0
-        self.IsCargoAffectedByGeneralPriority = False
-        self.IsGeneralPriorityVisible = False
-        self.Ports = None
-        self.Value = None
-        self.ConstructionCost = None
-        self.Transform = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.PfTargetTiles = None
-        self.CenterTile = None
-        self.Position2f = None
-        self.Position3f = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.ConstructionState = None
-        self.IsConstructed = False
-        self.IsNotConstructed = False
-        self.IsBeingUpgraded = False
-        self.ConstructionProgress = Option()
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.AreConstructionCubesDisabled = False
-        self.Id = None
-        self.DefaultTitle = None
-        self.Context = None
-        self.IsDestroyed = False
-        self.IsEnabled = False
-        self.IsNotEnabled = False
-        self.IsPaused = False
-        self.IsNotPaused = False
-        self.RendererData = None
-
-class MechPowerGeneratorFromProduct:
-    def __init__(self):
-        self.Prototype = None
-        self.CanBePaused = False
-        self.Upgrader = None
-        self.Maintenance = None
-        self.AnimationParams = None
-        self.AnimationStatesProvider = None
-        self.SoundParams = None
-        self.IsSoundOn = False
-        self.PowerGeneratedLastTick = None
-        self.OutputBufferQuantity = None
-        self.InputBufferQuantity = None
-        self.LossesLastTick = None
-        self.CurrentState = None
-        self.AutoBalance = False
-        self.IsOffDueToAutoBalance = False
-        self.Efficiency = None
-        from Mafi import Option
+        self.ElectricityConsumer = Option()
+        self.CanWorkOnLowPower = False
+        self.TrackProto = None
+        self.TrainTrackId = None
+        self.Direction = None
+        self.TrackEntityId = None
+        self.TrackTransform = None
+        self.TrackCenterTile = None
+        self.TrackPosition2f = None
+        self.TrackPosition3f = None
+        self.IsTrackConstructed = False
+        self.Waypoints = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
@@ -207,255 +136,83 @@ class MechPowerGeneratorFromProduct:
         self.RendererData = None
         self.WorkersNeeded = 0
         self.HasWorkersCached = False
-        self.MaintenanceCosts = None
-        self.IsIdleForMaintenance = False
+        self.PowerRequired = None
 
-    class State:
-        None = None
-        Working = None
-        Idle = None
-        Broken = None
-        Paused = None
-        NotEnoughWorkers = None
-        OutputFull = None
-        NotEnoughInput = None
-        NoShaft = None
-        def __init__(self):
-            self.value__ = 0
-
-class ToggleMechGeneratorAutoBalanceCmd:
+class TrainStationRoot:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityId = None
-
-class ElectricityGeneratorFromMechPowerProto:
-    def __init__(self):
-        self.EntityType = None
-        self.TierData = None
-        self.OutputElectricity = None
-        self.AnimationParams = None
-        self.Recipe = None
-        self.AllUserVisibleInputs = None
-        self.AllUserVisibleOutputs = None
-        self.Layout = None
+        self.Prototype = None
+        self.ModuleLimits = None
+        self.TrainLimit = 0
+        self.CanChangeRailTrackDirection = False
+        self.CanChangeCriticality = False
+        self.CanAddToSuperBlock = False
+        self.CanRemoveFromSuperBlock = False
+        self.IsDefaultCritical = False
+        self.CanBePaused = False
+        from Mafi import Option
+        self.ElectricityConsumer = Option()
+        self.CanWorkOnLowPower = False
+        self.TrackProto = None
+        self.TrainTrackId = None
+        self.Direction = None
+        self.TrackEntityId = None
+        self.TrackTransform = None
+        self.TrackCenterTile = None
+        self.TrackPosition2f = None
+        self.TrackPosition3f = None
+        self.IsTrackConstructed = False
+        self.Waypoints = None
+        self.CustomTitle = Option()
+        self.GeneralPriority = 0
+        self.IsCargoAffectedByGeneralPriority = False
+        self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.CloningDisabled = False
-        self.IsUnique = False
-        self.CannotBeReflected = False
-        self.AutoBuildMiniZippers = False
-        self.Graphics = None
-        self.IconPath = ""
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
+        self.Value = None
+        self.ConstructionCost = None
+        self.Transform = None
+        self.OccupiedTiles = None
+        self.OccupiedVertices = None
+        self.OccupiedVerticesCombinedConstraint = None
+        self.VehicleSurfaceHeights = None
+        self.PfTargetTiles = None
+        self.CenterTile = None
+        self.Position2f = None
+        self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
+        self.ConstructionState = None
+        self.IsConstructed = False
+        self.IsNotConstructed = False
+        self.IsBeingUpgraded = False
+        self.ConstructionProgress = Option()
+        self.DoNotAdjustTerrainDuringConstruction = False
+        self.AreConstructionCubesDisabled = False
+        self.Id = None
+        self.DefaultTitle = None
+        self.Context = None
+        self.IsDestroyed = False
+        self.IsEnabled = False
+        self.IsNotEnabled = False
+        self.IsPaused = False
+        self.IsNotPaused = False
+        self.RendererData = None
+        self.WorkersNeeded = 0
+        self.HasWorkersCached = False
+        self.PowerRequired = None
 
-        self.Costs = None
-        self.Strings = None
-        self.IsNotPhantom = False
-        self.IsInitialized = False
-        self.Mod = None
-        self.Tags = None
-        self.IsNotAvailable = False
-        self.IsAvailable = False
-        self.IsObsolete = False
-        self.Duration = None
-        self.InputMechPower = None
-        self.GenerationPriority = 0
-        self.MinUtilization = None
-        self.BoostCost = None
-        self.InputPorts = None
-        self.OutputPorts = None
-        self.CannotBeBuiltByPlayer = False
-        self.ConstructionDurationPerProduct = None
-        self.CollapseRubbleScale = None
-        self.CustomBuriedTolerance = None
-        self.CustomSuspendedTolerance = None
-        self.VehicleGoalHeightAllowedRange = None
-        self.DoNotStartConstructionAutomatically = False
-        self.IsPhantom = False
-
-    class Gfx:
-        Empty = None
-        def __init__(self):
-            self.PrefabPath = ""
-            self.PrefabOrigin = None
-            self.IconPath = ""
-            self.YawForGeneratedIcon = None
-            self.VisualizedLayers = None
-            self.Categories = None
-            from Mafi import Option
-            self.SoundPrefabPath = Option()
-            self.IconIsCustom = False
-            self.UseInstancedRendering = False
-            self.UseSemiInstancedRendering = False
-            self.SemiInstancedRenderingExcludedObjects = None
-            self.MaxRenderedLod = 0
-            self.DisableEmptyChildrenStripping = False
-            self.InstancedRendererIndex = None
-            self.AnimatedGameObjects = None
-            self.AnimationLength = 0.0
-            self.HideBlockedPortsIcon = False
-            self.Color = None
-            self.RendererIndex = 0
-
-class ElectricityGeneratorFromProductPortProductResolver:
-    def __init__(self):
-        self.ResolvedEntityType = None
-
-class ElectricityGeneratorFromProductProto:
-    def __init__(self):
-        self.EntityType = None
-        self.OutputElectricity = None
-        self.TierData = None
-        self.Duration = None
-        self.AnimationParams = None
-        self.Recipe = None
-        self.AllUserVisibleInputs = None
-        self.AllUserVisibleOutputs = None
-        self.Layout = None
-        self.Ports = None
-        self.CloningDisabled = False
-        self.IsUnique = False
-        self.CannotBeReflected = False
-        self.AutoBuildMiniZippers = False
-        self.Graphics = None
-        self.IconPath = ""
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
-
-        self.Costs = None
-        self.Strings = None
-        self.IsNotPhantom = False
-        self.IsInitialized = False
-        self.Mod = None
-        self.Tags = None
-        self.IsNotAvailable = False
-        self.IsAvailable = False
-        self.IsObsolete = False
-        self.GenerationPriority = 0
-        self.InputProduct = None
-        self.BufferCapacityMultiplier = 0
-        self.OutputProduct = None
-        self.ProductDestroyReason = None
-        self.BoostCost = None
-        self.InputPorts = None
-        self.OutputPorts = None
-        self.CannotBeBuiltByPlayer = False
-        self.ConstructionDurationPerProduct = None
-        self.CollapseRubbleScale = None
-        self.CustomBuriedTolerance = None
-        self.CustomSuspendedTolerance = None
-        self.VehicleGoalHeightAllowedRange = None
-        self.DoNotStartConstructionAutomatically = False
-        self.IsPhantom = False
-
-    class Gfx:
-        Empty = None
-        def __init__(self):
-            self.PrefabPath = ""
-            self.PrefabOrigin = None
-            self.IconPath = ""
-            self.YawForGeneratedIcon = None
-            self.VisualizedLayers = None
-            self.Categories = None
-            self.ParticlesParams = None
-            from Mafi import Option
-            self.SoundPrefabPath = Option()
-            self.IconIsCustom = False
-            self.UseInstancedRendering = False
-            self.UseSemiInstancedRendering = False
-            self.SemiInstancedRenderingExcludedObjects = None
-            self.MaxRenderedLod = 0
-            self.DisableEmptyChildrenStripping = False
-            self.InstancedRendererIndex = None
-            self.AnimatedGameObjects = None
-            self.AnimationLength = 0.0
-            self.HideBlockedPortsIcon = False
-            self.Color = None
-            self.RendererIndex = 0
-
-class FlyWheelEntityProto:
-    def __init__(self):
-        self.EntityType = None
-        self.AnimationParams = None
-        self.Layout = None
-        self.Ports = None
-        self.CloningDisabled = False
-        self.IsUnique = False
-        self.CannotBeReflected = False
-        self.AutoBuildMiniZippers = False
-        self.Graphics = None
-        self.IconPath = ""
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
-
-        self.Costs = None
-        self.Strings = None
-        self.IsNotPhantom = False
-        self.IsInitialized = False
-        self.Mod = None
-        self.Tags = None
-        self.IsNotAvailable = False
-        self.IsAvailable = False
-        self.IsObsolete = False
-        self.BoostCost = None
-        self.InputPorts = None
-        self.OutputPorts = None
-        self.CannotBeBuiltByPlayer = False
-        self.ConstructionDurationPerProduct = None
-        self.CollapseRubbleScale = None
-        self.CustomBuriedTolerance = None
-        self.CustomSuspendedTolerance = None
-        self.VehicleGoalHeightAllowedRange = None
-        self.DoNotStartConstructionAutomatically = False
-        self.IsPhantom = False
-
-    class Gfx:
-        Empty = None
-        def __init__(self):
-            self.PrefabPath = ""
-            self.PrefabOrigin = None
-            self.IconPath = ""
-            self.YawForGeneratedIcon = None
-            self.VisualizedLayers = None
-            self.Categories = None
-            from Mafi import Option
-            self.SoundPrefabPath = Option()
-            self.IconIsCustom = False
-            self.UseInstancedRendering = False
-            self.UseSemiInstancedRendering = False
-            self.SemiInstancedRenderingExcludedObjects = None
-            self.MaxRenderedLod = 0
-            self.DisableEmptyChildrenStripping = False
-            self.InstancedRendererIndex = None
-            self.AnimatedGameObjects = None
-            self.AnimationLength = 0.0
-            self.HideBlockedPortsIcon = False
-            self.Color = None
-            self.RendererIndex = 0
-
-class MechPowerGeneratorFromProductConfigExtensions:
+class LevelCrossingsData:
     def __init__(self):
         pass
 
 
-class MechPowerGeneratorFromProductProto:
+class TrainStationFuelProto:
     def __init__(self):
         self.EntityType = None
-        self.Upgrade = None
-        self.UpgradeNonGeneric = None
-        self.TierData = None
-        self.AnimationParams = None
-        self.Recipe = None
-        self.AllUserVisibleInputs = None
-        self.AllUserVisibleOutputs = None
+        self.CanBeElevatedOnSupports = False
+        self.TrajectoryLength = None
+        self.BlocksCount = 0
+        self.MaxSpeedTilesPerTick = None
+        self.TrajectoryData = None
+        self.TrainTrackHelper = None
         self.Layout = None
         self.Ports = None
         self.CloningDisabled = False
@@ -476,13 +233,11 @@ class MechPowerGeneratorFromProductProto:
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
-        self.Duration = None
-        self.RecipeDuration = None
-        self.ConsumedProduct = None
-        self.ProducedProduct = None
-        self.MechPowerOutput = None
-        self.EfficiencyIncPerTick = None
-        self.EfficiencyDecPerTick = None
+        self.TrackGraphics = None
+        self.TransferPeriod = None
+        self.PrimaryProduct = None
+        self.SecondaryProduct = None
+        self.PowerConsumption = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
@@ -496,8 +251,9 @@ class MechPowerGeneratorFromProductProto:
         self.IsPhantom = False
 
     class Gfx:
-        Empty = None
         def __init__(self):
+            self.VisualStylePrefabsLods = None
+            self.Ties = None
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
@@ -505,7 +261,8 @@ class MechPowerGeneratorFromProductProto:
             self.VisualizedLayers = None
             self.Categories = None
             from Mafi import Option
-            self.SoundPrefabPath = Option()
+            self.SignObjectName = Option()
+            self.SignIconScale = 0.0
             self.IconIsCustom = False
             self.UseInstancedRendering = False
             self.UseSemiInstancedRendering = False
@@ -518,3 +275,138 @@ class MechPowerGeneratorFromProductProto:
             self.HideBlockedPortsIcon = False
             self.Color = None
             self.RendererIndex = 0
+
+class TrainStationModuleProto:
+    def __init__(self):
+        self.EntityType = None
+        self.CanBeElevatedOnSupports = False
+        self.StorableProducts = None
+        self.TrajectoryLength = None
+        self.BlocksCount = 0
+        self.MaxSpeedTilesPerTick = None
+        self.TrajectoryData = None
+        self.TrainTrackHelper = None
+        self.Layout = None
+        self.Ports = None
+        self.CloningDisabled = False
+        self.IsUnique = False
+        self.CannotBeReflected = False
+        self.AutoBuildMiniZippers = False
+        self.Graphics = None
+        self.IconPath = ""
+        from Mafi.Core.Entities.Static import StaticEntityProto
+        self.Id = StaticEntityProto.ID()
+
+        self.Costs = None
+        self.Strings = None
+        self.IsNotPhantom = False
+        self.IsInitialized = False
+        self.Mod = None
+        self.Tags = None
+        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsObsolete = False
+        self.TrackGraphics = None
+        self.TransferPeriod = None
+        self.TransferQuantity = None
+        self.Capacity = None
+        self.ConnectionCompletionPerStep = None
+        self.ProductType = None
+        self.PowerConsumption = None
+        self.BoostCost = None
+        self.InputPorts = None
+        self.OutputPorts = None
+        self.CannotBeBuiltByPlayer = False
+        self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
+        self.VehicleGoalHeightAllowedRange = None
+        self.DoNotStartConstructionAutomatically = False
+        self.IsPhantom = False
+
+    class Gfx:
+        def __init__(self):
+            self.VisualStylePrefabsLods = None
+            self.Ties = None
+            self.PrefabPath = ""
+            self.PrefabOrigin = None
+            self.IconPath = ""
+            self.YawForGeneratedIcon = None
+            self.VisualizedLayers = None
+            self.Categories = None
+            from Mafi import Option
+            self.SignObjectName = Option()
+            self.SignIconScale = 0.0
+            self.SignInMaterialPath = ""
+            self.SignOutMaterialPath = ""
+            self.ParticlesParamsForLoading = None
+            self.ParticlesParamsForUnloading = None
+            self.IconIsCustom = False
+            self.UseInstancedRendering = False
+            self.UseSemiInstancedRendering = False
+            self.SemiInstancedRenderingExcludedObjects = None
+            self.MaxRenderedLod = 0
+            self.DisableEmptyChildrenStripping = False
+            self.InstancedRendererIndex = None
+            self.AnimatedGameObjects = None
+            self.AnimationLength = 0.0
+            self.HideBlockedPortsIcon = False
+            self.Color = None
+            self.RendererIndex = 0
+
+class TrainStationRootProto:
+    def __init__(self):
+        self.EntityType = None
+        self.CanBeElevatedOnSupports = False
+        self.TrajectoryLength = None
+        self.BlocksCount = 0
+        self.MaxSpeedTilesPerTick = None
+        self.TrajectoryData = None
+        self.TrainTrackHelper = None
+        self.Layout = None
+        self.Ports = None
+        self.CloningDisabled = False
+        self.IsUnique = False
+        self.CannotBeReflected = False
+        self.AutoBuildMiniZippers = False
+        self.Graphics = None
+        self.IconPath = ""
+        from Mafi.Core.Entities.Static import StaticEntityProto
+        self.Id = StaticEntityProto.ID()
+
+        self.Costs = None
+        self.Strings = None
+        self.IsNotPhantom = False
+        self.IsInitialized = False
+        self.Mod = None
+        self.Tags = None
+        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsObsolete = False
+        self.TrackGraphics = None
+        self.PowerConsumption = None
+        self.BoostCost = None
+        self.InputPorts = None
+        self.OutputPorts = None
+        self.CannotBeBuiltByPlayer = False
+        self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
+        self.VehicleGoalHeightAllowedRange = None
+        self.DoNotStartConstructionAutomatically = False
+        self.IsPhantom = False
+
+class TrainTracksData:
+    R14_MAX_SPEED = None
+    R22_MAX_SPEED = None
+    TRACK_COST_PER_TILE = None
+    TRACK_ELEVATED_COST_PER_TILE = None
+    TRACK_RAIL_ONLY_PREFABS = None
+    TRACK_WITH_BALLAST_PREFABS = None
+    TRACK_ELEVATED_PREFABS = None
+    SAMPLES_PER_10_TILES = 0
+    def __init__(self):
+        pass
+

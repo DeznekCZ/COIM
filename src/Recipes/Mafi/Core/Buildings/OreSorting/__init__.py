@@ -1,8 +1,8 @@
 
 class OreSortingPlant:
-    OUTPUT_PORTS_COUNT = 0
     MAX_PRODUCTS = 0
     def __init__(self):
+        self.OutputPortsCount = 0
         self.Prototype = None
         self.AnimationParams = None
         self.AnimationStatesProvider = None
@@ -11,6 +11,7 @@ class OreSortingPlant:
         self.ElectricityConsumer = Option()
         self.Maintenance = None
         self.IsIdleForMaintenance = False
+        self.AlwaysUseCustomPfTargetTiles = False
         self.CanBePaused = False
         self.CurrentState = None
         self.AssignedOutputs = None
@@ -21,12 +22,13 @@ class OreSortingPlant:
         self.ProductsData = None
         self.AllReservedJobs = None
         self.Capacity = None
-        self.CapacityLeft = None
+        self.CapacityLeftForMixed = None
         self.SortedPerDuration = None
         self.MixedTotal = None
         self.PercentFull = None
         self.IsEmpty = False
         self.IsNotEmpty = False
+        self.ReservedTotal = None
         self.CanDisableLogisticsInput = False
         self.CanDisableLogisticsOutput = False
         self.LogisticsInputMode = None
@@ -93,6 +95,7 @@ class OreSortingPlant:
             self.CanAcceptMoreTrucks = False
             self.Reserved = None
             self.Buffer = None
+            self.OutputPorts = None
             self.CanBeWasted = False
 
 class OreSorterConfigExtensions:
@@ -108,6 +111,7 @@ class OreSortingPlantProto:
         self.QuantityPerDuration = None
         self.ElectricityConsumed = None
         self.AnimationParams = None
+        self.TierData = None
         self.Layout = None
         self.Ports = None
         self.CloningDisabled = False
@@ -122,6 +126,7 @@ class OreSortingPlantProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -129,21 +134,27 @@ class OreSortingPlantProto:
         self.IsObsolete = False
         self.InputBufferCapacity = None
         self.OutputBuffersCapacity = None
+        self.AcceptAllTrucksUntilFreeCapacity = None
+        self.CustomPfTargetTiles = None
+        self.CustomPfTargetTilesForRetry = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         def __init__(self):
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.SmoothPileObjectPath = ""
@@ -197,6 +208,7 @@ class SetProductPortCmd:
         self.ProductId = ProductProto.ID()
 
         self.PortIndex = 0
+        self.ClearPortInstead = False
 
 class RemoveProductToSortCmd:
     def __init__(self):

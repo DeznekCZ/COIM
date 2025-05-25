@@ -4,6 +4,7 @@ class GoalToConstructVehicle:
         self.Title = ""
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
         self.Prototype = None
 
     class Proto:
@@ -15,6 +16,7 @@ class GoalToConstructVehicle:
 
             self.Strings = None
             self.IsNotPhantom = False
+            self.IsInitialized = False
             self.Mod = None
             self.Tags = None
             self.IsNotAvailable = False
@@ -27,4 +29,3 @@ class GoalToConstructVehicle:
             self.Tip = None
             self.LockedByIndex = 0
             self.IsPhantom = False
-            self.IsInitialized = False

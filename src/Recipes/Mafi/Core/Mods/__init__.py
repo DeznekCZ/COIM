@@ -84,7 +84,6 @@ class ProtoRegistrator:
         self.MoltenProductProtoBuilder = None
         self.NotificationProtoBuilder = None
         self.RecipeProtoBuilder = None
-        self.ResearchLabProtoBuilder = None
         self.ResearchNodeProtoBuilder = None
         self.FleetEntityHullProtoBuilder = None
         self.SettlementModuleProtoBuilder = None

@@ -2,7 +2,6 @@
 class TreePlanter:
     MAX_SERVICE_DISTANCE = None
     def __init__(self):
-        self.CargoPickupDuration = None
         self.ProductProto = None
         self.Cargo = None
         self.IsEmpty = False
@@ -17,6 +16,7 @@ class TreePlanter:
         self.ForestryTower = Option()
         self.CurrentStateDuration = None
         self.CurrentStateRemaining = None
+        self.LifetimeTreesPlanted = 0
         self.ArmStateChangeSpeedFactor = None
         self.CabinDirectionRelative = None
         self.CanBePaused = False
@@ -39,6 +39,7 @@ class TreePlanter:
         self.HasTrueJob = False
         self.CurrentJob = Option()
         self.IsIdle = False
+        self.IsEngineIdle = False
         self.CurrentJobInfo = None
         self.IsStuck = False
         self.Maintenance = None
@@ -69,6 +70,8 @@ class TreePlanter:
         self.SteeringAngle = None
         self.SteeringAccelerationPercent = None
         self.DistanceToFullStop = None
+        from Mafi import Fix64
+        self.LifetimeDistanceTraveled = Fix64()
         self.TargetIsTerminal = False
         self.DrivingState = None
         self.SpeedFactor = None
@@ -117,6 +120,8 @@ class TreePlanterState:
 class TreePlanterProto:
     def __init__(self):
         self.EntityType = None
+        from Mafi import Option
+        self.FuelTankProto = Option()
         self.CostToBuild = None
         self.DisruptsSurface = False
         self.IconPath = ""
@@ -126,6 +131,7 @@ class TreePlanterProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -139,8 +145,6 @@ class TreePlanterProto:
         self.TreePlantDistance = None
         self.Graphics = None
         self.DrivingData = None
-        from Mafi import Option
-        self.FuelTankProto = Option()
         self.PathFindingParams = None
         self.NextTier = Option()
         self.UIOrder = 0.0
@@ -151,7 +155,6 @@ class TreePlanterProto:
         self.BuildExtraDuration = None
         self.VehicleQuotaCost = 0
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Timings:
         def __init__(self):

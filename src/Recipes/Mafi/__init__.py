@@ -48,17 +48,17 @@ class DictAssertionExtensions:
         pass
 
 
+class Fix32AssertionAndChecksExtensions:
+    def __init__(self):
+        pass
+
+
 class Fix64AssertionAndChecksExtensions:
     def __init__(self):
         pass
 
 
 class DoubleAssertionAndChecksExtensions:
-    def __init__(self):
-        pass
-
-
-class Fix32AssertionAndChecksExtensions:
     def __init__(self):
         pass
 
@@ -201,6 +201,7 @@ class IResolver:
 class DependencyResolver:
     def __init__(self):
         self.ResolvedObjects = None
+        self.AllResolvedInstances = None
 
 class DependencyResolverException:
     def __init__(self):
@@ -343,7 +344,17 @@ class MeanAndStdDev:
         self.Mean = 0.0
         self.StdDev = 0.0
 
+class NullableExtensions:
+    def __init__(self):
+        pass
+
+
 class ObjectExtensions:
+    def __init__(self):
+        pass
+
+
+class RomanNumerals:
     def __init__(self):
         pass
 
@@ -368,11 +379,19 @@ class TypeExtensions:
         pass
 
 
+class Aabb:
+    def __init__(self):
+        self.IsValid = False
+        self.Size = None
+        self.Min = None
+        self.Max = None
+
 class Fix32:
     from Mafi import Fix32
     Zero = Fix32()
     One = Fix32()
     Quarter = Fix32()
+    Third = Fix32()
     Half = Fix32()
     Two = Fix32()
     Three = Fix32()
@@ -385,6 +404,8 @@ class Fix32:
     MinIntValue = Fix32()
     MaxIntValue = Fix32()
     Tau = Fix32()
+    TauOver2 = Fix32()
+    TauOver4 = Fix32()
     Sqrt2 = Fix32()
     Sqrt3 = Fix32()
     Sqrt5 = Fix32()
@@ -462,8 +483,17 @@ class Percent:
     Zero = None
     Epsilon = None
     One = None
-    Hundred = None
+    Two = None
+    Ten = None
+    Twenty = None
+    Thirty = None
+    Forty = None
     Fifty = None
+    Sixty = None
+    Seventy = None
+    Eighty = None
+    Ninety = None
+    Hundred = None
     MinValue = None
     MaxValue = None
     Tau = None
@@ -534,6 +564,9 @@ class MafiMath:
     ONE_MINUS_TAU_OVER_4 = Fix32()
     ONE_MINUS_TAU_OVER_2 = Fix32()
     TAU_OVER_2_MINUS_2 = Fix32()
+    TAU_OVER_4_MINUS_1 = Fix32()
+    G = Fix32()
+    AIR_DENSITY_SEA_LEVEL = Fix32()
     DEFAULT_FLOAT_TOLERANCE = 0.0
     TAU_D = None
     SQRT2 = None
@@ -567,13 +600,6 @@ class Make:
         pass
 
 
-class Aabb:
-    def __init__(self):
-        self.IsValid = False
-        self.Size = None
-        self.Min = None
-        self.Max = None
-
 class AngleDegrees1f:
     Zero = None
     MinValue = None
@@ -581,11 +607,14 @@ class AngleDegrees1f:
     Epsilon = None
     HalfDegree = None
     OneDegree = None
+    Deg22Point5 = None
+    Deg45 = None
     Deg90 = None
     Deg179 = None
     Deg180 = None
     Deg270 = None
     Deg360 = None
+    Deg720 = None
     def __init__(self):
         from Mafi import Fix32
         self.Radians = Fix32()
@@ -610,13 +639,30 @@ class AngleDegrees1fExtensions:
 
 
 class AngleSlim:
+    Epsilon = None
+    EpsilonNear = None
+    Degrees0 = None
+    Degrees1 = None
+    Degrees5 = None
+    Degrees10 = None
+    Degrees90 = None
+    Degrees180 = None
+    Degrees270 = None
     Zero = None
     MinValue = None
     MaxValue = None
+    RAW_VALUE_360_DEG = 0
+    RAW_VALUE_90_DEG = 0
+    RAW_VALUE_180_DEG = 0
+    RAW_VALUE_270_DEG = 0
     def __init__(self):
         from Mafi import Fix32
         self.Degrees = Fix32()
+        self.Radians = Fix32()
+        from Mafi import Fix64
+        self.RadiansAsFix64 = Fix64()
         self.RadiansAsFloat = 0.0
+        self.DirectionVector = None
         self.IsZero = False
         self.IsNotZero = False
         self.IsPositive = False
@@ -752,6 +798,7 @@ class Px:
     MinValue = None
     MaxValue = None
     Auto = None
+    NotSet = None
     POINTS_MULTIPLIER = 0
     def __init__(self):
         self.Abs = None
@@ -784,6 +831,7 @@ class Rotation90:
         self.Rotated180 = None
         self.DirectionVector = None
         self.Angle = None
+        self.AngleSlim = None
         self.Quaternion = None
         self.AngleIndex = 0
 
@@ -1238,9 +1286,23 @@ class StringFormatMethodAttribute:
         self.FormatParameterName = ""
         self.TypeId = None
 
+class StructuredMessageTemplateAttribute:
+    def __init__(self):
+        self.TypeId = None
+
 class ValueProviderAttribute:
     def __init__(self):
         self.Name = ""
+        self.TypeId = None
+
+class ValueRangeAttribute:
+    def __init__(self):
+        self.From = None
+        self.To = None
+        self.TypeId = None
+
+class NonNegativeValueAttribute:
+    def __init__(self):
         self.TypeId = None
 
 class InvokerParameterNameAttribute:
@@ -1297,6 +1359,7 @@ class ImplicitUseTargetFlags:
     Default = None
     Itself = None
     Members = None
+    WithInheritors = None
     WithMembers = None
     def __init__(self):
         self.value__ = 0
@@ -1308,6 +1371,7 @@ class PublicAPIAttribute:
 
 class InstantHandleAttribute:
     def __init__(self):
+        self.RequireAwait = False
         self.TypeId = None
 
 class PureAttribute:
@@ -1317,6 +1381,20 @@ class PureAttribute:
 class MustUseReturnValueAttribute:
     def __init__(self):
         self.Justification = ""
+        self.TypeId = None
+
+class MustDisposeResourceAttribute:
+    def __init__(self):
+        self.Value = False
+        self.TypeId = None
+
+class HandlesResourceDisposalAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class RequireStaticDelegateAttribute:
+    def __init__(self):
+        self.IsError = False
         self.TypeId = None
 
 class ProvidesContextAttribute:
@@ -1330,7 +1408,14 @@ class PathReferenceAttribute:
 
 class SourceTemplateAttribute:
     def __init__(self):
+        self.Target = None
         self.TypeId = None
+
+class SourceTemplateTargetExpression:
+    Inner = None
+    Outer = None
+    def __init__(self):
+        self.value__ = 0
 
 class MacroAttribute:
     def __init__(self):
@@ -1339,12 +1424,128 @@ class MacroAttribute:
         self.Target = ""
         self.TypeId = None
 
+class CollectionAccessAttribute:
+    def __init__(self):
+        self.CollectionAccessType = None
+        self.TypeId = None
+
+class CollectionAccessType:
+    None = None
+    Read = None
+    ModifyExistingContent = None
+    UpdatedContent = None
+    def __init__(self):
+        self.value__ = 0
+
+class AssertionMethodAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AssertionConditionAttribute:
+    def __init__(self):
+        self.ConditionType = None
+        self.TypeId = None
+
+class AssertionConditionType:
+    IS_TRUE = None
+    IS_FALSE = None
+    IS_NULL = None
+    IS_NOT_NULL = None
+    def __init__(self):
+        self.value__ = 0
+
+class TerminatesProgramAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class LinqTunnelAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class NoEnumerationAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class RegexPatternAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class InjectedLanguage:
+    CSS = None
+    HTML = None
+    JAVASCRIPT = None
+    JSON = None
+    XML = None
+    def __init__(self):
+        self.value__ = 0
+
+class LanguageInjectionAttribute:
+    def __init__(self):
+        self.InjectedLanguage = None
+        self.InjectedLanguageName = ""
+        self.Prefix = ""
+        self.Suffix = ""
+        self.TypeId = None
+
+class NoReorderAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class CodeTemplateAttribute:
+    def __init__(self):
+        self.SearchTemplate = ""
+        self.Message = ""
+        self.ReplaceTemplate = ""
+        self.ReplaceMessage = ""
+        self.FormatAfterReplace = False
+        self.MatchSimilarConstructs = False
+        self.ShortenReferences = False
+        self.SuppressionKey = ""
+        self.TypeId = None
+
+class IgnoreSpellingAndGrammarErrorsAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspChildControlTypeAttribute:
+    def __init__(self):
+        self.TagName = ""
+        self.ControlType = None
+        self.TypeId = None
+
+class AspDataFieldAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspDataFieldsAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspMethodPropertyAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspRequiredAttributeAttribute:
+    def __init__(self):
+        self.Attribute = ""
+        self.TypeId = None
+
+class AspTypePropertyAttribute:
+    def __init__(self):
+        self.CreateConstructorReferences = False
+        self.TypeId = None
+
 class AspMvcAreaMasterLocationFormatAttribute:
     def __init__(self):
         self.Format = ""
         self.TypeId = None
 
 class AspMvcAreaPartialViewLocationFormatAttribute:
+    def __init__(self):
+        self.Format = ""
+        self.TypeId = None
+
+class AspMvcAreaViewComponentViewLocationFormatAttribute:
     def __init__(self):
         self.Format = ""
         self.TypeId = None
@@ -1360,6 +1561,11 @@ class AspMvcMasterLocationFormatAttribute:
         self.TypeId = None
 
 class AspMvcPartialViewLocationFormatAttribute:
+    def __init__(self):
+        self.Format = ""
+        self.TypeId = None
+
+class AspMvcViewComponentViewLocationFormatAttribute:
     def __init__(self):
         self.Format = ""
         self.TypeId = None
@@ -1428,6 +1634,68 @@ class AspMvcActionSelectorAttribute:
     def __init__(self):
         self.TypeId = None
 
+class RouteTemplateAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class RouteParameterConstraintAttribute:
+    def __init__(self):
+        self.ConstraintName = ""
+        self.ProposedType = None
+        self.TypeId = None
+
+class UriStringAttribute:
+    def __init__(self):
+        self.HttpVerb = ""
+        self.TypeId = None
+
+class AspRouteConventionAttribute:
+    def __init__(self):
+        self.PredefinedPattern = ""
+        self.TypeId = None
+
+class AspDefaultRouteValuesAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspRouteValuesConstraintsAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspRouteOrderAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspRouteVerbsAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspAttributeRoutingAttribute:
+    def __init__(self):
+        self.HttpVerb = ""
+        self.TypeId = None
+
+class AspMinimalApiDeclarationAttribute:
+    def __init__(self):
+        self.HttpVerb = ""
+        self.TypeId = None
+
+class AspMinimalApiGroupAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspMinimalApiHandlerAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class AspMinimalApiImplicitEndpointDeclarationAttribute:
+    def __init__(self):
+        self.HttpVerb = ""
+        self.RouteTemplate = ""
+        self.BodyType = None
+        self.QueryParameters = ""
+        self.TypeId = None
+
 class HtmlElementAttributesAttribute:
     def __init__(self):
         self.Name = ""
@@ -1440,92 +1708,6 @@ class HtmlAttributeValueAttribute:
 
 class RazorSectionAttribute:
     def __init__(self):
-        self.TypeId = None
-
-class CollectionAccessAttribute:
-    def __init__(self):
-        self.CollectionAccessType = None
-        self.TypeId = None
-
-class CollectionAccessType:
-    None = None
-    Read = None
-    ModifyExistingContent = None
-    UpdatedContent = None
-    def __init__(self):
-        self.value__ = 0
-
-class AssertionMethodAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class AssertionConditionAttribute:
-    def __init__(self):
-        self.ConditionType = None
-        self.TypeId = None
-
-class AssertionConditionType:
-    IS_TRUE = None
-    IS_FALSE = None
-    IS_NULL = None
-    IS_NOT_NULL = None
-    def __init__(self):
-        self.value__ = 0
-
-class TerminatesProgramAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class LinqTunnelAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class NoEnumerationAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class RegexPatternAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class NoReorderAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class XamlItemsControlAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class XamlItemBindingOfItemsControlAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class AspChildControlTypeAttribute:
-    def __init__(self):
-        self.TagName = ""
-        self.ControlType = None
-        self.TypeId = None
-
-class AspDataFieldAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class AspDataFieldsAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class AspMethodPropertyAttribute:
-    def __init__(self):
-        self.TypeId = None
-
-class AspRequiredAttributeAttribute:
-    def __init__(self):
-        self.Attribute = ""
-        self.TypeId = None
-
-class AspTypePropertyAttribute:
-    def __init__(self):
-        self.CreateConstructorReferences = False
         self.TypeId = None
 
 class RazorImportNamespaceAttribute:
@@ -1570,10 +1752,70 @@ class RazorWriteMethodParameterAttribute:
     def __init__(self):
         self.TypeId = None
 
+class XamlItemsControlAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class XamlItemBindingOfItemsControlAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class XamlItemStyleOfItemsControlAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class XamlOneWayBindingModeByDefaultAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class XamlTwoWayBindingModeByDefaultAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class TestSubjectAttribute:
+    def __init__(self):
+        self.Subject = None
+        self.TypeId = None
+
+class MeansTestSubjectAttribute:
+    def __init__(self):
+        self.TypeId = None
+
 class SaveVersion:
     BRANCH_MAP = None
     CURRENT_SAVE_VERSION = 0
     MIN_COMPATIBLE_SAVE_VERSION = 0
+    V213_TRAIN_SELF_INTERSECT = 0
+    V212_WAGON_PRODUCT_FILTER = 0
+    V211_TRAIN_LAST_FAILED_RESERVATION = 0
+    V210_TRAIN_LOAD_UNLOAD_NOTHING = 0
+    V209_SAVED_TRAIN_STATUS = 0
+    V208_VEHICLE_ENGINE_OFF = 0
+    V207_TREE_HARVESTER_UNREACHABLES = 0
+    V206_TRAIN_SKIP_ITEM_IF_HIGH_FUEL = 0
+    V205_STUMPS_NO_BLOCK = 0
+    V204_MAINTENANCE_STORED_STATS = 0
+    V203_UNDISRUPT_PROPS = 0
+    V202_LAST_BLOCKING_TRAIN = 0
+    V201_BLOCK_VISUALIZER = 0
+    V200_TRAIN_WARNING_STATE = 0
+    V199_TRACK_COLLAPSE_INFO = 0
+    V198_REFRESH_TRAIN_PROPS_DEFAULTS = 0
+    V197_TRAIN_CAR_FLIPPING = 0
+    V196_TRAIN_STATION_GROUPS = 0
+    V195_FBR = 0
+    V194_DONT_SAVE_FORCE_RUN = 0
+    V193_UPDATE_3_TRAINS_RESERVATION_LENGTH = 0
+    V192_UPDATE_3_TRAINS = 0
+    V191_UPDATE_3_TRAIN_PAUSING = 0
+    V190_UPDATE_3_LEVEL_CROSSING = 0
+    V189_UPDATE_3_PRE_TRAILER = 0
+    V188_UPDATE_3_EDITOR_IMPROVEMENTS_4 = 0
+    V185_UPDATE_3_EDITOR_IMPROVEMENTS_3 = 0
+    V183_UPDATE_3_EDITOR_IMPROVEMENTS_2 = 0
+    V182_UPDATE_3_EDITOR_IMPROVEMENTS = 0
+    V181_UPDATE_3_TREES = 0
+    V180_UPDATE_3 = 0
     V171_SAVE_SIM_SPEED = 0
     V170_OPTIMIZED_TILE_SERIALIZATION = 0
     V169_MAP_CACHE = 0
@@ -1666,13 +1908,23 @@ class ThreadUtils:
 
 
 class Tracing:
-    IsEnabled = False
-    RecordedEventsCount = 0
     TRACING_CONDITIONAL = ""
+    IS_AVAILABLE = False
     BEGIN_PHASE_NAME = None
     END_PHASE_NAME = None
+    COMPLETE_PHASE_NAME = None
+    BEGIN_ASYNC_PHASE_NAME = None
+    END_ASYNC_PHASE_NAME = None
     INSTANT_PHASE_NAME = None
-    IS_AVAILABLE = False
+    IsRecording = False
+    def __init__(self):
+        pass
+
+
+class TracingManager:
+    RecordedEventsCount = 0
+    IsTracingDirectlyToWriter = False
+    IsRecording = False
     def __init__(self):
         pass
 
@@ -1689,7 +1941,7 @@ class Tracing:
             self.Name = ""
             self.Category = ""
             self.ThreadName = ""
-            self.Microseconds = 0
+            self.Timestamp = 0
             self.ExtraStr = ""
 
 class EditorIgnoreAttribute:
@@ -1791,6 +2043,11 @@ class EditorRangePercentAttribute:
 class EditorRangeAttribute:
     def __init__(self):
         self.TypeId = None
+
+class EditorAutoUpdateVersionAttribute:
+    def __init__(self):
+        self.TypeId = None
+        self.LatestVersion = 0
 
 class PerfCounter:
     PERF_COUNTERS_ENABLED = False
@@ -2074,6 +2331,40 @@ class Chunk2iSlim:
         self.Y = None
         self.XyPacked = None
 
+class Chunk8:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
+    DIMENSION_TILES = 0
+    DIMENSION_TILES_BITS = 0
+    def __init__(self):
+        self.OriginTile2i = None
+        self.Sum = 0
+        self.Product = 0
+        from Mafi import Fix32
+        self.Length = Fix32()
+        self.LengthInt = 0
+        self.LengthSqrInt = 0
+        self.LengthSqr = 0
+        self.IsZero = False
+        self.IsNotZero = False
+        self.IncrementX = None
+        self.IncrementY = None
+        self.DecrementX = None
+        self.DecrementY = None
+        self.Angle = None
+        self.X = None
+        self.Y = None
+
+class Chunk8Index:
+    def __init__(self):
+        self.PlusXNeighborUnchecked = None
+        self.MinusXNeighborUnchecked = None
+        self.Value = 0
+
 class Computing:
     Zero = None
     MinValue = None
@@ -2091,6 +2382,11 @@ class Computing:
         self.Squared = 0
         self.Value = 0
 
+class ComputingExtensions:
+    def __init__(self):
+        pass
+
+
 class Duration:
     Zero = None
     MinValue = None
@@ -2105,10 +2401,11 @@ class Duration:
     def __init__(self):
         from Mafi import Fix64
         self.Millis = Fix64()
-        self.Seconds = Fix64()
+        from Mafi import Fix32
+        self.Seconds = Fix32()
         self.SecondsFloored = 0
         self.Minutes = Fix64()
-        from Mafi import Fix32
+        self.MinutesAsFix32 = Fix32()
         self.Days = Fix32()
         self.Months = Fix32()
         self.Years = Fix32()
@@ -2147,6 +2444,11 @@ class Electricity:
         self.Value = 0
 
 class ElectricityExtensions:
+    def __init__(self):
+        pass
+
+
+class Fix64CoreExtensions:
     def __init__(self):
         pass
 
@@ -2224,9 +2526,10 @@ class Chunk64Index:
     def __init__(self):
         self.Value = 0
 
-class Chunk8Index:
+class Chunk8Assertions:
     def __init__(self):
-        self.Value = 0
+        pass
+
 
 class HeightTilesF:
     Zero = None
@@ -2406,11 +2709,13 @@ class RelGameDate:
 
 class RelTile1f:
     Zero = None
+    Two = None
     MinValue = None
     MaxValue = None
     Epsilon = None
     One = None
     Half = None
+    Third = None
     Quarter = None
     def __init__(self):
         self.Abs = None
@@ -2547,6 +2852,7 @@ class RelTile2i:
         self.Vector2f = None
         self.RelTile2f = None
         self.RelTile2fCenter = None
+        self.AsTile2i = None
         self.LengthAsFloat = 0.0
         self.X = 0
         self.Y = 0
@@ -2601,11 +2907,13 @@ class RelTile3f:
         self.DivBy4Fast = None
         self.DivBy8Fast = None
         self.DivBy16Fast = None
-        self.Tile3i = None
+        self.RelTile3i = None
+        self.RelTile3iCeiled = None
         self.RelTile3iRounded = None
         self.LengthTiles1f = None
         self.WidthTiles1f = None
         self.HeightTiles1f = None
+        self.Xz = None
         self.X = Fix32()
         self.Y = Fix32()
         self.Z = Fix32()
@@ -2849,6 +3157,7 @@ class Tile2i:
         self.RelTile2i = None
         self.ChunkCoord2i = None
         self.ChunkCoord2iSlim = None
+        self.ChunkCoord256 = None
         self.TileInChunkCoord = None
         self.TileInChunkCoordSlim = None
         self.CornerTile2f = None
@@ -3002,6 +3311,7 @@ class Tile3i:
         self.DivBy8Fast = None
         self.DivBy16Fast = None
         self.AsSlim = None
+        self.AsSlimUnchecked = None
         self.Height = None
         self.Tile2i = None
         self.ParentChunkCoord = None
@@ -3259,6 +3569,7 @@ class Tile3iSlim:
     def __init__(self):
         self.Xy = None
         self.Tile3i = None
+        self.Tile3f = None
         self.Vector3i = None
         self.Sum = 0
         from Mafi import Fix32
@@ -3343,6 +3654,7 @@ class DebugGameRenderer:
 
 
 class DebugGameMapDrawing:
+    STATIC_ENTITY_COLOR = None
     def __init__(self):
         from Mafi import Option
         self.Resolver = Option()
@@ -3350,6 +3662,7 @@ class DebugGameMapDrawing:
         self.IsNotEnabled = False
         self.From = None
         self.Size = None
+        self.PixelsPerTile = 0
 
 class DebugGameRendererConfig:
     SaveVehiclePathFindingSuccesses = False
@@ -3363,6 +3676,8 @@ class DebugGameRendererConfig:
     SaveVehicleGoalUnreachable = False
     SaveVehicleGoalReplanDueToBlock = False
     SaveVehicleDriveTooFarWithoutPf = False
+    SaveTrainPathFindingGraph = False
+    SaveTrainPathFindingAttempts = False
     SaveTransportPillarsSupportFailures = False
     SaveClearancePathabilityProviderValidationErrors = False
     SaveSuspiciouslyLongVehicleDriveTargets = False

@@ -30,6 +30,7 @@ class ResearchFinishedMessage:
         self.NotificationId = None
         self.ResearchNode = None
         self.UnlockedProtos = None
+        self.TimesResearched = 0
 
 class ShipInBattleNotification:
     def __init__(self):

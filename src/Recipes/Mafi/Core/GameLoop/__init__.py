@@ -5,6 +5,7 @@ class BackgroundTaskRunner:
         self.WasOverTime = False
         self.LastOvertimeDuration = None
         self.LastWorkDuration = None
+        self.Name = ""
 
 class GameLoopEvents:
     def __init__(self):
@@ -18,6 +19,7 @@ class GameLoopEvents:
         self.SyncUpdateEnd = None
         self.InputUpdate = None
         self.InputUpdateEnd = None
+        self.RenderUpdateAfterSync = None
         self.RenderUpdate = None
         self.RenderUpdateEnd = None
         self.Terminate = None
@@ -43,6 +45,7 @@ class GameLoopState:
     RenderUpdateEnd = None
     Terminate = None
     SyncUpdateEnd = None
+    RenderUpdateAfterSync = None
     def __init__(self):
         self.value__ = 0
 
@@ -78,6 +81,7 @@ class IGameLoopEvents:
         self.SyncUpdateEnd = None
         self.InputUpdate = None
         self.InputUpdateEnd = None
+        self.RenderUpdateAfterSync = None
         self.RenderUpdate = None
         self.RenderUpdateEnd = None
         self.Terminate = None

@@ -390,8 +390,22 @@ namespace CustomRecipes.ModuleParser.Registrator
                         typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
                                                  .SetValue(research, research.Units
                                                                              .AsEnumerable()
-                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false) })
+                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false),
+                                                                                                             new ProtoWithIconUnlock(machine, false) })
+                                                                             .Distinct(i =>
+                                                                             {
+                                                                                 if (i is ProtoWithIconUnlock protoUnlock)
+                                                                                     return protoUnlock.Proto.Id.Value;
+                                                                                 else
+                                                                                     return DateTime.Now.Ticks.ToString();
+                                                                             })
                                                                              .ToImmutableArray());
+
+                        typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+                                                     .SetValue(research.Graphics, research.Graphics.Icons
+                                                                                                   .AsEnumerable()
+                                                                                                   .Concat(new KeyValuePair<Option<Proto>, string>[] { new KeyValuePair<Option<Proto>, string>(machine, machine.IconPath) })
+                                                                                                   .ToImmutableArray());
                     }
 
                     return recipe;
@@ -490,8 +504,22 @@ namespace CustomRecipes.ModuleParser.Registrator
                         typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
                                                  .SetValue(research, research.Units
                                                                              .AsEnumerable()
-                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false) })
+                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false),
+                                                                                                             new ProtoWithIconUnlock(machine, false) })
+                                                                             .Distinct(i =>
+                                                                             {
+                                                                                 if (i is ProtoWithIconUnlock protoUnlock)
+                                                                                     return protoUnlock.Proto.Id.Value;
+                                                                                 else
+                                                                                     return DateTime.Now.Ticks.ToString();
+                                                                             })
                                                                              .ToImmutableArray());
+
+                        typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+                                                     .SetValue(research.Graphics, research.Graphics.Icons
+                                                                                                   .AsEnumerable()
+                                                                                                   .Concat(new KeyValuePair<Option<Proto>, string>[] { new KeyValuePair<Option<Proto>, string>(machine, machine.IconPath) })
+                                                                                                   .ToImmutableArray());
                     }
 
                     return recipe;
@@ -589,8 +617,22 @@ namespace CustomRecipes.ModuleParser.Registrator
                     typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
                                              .SetValue(research, research.Units
                                                                          .AsEnumerable()
-                                                                         .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false) })
+                                                                         .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false),
+                                                                                                         new ProtoWithIconUnlock(machine, false) })
+                                                                         .Distinct(i =>
+                                                                         {
+                                                                             if (i is ProtoWithIconUnlock protoUnlock)
+                                                                                 return protoUnlock.Proto.Id.Value;
+                                                                             else
+                                                                                 return DateTime.Now.Ticks.ToString();
+                                                                         })
                                                                          .ToImmutableArray());
+
+                    typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+                                                 .SetValue(research.Graphics, research.Graphics.Icons
+                                                                                               .AsEnumerable()
+                                                                                               .Concat(new KeyValuePair<Option<Proto>, string>[] { new KeyValuePair<Option<Proto>, string>(machine, machine.IconPath) })
+                                                                                               .ToImmutableArray());
                     return null;
                 }, new[] { "research", "machine", "recipe" }),
 
@@ -647,6 +689,13 @@ namespace CustomRecipes.ModuleParser.Registrator
                                              .SetValue(research, research.Units
                                                                          .AsEnumerable()
                                                                          .Concat(new IUnlockNodeUnit[] { new ProtoWithIconUnlock(machine, false) })
+                                                                         .Distinct(i =>
+                                                                         {
+                                                                             if (i is ProtoWithIconUnlock protoUnlock)
+                                                                                 return protoUnlock.Proto.Id.Value;
+                                                                             else
+                                                                                 return DateTime.Now.Ticks.ToString();
+                                                                         })
                                                                          .ToImmutableArray());
 
                     typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)

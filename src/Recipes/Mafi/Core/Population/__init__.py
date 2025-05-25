@@ -7,6 +7,7 @@ class BirthRateCategoryProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -14,7 +15,6 @@ class BirthRateCategoryProto:
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -30,6 +30,7 @@ class DiseaseProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -41,7 +42,6 @@ class DiseaseProto:
         self.MinDistanceTraveled = 0
         self.Reason = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class FoodProto:
     def __init__(self):
@@ -50,6 +50,7 @@ class FoodProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -58,7 +59,6 @@ class FoodProto:
         self.Product = None
         self.FoodCategory = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class FoodCategoryProto:
     def __init__(self):
@@ -67,6 +67,7 @@ class FoodCategoryProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -74,7 +75,6 @@ class FoodCategoryProto:
         self.IsObsolete = False
         self.HasHealthBenefit = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class HealthPointsCategoryProto:
     def __init__(self):
@@ -84,6 +84,7 @@ class HealthPointsCategoryProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -91,7 +92,6 @@ class HealthPointsCategoryProto:
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -127,6 +127,7 @@ class MedicalSuppliesParam:
 
 class PopNeedProto:
     def __init__(self):
+        self.IconPath = ""
         self.IsFoodNeed = False
         self.IsHealthcareNeed = False
         from Mafi.Core.Prototypes import Proto
@@ -134,6 +135,7 @@ class PopNeedProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -146,7 +148,6 @@ class PopNeedProto:
         self.UnityMultiplierProperty = None
         self.UpointsCategory = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class HealthData:
         def __init__(self):
@@ -260,6 +261,7 @@ class UpointsCategoryProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -269,7 +271,6 @@ class UpointsCategoryProto:
         self.StatsCategory = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class IUpointsManager:
     def __init__(self):
@@ -314,6 +315,7 @@ class UpointsStatsCategoryProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -321,7 +323,6 @@ class UpointsStatsCategoryProto:
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None

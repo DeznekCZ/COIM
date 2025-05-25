@@ -7,8 +7,6 @@ class NuclearReactor:
     DECREASE_MAINTENANCE_MELTDOWN_DAMAGE = None
     POWER_LEVEL_HEAT_CAPACITY = 0
     SELF_COOLING_HEAT_MARGIN = 0
-    FUEL_CAPACITY = 0
-    MIN_FUEL_FOR_OPERATION = 0
     HEAT_PER_POWER_LEVEL_PER_TICK = 0
     HEAT_REMOVED_IN_MELTDOWN_PER_TICK = 0
     SELF_COOLING_PER_TICK = 0
@@ -49,6 +47,7 @@ class NuclearReactor:
         self.IsAutomaticPowerRegulationEnabled = False
         self.EnrichmentInputBuffer = Option()
         self.EnrichmentOutputBuffer = Option()
+        self.EnrichmentStep = 0
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
@@ -64,6 +63,7 @@ class NuclearReactor:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -95,6 +95,8 @@ class NuclearReactor:
             self.AllUserVisibleInputs = None
             self.AllUserVisibleOutputs = None
             self.Duration = None
+            self.FuelMultiplier = None
+            self.FuelPerMinute = None
 
     class State:
         None = None
@@ -155,12 +157,27 @@ class NuclearReactorToggleAutomaticRegulationCmd:
         self.ErrorMessage = ""
         self.ReactorId = None
 
+class NuclearReactorSetEnrichmentStepCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.ReactorId = None
+        self.EnrichmentStep = 0
+
 class NuclearReactorProto:
     def __init__(self):
         self.EntityType = None
         self.ComputingConsumed = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.Recipes = None
         self.Layout = None
         self.Ports = None
@@ -176,6 +193,7 @@ class NuclearReactorProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -187,6 +205,8 @@ class NuclearReactorProto:
         self.WaterInPorts = ""
         self.SteamOutPorts = ""
         self.ProcessDuration = None
+        self.FuelCapacity = None
+        self.MinFuelToOperate = None
         self.FuelPairs = None
         self.FuelInPort = None
         self.FuelOutPort = None
@@ -203,10 +223,12 @@ class NuclearReactorProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -214,6 +236,7 @@ class NuclearReactorProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             from Mafi import Option
@@ -249,3 +272,11 @@ class NuclearReactorProto:
             self.ProcessedPerLevel = None
             self.BuffersCapacity = None
             self.DestroyContentOnMeltdown = False
+            self.EnrichmentSteps = None
+            self.DefaultEnrichmentStep = 0
+
+    class EnrichmentStepData:
+        def __init__(self):
+            self.FuelMultiplier = None
+            self.BreedingRatio = 0
+            self.SteamReductionDiv = 0

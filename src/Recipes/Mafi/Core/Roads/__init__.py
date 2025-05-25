@@ -22,6 +22,7 @@ class IRoadGraphEntity:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -34,6 +35,63 @@ class IRoadGraphEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+
+class ICloseableRoadGraphEntity:
+    def __init__(self):
+        self.IsRoadClosedSelf = False
+        self.IsRoadGloballyClosed = False
+        self.RoadLanesCount = 0
+        self.RoadProto = None
+        self.Prototype = None
+        self.Transform = None
+        self.CenterTile = None
+        self.OccupiedTiles = None
+        self.OccupiedVertices = None
+        self.OccupiedVerticesCombinedConstraint = None
+        self.VehicleSurfaceHeights = None
+        self.Value = None
+        self.ConstructionCost = None
+        self.ConstructionState = None
+        from Mafi import Option
+        self.ConstructionProgress = Option()
+        self.IsConstructed = False
+        self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
+        self.AreConstructionCubesDisabled = False
+        self.DoNotAdjustTerrainDuringConstruction = False
+        self.Position2f = None
+        self.Position3f = None
+        self.RendererData = None
+        self.DefaultTitle = None
+        self.Id = None
+        self.Context = None
+        self.IsEnabled = False
+        self.IsPaused = False
+        self.CanBePaused = False
+        self.IsDestroyed = False
+
+class IRoadGraphEntityProto:
+    def __init__(self):
+        self.MaxVehicleSpeedPerTick = None
+        self.LanesSpecs = None
+        self.LanesData = None
+        self.LanesTrajectories = None
+        self.Layout = None
+        self.Ports = None
+        self.CannotBeReflected = False
+        self.IsUnique = False
+        self.AutoBuildMiniZippers = False
+        self.Graphics = None
+        from Mafi.Core.Entities.Static import StaticEntityProto
+        self.Id = StaticEntityProto.ID()
+
+        self.EntityType = None
+        self.Costs = None
+        self.Strings = None
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsInitialized = False
+        self.Mod = None
 
 class IRoadGraphTerrainConnector:
     def __init__(self):
@@ -54,6 +112,7 @@ class IRoadGraphTerrainConnector:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -75,12 +134,7 @@ class RoadEntity:
         self.CanBePaused = False
         self.RoadLanesCount = 0
         self.RoadProto = None
-        from Mafi import Option
-        self.CustomTitle = Option()
-        self.GeneralPriority = 0
-        self.IsCargoAffectedByGeneralPriority = False
-        self.IsGeneralPriorityVisible = False
-        self.Ports = None
+        self.HasBadConnection = False
         self.Value = None
         self.ConstructionCost = None
         self.Transform = None
@@ -92,10 +146,12 @@ class RoadEntity:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
         self.IsBeingUpgraded = False
+        from Mafi import Option
         self.ConstructionProgress = Option()
         self.DoNotAdjustTerrainDuringConstruction = False
         self.AreConstructionCubesDisabled = False
@@ -134,7 +190,7 @@ class RoadGraphNodeKey:
         self.Position = None
         self.Position2f = None
         self.Direction = None
-        self.m_unused = None
+        self.LaneType = None
 
 class RoadGraphNodeDirection:
     def __init__(self):
@@ -159,6 +215,8 @@ class RoadLaneMetadata:
         self.EndPosition = None
         self.StartDirection = None
         self.EndDirection = None
+        self.StartType = None
+        self.EndType = None
         self.LaneLength = None
 
 class RoadEntityProto:
@@ -168,6 +226,11 @@ class RoadEntityProto:
     RAMP_HEIGHT_DELTA = None
     def __init__(self):
         self.EntityType = None
+        self.TierData = None
+        self.MaxVehicleSpeedPerTick = None
+        self.LanesSpecs = None
+        self.LanesData = None
+        self.LanesTrajectories = None
         self.Graphics = None
         self.Layout = None
         self.Ports = None
@@ -182,43 +245,37 @@ class RoadEntityProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
-        self.LanesSpecs = None
-        self.LanesData = None
-        self.LanesTrajectories = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class RoadLaneSpec:
     def __init__(self):
         self.TrajectoryCurve = None
-        from Mafi import Option
-        self.CustomZCurve = Option()
-        self.TrajectoryOffset = None
-        self.IsReversed = False
+        self.HeightCurve = None
         self.IsHidden = False
+        self.StartType = None
+        self.EndType = None
 
 class RoadEntityBase:
     def __init__(self):
         self.RoadLanesCount = 0
         self.RoadProto = None
-        from Mafi import Option
-        self.CustomTitle = Option()
-        self.GeneralPriority = 0
-        self.IsCargoAffectedByGeneralPriority = False
-        self.IsGeneralPriorityVisible = False
-        self.Ports = None
+        self.HasBadConnection = False
         self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
@@ -231,10 +288,12 @@ class RoadEntityBase:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
         self.IsBeingUpgraded = False
+        from Mafi import Option
         self.ConstructionProgress = Option()
         self.DoNotAdjustTerrainDuringConstruction = False
         self.AreConstructionCubesDisabled = False
@@ -251,6 +310,10 @@ class RoadEntityBase:
 
 class RoadEntityProtoBase:
     def __init__(self):
+        self.MaxVehicleSpeedPerTick = None
+        self.LanesSpecs = None
+        self.LanesData = None
+        self.LanesTrajectories = None
         self.Graphics = None
         self.Layout = None
         self.Ports = None
@@ -266,33 +329,33 @@ class RoadEntityProtoBase:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
-        self.LanesSpecs = None
-        self.LanesData = None
-        self.LanesTrajectories = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
+        Empty = None
         def __init__(self):
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
-            self.MeshSegmentsCount = 0
-            self.MaterialPath = ""
             self.IconIsCustom = False
             self.UseInstancedRendering = False
             self.UseSemiInstancedRendering = False
@@ -306,19 +369,30 @@ class RoadEntityProtoBase:
             self.Color = None
             self.RendererIndex = 0
 
+class RoadLaneType:
+    MaskTwoTileLane = None
+    MaskFourTileLane = None
+    MaskAllowAll = None
+    MaskAllowNone = None
+    TwoTilesLaneFlag = None
+    FourTilesLaneFlag = None
+    BasicLaneFlag = None
+    ElevatedLaneFlag = None
+    TerrainConnectionFlag = None
+    def __init__(self):
+        self.value__ = None
+
 class RoadEntranceEntity:
     def __init__(self):
         self.CanBePaused = False
         self.RoadTerrainConnectionsCount = 0
+        self.IsRoadGloballyClosed = False
+        self.IsRoadClosedSelf = False
+        self.GateClosedPercentage = None
         self.Prototype = None
         self.RoadLanesCount = 0
         self.RoadProto = None
-        from Mafi import Option
-        self.CustomTitle = Option()
-        self.GeneralPriority = 0
-        self.IsCargoAffectedByGeneralPriority = False
-        self.IsGeneralPriorityVisible = False
-        self.Ports = None
+        self.HasBadConnection = False
         self.Value = None
         self.ConstructionCost = None
         self.Transform = None
@@ -330,10 +404,12 @@ class RoadEntranceEntity:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
         self.IsBeingUpgraded = False
+        from Mafi import Option
         self.ConstructionProgress = Option()
         self.DoNotAdjustTerrainDuringConstruction = False
         self.AreConstructionCubesDisabled = False
@@ -350,6 +426,11 @@ class RoadEntranceEntity:
 class RoadEntranceEntityProto:
     def __init__(self):
         self.EntityType = None
+        self.TierData = None
+        self.MaxVehicleSpeedPerTick = None
+        self.LanesSpecs = None
+        self.LanesData = None
+        self.LanesTrajectories = None
         self.Graphics = None
         self.Layout = None
         self.Ports = None
@@ -364,24 +445,24 @@ class RoadEntranceEntityProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.TerrainConnections = None
-        self.LanesSpecs = None
-        self.LanesData = None
-        self.LanesTrajectories = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class LaneTerrainConnectionSpec:
     def __init__(self):
@@ -395,11 +476,20 @@ class RoadTerrainConnection:
         self.RoadGraphNode = None
         self.IsEntranceToRoadGraph = False
 
+class RoadsConstants:
+    ROAD_SURFACE_HEIGHT = None
+    ROAD_TRAIN_CROSSING_EXTRA_HEIGHT = None
+    def __init__(self):
+        pass
+
+
 class IRoadsManager:
     def __init__(self):
         self.RoadGraphNodes = None
         self.TerrainGraphConnections = None
         self.GraphTerrainConnections = None
+        self.RoadConnectionAdded = None
+        self.RoadConnectionRemoved = None
 
 class RoadNetworkSearchStatus:
     InvalidStartNode = None
@@ -408,11 +498,32 @@ class RoadNetworkSearchStatus:
     def __init__(self):
         self.value__ = 0
 
+class RoadsManager:
+    def __init__(self):
+        self.RoadGraphNodesCount = 0
+        self.RoadGraphEdgesCount = 0
+        self.RoadGraphNodes = None
+        self.TerrainGraphConnections = None
+        self.GraphTerrainConnections = None
+        self.RoadConnectionAdded = None
+        self.RoadConnectionRemoved = None
+
+    class NodeData:
+        def __init__(self):
+            self.TotalEdgesCount = 0
+            self.NodeKey = None
+            self.OutgoingEdgesCount = None
+            self.IncomingEdgesCount = None
+            self.IsConnectedFromTerrain = False
+            self.IsConnectedToTerrain = False
+
 class DummyRoadsManager:
     def __init__(self):
         self.RoadGraphNodes = None
         self.TerrainGraphConnections = None
         self.GraphTerrainConnections = None
+        self.RoadConnectionAdded = None
+        self.RoadConnectionRemoved = None
 
 class RoadGraphPath:
     def __init__(self):
@@ -431,4 +542,6 @@ class GraphTerrainConnection:
     def __init__(self):
         self.RoadNodeId = 0
         self.TerrainTile = None
+        self.RoadLaneType = None
         self.IsFromTerrainToRoad = False
+        self.Entity = None

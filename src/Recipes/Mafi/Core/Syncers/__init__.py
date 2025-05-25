@@ -4,16 +4,6 @@ class CollectionSyncerFactory:
         pass
 
 
-class Extensions:
-    def __init__(self):
-        pass
-
-
-    class BooleanCallBuilder:
-        def __init__(self):
-            pass
-
-
 class IUiUpdater:
     def __init__(self):
         pass
@@ -26,7 +16,22 @@ class SyncFrequency:
     def __init__(self):
         self.value__ = 0
 
+class IUpdaterRegistrar:
+    def __init__(self):
+        pass
+
+
 class PeriodicSyncUpdateSyncer:
+    def __init__(self):
+        pass
+
+
+class ISyncer:
+    def __init__(self):
+        pass
+
+
+class UpdaterRegistrarExtensions:
     def __init__(self):
         pass
 

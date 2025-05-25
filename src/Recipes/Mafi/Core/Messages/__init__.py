@@ -41,6 +41,7 @@ class MessageGroupProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -48,7 +49,6 @@ class MessageGroupProto:
         self.IsObsolete = False
         self.Order = 0
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageProto:
     def __init__(self):
@@ -57,6 +57,7 @@ class MessageProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -71,7 +72,6 @@ class MessageProto:
         self.AlwaysNotify = False
         self.UnlockSilentlyFromStart = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class InGameMessageType:
     Message = None
@@ -139,13 +139,13 @@ class MessageTriggerProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsObsolete = False
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageTriggerOnProtoUnlockedProto:
     def __init__(self):
@@ -156,6 +156,7 @@ class MessageTriggerOnProtoUnlockedProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -163,7 +164,6 @@ class MessageTriggerOnProtoUnlockedProto:
         self.UnlockedProto = None
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageTriggerOnQuantityProducedProto:
     def __init__(self):
@@ -174,6 +174,7 @@ class MessageTriggerOnQuantityProducedProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -182,7 +183,6 @@ class MessageTriggerOnQuantityProducedProto:
         self.Quantity = None
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageTriggerOnEntityConstructedProto:
     def __init__(self):
@@ -193,6 +193,7 @@ class MessageTriggerOnEntityConstructedProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -202,7 +203,6 @@ class MessageTriggerOnEntityConstructedProto:
 
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageTriggerOnEntityConstructedOrProductRunningOutProto:
     def __init__(self):
@@ -213,6 +213,7 @@ class MessageTriggerOnEntityConstructedOrProductRunningOutProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -223,7 +224,6 @@ class MessageTriggerOnEntityConstructedOrProductRunningOutProto:
         self.ProductQuantityToTrigger = None
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageTriggerOnShipRepairProto:
     def __init__(self):
@@ -234,13 +234,13 @@ class MessageTriggerOnShipRepairProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsObsolete = False
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageTriggerDelayedProto:
     def __init__(self):
@@ -251,6 +251,7 @@ class MessageTriggerDelayedProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -258,7 +259,6 @@ class MessageTriggerDelayedProto:
         self.DelayDays = 0
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageTriggerGlobalProductLowProto:
     def __init__(self):
@@ -269,6 +269,7 @@ class MessageTriggerGlobalProductLowProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -279,7 +280,6 @@ class MessageTriggerGlobalProductLowProto:
         self.MinQuantity = None
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MessageTriggerOnEventProto:
     def __init__(self):
@@ -290,6 +290,7 @@ class MessageTriggerOnEventProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -298,4 +299,3 @@ class MessageTriggerOnEventProto:
         self.GetEvent = None
         self.MessageProto = None
         self.IsPhantom = False
-        self.IsInitialized = False

@@ -26,19 +26,20 @@ class BooleanPropertyProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class PropertyBoolean:
     def __init__(self):
         self.Id = ""
         self.OnChange = None
         self.Value = False
+        self.AllModifiers = None
 
 class DurationPropertyProto:
     def __init__(self):
@@ -48,19 +49,30 @@ class DurationPropertyProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class PropertyDuration:
     def __init__(self):
         self.Id = ""
         self.OnChange = None
         self.Value = None
+        self.AllModifiers = None
+
+class PropertyGroups:
+    RESEARCH = ""
+    FOCUS = ""
+    EDICT = ""
+    SPACE = ""
+    POPULATION = ""
+    def __init__(self):
+        pass
+
 
 class PropertyModifiers:
     from Mafi import Option
@@ -74,12 +86,14 @@ class PropertyPercentMult:
         self.Id = ""
         self.OnChange = None
         self.Value = None
+        self.AllModifiers = None
 
 class PropertyPercentSum:
     def __init__(self):
         self.Id = ""
         self.OnChange = None
         self.Value = None
+        self.AllModifiers = None
 
 class PercentPropertyProto:
     def __init__(self):
@@ -89,13 +103,13 @@ class PercentPropertyProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class PropertyType:
         Multiplier = None
@@ -111,13 +125,13 @@ class PropertyProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class PropsDb:
     def __init__(self):

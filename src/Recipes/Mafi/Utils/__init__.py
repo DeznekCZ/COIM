@@ -26,6 +26,11 @@ class ExpectedStructSizeAttribute:
         self.TypeId = None
         self.SizeBytes = 0
 
+class AnyValidGenericArgumentsAttribute:
+    def __init__(self):
+        self.TypeId = None
+        self.GenericTypeArguments = None
+
 class StructSize:
     def __init__(self):
         pass

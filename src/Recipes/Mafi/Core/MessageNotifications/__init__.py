@@ -1,4 +1,12 @@
 
+class MessageNotificationType:
+    Neutral = None
+    Success = None
+    Important = None
+    Danger = None
+    def __init__(self):
+        self.value__ = 0
+
 class IMessageNotification:
     def __init__(self):
         self.NotificationId = None

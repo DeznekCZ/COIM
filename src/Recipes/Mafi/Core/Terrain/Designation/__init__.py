@@ -284,6 +284,9 @@ class TerrainDesignationsManager:
         self.DesignationRemoved = None
         self.DesignationManagedTowersChanged = None
         self.DesignationReachabilityChanged = None
+        from Mafi import Option
+        self.GetFirstUnmanagedMineDesignation = Option()
+        self.GetFirstUnmanagedForestryDesignation = Option()
         self.Designations = None
         self.DesignationsDict = None
         self.Count = 0
@@ -303,8 +306,7 @@ class TerrainDumpingManager:
 
 class UnreachableTerrainDesignationsManager:
     def __init__(self):
-        pass
-
+        self.VehiclesToClear = None
 
 class VehicleLastOutputBufferManager:
     def __init__(self):
@@ -354,6 +356,7 @@ class ITerrainDesignationBlockingEntityNoEdgeProto:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class TerrainDesignationBlockingEntityNoEdgeProtoValidator:
@@ -395,6 +398,7 @@ class SurfaceDesignationProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -402,7 +406,6 @@ class SurfaceDesignationProto:
         self.IsObsolete = False
         self.IsPlacing = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class TerrainDesignationProto:
     def __init__(self):
@@ -411,6 +414,7 @@ class TerrainDesignationProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -429,7 +433,6 @@ class TerrainDesignationProto:
         self.IsTerraforming = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None

@@ -87,6 +87,7 @@ class CargoShipProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -96,10 +97,10 @@ class CargoShipProto:
         self.AvailableModules = None
         self.AvailableFuels = None
         self.DockTransitionDuration = None
+        self.CapacityMultiplier = None
         self.DockOffset = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class FuelData:
         def __init__(self):

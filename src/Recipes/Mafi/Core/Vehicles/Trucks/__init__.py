@@ -1,7 +1,6 @@
 
 class Truck:
     def __init__(self):
-        self.CargoPickupDuration = None
         self.ProductType = None
         self.Cargo = None
         self.TotalCargoQuantity = None
@@ -35,6 +34,7 @@ class Truck:
         self.HasJobs = False
         self.HasTrueJob = False
         self.CurrentJob = Option()
+        self.IsEngineIdle = False
         self.CurrentJobInfo = None
         self.IsStuck = False
         self.Maintenance = None
@@ -65,6 +65,8 @@ class Truck:
         self.SteeringAngle = None
         self.SteeringAccelerationPercent = None
         self.DistanceToFullStop = None
+        from Mafi import Fix64
+        self.LifetimeDistanceTraveled = Fix64()
         self.TargetIsTerminal = False
         self.DrivingState = None
         self.SpeedFactor = None
@@ -121,6 +123,7 @@ class AttachmentProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -130,7 +133,6 @@ class AttachmentProto:
         self.KeepOnEvenIfNotNeeded = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -147,6 +149,7 @@ class DumpAttachmentProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -156,7 +159,6 @@ class DumpAttachmentProto:
         self.EligibleProductsFilter = None
         self.KeepOnEvenIfNotNeeded = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -180,6 +182,7 @@ class FlatBedAttachmentProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -189,14 +192,13 @@ class FlatBedAttachmentProto:
         self.KeepOnEvenIfNotNeeded = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
         def __init__(self):
+            self.MaxProductRenderCapacity = 0
+            self.ProductRenderOffsets = None
             self.IconPath = ""
-            self.maxProductRenderCapacity = 0
-            self.productRenderOffsets = None
             self.PrefabPath = ""
             self.ColorsMap = None
             self.IconIsCustom = False
@@ -208,6 +210,7 @@ class TankAttachmentProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -217,7 +220,6 @@ class TankAttachmentProto:
         self.EligibleProductsFilter = None
         self.KeepOnEvenIfNotNeeded = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -235,6 +237,8 @@ class TruckProto:
     def __init__(self):
         self.EntityType = None
         self.AllowedProducts = None
+        from Mafi import Option
+        self.FuelTankProto = Option()
         self.CostToBuild = None
         self.DisruptsSurface = False
         self.IconPath = ""
@@ -244,6 +248,7 @@ class TruckProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -252,7 +257,6 @@ class TruckProto:
         self.ProductType = None
         self.CapacityBase = None
         self.Attachments = None
-        from Mafi import Option
         self.AttachmentWhenEmpty = Option()
         self.MaxDumpingDistance = None
         self.MinDumpingDistance = None
@@ -264,7 +268,6 @@ class TruckProto:
         self.CargoPickupDuration = None
         self.Graphics = None
         self.DrivingData = None
-        self.FuelTankProto = Option()
         self.PathFindingParams = None
         self.NextTier = Option()
         self.UIOrder = 0.0
@@ -275,7 +278,6 @@ class TruckProto:
         self.BuildExtraDuration = None
         self.VehicleQuotaCost = 0
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None

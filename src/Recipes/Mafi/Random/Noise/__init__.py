@@ -1,4 +1,11 @@
 
+class AbsNoise2D:
+    def __init__(self):
+        from Mafi import Fix32
+        self.MeanValue = Fix32()
+        self.Amplitude = Fix32()
+        self.Period = Fix32()
+
 class ConstantNoise2D:
     def __init__(self):
         from Mafi import Fix32
@@ -8,6 +15,7 @@ class ConstantNoise2D:
 
 class ExpBendNoise2D:
     MAX_VALUE = None
+    LATEST_VERSION = 0
     def __init__(self):
         from Mafi import Fix32
         self.MeanValue = Fix32()
@@ -17,12 +25,14 @@ class ExpBendNoise2D:
         from Mafi import Fix64
         self.Amount = Fix64()
         self.Bias = Fix64()
+        self.Version = 0
 
 class ExpBendNoiseParams:
     def __init__(self):
         self.Amount = None
         from Mafi import Fix32
         self.Bias = Fix32()
+        self.Version = 0
 
 class LineDistanceNoise:
     def __init__(self):
@@ -241,6 +251,29 @@ class WarpCoordsNoise:
         self.Amplitude = Fix32()
         self.Period = Fix32()
 
+class WarpCoordsPolarNoise:
+    def __init__(self):
+        from Mafi import Fix32
+        self.MeanValue = Fix32()
+        self.Amplitude = Fix32()
+        self.Period = Fix32()
+        self.Noise = None
+        self.Parameters = None
+
+class WarpCoordsPolarParams:
+    def __init__(self):
+        self.Origin = None
+        from Mafi import Fix32
+        self.DistanceFromOriginScale = Fix32()
+        self.AngleAroundOriginScale = Fix32()
+        self.SeamSmoothingSize = Fix32()
+        self.OriginDistanceAmplitudeScaling = Fix32()
+
+class AbsNoise2DExtensions:
+    def __init__(self):
+        pass
+
+
 class ExpBendNoise2DExtensions:
     def __init__(self):
         pass
@@ -315,7 +348,12 @@ class SteppedNoise2DExtensions:
         pass
 
 
-class DisplaceCoordsNoise2DExtensions:
+class WarpCoordsNoise2DExtensions:
+    def __init__(self):
+        pass
+
+
+class WarpCoordsPolarNoiseExtensions:
     def __init__(self):
         pass
 

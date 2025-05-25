@@ -18,16 +18,15 @@ class EdictCategoryProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class EdictProto:
-    ROMAN_NUMERALS = None
     def __init__(self):
         self.IconPath = ""
         from Mafi import Option
@@ -38,6 +37,7 @@ class EdictProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -50,7 +50,6 @@ class EdictProto:
         self.PreviousTier = Option()
         self.IsGeneratingUnity = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -87,6 +86,7 @@ class EdictWithPropertiesProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -101,7 +101,6 @@ class EdictWithPropertiesProto:
         self.PreviousTier = Option()
         self.IsGeneratingUnity = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class FoodConsumptionEdict:
     def __init__(self):
@@ -121,6 +120,7 @@ class FoodConsumptionEdictProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -134,7 +134,6 @@ class FoodConsumptionEdictProto:
         self.PreviousTier = Option()
         self.IsGeneratingUnity = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class PopsBoostEdict:
     def __init__(self):
@@ -154,6 +153,7 @@ class PopsBoostEdictProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -167,7 +167,6 @@ class PopsBoostEdictProto:
         self.PreviousTier = Option()
         self.IsGeneratingUnity = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class PopsEvictionEdict:
     def __init__(self):
@@ -187,6 +186,7 @@ class PopsEvictionEdictProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -200,7 +200,6 @@ class PopsEvictionEdictProto:
         self.PreviousTier = Option()
         self.IsGeneratingUnity = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class PopsGrowthPauseEdictProto:
     def __init__(self):
@@ -213,6 +212,7 @@ class PopsGrowthPauseEdictProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -225,7 +225,6 @@ class PopsGrowthPauseEdictProto:
         self.PreviousTier = Option()
         self.IsGeneratingUnity = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class PopsQuarantineEdict:
     def __init__(self):
@@ -245,6 +244,7 @@ class PopsQuarantineEdictProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -259,7 +259,6 @@ class PopsQuarantineEdictProto:
         self.PreviousTier = Option()
         self.IsGeneratingUnity = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class PopulationGrowthPauseEdict:
     def __init__(self):

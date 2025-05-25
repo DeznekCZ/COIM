@@ -18,6 +18,7 @@ class PopNeedDiseaseProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -30,7 +31,6 @@ class PopNeedDiseaseProto:
         self.MinDistanceTraveled = 0
         self.Reason = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class TrashDiseaseProto:
     def __init__(self):
@@ -41,6 +41,7 @@ class TrashDiseaseProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -52,4 +53,3 @@ class TrashDiseaseProto:
         self.MinDistanceTraveled = 0
         self.Reason = None
         self.IsPhantom = False
-        self.IsInitialized = False

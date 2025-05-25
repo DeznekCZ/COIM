@@ -115,6 +115,8 @@ class TerrainFeaturesTooltips:
     ORDER_MATTERS_NOTE = ""
     WHERE_TO_EDIT_PRIORITY = ""
     MAX_INFLUENCE_DISTANCE_FOR_POLYGON = ""
+    POST_PROCESSING_PHASE = ""
+    MATERIAL_GENERATED_STAT = ""
     def __init__(self):
         pass
 

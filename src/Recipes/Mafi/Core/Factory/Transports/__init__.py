@@ -47,6 +47,19 @@ class ClearTransportCmd:
         self.ErrorMessage = ""
         self.TransportId = None
 
+class QuickClearTransportCmd:
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.TransportId = None
+
 class DeconstructTransportSegmentCmd:
     def __init__(self):
         self.AffectsSaveState = False
@@ -187,6 +200,7 @@ class Stacker:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -227,6 +241,7 @@ class StackerProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -243,16 +258,19 @@ class StackerProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         def __init__(self):
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.ParticlesParams = None
@@ -318,10 +336,12 @@ class Transport:
         from Mafi import Option
         self.ElectricityConsumer = Option()
         self.IsTooLongTransportNotificationOn = False
+        self.IsTooLong = False
         self.IsProductsRemovalInProgress = False
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -346,6 +366,7 @@ class Transport:
         Moving = None
         Paused = None
         PowerLow = None
+        ProductRemoval = None
         def __init__(self):
             self.value__ = 0
 
@@ -381,7 +402,7 @@ class TransportHelper:
         pass
 
 
-class TransportSupportableTile:
+class TransportSupportInfo:
     def __init__(self):
         self.Position = None
         self.OccupiedTileIndex = 0
@@ -453,6 +474,7 @@ class TransportPillar:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -495,6 +517,7 @@ class TransportPillarProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -502,10 +525,12 @@ class TransportPillarProto:
         self.IsObsolete = False
         self.Graphics = None
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -524,10 +549,13 @@ class TransportPillarsBuilder:
 
 class TransportProto:
     MAX_TERRAIN_PENETRATION = None
+    LENGTH_PER_COST = None
     def __init__(self):
         self.EntityType = None
+        self.BaseMaintenanceCost = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.IconPath = ""
         self.CanGoUpDown = False
         self.NeedsPillars = False
@@ -537,6 +565,7 @@ class TransportProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -547,6 +576,7 @@ class TransportProto:
         self.TransportedProductsSpacing = None
         self.SpeedPerTick = None
         self.ThroughputPerTick = None
+        self.ThroughputPer60 = None
         self.ProductSpacingWaypoints = 0
         self.ProductSpacing = None
         self.ZStepLength = None
@@ -561,19 +591,20 @@ class TransportProto:
         self.IsBuildable = False
         self.LengthPerCost = None
         self.AllowMixedProducts = False
-        self.MaintenanceProduct = None
-        self.MaintenancePerTile = None
         self.Graphics = None
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
         def __init__(self):
             self.IconPath = ""
+            self.Categories = None
             self.IconIsCustom = False
             self.CrossSection = None
             self.UsePerProductColoring = False
@@ -588,7 +619,7 @@ class TransportProto:
             self.VerticalConnectorPrefabPath = Option()
             self.PillarAttachments = None
             self.UvShiftY = 0.0
-            self.CrossSectionScale = None
+            self.CrossSectionScale = 0.0
             self.CrossSectionRadius = 0.0
             self.UseInstancedRendering = False
             self.MaxRenderedLod = 0
@@ -632,6 +663,8 @@ class PillarVisualsSpec:
         self.Layers = None
         self.BasePosition = None
         self.IsConstructed = False
+        self.IsPaused = False
+        self.IsDeconstruction = False
 
 class PillarLayerSpec:
     BEAMS_MASK = None
@@ -691,7 +724,7 @@ class TransportTrajectory:
         self.TrajectoryLength = None
         self.MaxProducts = 0
         self.Price = None
-        self.SupportableTiles = None
+        self.TilesSupportInfo = None
         self.TransportProto = None
         self.Pivots = None
         self.StartDirection = None

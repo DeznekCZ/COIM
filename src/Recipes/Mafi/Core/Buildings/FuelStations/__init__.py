@@ -10,6 +10,7 @@ class FuelStation:
         self.AllVehicles = None
         self.CanRefuelOthers = False
         self.AssignedInputs = None
+        self.NoPipeConnected = False
         from Mafi import Option
         self.StoredProduct = Option()
         self.Capacity = None
@@ -39,6 +40,7 @@ class FuelStation:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -61,6 +63,7 @@ class FuelStationProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.Layout = None
         self.Ports = None
         self.CloningDisabled = False
@@ -75,6 +78,7 @@ class FuelStationProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -91,10 +95,12 @@ class FuelStationProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class FuelStationProtoBuilder:
     def __init__(self):

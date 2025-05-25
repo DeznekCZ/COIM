@@ -23,12 +23,14 @@ class SyslogSeverity:
 class IErrorLoggerConfig:
     def __init__(self):
         self.DisableAnonymousErrorLogs = False
+        self.IsRunningInUnityEditor = False
 
 class GraylogLogger:
     MAX_MESSAGES_PER_BATCH = 0
     def __init__(self):
-        self.MessagesReceived = 0
+        self.MessagesQueued = 0
         self.MessagesSent = 0
+        self.MessagesDiscarded = 0
         self.IsLoggingStarted = False
 
 class IGelfClient:

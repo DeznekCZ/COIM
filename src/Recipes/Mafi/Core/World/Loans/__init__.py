@@ -52,6 +52,7 @@ class LoansManager:
     SCORE_PENALTY_ON_MISSED_PAYMENT = Fix32()
     SCORE_BONUS_ON_PAYMENT = Fix32()
     SCORE_AUTO_RESTORE = Fix32()
+    MIN_LOAN = None
     def __init__(self):
         from Mafi import Fix32
         self.CreditScore = Fix32()

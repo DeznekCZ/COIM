@@ -9,6 +9,7 @@ class GeneratorContext:
 class MembersGenerator:
     TYPE_TO_WRITE_METHOD_NAME = None
     TYPE_TO_READ_METHOD_NAME = None
+    SAVE_VERSION_NAMES = None
     def __init__(self):
         pass
 
@@ -23,6 +24,7 @@ class MemberWrapper:
         self.IsDirectCallSerializationDisabled = False
         self.ShouldAssignToObj = False
         self.IsSerialized = False
+        self.NeedsStaticSaveVersion = False
         self.Owner = None
         self.IsField = False
         self.Name = ""
@@ -31,6 +33,7 @@ class MemberWrapper:
         self.NewInstanceOnLoad = Option()
         self.DeprecatedInSaveVersion = None
         self.RemovedInSaveVersion = None
+        self.CtorSortingIndex = None
         self.NameForSorting = ""
         self.CustomValueWhenNotLoaded = Option()
         self.GlobalDepTypeOverride = Option()
@@ -65,7 +68,6 @@ class TypeSerializationSpec:
         from Mafi import Option
         self.SerializedDueToDerivedClass = Option()
         self.HasBaseTypeWithSomethingToSerialize = False
-        self.HasSomethingToSerialize = False
         self.Type = None
         self.ClassName = ""
         self.FileName = ""
@@ -73,8 +75,11 @@ class TypeSerializationSpec:
         self.Usings = None
         self.Members = None
         self.InitCalls = None
-        self.CtorArgs = None
+        self.LoadedCtorArgs = None
+        self.SortedCtorArgs = None
         self.NonCtorArgs = None
         self.SerializeAsSingleton = Option()
         self.HasCustomDataSerialization = False
         self.TypeNewInSaveVersion = None
+        self.HasSomethingToSerialize = False
+        self.NeedsStaticSaveVersion = False

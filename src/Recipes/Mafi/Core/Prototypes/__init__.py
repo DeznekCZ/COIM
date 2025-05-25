@@ -15,6 +15,7 @@ class EntityCosts:
         self.Maintenance = None
 
 class EntityCostsTpl:
+    Build = None
     def __init__(self):
         pass
 
@@ -28,11 +29,16 @@ class EntityCostsTpl:
         def __init__(self):
             self.Product = None
             self.Quantity = None
+            self.ExtraBufferDuration = None
             self.InitialMaintenanceBoost = None
 
 class IProtoWithPowerConsumption:
     def __init__(self):
         self.ElectricityConsumed = None
+
+class IProtoWithPowerProduction:
+    def __init__(self):
+        self.ElectricityProduced = None
 
 class IProtoWithUnityConsumption:
     def __init__(self):
@@ -66,13 +72,13 @@ class Proto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):
@@ -107,6 +113,7 @@ class IProtoWithIconAndName:
 
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class IProtoWithIcon:
@@ -118,6 +125,7 @@ class IProtoWithIcon:
 
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class IProtoWithPropertiesUpdate:
@@ -128,17 +136,34 @@ class IProtoWithPropertiesUpdate:
 
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
-class IProtoWithUpgrade:
+class IProtoWithTiers:
     def __init__(self):
-        self.UpgradeNonGeneric = None
+        self.TierData = None
+        self.IconPath = ""
         self.Strings = None
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
+        self.Mod = None
+
+class IProtoWithUpgrade:
+    def __init__(self):
+        self.UpgradeNonGeneric = None
+        self.TierData = None
+        self.IconPath = ""
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
+
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class IUpgradeData:
@@ -146,6 +171,25 @@ class IUpgradeData:
         from Mafi import Option
         self.NextTierNonGeneric = Option()
         self.PreviousTierNonGeneric = Option()
+
+class ITierData:
+    def __init__(self):
+        from Mafi import Option
+        self.NextTierIndirect = Option()
+        self.PreviousTierIndirect = Option()
+        self.TierNumberForUi = 0
+
+class UpgradeExtensions:
+    def __init__(self):
+        pass
+
+
+class TierData:
+    def __init__(self):
+        from Mafi import Option
+        self.NextTierIndirect = Option()
+        self.PreviousTierIndirect = Option()
+        self.TierNumberForUi = 0
 
 class IProto:
     def __init__(self):
@@ -155,6 +199,7 @@ class IProto:
 
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 
 class ProtoChecks:

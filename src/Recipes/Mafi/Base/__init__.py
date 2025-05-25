@@ -17,7 +17,11 @@ class Assets:
             ForestryTower_prefab = ""
             Mainframe_prefab = ""
             MineTower_prefab = ""
+            OfficeT1_prefab = ""
+            OfficeT2_prefab = ""
+            OfficeT3_prefab = ""
             OreSorterT1_prefab = ""
+            OreSorterT2_prefab = ""
             PreviewArrow_prefab = ""
             RocketAssemblyDepot_prefab = ""
             RocketLaunchPad_prefab = ""
@@ -291,6 +295,7 @@ class Assets:
         class Icons:
             Bush_svg = ""
             DeciduousTree_svg = ""
+            Rail_svg = ""
             Rock_svg = ""
             Tree_svg = ""
             VehicleLimitIncrease_svg = ""
@@ -299,21 +304,28 @@ class Assets:
 
 
             class Edicts:
+                AirPollutionReduced_svg = ""
+                ContractsProfitability_svg = ""
+                ContractsUnityDecrease_svg = ""
                 Eviction_svg = ""
                 FarmingBoost_svg = ""
                 FoodReduced_png = ""
                 FuelReduced_svg = ""
                 HealthBoost_svg = ""
+                MaintenanceProdIncrease_svg = ""
                 MaintenanceReduced_svg = ""
                 PopGrowth_svg = ""
                 PopGrowthPause_svg = ""
                 Quarantine_svg = ""
                 RecyclingIncrease_svg = ""
                 RecyclingIncrease2_svg = ""
+                ResearchEfficiency_svg = ""
+                SettlementConsumptionDecrease_svg = ""
                 SolarBoost_svg = ""
                 TrucksCapacity_svg = ""
                 UnityIncreased_svg = ""
                 WaterSaver_svg = ""
+                WorldMinesEfficiency_svg = ""
                 def __init__(self):
                     pass
 
@@ -332,6 +344,16 @@ class Assets:
                     pass
 
 
+            class Toolbar:
+                Buildings_svg = ""
+                Nuclear_svg = ""
+                Rockets_svg = ""
+                TrainBuildings_svg = ""
+                Tree_svg = ""
+                def __init__(self):
+                    pass
+
+
             class Trees:
                 Conifer_128_png = ""
                 Fir_128_png = ""
@@ -340,10 +362,10 @@ class Assets:
 
 
             class Weather:
-                Cloudy_svg = ""
-                HeavyRain_svg = ""
-                Rain_svg = ""
-                Sunny_svg = ""
+                Cloudy_png = ""
+                HeavyRain_png = ""
+                Rain_png = ""
+                Sunny_png = ""
                 def __init__(self):
                     pass
 
@@ -372,8 +394,8 @@ class Assets:
                 AssemblyT1_prefab = ""
                 AssemblyT2_prefab = ""
                 AssemblyT3_prefab = ""
-                RoboticT1_prefab = ""
-                RoboticT2_prefab = ""
+                AssemblyT4_prefab = ""
+                AssemblyT5_prefab = ""
                 def __init__(self):
                     pass
 
@@ -390,8 +412,13 @@ class Assets:
                         pass
 
 
-                class Robotic:
+                class AssemblyT4:
                     AssemblerSound_prefab = ""
+                    def __init__(self):
+                        pass
+
+
+                class Robotic:
                     AssemblerT1_mat = ""
                     AssemblerT2_mat = ""
                     def __init__(self):
@@ -400,6 +427,7 @@ class Assets:
 
             class Electronics:
                 ElectricFurnace_prefab = ""
+                LensMaker_prefab = ""
                 MicrochipMachineT1_prefab = ""
                 MicrochipMachineT2_prefab = ""
                 SiliconCrystallizer_prefab = ""
@@ -429,6 +457,7 @@ class Assets:
 
 
             class General:
+                DiamondReactor_prefab = ""
                 FermentationTank_prefab = ""
                 IndustrialMixerT1_prefab = ""
                 IndustrialMixerT2_prefab = ""
@@ -489,6 +518,8 @@ class Assets:
 
             class MetalWorks:
                 AirSeparator_prefab = ""
+                AlloyMixer_prefab = ""
+                AluminumCell_prefab = ""
                 BlastFurnaceT1_prefab = ""
                 BlastFurnaceT2_prefab = ""
                 Caster_prefab = ""
@@ -801,13 +832,20 @@ class Assets:
 
             class Countable:
                 Aluminum_prefab = ""
+                AluminumScrap_prefab = ""
                 Anesthetics_prefab = ""
                 Antibiotics_prefab = ""
+                AsteridBoosterParts_prefab = ""
                 Bread_prefab = ""
                 Bricks_prefab = ""
                 Cake_prefab = ""
                 Cement_prefab = ""
+                ChemicalFuel_prefab = ""
                 Chicken_prefab = ""
+                CompactReactor_prefab = ""
+                CompositeCore_prefab = ""
+                CompositeCoreBasic_prefab = ""
+                CompositePanel_prefab = ""
                 ConcreteSlab_prefab = ""
                 ConstructionParts1_prefab = ""
                 ConstructionParts2_prefab = ""
@@ -817,11 +855,15 @@ class Assets:
                 CopperScrapPressed_prefab = ""
                 CopperSlab_prefab = ""
                 CopperSlabDirty_prefab = ""
+                CrewSupplies_prefab = ""
+                Diamond_prefab = ""
+                DiamondPaste_prefab = ""
                 Disinfectant_prefab = ""
                 Eggs_prefab = ""
-                El3_prefab = ""
                 Electronics1_prefab = ""
                 Electronics2_prefab = ""
+                Electronics3_prefab = ""
+                Electronics4_prefab = ""
                 EWaste_prefab = ""
                 FissionProduct_prefab = ""
                 Flour_prefab = ""
@@ -835,6 +877,7 @@ class Assets:
                 HardDrive_prefab = ""
                 HouseholdAppliances_prefab = ""
                 HouseholdGoods_prefab = ""
+                ImportedGoods_prefab = ""
                 IronScrapPressed_prefab = ""
                 IronSlab_prefab = ""
                 LabEquipment_prefab = ""
@@ -842,24 +885,27 @@ class Assets:
                 LabEquipment3_prefab = ""
                 LabEquipment4_prefab = ""
                 Lens_prefab = ""
-                LiquidNitrogen_prefab = ""
+                LuxuryGoods_prefab = ""
                 Meat_prefab = ""
                 MechanicalParts_prefab = ""
                 MedicalEquipment_prefab = ""
                 MedicalSupplies_prefab = ""
                 MedicalSupplies2_prefab = ""
                 MedicalSupplies3_prefab = ""
-                Microchip_prefab = ""
+                Microchips_prefab = ""
                 Morphine_prefab = ""
                 MoxRod_prefab = ""
+                OfficeSupplies_prefab = ""
                 Paper_prefab = ""
                 PCB_prefab = ""
                 Plastic_prefab = ""
                 Plutonium_prefab = ""
+                RailParts_prefab = ""
                 RawWood_prefab = ""
                 RecyclablesPressed_prefab = ""
                 RetiredWaste_prefab = ""
                 Rubber_prefab = ""
+                SapphireWafer_prefab = ""
                 Sausages_prefab = ""
                 Server_prefab = ""
                 Silicon_prefab = ""
@@ -867,11 +913,15 @@ class Assets:
                 Snacks_prefab = ""
                 SolarCellMono_prefab = ""
                 SolarCellPoly_prefab = ""
+                SpaceProbeParts_prefab = ""
+                SpaceStationParts_prefab = ""
+                SpaceStationPartsBasic_prefab = ""
                 SpaceSupplies_prefab = ""
                 SpentFuel_prefab = ""
                 SpentMox_prefab = ""
                 SteelSlab_prefab = ""
                 ThermalPlate_prefab = ""
+                Titanium_prefab = ""
                 Tofu_prefab = ""
                 TreeSapling_prefab = ""
                 UraniumEnriched20_prefab = ""
@@ -885,6 +935,12 @@ class Assets:
                 WastePressed_prefab = ""
                 def __init__(self):
                     pass
+
+
+                class LensObsolete:
+                    Lens_prefab = ""
+                    def __init__(self):
+                        pass
 
 
                 class Microchip:
@@ -912,12 +968,18 @@ class Assets:
             class Icons:
                 Acid_svg = ""
                 AirPollution_svg = ""
+                Alumina_svg = ""
+                AluminaHydrated_svg = ""
                 Aluminum_svg = ""
                 AluminumMolten_svg = ""
+                AluminumScrap_svg = ""
+                AluminumScrapPressed_svg = ""
                 Ammonia_svg = ""
                 Anesthetics_svg = ""
                 AnimalFood_svg = ""
+                AsteroidBoosterParts_svg = ""
                 Bauxite_svg = ""
+                BauxitePowder_svg = ""
                 Bedrock_svg = ""
                 Biomass_svg = ""
                 BlanketFuel_svg = ""
@@ -930,10 +992,15 @@ class Assets:
                 Canola_svg = ""
                 CarbonDioxide_svg = ""
                 Cement_svg = ""
+                ChemicalFuel_svg = ""
                 Chicken_svg = ""
                 ChickenCarcass_svg = ""
                 Chlorine_svg = ""
                 Coal_svg = ""
+                CompactReactor_svg = ""
+                CompositeCore1_svg = ""
+                CompositeCore2_svg = ""
+                CompositePanel_svg = ""
                 Concrete_svg = ""
                 ConcreteCrushed_svg = ""
                 ConstructionParts1_svg = ""
@@ -953,8 +1020,11 @@ class Assets:
                 CoreFuelDirty_svg = ""
                 Corn_svg = ""
                 CornMash_svg = ""
+                CrewSupplies_svg = ""
                 CrudeOil_svg = ""
                 DepletedUranium_svg = ""
+                Diamond_svg = ""
+                DiamondPaste_svg = ""
                 Diesel_svg = ""
                 Digestate_svg = ""
                 Dirt_svg = ""
@@ -965,6 +1035,7 @@ class Assets:
                 Electronics1_svg = ""
                 Electronics2_svg = ""
                 Electronics3_svg = ""
+                Electronics4_svg = ""
                 Ethanol_svg = ""
                 Exhaust_svg = ""
                 Fertilizer_svg = ""
@@ -995,6 +1066,7 @@ class Assets:
                 HouseholdGoods_svg = ""
                 Hydrogen_svg = ""
                 HydrogenFluoride_svg = ""
+                ImportedGoods_svg = ""
                 Iron_svg = ""
                 IronCrushed_svg = ""
                 IronMolten_svg = ""
@@ -1006,8 +1078,10 @@ class Assets:
                 LabEquipment3_svg = ""
                 LabEquipment4_svg = ""
                 LandRest_svg = ""
+                Lens_svg = ""
                 Limestone_svg = ""
                 LiquidNitrogen_svg = ""
+                LuxuryGoods_svg = ""
                 Maintenance1_svg = ""
                 Maintenance2_svg = ""
                 Maintenance3_svg = ""
@@ -1038,6 +1112,7 @@ class Assets:
                 MoxRod_svg = ""
                 Naphtha_svg = ""
                 Nitrogen_svg = ""
+                OfficeSupplies_svg = ""
                 OilHeavy_svg = ""
                 OilLight_svg = ""
                 OilMedium_svg = ""
@@ -1051,13 +1126,16 @@ class Assets:
                 Potato128_png = ""
                 Quartz_svg = ""
                 QuartzCrushed_svg = ""
+                RailParts_svg = ""
                 RecyclablesPressed_svg = ""
+                RedMud_svg = ""
                 ReprocessedUranium_svg = ""
                 RetiredWaste_svg = ""
                 Rock_svg = ""
                 Rubber_svg = ""
                 Salt_svg = ""
                 Sand_svg = ""
+                SapphireWafer_svg = ""
                 Sausage_svg = ""
                 SeaWater_svg = ""
                 Server_svg = ""
@@ -1071,6 +1149,11 @@ class Assets:
                 SolarCellMono_svg = ""
                 SourWater_svg = ""
                 Soybean_svg = ""
+                SpaceCrew_svg = ""
+                SpaceProbeParts_svg = ""
+                SpaceResearchPoints_svg = ""
+                SpaceStationParts1_svg = ""
+                SpaceStationParts2_svg = ""
                 SpaceSupplies128_png = ""
                 SpentFuel_svg = ""
                 SpentMox_svg = ""
@@ -1086,6 +1169,15 @@ class Assets:
                 SugarCane_svg = ""
                 Sulfur_svg = ""
                 ThermalPlate128_png = ""
+                Titanium_svg = ""
+                TitaniumAlloyMolten_svg = ""
+                TitaniumChloride_svg = ""
+                TitaniumChloridePure_svg = ""
+                TitaniumMolten_svg = ""
+                TitaniumOre_svg = ""
+                TitaniumOreCrushed_svg = ""
+                TitaniumSlag_svg = ""
+                TitaniumSponge_svg = ""
                 Tofu_svg = ""
                 ToxicSlurry_svg = ""
                 TreeSapling_svg = ""
@@ -1114,7 +1206,12 @@ class Assets:
 
 
             class Loose:
+                Alumina_mat = ""
+                AluminaHydrated_mat = ""
+                AluminumScrap_mat = ""
                 AnimalFeed_mat = ""
+                Bauxite_mat = ""
+                BauxiteCrushed_mat = ""
                 Biomass_mat = ""
                 BrokenGlass_mat = ""
                 Canola_mat = ""
@@ -1158,6 +1255,10 @@ class Assets:
                 Sugar_mat = ""
                 Sugarcane_mat = ""
                 Sulfur_mat = ""
+                TitaniumOre_mat = ""
+                TitaniumOreCrushed_mat = ""
+                TitaniumSlag_mat = ""
+                TitaniumSponge_mat = ""
                 UraniumDepleted_mat = ""
                 UraniumOre_mat = ""
                 UraniumOreCrushed_mat = ""
@@ -1194,14 +1295,26 @@ class Assets:
 
 
             class Molten:
+                Aluminum_mat = ""
                 Copper_mat = ""
+                MoltenAluminum_prefab = ""
                 MoltenCopper_prefab = ""
                 MoltenSillicon_prefab = ""
                 MoltenSteel_prefab = ""
+                MoltenTitanium_prefab = ""
+                MoltenTitaniumAlloy_prefab = ""
                 Silicon_mat = ""
                 Steel_mat = ""
+                Titanium_mat = ""
+                TitaniumAlloy_mat = ""
                 def __init__(self):
                     pass
+
+
+        class Railroads:
+            Railroad_mat = ""
+            def __init__(self):
+                pass
 
 
         class Roads:
@@ -1219,6 +1332,8 @@ class Assets:
             FoodMarketT2_prefab = ""
             HouseholdAppliancesModule_prefab = ""
             HouseholdGoodsModule_prefab = ""
+            IspModule_prefab = ""
+            LuxuryGoodsModules_prefab = ""
             PowerModule_prefab = ""
             RecyclablesModule_prefab = ""
             WasteModule_prefab = ""
@@ -1266,11 +1381,23 @@ class Assets:
                 SettlementT3_1_prefab = ""
                 SettlementT3_2_prefab = ""
                 SettT3_BlackBricks_mat = ""
+                SettT3_BluePlaster_mat = ""
                 SettT3_GrayPlaster_mat = ""
+                SettT3_LightGrayPlaster_mat = ""
                 SettT3_RedBricks_mat = ""
                 SettT3_RedPlaster_mat = ""
                 SettT3_style1_placeholder_mat = ""
                 SettT3_style2_placeholder_mat = ""
+                SettT3_YellowPlaster_mat = ""
+                def __init__(self):
+                    pass
+
+
+            class T4:
+                SettlementT4_1_prefab = ""
+                SettlementT4_2_prefab = ""
+                SettlementT4_3_prefab = ""
+                SettlementT4_4_prefab = ""
                 def __init__(self):
                     pass
 
@@ -1959,6 +2086,10 @@ class Assets:
 
 
             class Textures:
+                Bauxite_2048_albedo_height_png = ""
+                Bauxite_2048_normal_s_ao_png = ""
+                Bauxite_disrupted_2048_albedo_height_png = ""
+                Bauxite_disrupted_2048_normal_s_ao_png = ""
                 Coal_2048_albedo_height_png = ""
                 Coal_2048_normal_s_ao_png = ""
                 Coal_disrupted_2048_albedo_height_png = ""
@@ -2007,10 +2138,246 @@ class Assets:
                 Sand_disrupted_2048_normal_s_ao_png = ""
                 Slag_2048_albedo_height_png = ""
                 Slag_2048_normal_s_ao_png = ""
-                Uranium_2048_albedo_height_png = ""
-                Uranium_2048_normal_s_ao_png = ""
+                TitaniumOre_2048_albedo_height_png = ""
+                TitaniumOre_2048_normal_s_ao_png = ""
+                TitaniumOre_disrupted_2048_albedo_height_png = ""
+                TitaniumOre_disrupted_2048_normal_s_ao_png = ""
+                UraniumDepleted_2048_albedo_height_png = ""
+                UraniumDepleted_2048_normal_s_ao_png = ""
+                UraniumOre_2048_albedo_height_png = ""
+                UraniumOre_2048_normal_s_ao_png = ""
+                UraniumOre_disrupted_2048_albedo_height_png = ""
+                UraniumOre_disrupted_2048_normal_s_ao_png = ""
                 def __init__(self):
                     pass
+
+
+        class Trains:
+            DerailerInstanced_mat = ""
+            LevelCrossingLarge_prefab = ""
+            LevelCrossingLargeConnector_prefab = ""
+            LevelCrossingLargeEntrance_prefab = ""
+            LevelCrossingSmall_prefab = ""
+            LevelCrossingSmallConnector_prefab = ""
+            LevelCrossingSmallEntrance_prefab = ""
+            Locomotive_T1_steam_tender_prefab = ""
+            Locomotive_T2_prefab = ""
+            LocoT1Diesel_prefab = ""
+            LocoT1Steam_prefab = ""
+            LocoT1Steam_tender_prefab = ""
+            RailTracksElevatedMaterial_mat = ""
+            RailTracksMaterial_mat = ""
+            TrackEnd_prefab = ""
+            TrackEndLiteInternal_prefab = ""
+            TrackPreviewArrow_prefab = ""
+            TrainDepot_prefab = ""
+            TrainDepotAddon_prefab = ""
+            TrainTrackBlocksInstanced_mat = ""
+            TrainTrackBlocksReflectedInstanced_mat = ""
+            TrainTrackDirectionInstanced_mat = ""
+            TrainTrackDirectionReflectedInstanced_mat = ""
+            TTEntityBlueprintInstanced_mat = ""
+            TTEntityBlueprintReflectedInstanced_mat = ""
+            TTEntityHighlightInstanced_mat = ""
+            TTEntityInstanced_mat = ""
+            TTEntityReflectedInstanced_mat = ""
+            WagonT1Fluid_prefab = ""
+            WagonT1Loose_prefab = ""
+            WagonT1_molten_prefab = ""
+            WagonT1Unit_prefab = ""
+            WagonT2_loose_prefab = ""
+            WagonT2_tank_prefab = ""
+            WagonT2_unit_prefab = ""
+            WagonT2_unit_open_prefab = ""
+            def __init__(self):
+                pass
+
+
+            class Audio:
+                Braking_prefab = ""
+                Moving_prefab = ""
+                Stopped_prefab = ""
+                def __init__(self):
+                    pass
+
+
+            class LevelCrossings:
+                LevelCrossing_Sound_prefab = ""
+                def __init__(self):
+                    pass
+
+
+            class LocoT1Diesel:
+                def __init__(self):
+                    pass
+
+
+                class Audio:
+                    Idle_prefab = ""
+                    LeaveStation_prefab = ""
+                    Moving_prefab = ""
+                    def __init__(self):
+                        pass
+
+
+            class LocoT1Steam:
+                SteamLeaveStation_prefab = ""
+                def __init__(self):
+                    pass
+
+
+                class Audio:
+                    Idle_prefab = ""
+                    LeaveStation_prefab = ""
+                    Moving_prefab = ""
+                    def __init__(self):
+                        pass
+
+
+            class Pillars:
+                Pillar_prefab = ""
+                Pillar_base_prefab = ""
+                TrainTrackPillar_mat = ""
+                TrainTrackPillarHighlightInstanced_mat = ""
+                TrainTrackPillarInstanced_mat = ""
+                def __init__(self):
+                    pass
+
+
+            class Stations:
+                StationBase_prefab = ""
+                StationEmpty_prefab = ""
+                StationFluidT1_prefab = ""
+                StationFuelLiquid_prefab = ""
+                StationFuelSteam_prefab = ""
+                StationLooseT1_prefab = ""
+                StationUnitT1_prefab = ""
+                def __init__(self):
+                    pass
+
+
+                class StationFluidT1:
+                    StationFluidT1_signIn_mat = ""
+                    StationFluidT1_signOut_mat = ""
+                    def __init__(self):
+                        pass
+
+
+                class StationLooseT1:
+                    StationLooseT1_signIn_mat = ""
+                    StationLooseT1_signOut_mat = ""
+                    def __init__(self):
+                        pass
+
+
+                class StationUnitT1:
+                    StationUnitT1_signIn_mat = ""
+                    StationUnitT1_signOut_mat = ""
+                    def __init__(self):
+                        pass
+
+
+            class Ties:
+                Tie_1_LOD0_prefab = ""
+                Tie_1_LOD1_prefab = ""
+                Tie_1_LOD2_prefab = ""
+                Tie_1_LODHD_prefab = ""
+                Tie_2_LOD0_prefab = ""
+                Tie_2_LOD1_prefab = ""
+                Tie_2_LOD2_prefab = ""
+                Tie_2_LODHD_prefab = ""
+                Tie_3_LOD0_prefab = ""
+                Tie_3_LOD1_prefab = ""
+                Tie_3_LOD2_prefab = ""
+                Tie_3_LODHD_prefab = ""
+                Tie_4_LOD0_prefab = ""
+                Tie_4_LOD1_prefab = ""
+                Tie_4_LOD2_prefab = ""
+                Tie_4_LODHD_prefab = ""
+                def __init__(self):
+                    pass
+
+
+            class TrainTracks:
+                def __init__(self):
+                    pass
+
+
+                class ConcreteElevated:
+                    Rails_LOD0_prefab = ""
+                    Rails_LOD1_prefab = ""
+                    Tie1Lip_LOD0_prefab = ""
+                    Tie1Lip_LOD1_prefab = ""
+                    Tie1_LOD0_prefab = ""
+                    Tie1_LOD1_prefab = ""
+                    Tie1_LOD2_prefab = ""
+                    Tie2Lip_LOD0_prefab = ""
+                    Tie2Lip_LOD1_prefab = ""
+                    Tie2_LOD0_prefab = ""
+                    Tie2_LOD1_prefab = ""
+                    Tie2_LOD2_prefab = ""
+                    Tie3Lip_LOD0_prefab = ""
+                    Tie3Lip_LOD1_prefab = ""
+                    Tie3_LOD0_prefab = ""
+                    Tie3_LOD1_prefab = ""
+                    Tie3_LOD2_prefab = ""
+                    TrackBase_LOD0_prefab = ""
+                    TrackBase_LOD1_prefab = ""
+                    TrackBase_LOD2_prefab = ""
+                    TrackEnd_LOD0_prefab = ""
+                    TrackEnd_LOD1_prefab = ""
+                    TrackEnd_LOD2_prefab = ""
+                    TrackLipEnd_LOD0_prefab = ""
+                    TrackLipEnd_LOD1_prefab = ""
+                    TrackLip_LOD0_prefab = ""
+                    TrackLip_LOD1_prefab = ""
+                    TrackLip_LOD2_prefab = ""
+                    def __init__(self):
+                        pass
+
+
+                class ConcreteWithBallast:
+                    Rails_LOD0_prefab = ""
+                    Rails_LOD1_prefab = ""
+                    Tie1_LOD0_prefab = ""
+                    Tie1_LOD1_prefab = ""
+                    Tie1_LOD3_prefab = ""
+                    Tie2_LOD0_prefab = ""
+                    Tie2_LOD1_prefab = ""
+                    Tie2_LOD3_prefab = ""
+                    Tie3_LOD0_prefab = ""
+                    Tie3_LOD1_prefab = ""
+                    Tie3_LOD3_prefab = ""
+                    TrackBase_LOD0_prefab = ""
+                    TrackBase_LOD1_prefab = ""
+                    TrackBase_LOD2_prefab = ""
+                    TrackEnd_LOD0_prefab = ""
+                    TrackEnd_LOD1_prefab = ""
+                    TrackEnd_LOD2_prefab = ""
+                    def __init__(self):
+                        pass
+
+
+                class WoodenWithBallast:
+                    Rails_LOD0_prefab = ""
+                    Rails_LOD1_prefab = ""
+                    Tie1_LOD0_prefab = ""
+                    Tie1_LOD1_prefab = ""
+                    Tie1_LOD2_prefab = ""
+                    Tie2_LOD0_prefab = ""
+                    Tie2_LOD1_prefab = ""
+                    Tie2_LOD2_prefab = ""
+                    Tie3_LOD0_prefab = ""
+                    Tie3_LOD1_prefab = ""
+                    Tie3_LOD2_prefab = ""
+                    TrackBase_LOD0_prefab = ""
+                    TrackBase_LOD1_prefab = ""
+                    TrackBase_LOD2_prefab = ""
+                    TrackEnd_LOD0_prefab = ""
+                    TrackEnd_LOD1_prefab = ""
+                    TrackEnd_LOD2_prefab = ""
+                    def __init__(self):
+                        pass
 
 
         class Transports:
@@ -2125,16 +2492,24 @@ class Assets:
 
 
             class Pipes:
+                ColorizablePipesTesterT1_mat = ""
+                ColorizablePipesTesterT2_mat = ""
+                ColorizablePipesTesterT3_mat = ""
+                ColorizablePipesTesterT4_mat = ""
                 FlowIndicator_Flow_T1_prefab = ""
                 FlowIndicator_Flow_T2_prefab = ""
                 FlowIndicator_Flow_T3_prefab = ""
+                FlowIndicator_Flow_T4_prefab = ""
                 FlowIndicator_Frame_T1_prefab = ""
                 FlowIndicator_Frame_T2_prefab = ""
                 FlowIndicator_Frame_T3_prefab = ""
+                FlowIndicator_Frame_T4_prefab = ""
                 FlowIndicator_Glass_T1_prefab = ""
                 FlowIndicator_Glass_T2_prefab = ""
                 FlowIndicator_Glass_T3_prefab = ""
+                FlowIndicator_Glass_T4_prefab = ""
                 Pipes_mat = ""
+                Pipes2_mat = ""
                 Port_prefab = ""
                 Port_Lod3_prefab = ""
                 T1_FlatToFlat_Straight_prefab = ""
@@ -2194,17 +2569,18 @@ class Assets:
 
 
             class Birch:
-                Birch1_Color1_prefab = ""
-                Birch1_Color2_prefab = ""
+                Birch1_prefab = ""
                 Birch1_Cut_prefab = ""
-                Birch2_Color1_prefab = ""
-                Birch2_Color2_prefab = ""
+                Birch1_stump_prefab = ""
+                Birch2_prefab = ""
                 Birch2_Cut_prefab = ""
-                Birch3_Color1_prefab = ""
-                Birch3_Color2_prefab = ""
+                Birch2_stump_prefab = ""
+                Birch3_prefab = ""
                 Birch3_Cut_prefab = ""
-                Birch4_Color1_prefab = ""
-                Birch4_Cut_prefab = ""
+                Birch3_stump_prefab = ""
+                Birch4_dry_prefab = ""
+                Birch4_dry_cut_prefab = ""
+                Birch4_dry_stump_prefab = ""
                 BirchLogCut_prefab = ""
                 def __init__(self):
                     pass
@@ -2213,86 +2589,88 @@ class Assets:
             class Common:
                 NewConiferLog_prefab = ""
                 TestTree_prefab = ""
-                TestTreeCutOutNoCull_shader = ""
-                TreeBillboard_shader = ""
-                TreeCutOutNoCull_shader = ""
+                TreeBillboardInstanced_mat = ""
+                TreeBlueprintInstanced_mat = ""
+                TreeExplicitTransformInstanced_mat = ""
+                TreeHighlightnstanced_mat = ""
+                TreeInstanced_mat = ""
                 TreeTrunkMat_mat = ""
                 def __init__(self):
                     pass
 
 
             class Conifer:
-                Conifer1_Color1_prefab = ""
-                Conifer1_Color2_prefab = ""
-                Conifer1_Color3_prefab = ""
+                Conifer1_prefab = ""
                 Conifer1_Cut_prefab = ""
-                Conifer2_Color1_prefab = ""
-                Conifer2_Color2_prefab = ""
-                Conifer2_Color3_prefab = ""
+                Conifer1_stump_prefab = ""
+                Conifer2_prefab = ""
                 Conifer2_Cut_prefab = ""
-                conifer3_prefab = ""
+                Conifer2_stump_prefab = ""
+                Conifer3_dry_prefab = ""
+                Conifer3_dry_cut_prefab = ""
+                Conifer3_dry_stump_prefab = ""
                 def __init__(self):
                     pass
 
 
             class Fir:
-                Fir1_Color1_prefab = ""
-                Fir1_Color2_prefab = ""
-                Fir1_Color3_prefab = ""
+                Fir1_prefab = ""
                 Fir1_Cut_prefab = ""
-                Fir2_Color1_prefab = ""
-                Fir2_Color2_prefab = ""
-                Fir2_Color3_prefab = ""
+                Fir1_stump_prefab = ""
+                Fir2_prefab = ""
                 Fir2_Cut_prefab = ""
-                fir3_prefab = ""
+                Fir2_stump_prefab = ""
+                Fir3_dry_prefab = ""
                 def __init__(self):
                     pass
 
 
             class Maple:
-                Maple1_Color1_prefab = ""
-                Maple1_Color2_prefab = ""
+                Maple1_prefab = ""
                 Maple1_Cut_prefab = ""
-                Maple4_Color1_prefab = ""
-                Maple4_Cut_prefab = ""
-                Maple5_Color1_prefab = ""
-                Maple5_Color2_prefab = ""
+                Maple1_stump_prefab = ""
+                Maple4_dry_prefab = ""
+                Maple4_dry_cut_prefab = ""
+                Maple4_dry_stump_prefab = ""
+                Maple5_prefab = ""
                 Maple5_Cut_prefab = ""
-                Maple7_Color1_prefab = ""
-                Maple7_Color2_prefab = ""
+                Maple5_stump_prefab = ""
+                Maple7_prefab = ""
                 Maple7_Cut_prefab = ""
+                Maple7_stump_prefab = ""
                 MapleLogCut_prefab = ""
                 def __init__(self):
                     pass
 
 
             class Oak:
-                Oak1_Color1_prefab = ""
-                Oak1_Color2_prefab = ""
+                Oak1_prefab = ""
                 Oak1_Cut_prefab = ""
-                Oak2_Color1_prefab = ""
-                Oak2_Color2_prefab = ""
+                Oak1_stump_prefab = ""
+                Oak2_prefab = ""
                 Oak2_Cut_prefab = ""
-                Oak3_Color1_prefab = ""
-                Oak3_Cut_prefab = ""
-                Oak4_Color1_prefab = ""
-                Oak4_Color2_prefab = ""
+                Oak2_stump_prefab = ""
+                Oak3_dry_prefab = ""
+                Oak3_dry_cut_prefab = ""
+                Oak3_dry_stump_prefab = ""
+                Oak4_prefab = ""
                 Oak4_Cut_prefab = ""
+                Oak4_stump_prefab = ""
                 OakLogCut_prefab = ""
                 def __init__(self):
                     pass
 
 
             class Palm:
-                Palm1_Color1_prefab = ""
-                Palm1_Color2_prefab = ""
+                Palm1_prefab = ""
                 Palm1_Cut_prefab = ""
-                Palm2_Color1_prefab = ""
-                Palm2_Color2_prefab = ""
+                Palm1_stump_prefab = ""
+                Palm2_prefab = ""
                 Palm2_Cut_prefab = ""
-                Palm3_Color1_prefab = ""
-                Palm3_Color2_prefab = ""
+                Palm2_stump_prefab = ""
+                Palm3_prefab = ""
                 Palm3_Cut_prefab = ""
+                Palm3_stump_prefab = ""
                 PalmLogCut_prefab = ""
                 def __init__(self):
                     pass
@@ -2302,6 +2680,23 @@ class Assets:
             TODO_jpg = ""
             def __init__(self):
                 pass
+
+
+            class AssignedRoutes:
+                Export_jpg = ""
+                FuelToTower_jpg = ""
+                Intro_jpg = ""
+                Summary_jpg = ""
+                TowerToTower_jpg = ""
+                def __init__(self):
+                    pass
+
+
+            class Bidirectional:
+                Bidirectional_1_jpg = ""
+                Bidirectional_2_jpg = ""
+                def __init__(self):
+                    pass
 
 
             class CargoShip:
@@ -2336,21 +2731,8 @@ class Assets:
                     pass
 
 
-            class CustomRoutes:
-                Export1_jpg = ""
-                Export2_jpg = ""
-                FuelToTower_jpg = ""
-                Intro_jpg = ""
-                Summary_jpg = ""
-                TowerToStorages_jpg = ""
-                TowerToTower_jpg = ""
-                def __init__(self):
-                    pass
-
-
             class DieselProduction:
                 LiquidWaste_jpg = ""
-                Overlay_jpg = ""
                 PlacePipes_jpg = ""
                 PlacePump_jpg = ""
                 def __init__(self):
@@ -2400,7 +2782,6 @@ class Assets:
                 Final_jpg = ""
                 Overview_jpg = ""
                 SmokeStack_jpg = ""
-                StartRecycle_jpg = ""
                 def __init__(self):
                     pass
 
@@ -2421,6 +2802,7 @@ class Assets:
                 FlatRampRotate_jpg = ""
                 MiningTowerEditArea_jpg = ""
                 MiningTowerVehicles_jpg = ""
+                OreSorter_jpg = ""
                 Overlay_jpg = ""
                 Rotate_jpg = ""
                 TerrainShape_jpg = ""
@@ -2526,7 +2908,6 @@ class Assets:
                 Connectors_jpg = ""
                 Height_jpg = ""
                 Intro_jpg = ""
-                Ramps_jpg = ""
                 Snapping_jpg = ""
                 def __init__(self):
                     pass
@@ -2571,7 +2952,6 @@ class Assets:
             class WasteDumping:
                 BuildCollection_jpg = ""
                 BurningWaste_jpg = ""
-                Colony_jpg = ""
                 Designate_jpg = ""
                 Outro_jpg = ""
                 def __init__(self):
@@ -2603,6 +2983,7 @@ class Assets:
             ExcavatorT3_prefab = ""
             ExcavatorT3Hydrogen_prefab = ""
             RocketT2_prefab = ""
+            RocketT3_prefab = ""
             RocketTransporter_prefab = ""
             TreeHarvester_prefab = ""
             TreeHarvesterT1_prefab = ""
@@ -2785,6 +3166,21 @@ class Assets:
                 pass
 
 
+        class Icons:
+            def __init__(self):
+                pass
+
+
+            class ProductTypes:
+                Countable_svg = ""
+                Fluid_svg = ""
+                Loose_svg = ""
+                Molten_svg = ""
+                Solid_svg = ""
+                def __init__(self):
+                    pass
+
+
         class Map:
             AvailableCell_mat = ""
             NotAvailableCell_mat = ""
@@ -2796,6 +3192,7 @@ class Assets:
             BuildingBlueprint_mat = ""
             BuildingSignBlueprint_mat = ""
             Line_mat = ""
+            LineOverlay_mat = ""
             MapHighlightMaterial_mat = ""
             MovingArrowsLine_mat = ""
             PolygonEditHandle_mat = ""
@@ -2824,6 +3221,12 @@ class Assets:
             PortBlocked128_png = ""
             PortCantConnect128_png = ""
             PortConnected128_png = ""
+            def __init__(self):
+                pass
+
+
+        class Textures:
+            AvgTextureColor_compute = ""
             def __init__(self):
                 pass
 
@@ -2875,6 +3278,8 @@ class IconsPaths:
     ToolbarLandmarks = ""
     ToolbarConcrete = ""
     ToolbarRoads = ""
+    ToolbarRailroads = ""
+    ToolbarRailroadsPlus = ""
     ToolbarSettlement = ""
     def __init__(self):
         pass
@@ -2894,6 +3299,9 @@ class Ids:
         ChickenFarm = StaticEntityProto.ID('ChickenFarm')
         CaptainOfficeT1 = StaticEntityProto.ID('CaptainOfficeT1')
         CaptainOfficeT2 = StaticEntityProto.ID('CaptainOfficeT2')
+        OfficeBuildingT1 = StaticEntityProto.ID('OfficeBuildingT1')
+        OfficeBuildingT2 = StaticEntityProto.ID('OfficeBuildingT2')
+        OfficeBuildingT3 = StaticEntityProto.ID('OfficeBuildingT3')
         ResearchLab1 = StaticEntityProto.ID('ResearchLab1')
         ResearchLab2 = StaticEntityProto.ID('ResearchLab2')
         ResearchLab3 = StaticEntityProto.ID('ResearchLab3')
@@ -2948,6 +3356,7 @@ class Ids:
         Housing = StaticEntityProto.ID('Housing')
         HousingT2 = StaticEntityProto.ID('HousingT2')
         HousingT3 = StaticEntityProto.ID('HousingT3')
+        HousingT4 = StaticEntityProto.ID('HousingT4')
         SettlementLandfillModule = StaticEntityProto.ID('SettlementLandfillModule')
         SettlementRecyclablesModule = StaticEntityProto.ID('SettlementRecyclablesModule')
         SettlementBiomassModule = StaticEntityProto.ID('SettlementBiomassModule')
@@ -2955,9 +3364,11 @@ class Ids:
         SettlementFoodModule = StaticEntityProto.ID('SettlementFoodModule')
         SettlementFoodModuleT2 = StaticEntityProto.ID('SettlementFoodModuleT2')
         SettlementPowerModule = StaticEntityProto.ID('SettlementPowerModule')
+        SettlementComputingModule = StaticEntityProto.ID('SettlementComputingModule')
         SettlementHouseholdGoodsModule = StaticEntityProto.ID('SettlementHouseholdGoodsModule')
         SettlementHouseholdAppliancesModule = StaticEntityProto.ID('SettlementHouseholdAppliancesModule')
         SettlementConsumerElectronicsModule = StaticEntityProto.ID('SettlementConsumerElectronicsModule')
+        SettlementLuxuryGoodsModule = StaticEntityProto.ID('SettlementLuxuryGoodsModule')
         SettlementPillar = StaticEntityProto.ID('SettlementPillar')
         SettlementFountain = StaticEntityProto.ID('SettlementFountain')
         SettlementSquare1 = StaticEntityProto.ID('SettlementSquare1')
@@ -2965,6 +3376,7 @@ class Ids:
         Clinic = StaticEntityProto.ID('Hospital')
         WasteSortingPlant = StaticEntityProto.ID('WasteSortingPlant')
         OreSortingPlantT1 = StaticEntityProto.ID('OreSortingPlantT1')
+        OreSortingPlantT2 = StaticEntityProto.ID('OreSortingPlantT2')
         Shipyard = StaticEntityProto.ID('Shipyard')
         Shipyard2 = StaticEntityProto.ID('Shipyard2')
         VehicleRamp = StaticEntityProto.ID('VehicleRamp')
@@ -3035,6 +3447,7 @@ class Ids:
         PipeT1 = StaticEntityProto.ID('PipeT1')
         PipeT2 = StaticEntityProto.ID('PipeT2')
         PipeT3 = StaticEntityProto.ID('PipeT3')
+        PipeT4 = StaticEntityProto.ID('PipeT4')
         MoltenMetalChannel = StaticEntityProto.ID('MoltenMetalChannel')
         Shaft = StaticEntityProto.ID('Shaft')
         Stacker = StaticEntityProto.ID('Stacker')
@@ -3044,6 +3457,7 @@ class Ids:
         PIPE_T1 = ""
         PIPE_T2 = ""
         PIPE_T3 = ""
+        PIPE_T4 = ""
         def __init__(self):
             pass
 
@@ -3140,10 +3554,12 @@ class Ids:
         ConsumerElectronicsConsumptionIncreaseT3 = Proto.ID('Edict_ConsumerElectronicsConsumptionIncreaseT3')
         MaintenanceReduction = Proto.ID('Edict_MaintenanceReduction')
         MaintenanceReductionT2 = Proto.ID('Edict_MaintenanceReductionT2')
+        MaintenanceReductionT3 = Proto.ID('Edict_MaintenanceReductionT3')
         RecyclingIncrease = Proto.ID('Edict_RecyclingIncrease')
         RecyclingIncreaseT2 = Proto.ID('Edict_RecyclingIncreaseT2')
         RecyclingIncreaseT3 = Proto.ID('Edict_RecyclingIncreaseT3')
         RecyclingIncreaseT4 = Proto.ID('Edict_RecyclingIncreaseT4')
+        RecyclingIncreaseT5 = Proto.ID('Edict_RecyclingIncreaseT5')
         FarmYieldIncrease = Proto.ID('Edict_FarmYieldIncrease')
         FarmYieldIncreaseT2 = Proto.ID('Edict_FarmYieldIncreaseT2')
         FarmYieldIncreaseT3 = Proto.ID('Edict_FarmYieldIncreaseT3')
@@ -3155,6 +3571,11 @@ class Ids:
         SolarPowerIncrease = Proto.ID('Edict_SolarPowerIncrease')
         SolarPowerIncreaseT2 = Proto.ID('Edict_SolarPowerIncreaseT2')
         SolarPowerIncreaseT3 = Proto.ID('Edict_SolarPowerIncreaseT3')
+        ResearchEfficiencyInc = Proto.ID('Edict_ResearchEfficiencyInc')
+        ResearchEfficiencyIncT2 = Proto.ID('Edict_ResearchEfficiencyIncT2')
+        ResearchEfficiencyIncT3 = Proto.ID('Edict_ResearchEfficiencyIncT3')
+        ResearchEfficiencyIncT4 = Proto.ID('Edict_ResearchEfficiencyIncT4')
+        ResearchEfficiencyIncT5 = Proto.ID('Edict_ResearchEfficiencyIncT5')
         def __init__(self):
             pass
 
@@ -3226,6 +3647,23 @@ class Ids:
             FuelTankT1 = FleetWeaponProto.ID('FuelTankT1')
             def __init__(self):
                 pass
+
+
+    class Focuses:
+        from Mafi.Core.Prototypes import Proto
+        ResearchEfficiencyInc = Proto.ID('Focus_ResearchEfficiencyInc')
+        MaintenanceProductionInc = Proto.ID('Focus_MaintenanceProductionInc')
+        CropYieldInc = Proto.ID('Focus_CropYieldInc')
+        RecyclingInc = Proto.ID('Focus_RecyclingInc')
+        TrucksCapacityInc = Proto.ID('Focus_TrucksCapacityInc')
+        ContractsProfitInc = Proto.ID('Focus_ContractsProfitInc')
+        FoodConsumptionDec = Proto.ID('Focus_FoodConsumptionDec')
+        SettlementConsumptionDec = Proto.ID('Focus_SettlementConsumptionDec')
+        UnityInc = Proto.ID('Focus_UnityInc')
+        ContractsUnityDec = Proto.ID('Focus_ContractsUnityDec')
+        WorldMinesEfficiency = Proto.ID('Focus_WorldMinesEfficiency')
+        def __init__(self):
+            pass
 
 
     class Islands:
@@ -3318,6 +3756,10 @@ class Ids:
         CharcoalMaker = MachineProto.ID('CharcoalMaker')
         SettlingTank = MachineProto.ID('SettlingTank')
         GoldFurnace = MachineProto.ID('GoldFurnace')
+        AluminumCell = MachineProto.ID('AluminumCell')
+        AlloyMixer = MachineProto.ID('AlloyMixer')
+        DiamondReactor = MachineProto.ID('DiamondReactor')
+        LensMaker = MachineProto.ID('LensMaker')
         SolarPanel = MachineProto.ID('SolarPanel')
         SolarPanelMono = MachineProto.ID('SolarPanelMono')
         DistillationTowerT1 = MachineProto.ID('DistillationTowerT1')
@@ -3382,6 +3824,8 @@ class Ids:
         MaintenanceT1 = ProductProto.ID('Product_Virtual_MaintenanceT1')
         MaintenanceT2 = ProductProto.ID('Product_Virtual_MaintenanceT2')
         MaintenanceT3 = ProductProto.ID('Product_Virtual_MaintenanceT3')
+        SpaceCrew = ProductProto.ID('Product_Virtual_SpaceCrew')
+        SpaceResearchPoints = ProductProto.ID('Product_Virtual_SpaceResearchPoints')
         Wood = ProductProto.ID('Product_Wood')
         Woodchips = ProductProto.ID('Product_Woodchips')
         FertilizerChemical = ProductProto.ID('Product_Fertilizer')
@@ -3433,6 +3877,28 @@ class Ids:
         MoltenCopper = ProductProto.ID('Product_MoltenCopper')
         ImpureCopper = ProductProto.ID('Product_ImpureCopper')
         Copper = ProductProto.ID('Product_Copper')
+        Bauxite = ProductProto.ID('Product_Bauxite')
+        BauxiteParams = None
+        BauxitePowder = ProductProto.ID('Product_BauxitePowder')
+        BauxitePowderParams = None
+        RedMud = ProductProto.ID('Product_RedMud')
+        HydratedAlumina = ProductProto.ID('Product_HydratedAlumina')
+        Alumina = ProductProto.ID('Product_Alumina')
+        AluminumScrap = ProductProto.ID('Product_AluminumScrap')
+        AluminumScrapPressed = ProductProto.ID('Product_AluminumScrapPressed')
+        MoltenAluminum = ProductProto.ID('Product_MoltenAluminum')
+        Aluminum = ProductProto.ID('Product_Aluminum')
+        TitaniumOre = ProductProto.ID('Product_TitaniumOre')
+        TitaniumOreParams = None
+        TitaniumOreCrushed = ProductProto.ID('Product_TitaniumOreCrushed')
+        TitaniumOreCrushedParams = None
+        TitaniumSlag = ProductProto.ID('Product_TitaniumSlag')
+        TitaniumChloride = ProductProto.ID('Product_TitaniumChloride')
+        TitaniumChloridePure = ProductProto.ID('Product_TitaniumChloridePure')
+        TitaniumSponge = ProductProto.ID('Product_TitaniumSponge')
+        MoltenTitanium = ProductProto.ID('Product_MoltenTitanium')
+        MoltenTitaniumAlloy = ProductProto.ID('Product_MoltenTitaniumAlloy')
+        TitaniumAlloy = ProductProto.ID('Product_TitaniumAlloy')
         GoldOre = ProductProto.ID('Product_GoldOre')
         GoldOreParams = None
         GoldOreCrushed = ProductProto.ID('Product_GoldOreCrushed')
@@ -3449,7 +3915,9 @@ class Ids:
         Glass = ProductProto.ID('Product_Glass')
         GlassMix = ProductProto.ID('Product_GlassMix')
         UraniumOre = ProductProto.ID('Product_UraniumOre')
+        UraniumOreParams = None
         UraniumOreCrushed = ProductProto.ID('Product_UraniumOreCrushed')
+        UraniumOreCrushedParams = None
         Yellowcake = ProductProto.ID('Product_Yellowcake')
         UraniumEnriched = ProductProto.ID('Product_UraniumEnriched')
         UraniumEnriched20 = ProductProto.ID('Product_UraniumEnriched20')
@@ -3539,6 +4007,8 @@ class Ids:
         HouseholdGoods = ProductProto.ID('Product_HouseholdGoods')
         HouseholdAppliances = ProductProto.ID('Product_HouseholdAppliances')
         ConsumerElectronics = ProductProto.ID('Product_ConsumerElectronics')
+        LuxuryGoods = ProductProto.ID('Product_LuxuryGoods')
+        ImportedGoods = ProductProto.ID('Product_ImportedGoods')
         Antibiotics = ProductProto.ID('Product_Antibiotics')
         Disinfectant = ProductProto.ID('Product_Disinfectant')
         Anesthetics = ProductProto.ID('Product_Anesthetics')
@@ -3566,10 +4036,13 @@ class Ids:
         LabEquipment2 = ProductProto.ID('Product_LabEquipment2')
         LabEquipment3 = ProductProto.ID('Product_LabEquipment3')
         LabEquipment4 = ProductProto.ID('Product_LabEquipment4')
+        RailParts = ProductProto.ID('Product_RailParts')
+        OfficeSupplies = ProductProto.ID('Product_OfficeSupplies')
         Electronics = ProductProto.ID('Product_Electronics')
         PCB = ProductProto.ID('Product_PCB')
         Electronics2 = ProductProto.ID('Product_Electronics2')
         Electronics3 = ProductProto.ID('Product_Electronics3')
+        Electronics4 = ProductProto.ID('Product_Electronics4')
         Server = ProductProto.ID('Product_Server')
         Microchips = ProductProto.ID('Product_Microchips')
         MicrochipsStage1A = ProductProto.ID('Product_MicrochipsStage1A')
@@ -3583,8 +4056,22 @@ class Ids:
         MicrochipsStage3C = ProductProto.ID('Product_MicrochipsStage3C')
         MicrochipsStage4A = ProductProto.ID('Product_MicrochipsStage4A')
         MicrochipsStage4B = ProductProto.ID('Product_MicrochipsStage4B')
+        Diamond = ProductProto.ID('Product_Diamond')
+        DiamondPaste = ProductProto.ID('Product_DiamondPaste')
+        SapphireWafer = ProductProto.ID('Product_SapphireWafer')
+        Lens = ProductProto.ID('Product_Lens')
         SolarCell = ProductProto.ID('Product_SolarCell')
         SolarCellMono = ProductProto.ID('Product_SolarCellMono')
+        CompositePanel = ProductProto.ID('Product_CompositePanel')
+        CompositeCoreBasic = ProductProto.ID('Product_CompositeBodyBasic')
+        CompositeCore = ProductProto.ID('Product_CompositeCore')
+        ChemicalFuel = ProductProto.ID('Product_ChemicalFuel')
+        SpaceStationParts1 = ProductProto.ID('Product_SpaceStationParts1')
+        SpaceStationParts2 = ProductProto.ID('Product_SpaceStationParts2')
+        CrewSupplies = ProductProto.ID('Product_CrewSupplies')
+        SpaceProbeParts = ProductProto.ID('Product_SpaceProbeParts')
+        AsteroidBoosterParts = ProductProto.ID('Product_AsteroidBoosterParts')
+        CompactReactor = ProductProto.ID('Product_CompactReactor')
         Oxygen = ProductProto.ID('Product_Oxygen')
         HydrogenFluoride = ProductProto.ID('Product_HydrogenFluoride')
         Waste = ProductProto.ID('Product_Waste')
@@ -3648,41 +4135,58 @@ class Ids:
         CpAssemblyT2 = RecipeProto.ID('CpAssemblyT2')
         CpAssemblyT3 = RecipeProto.ID('CpAssemblyT3')
         CpAssemblyT4 = RecipeProto.ID('CpAssemblyT4')
+        CpAssemblyT5 = RecipeProto.ID('CpAssemblyT5')
+        CpAssemblySteelT3 = RecipeProto.ID('CpAssemblySteelT3')
+        CpAssemblySteelT4 = RecipeProto.ID('CpAssemblySteelT4')
+        CpAssemblySteelT5 = RecipeProto.ID('CpAssemblySteelT5')
         CpBricksAssemblyT1 = RecipeProto.ID('CpBricksAssemblyT1')
         CpBricksAssemblyT2 = RecipeProto.ID('CpBricksAssemblyT2')
         CpBricksAssemblyT3 = RecipeProto.ID('CpBricksAssemblyT3')
         CpBricksAssemblyT4 = RecipeProto.ID('CpBricksAssemblyT4')
+        CpBricksAssemblyT5 = RecipeProto.ID('CpBricksAssemblyT5')
         Cp2AssemblyT1 = RecipeProto.ID('Cp2AssemblyT1')
         Cp2AssemblyT2 = RecipeProto.ID('Cp2AssemblyT2')
         Cp2AssemblyT3 = RecipeProto.ID('Cp2AssemblyT3')
         Cp2AssemblyT4 = RecipeProto.ID('Cp2AssemblyT4')
+        Cp2AssemblyT5 = RecipeProto.ID('Cp2AssemblyT5')
         Cp3AssemblyT1 = RecipeProto.ID('Cp3AssemblyT1')
         Cp3AssemblyT2 = RecipeProto.ID('Cp3AssemblyT2')
         Cp3AssemblyT3 = RecipeProto.ID('Cp3AssemblyT3')
+        Cp3AssemblyT4 = RecipeProto.ID('Cp3AssemblyT4')
         Cp4AssemblyElectrifiedT2 = RecipeProto.ID('Cp4AssemblyElectrifiedT2')
         Cp4AssemblyRoboticT1 = RecipeProto.ID('Cp4AssemblyRoboticT1')
         Cp4AssemblyRoboticT2 = RecipeProto.ID('Cp4AssemblyRoboticT2')
         MechPartsAssemblyT1 = RecipeProto.ID('MechPartsAssemblyT1')
         MechPartsAssemblyT2 = RecipeProto.ID('MechPartsAssemblyT2')
         MechPartsAssemblyT3Iron = RecipeProto.ID('MechPartsAssemblyT3Iron')
+        MechPartsAssemblyT4Iron = RecipeProto.ID('MechPartsAssemblyT4Iron')
+        MechPartsAssemblyT5Iron = RecipeProto.ID('MechPartsAssemblyT5Iron')
         MechPartsAssemblyT3 = RecipeProto.ID('MechPartsAssemblyT3')
         MechPartsAssemblyT4 = RecipeProto.ID('MechPartsAssemblyT4')
+        MechPartsAssemblyT5 = RecipeProto.ID('MechPartsAssemblyT5')
         VehicleParts1AssemblyT1 = RecipeProto.ID('VehicleParts1AssemblyT1')
         VehicleParts1AssemblyT2 = RecipeProto.ID('VehicleParts1AssemblyT2')
         VehicleParts1AssemblyT3 = RecipeProto.ID('VehicleParts1AssemblyT3')
         VehicleParts1AssemblyT4 = RecipeProto.ID('VehicleParts1AssemblyT4')
+        VehicleParts1AssemblyT5 = RecipeProto.ID('VehicleParts1AssemblyT5')
         VehicleParts2AssemblyT1 = RecipeProto.ID('VehicleParts2AssemblyT1')
         VehicleParts2AssemblyT2 = RecipeProto.ID('VehicleParts2AssemblyT2')
+        VehicleParts2AssemblyT3 = RecipeProto.ID('VehicleParts2AssemblyT3')
         VehicleParts3AssemblyT1 = RecipeProto.ID('VehicleParts3AssemblyT1')
         VehicleParts3AssemblyT2 = RecipeProto.ID('VehicleParts3AssemblyT2')
+        VehicleParts3AssemblyT3 = RecipeProto.ID('VehicleParts3AssemblyT3')
         LabEquipment1AssemblyT1 = RecipeProto.ID('LabEquipment1AssemblyT1')
         LabEquipment1AssemblyT2 = RecipeProto.ID('LabEquipment1AssemblyT2')
         LabEquipment1AssemblyT3 = RecipeProto.ID('LabEquipment1AssemblyT3')
+        LabEquipment1AssemblyT4 = RecipeProto.ID('LabEquipment1AssemblyT4')
         LabEquipment2AssemblyT1 = RecipeProto.ID('LabEquipment2AssemblyT2')
         LabEquipment2AssemblyT2 = RecipeProto.ID('LabEquipment2AssemblyT3')
+        LabEquipment2AssemblyT3 = RecipeProto.ID('LabEquipment2AssemblyT4')
         LabEquipment3AssemblyT1 = RecipeProto.ID('LabEquipment3AssemblyT1')
         LabEquipment3AssemblyT2 = RecipeProto.ID('LabEquipment3AssemblyT2')
+        LabEquipment3AssemblyT3 = RecipeProto.ID('LabEquipment3AssemblyT3')
         LabEquipment4AssemblyT2 = RecipeProto.ID('LabEquipment4AssemblyT2')
+        LabEquipment4AssemblyT3 = RecipeProto.ID('LabEquipment4AssemblyT3')
         MaintenanceT0 = RecipeProto.ID('MaintenanceT0Recipe')
         MaintenanceT1 = RecipeProto.ID('MaintenanceT1Recipe')
         MaintenanceT1Recycling = RecipeProto.ID('MaintenanceT1Recycling')
@@ -3691,6 +4195,7 @@ class Ids:
         MaintenanceT3 = RecipeProto.ID('MaintenanceT3Recipe')
         MaintenanceT3Recycling = RecipeProto.ID('MaintenanceT3Recycling')
         BricksMaking = RecipeProto.ID('BricksMaking')
+        SimpleConcreteMaking = RecipeProto.ID('SimpleConcreteMaking')
         ConcreteMixingSlag = RecipeProto.ID('ConcreteMixingSlag')
         ConcreteMixingSlagM = RecipeProto.ID('ConcreteMixingSlagM')
         ConcreteMixingGravel = RecipeProto.ID('ConcreteMixingGravel')
@@ -3719,6 +4224,7 @@ class Ids:
         SteamGenerationNaphtha = RecipeProto.ID('SteamGenerationNaphtha')
         SteamGenerationHydrogen = RecipeProto.ID('SteamGenerationHydrogen')
         SteamGenerationEthanol = RecipeProto.ID('SteamGenerationEthanol')
+        SteamGenerationElectricHalf = RecipeProto.ID('SteamGenerationElectricHalf')
         SteamGenerationElectric = RecipeProto.ID('SteamGenerationElectric')
         SteamGenerationSpElectric = RecipeProto.ID('SteamGenerationSpElectric')
         SiliconSmeltingArc = RecipeProto.ID('SiliconSmeltingArc')
@@ -3739,7 +4245,9 @@ class Ids:
         IronSmeltingT1Coal = RecipeProto.ID('IronSmeltingT1Coal')
         IronSmeltingT2Scrap = RecipeProto.ID('IronSmeltingT2Scrap')
         IronSmeltingT2 = RecipeProto.ID('IronSmeltingT2')
+        IronSmeltingArcScrapT1 = RecipeProto.ID('IronSmeltingArcScrapT1')
         IronSmeltingArcScrap = RecipeProto.ID('IronSmeltingArcScrap')
+        IronSmeltingArcT1 = RecipeProto.ID('IronSmeltingArcT1')
         IronSmeltingArc = RecipeProto.ID('IronSmeltingArc')
         SteelSmelting = RecipeProto.ID('SteelSmelting')
         SteelSmeltingT2 = RecipeProto.ID('SteelSmeltingT2')
@@ -3751,7 +4259,9 @@ class Ids:
         CopperSmeltingT1 = RecipeProto.ID('CopperSmeltingT1')
         CopperSmeltingT2Scrap = RecipeProto.ID('CopperSmeltingT2Scrap')
         CopperSmeltingT2 = RecipeProto.ID('CopperSmeltingT2')
+        CopperSmeltingArcScrapT1 = RecipeProto.ID('CopperSmeltingArcScrapT1')
         CopperSmeltingArcScrap = RecipeProto.ID('CopperSmeltingArcScrap')
+        CopperSmeltingArcT1 = RecipeProto.ID('CopperSmeltingArcT1')
         CopperSmeltingArc = RecipeProto.ID('CopperSmeltingArc')
         CopperOreCrushing = RecipeProto.ID('CopperOreCrushing')
         CopperOreCrushingT2 = RecipeProto.ID('CopperOreCrushingT2')
@@ -3759,6 +4269,33 @@ class Ids:
         CopperCastingT2 = RecipeProto.ID('CopperCastingCooled')
         CopperElectrolysisWithWater = RecipeProto.ID('CopperElectrolysisWithWater')
         CopperElectrolysis = RecipeProto.ID('CopperElectrolysisProcess')
+        BauxiteMilling = RecipeProto.ID('BauxiteMilling')
+        BauxiteMillingT2 = RecipeProto.ID('BauxiteMillingT2')
+        BauxiteDigestion = RecipeProto.ID('BauxiteDigestion')
+        RedMudSettling = RecipeProto.ID('RedMudSettling')
+        RedMudSettlingAcid = RecipeProto.ID('RedMudSettlingAcid')
+        RedMudDumping = RecipeProto.ID('RedMudDumping')
+        AluminaCalcificationGas = RecipeProto.ID('AluminaCalcificationGas')
+        AluminaCalcificationHydrogen = RecipeProto.ID('AluminaCalcificationHydrogen')
+        AluminumElectrolysis = RecipeProto.ID('AluminumElectrolysis')
+        AluminumCasting = RecipeProto.ID('AluminumCasting')
+        AluminumCastingT2 = RecipeProto.ID('AluminumCastingT2')
+        AluminumSmeltingScrapArcT1 = RecipeProto.ID('AluminumSmeltingScrapArcT1')
+        AluminumSmeltingScrapArcT2 = RecipeProto.ID('AluminumSmeltingScrapArcT2')
+        AluminaCrystallization = RecipeProto.ID('AluminaCrystallization')
+        DiamondSynthesis = RecipeProto.ID('DiamondSynthesis')
+        DiamondPasteFromCookingOil = RecipeProto.ID('DiamondPasteFromCookingOil')
+        DiamondPasteFromHeavyOil = RecipeProto.ID('DiamondPasteFromHeavyOil')
+        LensMaking = RecipeProto.ID('LensMaking')
+        TitaniumOreCrushing = RecipeProto.ID('IlmeniteMilling')
+        TitaniumOreCrushingT2 = RecipeProto.ID('IlmeniteMillingT2')
+        TitaniumOreSmeltingArc2 = RecipeProto.ID('IlmeniteSmeltingArc2')
+        TitaniumChlorination = RecipeProto.ID('TitaniumChlorination')
+        TitaniumPurification = RecipeProto.ID('TitaniumPurification')
+        TitaniumChlorideReduction = RecipeProto.ID('TitaniumChlorideReduction')
+        TitaniumSmeltingArc2 = RecipeProto.ID('TitaniumSmeltingArc2')
+        TitaniumAlloyMixing = RecipeProto.ID('TitaniumAlloyMixing')
+        TitaniumAlloyCastingT2 = RecipeProto.ID('TitaniumAlloyCastingT2')
         GlassMixMixing = RecipeProto.ID('GlassMixMixing')
         GlassMixMixingT2 = RecipeProto.ID('GlassMixMixingT2')
         GlassMixMixingWithAcid = RecipeProto.ID('GlassMixMixingWithAcid')
@@ -3767,6 +4304,8 @@ class Ids:
         GlassSmeltingT2 = RecipeProto.ID('GlassSmeltingT2')
         GlassSmeltingWithBroken = RecipeProto.ID('GlassSmeltingWithBroken')
         GlassSmeltingT2WithBroken = RecipeProto.ID('GlassSmeltingT2WithBroken')
+        GlassSmeltingArcT1WithBroken = RecipeProto.ID('GlassSmeltingArcT1WithBroken')
+        GlassSmeltingArcT1 = RecipeProto.ID('GlassSmeltingArcT1')
         GlassSmeltingArc = RecipeProto.ID('GlassSmeltingArc')
         GlassSmeltingArcWithBroken = RecipeProto.ID('GlassSmeltingArcWithBroken')
         GlassCastingT1 = RecipeProto.ID('GlassCastingT1')
@@ -3785,6 +4324,8 @@ class Ids:
         DirtMixingT2 = RecipeProto.ID('DirtMixingT2')
         OrganicFertilizerProduction = RecipeProto.ID('OrganicFertilizerProduction')
         OrganicFertilizerProductionT2 = RecipeProto.ID('OrganicFertilizerProductionT2')
+        OrganicFertilizerProductionDirt = RecipeProto.ID('OrganicFertilizerProductionDirt')
+        OrganicFertilizerProductionDirtT2 = RecipeProto.ID('OrganicFertilizerProductionDirtT2')
         GoldOreCrushing = RecipeProto.ID('GoldOreCrushing')
         GoldOreCrushingT2 = RecipeProto.ID('GoldOreCrushingT2')
         GoldOreMilling = RecipeProto.ID('GoldMilling')
@@ -3813,6 +4354,7 @@ class Ids:
         SmokeStackCarbonDioxide = RecipeProto.ID('SmokeStackCarbonDioxide')
         SmokeStackLargeCarbonDioxide = RecipeProto.ID('SmokeStackLargeCarbonDioxide')
         ExhaustFiltering = RecipeProto.ID('ExhaustFiltering')
+        ExhaustFilteringLime = RecipeProto.ID('ExhaustFilteringLime')
         SteamHpCondensation = RecipeProto.ID('SteamHpCondensation')
         SteamLpCondensation = RecipeProto.ID('SteamLpCondensation')
         SteamDepletedCondensation = RecipeProto.ID('SteamDepletedCondensation')
@@ -3833,9 +4375,12 @@ class Ids:
         Electronics2AssemblyT3 = RecipeProto.ID('Electronics2AssemblyT3')
         Electronics3AssemblyRoboticT1 = RecipeProto.ID('Electronics3AssemblyRoboticT1')
         Electronics3AssemblyRoboticT2 = RecipeProto.ID('Electronics3AssemblyRoboticT2')
+        Electronics4Assembly = RecipeProto.ID('Electronics4Assembly')
         ServerAssemblyT1 = RecipeProto.ID('ServerAssemblyT1')
         ServerAssemblyT2 = RecipeProto.ID('ServerAssemblyT2')
         UraniumRodsAssemblyT1 = RecipeProto.ID('UraniumRodsAssemblyT1')
+        UraniumRodsAssemblyT2 = RecipeProto.ID('UraniumRodsAssemblyT2')
+        UraniumRodsAssemblyT3 = RecipeProto.ID('UraniumRodsAssemblyT3')
         UraniumEnrichedAssemblyT1 = RecipeProto.ID('UraniumEnrichedAssemblyT1')
         MoxRodsAssemblyT1 = RecipeProto.ID('MoxRodsAssemblyT1')
         SolarCellAssemblyT1 = RecipeProto.ID('SolarCellAssemblyT1')
@@ -3844,17 +4389,29 @@ class Ids:
         SolarCellMonoAssemblyT1 = RecipeProto.ID('SolarCellMonoAssemblyT1')
         MedicalEquipmentAssemblyT1 = RecipeProto.ID('MedicalEquipmentAssemblyT1')
         MedicalEquipmentAssemblyT2 = RecipeProto.ID('MedicalEquipmentAssemblyT2')
+        MedicalEquipmentAssemblyT3 = RecipeProto.ID('MedicalEquipmentAssemblyT3')
         MedicalSuppliesAssemblyT1 = RecipeProto.ID('MedicalSuppliesAssemblyT1')
         MedicalSuppliesAssemblyT2 = RecipeProto.ID('MedicalSuppliesAssemblyT2')
+        MedicalSuppliesAssemblyT3 = RecipeProto.ID('MedicalSuppliesAssemblyT3')
         MedicalSupplies2AssemblyT1 = RecipeProto.ID('MedicalSupplies2AssemblyT1')
         MedicalSupplies2AssemblyT2 = RecipeProto.ID('MedicalSupplies2AssemblyT2')
+        MedicalSupplies2AssemblyT3 = RecipeProto.ID('MedicalSupplies2AssemblyT3')
         MedicalSupplies3AssemblyT1 = RecipeProto.ID('MedicalSupplies3AssemblyT1')
         MedicalSupplies3AssemblyT2 = RecipeProto.ID('MedicalSupplies3AssemblyT2')
+        MedicalSupplies3AssemblyT3 = RecipeProto.ID('MedicalSupplies3AssemblyT3')
         FoodPackAssemblyMeat = RecipeProto.ID('FoodPackAssemblyMeat')
+        FoodPackAssemblyMeatT2 = RecipeProto.ID('FoodPackAssemblyMeatT2')
+        FoodPackAssemblyMeatT3 = RecipeProto.ID('FoodPackAssemblyMeatT3')
         FoodPackAssemblyEggs = RecipeProto.ID('FoodPackAssemblyEggs')
+        FoodPackAssemblyEggsT2 = RecipeProto.ID('FoodPackAssemblyEggsT2')
+        FoodPackAssemblyEggsT3 = RecipeProto.ID('FoodPackAssemblyEggsT3')
+        FoodPackAssemblyTofu = RecipeProto.ID('FoodPackAssemblyTofu')
+        FoodPackAssemblyTofuT2 = RecipeProto.ID('FoodPackAssemblyTofuT2')
+        FoodPackAssemblyTofuT3 = RecipeProto.ID('FoodPackAssemblyTofuT3')
         BlanketFuelFromDepleted = RecipeProto.ID('BlanketFuelFromDepleted')
         BlanketFuelFromYellowcake = RecipeProto.ID('BlanketFuelFromYellowcake')
         CoreFuelFromEnriched = RecipeProto.ID('CoreFuelFromEnriched')
+        CoreFuelFromPu = RecipeProto.ID('CoreFuelFromPu')
         SpentFuelReprocessing = RecipeProto.ID('SpentFuelReprocessing')
         SpentFuelToBlanket = RecipeProto.ID('SpentFuelToBlanket')
         SpentMoxToBlanket = RecipeProto.ID('SpentMoxToBlanket')
@@ -3885,6 +4442,7 @@ class Ids:
         GraphiteProductionT1 = RecipeProto.ID('GraphiteProductionT1')
         GraphiteProductionT2 = RecipeProto.ID('GraphiteProductionT2')
         GraphiteProductionCo2 = RecipeProto.ID('GraphiteProductionCo2')
+        CarbonToEthanolProduction = RecipeProto.ID('CarbonToEthanolProduction')
         SourWaterStripping = RecipeProto.ID('SourWaterStripping')
         FlareDiesel = RecipeProto.ID('FlareDiesel')
         FlareHydrogen = RecipeProto.ID('FlareHydrogen')
@@ -3901,6 +4459,7 @@ class Ids:
         ChickenCarcassBurning = RecipeProto.ID('ChickenCarcassBurning')
         SulfurBurning = RecipeProto.ID('SulfurBurning')
         SludgeBurning = RecipeProto.ID('SludgeBurning')
+        CanolaBurning = RecipeProto.ID('CanolaBurning')
         WheatMilling = RecipeProto.ID('WheatMilling')
         SoybeanMilling = RecipeProto.ID('SoybeanMilling')
         CanolaMilling = RecipeProto.ID('CanolaMilling')
@@ -3918,6 +4477,7 @@ class Ids:
         DisinfectantProductionT2 = RecipeProto.ID('DisinfectantProductionT2')
         AnestheticsProduction = RecipeProto.ID('AnestheticsProduction')
         MorphineProduction = RecipeProto.ID('MorphineProduction')
+        ChemicalFuelProduction = RecipeProto.ID('ChemicalFuelProduction')
         AnimalFeedFromSoybean = RecipeProto.ID('AnimalFeedFromSoybean')
         AnimalFeedFromSoybeanT2 = RecipeProto.ID('AnimalFeedFromSoybeanT2')
         AnimalFeedFromCorn = RecipeProto.ID('AnimalFeedFromCorn')
@@ -3928,6 +4488,8 @@ class Ids:
         AnimalFeedFromWheatT2 = RecipeProto.ID('AnimalFeedFromWheatT2')
         FertilizerProduction = RecipeProto.ID('FertilizerProduction')
         FertilizerProductionT2 = RecipeProto.ID('FertilizerProductionT2')
+        FertilizerProductionFromOrganic = RecipeProto.ID('FertilizerProductionFromOrganic')
+        FertilizerProductionFromOrganicT2 = RecipeProto.ID('FertilizerProductionFromOrganicT2')
         Fertilizer2Production = RecipeProto.ID('Fertilizer2Production')
         Fertilizer2ProductionT2 = RecipeProto.ID('Fertilizer2ProductionT2')
         FuelGasSynthesis = RecipeProto.ID('FuelGasSynthesis')
@@ -3941,6 +4503,9 @@ class Ids:
         FruitDigestion = RecipeProto.ID('FruitDigestion')
         PoppyDigestion = RecipeProto.ID('PoppyDigestion')
         WheatDigestion = RecipeProto.ID('WheatDigestion')
+        SugarCaneDigestion = RecipeProto.ID('SugarCaneDigestion')
+        CornDigestion = RecipeProto.ID('CornDigestion')
+        SoybeanDigestion = RecipeProto.ID('SoybeanDigestion')
         MeatTrimmingsDigestion = RecipeProto.ID('MeatTrimmingsDigestion')
         AnimalFeedCompost = RecipeProto.ID('AnimalFeedCompost')
         AnimalFeedCompostT2 = RecipeProto.ID('AnimalFeedCompostT2')
@@ -3951,26 +4516,37 @@ class Ids:
         UraniumEnrichment = RecipeProto.ID('UraniumEnrichment')
         UraniumEnrichment20 = RecipeProto.ID('UraniumEnrichment20')
         BlanketFuelReprocessing = RecipeProto.ID('BlanketFuelReprocessing')
+        BlanketFuelReprocessingToPu = RecipeProto.ID('BlanketFuelReprocessingToPu')
+        BlanketFuelReprocessingToU30 = RecipeProto.ID('BlanketFuelReprocessingToU30')
         ReprocessedUraniumEnrichment = RecipeProto.ID('ReprocessedUraniumEnrichment')
         SugarToEthanolFermentation = RecipeProto.ID('SugarToEthanolFermentation')
         CornToEthanolFermentation = RecipeProto.ID('CornToEthanolFermentation')
         AntibioticsFermentation = RecipeProto.ID('AntibioticsFermentation')
+        RailPartsAssemblyT1 = RecipeProto.ID('RailPartsAssemblyT1')
+        RailPartsAssemblyT2 = RecipeProto.ID('RailPartsAssemblyT2')
+        RailPartsAssemblyT3 = RecipeProto.ID('RailPartsAssemblyT3')
         HouseholdGoodsAssemblyT1 = RecipeProto.ID('HouseholdGoodsAssemblyT1')
         HouseholdGoodsAssemblyT2 = RecipeProto.ID('HouseholdGoodsAssemblyT2')
         HouseholdGoodsAssemblyT3 = RecipeProto.ID('HouseholdGoodsAssemblyT3')
+        HouseholdGoodsAssemblyT4 = RecipeProto.ID('HouseholdGoodsAssemblyT4')
         HouseholdAppliancesAssemblyT1 = RecipeProto.ID('HouseholdAppliancesAssemblyT1')
         HouseholdAppliancesAssemblyT2 = RecipeProto.ID('HouseholdAppliancesAssemblyT2')
         HouseholdAppliancesAssemblyT3 = RecipeProto.ID('HouseholdAppliancesAssemblyT3')
+        LuxuryGoodsAssemblyT1 = RecipeProto.ID('LuxuryGoodsAssemblyT1')
+        LuxuryGoodsAssemblyT2 = RecipeProto.ID('LuxuryGoodsAssemblyT2')
+        LuxuryGoodsAssemblyT3 = RecipeProto.ID('LuxuryGoodsAssemblyT3')
         ConsumerElectronicsAssemblyT1 = RecipeProto.ID('ConsumerElectronicsAssemblyT1')
         WaterChilling = RecipeProto.ID('WaterChilling')
         PressingOfRecyclables = RecipeProto.ID('PressingOfRecyclables')
         PressingOfIronScrap = RecipeProto.ID('PressingOfIronScrap')
+        PressingOfAluminumScrap = RecipeProto.ID('PressingOfAluminumScrap')
         PressingOfCopperScrap = RecipeProto.ID('PressingOfCopperScrap')
         PressingOfGoldScrap = RecipeProto.ID('PressingOfGoldScrap')
         PressingOfWaste = RecipeProto.ID('PressingOfWaste')
         ShreddingWood = RecipeProto.ID('ShreddingWood')
         ShreddingSaplings = RecipeProto.ID('ShreddingSaplings')
         ShreddingIronScrap = RecipeProto.ID('ShreddingIronScrap')
+        ShreddingAluminumScrap = RecipeProto.ID('ShreddingAluminumScrap')
         ShreddingCopperScrap = RecipeProto.ID('ShreddingCopperScrap')
         ShreddingGoldScrap = RecipeProto.ID('ShreddingGoldScrap')
         ShreddingWaste = RecipeProto.ID('ShreddingWaste')
@@ -3980,6 +4556,27 @@ class Ids:
         IncinerationOfWasteHydrogen = RecipeProto.ID('IncinerationOfWasteHydrogen')
         IncinerationOfWastePressed = RecipeProto.ID('IncinerationOfWastePressed')
         IncinerationOfWastePressedHydrogen = RecipeProto.ID('IncinerationOfWastePressedHydrogen')
+        OfficeSuppliesAssemblyT1 = RecipeProto.ID('OfficeSuppliesAssemblyT1')
+        OfficeSuppliesAssemblyT2 = RecipeProto.ID('OfficeSuppliesAssemblyT2')
+        OfficeSuppliesAssemblyT3 = RecipeProto.ID('OfficeSuppliesAssemblyT3')
+        CompositePanelAssemblyT1 = RecipeProto.ID('CompositePanelAssemblyT1')
+        CompositePanelAssemblyT2 = RecipeProto.ID('CompositePanelAssemblyT2')
+        CompositePanelAssemblyT3 = RecipeProto.ID('CompositePanelAssemblyT3')
+        CompositeCoreBasicAssemblyT1 = RecipeProto.ID('CompositeCoreBasicAssemblyT1')
+        CompositeCoreBasicAssemblyT2 = RecipeProto.ID('CompositeCoreBasicAssemblyT2')
+        CompositeCoreBasicAssemblyT3 = RecipeProto.ID('CompositeCoreBasicAssemblyT3')
+        CompositeCoreAssembly = RecipeProto.ID('CompositeCoreAssembly')
+        StationPartsBasicAssemblyT1 = RecipeProto.ID('StationPartsBasicAssemblyT1')
+        StationPartsBasicAssemblyT2 = RecipeProto.ID('StationPartsBasicAssemblyT2')
+        StationPartsBasicAssemblyT3 = RecipeProto.ID('StationPartsBasicAssemblyT3')
+        StationPartsAssembly = RecipeProto.ID('StationPartsAssembly')
+        CrewSuppliesAssemblyT1 = RecipeProto.ID('CrewSuppliesAssemblyT1')
+        CrewSuppliesAssemblyT2 = RecipeProto.ID('CrewSuppliesAssemblyT2')
+        CrewSuppliesAssemblyT3 = RecipeProto.ID('CrewSuppliesAssemblyT3')
+        CompactReactorAssembly = RecipeProto.ID('CompactReactorAssembly')
+        AsteroidBoosterPartsAssembly = RecipeProto.ID('AsteroidBoosterPartsAssembly')
+        ProbePartsAssembly = RecipeProto.ID('ProbePartsAssembly')
+        ProbePartsAssemblyT2 = RecipeProto.ID('ProbePartsAssemblyT2')
         ID_PREFIX = ""
         def __init__(self):
             pass
@@ -4027,7 +4624,10 @@ class Ids:
         VehicleCapIncrease = ResearchNodeProto.ID('ResearchVehicleCapIncrease')
         VehicleCapIncrease2 = ResearchNodeProto.ID('ResearchVehicleCapIncrease2')
         RecyclingEdict = ResearchNodeProto.ID('ResearchRecyclingEdict')
+        RecyclingEdict1 = ResearchNodeProto.ID('ResearchRecyclingEdict1')
         RecyclingEdict2 = ResearchNodeProto.ID('ResearchRecyclingEdict2')
+        RecyclingEdict4 = ResearchNodeProto.ID('ResearchRecyclingEdict4')
+        RecyclingEdict5 = ResearchNodeProto.ID('ResearchRecyclingEdict5')
         RecyclingIncrease = ResearchNodeProto.ID('ResearchRecyclingIncrease')
         DeconstructionRatioIncrease = ResearchNodeProto.ID('ResearchDeconstructionRatioIncrease')
         DeconstructionRatioIncrease2 = ResearchNodeProto.ID('ResearchDeconstructionRatioIncrease2')
@@ -4042,6 +4642,7 @@ class Ids:
         Edicts2 = ResearchNodeProto.ID('ResearchEdicts2')
         Edicts3 = ResearchNodeProto.ID('ResearchEdicts3')
         Edicts4 = ResearchNodeProto.ID('ResearchEdicts4')
+        Edicts5 = ResearchNodeProto.ID('ResearchEdicts5')
         MechPowerStorage = ResearchNodeProto.ID('ResearchMechPowerStorage')
         Stacker = ResearchNodeProto.ID('ResearchStacker')
         FoodMarket2 = ResearchNodeProto.ID('ResearchFoodMarket2')
@@ -4164,6 +4765,42 @@ class Ids:
         SolarPanels = ResearchNodeProto.ID('ResearchSolarPanels')
         SolarPanels2 = ResearchNodeProto.ID('ResearchSolarPanels2')
         SuperPressSteam = ResearchNodeProto.ID('ResearchSuperPressSteam')
+        Offices = ResearchNodeProto.ID('ResearchOffices')
+        ArcFurnaceT1 = ResearchNodeProto.ID('ResearchArcFurnaceT1')
+        RoboticAssembly = ResearchNodeProto.ID('ResearchRoboticAssembly')
+        LuxuryGoods = ResearchNodeProto.ID('ResearchLuxuryGoods')
+        Trains = ResearchNodeProto.ID('ResearchTrains')
+        TrainDepotAddon = ResearchNodeProto.ID('ResearchTrainDepotAddon')
+        AluminumSmelting = ResearchNodeProto.ID('ResearchAluminumSmelting')
+        SpaceStation = ResearchNodeProto.ID('ResearchSpaceStation')
+        SpaceStationCrew = ResearchNodeProto.ID('ResearchSpaceStationCrew')
+        SpaceStationResearch = ResearchNodeProto.ID('ResearchSpaceStationResearch')
+        TitaniumSmelting = ResearchNodeProto.ID('ResearchTitaniumSmelting')
+        Rocket2 = ResearchNodeProto.ID('ResearchRocket2')
+        SpaceProbe = ResearchNodeProto.ID('ResearchSpaceProbe')
+        AsteroidBooster = ResearchNodeProto.ID('ResearchAsteroidBooster')
+        IspModule = ResearchNodeProto.ID('ResearchIspModule')
+        Electronics4 = ResearchNodeProto.ID('ResearchElectronics4')
+        Housing4 = ResearchNodeProto.ID('ResearchHousing4')
+        FocusIncreaseInc = ResearchNodeProto.ID('ResearchFocusIncreaseInc')
+        HousingCapInc = ResearchNodeProto.ID('ResearchHousingCapInc')
+        UnityCapInc = ResearchNodeProto.ID('ResearchUnityCapInc')
+        SettlementWaterDec = ResearchNodeProto.ID('ResearchSettlementWaterDec')
+        CropYieldInc = ResearchNodeProto.ID('ResearchCropYieldInc')
+        RainwaterYieldInc = ResearchNodeProto.ID('ResearchRainwaterYieldInc')
+        MaintenanceProductionInc = ResearchNodeProto.ID('ResearchMaintenanceProductionInc')
+        SolarPowerInc = ResearchNodeProto.ID('ResearchSolarPowerInc')
+        VehicleLimitsInc = ResearchNodeProto.ID('ResearchVehicleLimitsInc')
+        VehiclesFuelDec = ResearchNodeProto.ID('ResearchVehiclesFuelDec')
+        ShipsFuelDec = ResearchNodeProto.ID('ResearchShipsFuelDec')
+        TrainsFuelDec = ResearchNodeProto.ID('ResearchTrainsFuelDec')
+        AirPollutionDec = ResearchNodeProto.ID('ResearchAirPollutionDec')
+        VehiclesPollutionDec = ResearchNodeProto.ID('ResearchVehiclesPollutionDec')
+        TrainsPollutionDec = ResearchNodeProto.ID('ResearchTrainsPollutionDec')
+        ShipsPollutionDec = ResearchNodeProto.ID('ResearchShipsPollutionDec')
+        TreesGrowthSpeedInc = ResearchNodeProto.ID('ResearchTreesGrowthSpeedInc')
+        WorldMinesEfficiencyInc = ResearchNodeProto.ID('ResearchWorldMinesEfficiencyInc')
+        RocketsCapacityInc = ResearchNodeProto.ID('ResearchRocketsCapacityInc')
         ID_PREFIX = ""
         def __init__(self):
             pass
@@ -4172,6 +4809,7 @@ class Ids:
     class Rockets:
         from Mafi.Core.Entities import EntityProto
         TestingRocketT0 = EntityProto.ID('TestingRocketT0')
+        CargoRocketT2 = EntityProto.ID('CargoRocketT2')
         def __init__(self):
             pass
 
@@ -4248,7 +4886,6 @@ class Ids:
         Compost = Proto.ID('Compost_Terrain')
         Landfill = Proto.ID('Landfill_Terrain')
         LandfillOld = Proto.ID('LandfillOld_Terrain')
-        UraniumDepleted = Proto.ID('UraniumDepleted_Terrain')
         Rock = Proto.ID('Rock_Terrain')
         RockDisrupted = Proto.ID('RockDisrupted_Terrain')
         RockNoGrassCover = Proto.ID('RockNoGrassCover_Terrain')
@@ -4275,6 +4912,16 @@ class Ids:
         GoldOre = Proto.ID('GoldOre_Terrain')
         GoldOreDisrupted = Proto.ID('GoldOreDisrupted_Terrain')
         GoldOreCrushed = Proto.ID('GoldOreCrushed_Terrain')
+        Bauxite = Proto.ID('Bauxite_Terrain')
+        BauxiteDisrupted = Proto.ID('BauxiteDisrupted_Terrain')
+        BauxiteCrushed = Proto.ID('BauxiteCrushed_Terrain')
+        TitaniumOre = Proto.ID('TitaniumOre_Terrain')
+        TitaniumOreDisrupted = Proto.ID('TitaniumOreDisrupted_Terrain')
+        TitaniumOreCrushed = Proto.ID('TitaniumOreCrushed_Terrain')
+        UraniumOre = Proto.ID('UraniumOre_Terrain')
+        UraniumOreDisrupted = Proto.ID('UraniumOreDisrupted_Terrain')
+        UraniumOreCrushed = Proto.ID('UraniumOreCrushed_Terrain')
+        UraniumDepleted = Proto.ID('UraniumDepleted_Terrain')
         def __init__(self):
             pass
 
@@ -4313,19 +4960,87 @@ class Ids:
     class ToolbarCategories:
         from Mafi.Core.Prototypes import Proto
         Transports = Proto.ID('transportsCategory')
-        Machines = Proto.ID('machinesCategory')
-        MachinesWater = Proto.ID('machinesWaterCategory')
+        Transports_Flat = Proto.ID('transports_flatCategory')
+        Transports_Loose = Proto.ID('transports_looseCategory')
+        Transports_Fluid = Proto.ID('transports_fluidCategory')
+        Transports_Molten = Proto.ID('transports_moltenCategory')
+        Smelting = Proto.ID('smeltingCategory')
+        Production = Proto.ID('productionCategory')
+        Production_General = Proto.ID('production_generalCategory')
+        Production_Maintenance = Proto.ID('production_maintenanceCategory')
+        Smelting_Iron = Proto.ID('smelting_ironCategory')
+        Smelting_Copper = Proto.ID('smelting_copperCategory')
+        Smelting_Glass = Proto.ID('smelting_glassCategory')
+        Smelting_Gold = Proto.ID('smelting_goldCategory')
+        Smelting_Silicon = Proto.ID('smelting_siliconCategory')
+        Smelting_Aluminum = Proto.ID('smelting_aluminumCategory')
+        Smelting_Titanium = Proto.ID('smelting_titaniumCategory')
+        Water = Proto.ID('machinesWaterCategory')
         MachinesFood = Proto.ID('machinesFoodCategory')
-        MachinesMetallurgy = Proto.ID('machinesMetallurgyCategory')
-        MachinesOil = Proto.ID('machinesOilCategory')
-        MachinesElectricity = Proto.ID('machinesElectricityCategory')
+        Oil = Proto.ID('oilCategory')
+        Oil_Basic = Proto.ID('oil_basicCategory')
+        Oil_Distillation = Proto.ID('oil_distillationCategory')
+        Oil_Derivatives = Proto.ID('oil_derivativesCategory')
+        Power = Proto.ID('powerCategory')
+        Power_General = Proto.ID('power_generalCategory')
+        Power_Nuclear = Proto.ID('power_nuclearCategory')
         Waste = Proto.ID('wasteCategory')
+        Waste_Fluid = Proto.ID('waste_fluidCategory')
+        Waste_Solid = Proto.ID('waste_solidCategory')
+        Waste_Settlement = Proto.ID('waste_settlementCategory')
         Storages = Proto.ID('storagesCategory')
         Buildings = Proto.ID('buildingsCategory')
-        BuildingsForVehicles = Proto.ID('buildingsForVehiclesCategory')
         Housing = Proto.ID('housingCategory')
-        Docks = Proto.ID('docksCategory')
-        Landmarks = Proto.ID('landmarksCategory')
+        Logistics = Proto.ID('logisticsCategory')
+        Vehicles = Proto.ID('logistics_vehiclesCategory')
+        CargoShips = Proto.ID('logistics_cargoShipsCategory')
+        Trains = Proto.ID('trainsCategory')
+        Trains_Tracks = Proto.ID('trains_tracksCategory')
+        Trains_Structures = Proto.ID('trains_structuresCategory')
+        Rockets = Proto.ID('logistics_rocketsCategory')
+        Decorations = Proto.ID('decorationsCategory')
+        Decorations_Landmarks = Proto.ID('decorations_landmarksCategory')
+        Decorations_Trees = Proto.ID('decorations_treesCategory')
+        Obsolete_Machines = Proto.ID('machinesCategory')
+        Obsolete_MachinesMetallurgy = Proto.ID('machinesMetallurgyCategory')
+        Obsolete_MachinesOil = Proto.ID('machinesOilCategory')
+        Obsolete_MachinesElectricity = Proto.ID('machinesElectricityCategory')
+        Obsolete_BuildingsForVehicles = Proto.ID('buildingsForVehiclesCategory')
+        Obsolete_Docks = Proto.ID('docksCategory')
+        Obsolete_Landmarks = Proto.ID('landmarksCategory')
+        def __init__(self):
+            pass
+
+
+    class Trains:
+        from Mafi.Core.Entities import EntityProto
+        LocomotiveT1Diesel = EntityProto.ID('LocomotiveT1Diesel')
+        LocomotiveT1Steam = EntityProto.ID('LocomotiveT1Steam')
+        LocomotiveT1Tender = EntityProto.ID('LocomotiveT1Tender')
+        WagonT1Unit = EntityProto.ID('WagonT1Unit')
+        WagonT1Loose = EntityProto.ID('WagonT1Loose')
+        WagonT1Fluid = EntityProto.ID('WagonT1fluid')
+        def __init__(self):
+            pass
+
+
+    class TrainTracks:
+        from Mafi.Core.Entities.Static import StaticEntityProto
+        TrainDepot = StaticEntityProto.ID('TrainDepot')
+        TrainDepotAddon = StaticEntityProto.ID('TrainDepotAddon')
+        TrainStationRoot = StaticEntityProto.ID('TrainStationRoot')
+        TrainStationUnit = StaticEntityProto.ID('TrainStationUnit')
+        TrainStationLoose = StaticEntityProto.ID('TrainStationLoose')
+        TrainStationFluid = StaticEntityProto.ID('TrainStationFluid')
+        TrainStationEmpty = StaticEntityProto.ID('TrainStationEmpty')
+        TrainStationFuelDiesel = StaticEntityProto.ID('TrainStationFuelDiesel')
+        TrainStationFuelSteam = StaticEntityProto.ID('TrainStationFuelSteam')
+        TrainLevelCrossingSmall = StaticEntityProto.ID('TrainLevelCrossingSmall')
+        TrainLevelCrossingSmallEntrance = StaticEntityProto.ID('TrainLevelCrossingSmallEntrance')
+        TrainLevelCrossingSmallConnector = StaticEntityProto.ID('TrainLevelCrossingSmallConnector')
+        TrainLevelCrossingLarge = StaticEntityProto.ID('TrainLevelCrossingLarge')
+        TrainLevelCrossingLargeEntrance = StaticEntityProto.ID('TrainLevelCrossingLargeEntrance')
+        TrainLevelCrossingLargeConnector = StaticEntityProto.ID('TrainLevelCrossingLargeConnector')
         def __init__(self):
             pass
 
@@ -4449,6 +5164,7 @@ class Ids:
         UraniumMine = EntityProto.ID('UraniumMine')
         RockMine = EntityProto.ID('RockMine')
         LimestoneMine = EntityProto.ID('LimestoneMine')
+        BauxiteMine = EntityProto.ID('BauxiteMine')
         Settlement1 = EntityProto.ID('Settlement1')
         Settlement2 = EntityProto.ID('Settlement2')
         Settlement3 = EntityProto.ID('Settlement3')
@@ -4462,6 +5178,30 @@ class Ids:
         def __init__(self):
             pass
 
+
+class TrainTrackShapeType:
+    Straight0 = None
+    Straight27 = None
+    Straight45 = None
+    Turn0To45 = None
+    Turn0To27 = None
+    Turn27To45 = None
+    ShiftByTile0 = None
+    ShiftByTile27a = None
+    ShiftByTile27b = None
+    ShiftByTile45 = None
+    def __init__(self):
+        self.value__ = 0
+
+class TrainTrackRampType:
+    None = None
+    Ramp = None
+    RampA = None
+    RampB = None
+    RampStart = None
+    RampEnd = None
+    def __init__(self):
+        self.value__ = 0
 
 class CountableProductAttribute:
     def __init__(self):
@@ -4498,6 +5238,7 @@ class Costs:
         HousingT1 = None
         HousingT2 = None
         HousingT3 = None
+        HousingT4 = None
         SettlementFoodModule = None
         SettlementFoodModuleT2 = None
         SettlementLandfillModule = None
@@ -4506,9 +5247,11 @@ class Costs:
         SettlementWaterModule = None
         SettlementPowerModule = None
         SettlementHouseholdGoodsModule = None
+        SettlementLuxuryGoodsModule = None
         SettlementHouseholdAppliancesModule = None
         SettlementConsumerElectronicsModule = None
         Hospital = None
+        SettlementComputingModule = None
         SettlementSquare = None
         SettlementPillar = None
         SettlementFountain = None
@@ -4532,6 +5275,7 @@ class Costs:
         ThermalStorage = None
         WasteSortingPlant = None
         OreSortingPlantT1 = None
+        OreSortingPlantT2 = None
         NuclearReactor = None
         NuclearReactorT2 = None
         NuclearReactorT3 = None
@@ -4544,11 +5288,11 @@ class Costs:
         VehiclesDepot = None
         VehiclesDepot2 = None
         VehiclesDepot3 = None
-        ResearchLab = None
+        ResearchLab0 = None
+        ResearchLab1 = None
         ResearchLab2 = None
         ResearchLab3 = None
         ResearchLab4 = None
-        ResearchLab5 = None
         Beacon = None
         RainwaterHarvester = None
         TradeDock = None
@@ -4579,6 +5323,18 @@ class Costs:
         CargoModuleFluidT3 = None
         CaptainOfficeT1 = None
         CaptainOfficeT2 = None
+        OfficeT1 = None
+        OfficeT2 = None
+        OfficeT3 = None
+        TrainDepot = None
+        TrainDepotExtension = None
+        TrainStationRoot = None
+        TrainStationUnit = None
+        TrainStationLoose = None
+        TrainStationFluid = None
+        TrainStationFuelSteam = None
+        TrainStationFuelDiesel = None
+        TrainStationEmpty = None
         RocketAssemblyDepot = None
         RocketLaunchPad = None
         RetainingWall1 = None
@@ -4618,6 +5374,10 @@ class Costs:
         SmeltingFurnaceT2 = None
         ArcFurnace = None
         ArcFurnace2 = None
+        AluminumCell = None
+        DiamondReactor = None
+        LensMaker = None
+        AlloyMixer = None
         Boiler = None
         BoilerGas = None
         BoilerElectric = None
@@ -4705,6 +5465,24 @@ class Costs:
 
     class Rockets:
         TestingRocketT0 = None
+        CargoRocketT2 = None
+        def __init__(self):
+            pass
+
+
+    class Trains:
+        LevelCrossingSmall = None
+        LevelCrossingSmallRamp = None
+        LevelCrossingSmallPadding = None
+        LevelCrossingLarge = None
+        LevelCrossingLargeRamp = None
+        LevelCrossingLargePadding = None
+        LocomotiveT1Diesel = None
+        LocomotiveT1Steam = None
+        LocomotiveT1SteamTender = None
+        WagonT1Unit = None
+        WagonT1Loose = None
+        WagonT1Fluid = None
         def __init__(self):
             pass
 
@@ -4719,6 +5497,7 @@ class Costs:
         Pipe = None
         PipeT2 = None
         PipeT3 = None
+        PipeT4 = None
         MoltenMetalChannel = None
         Shaft = None
         FlatZipper = None
@@ -4729,7 +5508,16 @@ class Costs:
         LooseSorter = None
         LiftBase = None
         LiftPerHeightDelta = None
-        LENGTH_PER_COST = None
+        ConveyorT1ElectricityPer100 = None
+        ConveyorT2ElectricityPer100 = None
+        ConveyorT3ElectricityPer100 = None
+        ConveyorMaintenancePer100T1 = None
+        ConveyorMaintenancePer100T2 = None
+        ConveyorMaintenancePer100T3 = None
+        PipeMaintenancePer100T1 = None
+        PipeMaintenancePer100T2 = None
+        PipeMaintenancePer100T3 = None
+        PipeMaintenancePer100T4 = None
         def __init__(self):
             pass
 

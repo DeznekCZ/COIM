@@ -25,6 +25,7 @@ class RocketTransporter:
         self.HasTrueJob = False
         self.CurrentJob = Option()
         self.IsIdle = False
+        self.IsEngineIdle = False
         self.CurrentJobInfo = None
         self.IsStuck = False
         self.Maintenance = None
@@ -55,6 +56,8 @@ class RocketTransporter:
         self.SteeringAngle = None
         self.SteeringAccelerationPercent = None
         self.DistanceToFullStop = None
+        from Mafi import Fix64
+        self.LifetimeDistanceTraveled = Fix64()
         self.TargetIsTerminal = False
         self.DrivingState = None
         self.SpeedFactor = None
@@ -100,6 +103,8 @@ class IRocketTransporterOwner:
 class RocketTransporterProto:
     def __init__(self):
         self.EntityType = None
+        from Mafi import Option
+        self.FuelTankProto = Option()
         self.CostToBuild = None
         self.DisruptsSurface = False
         self.IconPath = ""
@@ -109,6 +114,7 @@ class RocketTransporterProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -118,8 +124,6 @@ class RocketTransporterProto:
         self.RocketHolderExtensionDuration = None
         self.Graphics = None
         self.DrivingData = None
-        from Mafi import Option
-        self.FuelTankProto = Option()
         self.PathFindingParams = None
         self.NextTier = Option()
         self.UIOrder = 0.0
@@ -130,7 +134,6 @@ class RocketTransporterProto:
         self.BuildExtraDuration = None
         self.VehicleQuotaCost = 0
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         def __init__(self):

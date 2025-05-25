@@ -70,19 +70,6 @@ class RecipeUnlock:
         self.Proto = None
         self.MachineProto = None
 
-class RecyclingRatioIncreaseUnlock:
-    def __init__(self):
-        self.Title = None
-        self.Description = None
-        from Mafi import Option
-        self.IconPath = Option()
-        self.HideInUI = False
-        self.RecyclingRatioIncrease = None
-
-class RecyclingRatioIncreaseUnlocker:
-    def __init__(self):
-        self.UnlockedType = None
-
 class VehicleLimitIncreaseUnlock:
     def __init__(self):
         self.Title = None

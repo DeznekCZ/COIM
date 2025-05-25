@@ -6,6 +6,7 @@ class CargoShipCountableModuleProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -15,7 +16,6 @@ class CargoShipCountableModuleProto:
         self.ProductType = None
         self.Capacity = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         def __init__(self):
@@ -31,6 +31,7 @@ class CargoShipLooseModuleProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -40,7 +41,6 @@ class CargoShipLooseModuleProto:
         self.ProductType = None
         self.Capacity = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         def __init__(self):
@@ -73,6 +73,7 @@ class CargoShipModuleProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -82,7 +83,6 @@ class CargoShipModuleProto:
         self.ProductType = None
         self.Capacity = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         EMPTY = None

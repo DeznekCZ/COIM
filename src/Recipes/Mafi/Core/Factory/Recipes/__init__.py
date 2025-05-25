@@ -68,6 +68,7 @@ class RecipeProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -81,8 +82,8 @@ class RecipeProto:
         self.QuantitiesGcd = 0
         self.ProductsDestroyReason = None
         self.DisableSourceProductsConversionLoss = False
+        self.PowerMultiplier = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):

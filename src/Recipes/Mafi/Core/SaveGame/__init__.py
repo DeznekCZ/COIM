@@ -65,7 +65,7 @@ class ModInfoRaw:
     def __init__(self):
         self.Name = ""
         self.Version = 0
-        self.TypeStr = ""
+        self.AssemblyQualifiedTypeStr = ""
 
 class GzipSaveCompressor:
     def __init__(self):
@@ -81,6 +81,7 @@ class ISaveConfig:
     def __init__(self):
         self.SaveCompressionType = None
         self.AutoSaveInterval = None
+        self.MaxAutoSavesCount = None
 
 class ISaveManager:
     def __init__(self):
@@ -108,7 +109,8 @@ class LoadFailInfo:
         self.MessageForPlayer = None
 
     class Reason:
-        Version = None
+        VersionTooOld = None
+        VersionTooNew = None
         FileAccessIssue = None
         ModsMissing = None
         FileCorrupted = None
@@ -151,7 +153,14 @@ class SaveManager:
     AUTOSAVE_OPTIONS_MINUTES = None
     AUTOSAVE_OPTIONS_DEFAULT_INDEX = 0
     AUTOSAVE_DEFAULT_INTERVAL_MINUTES = 0
+    MAX_AUTOSAVES_COUNT_OPTIONS = None
+    MAX_AUTOSAVES_COUNT_DEFAULT_INDEX = 0
+    MAX_AUTOSAVES_COUNT_DEFAULT = 0
     def __init__(self):
+        self.AutosaveMinInterval = None
+        from Mafi import Option
+        self.LastSaveFilePath = Option()
+        self.LastAutoSaveFilePath = Option()
         self.GameName = ""
         self.IsSavePending = False
 

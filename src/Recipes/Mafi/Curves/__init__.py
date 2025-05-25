@@ -1,16 +1,39 @@
 
-class CubicBezierCurve2f:
+class CubicBezierCurve1f:
     def __init__(self):
         self.ControlPointsCount = 0
         self.SegmentsCount = 0
         self.IsEmpty = False
-        self.LastControlPoint = None
+        from Mafi import Fix32
+        self.LastControlPoint = Fix32()
+        self.StartDirectionNotNormalized = Fix32()
+        self.EndDirectionNotNormalized = Fix32()
+        self.Item = Fix32()
+        self.ControlPoints = None
+
+class CubicBezierCurve1fSampler:
+    def __init__(self):
+        pass
+
+
+class CubicBezierCurve2f:
+    def __init__(self):
+        self.SegmentsCount = 0
+        self.IsEmpty = False
+        self.ControlPoints = None
+        self.StartDirectionNotNormalized = None
+        self.EndDirectionNotNormalized = None
         self.Item = None
 
 class CubicBezierCurve2fSampler:
     def __init__(self):
-        pass
+        from Mafi import Fix32
+        self.CurveLengthApprox = Fix32()
 
+class CubicBezierCurve2fSamplerCustom:
+    def __init__(self):
+        from Mafi import Fix32
+        self.CurveLengthApprox = Fix32()
 
 class CubicBezierCurve3f:
     def __init__(self):

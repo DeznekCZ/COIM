@@ -15,6 +15,7 @@ class IEntityWithPorts:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None

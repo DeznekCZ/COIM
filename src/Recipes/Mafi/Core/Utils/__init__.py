@@ -36,6 +36,7 @@ class TickTimer:
         self.Ticks = None
         self.StartedAtTicks = None
         self.IsFinished = False
+        self.IsFinishedThisTick = False
         self.IsNotFinished = False
         self.PercentFinished = None
 
@@ -69,12 +70,25 @@ class XorRsr128PlusGenerator:
         pass
 
 
+class AsciiGameRenderer:
+    def __init__(self):
+        pass
+
+
 class BitmapFont5Px:
     AVG_CHAR_WIDTH = 0
     AVG_CHAR_HEIGHT = 0
     def __init__(self):
         pass
 
+
+class BoolWithReason:
+    Success = None
+    def __init__(self):
+        self.IsSuccess = False
+        self.IsError = False
+        self.Value = False
+        self.Reason = None
 
 class ChangelogUtils:
     PATCH_NOTES_TRANSLATIONS = None

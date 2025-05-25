@@ -49,6 +49,7 @@ class Machine:
         self.RecipesAssigned = None
         self.SpeedFactor = None
         self.DurationMultiplier = None
+        self.VirtualOutputMultiplier = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
@@ -64,6 +65,7 @@ class Machine:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -175,10 +177,8 @@ class ReorderRecipeCmd:
         self.HasError = False
         self.ErrorMessage = ""
         self.MachineId = None
-        from Mafi.Core.Prototypes import Proto
-        self.RecipeId = Proto.ID()
-
-        self.IndexDiff = 0
+        self.OldIndex = 0
+        self.NewIndexAfterRemove = 0
 
 class MachineToggleRecipeActiveCmd:
     def __init__(self):
@@ -239,6 +239,19 @@ class ClearRecipeProductsCmd:
         self.RecipeId = Proto.ID()
 
 
+class ClearUnusedMachineBuffersCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.MachineId = None
+
 class MachineProto:
     BOOST_COST = None
     def __init__(self):
@@ -248,6 +261,7 @@ class MachineProto:
         self.Recipes = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
         self.AnimationParams = None
@@ -265,6 +279,7 @@ class MachineProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -279,10 +294,12 @@ class MachineProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ID:
         def __init__(self):
@@ -294,6 +311,7 @@ class MachineProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             self.ParticlesParams = None

@@ -23,10 +23,12 @@ class VehicleDepot:
         self.VehicleQueue = None
         self.BuildQueue = None
         self.ReplaceQueue = None
+        self.VehicleToReplaceQueue = None
         self.CurrentlyBuildVehicle = Option()
         self.Buffers = None
         self.VehicleConstructionProgress = Option()
         self.DestroyCallbackStarted = False
+        self.ProtoToBuildForever = Option()
         self.CanDisableLogisticsInput = False
         self.CanDisableLogisticsOutput = False
         self.LogisticsInputMode = None
@@ -47,6 +49,7 @@ class VehicleDepot:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -89,10 +92,12 @@ class VehicleDepotBase:
         self.VehicleQueue = None
         self.BuildQueue = None
         self.ReplaceQueue = None
+        self.VehicleToReplaceQueue = None
         self.CurrentlyBuildVehicle = Option()
         self.Buffers = None
         self.VehicleConstructionProgress = Option()
         self.DestroyCallbackStarted = False
+        self.ProtoToBuildForever = Option()
         self.CanDisableLogisticsInput = False
         self.CanDisableLogisticsOutput = False
         self.LogisticsInputMode = None
@@ -113,6 +118,7 @@ class VehicleDepotBase:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -155,6 +161,7 @@ class VehicleDepotBaseProto:
     def __init__(self):
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ElectricityConsumed = None
         self.BuildableEntities = None
         self.Layout = None
@@ -172,6 +179,7 @@ class VehicleDepotBaseProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -191,10 +199,12 @@ class VehicleDepotBaseProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -202,6 +212,7 @@ class VehicleDepotBaseProto:
             self.PrefabPath = ""
             self.PrefabOrigin = None
             self.IconPath = ""
+            self.YawForGeneratedIcon = None
             self.VisualizedLayers = None
             self.Categories = None
             from Mafi import Option
@@ -224,6 +235,7 @@ class VehicleDepotProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ElectricityConsumed = None
         self.BuildableEntities = None
         self.Layout = None
@@ -240,6 +252,7 @@ class VehicleDepotProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -259,10 +272,12 @@ class VehicleDepotProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class VehicleDepotProtoBuilder:
     def __init__(self):

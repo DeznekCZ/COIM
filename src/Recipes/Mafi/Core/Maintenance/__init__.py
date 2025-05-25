@@ -74,10 +74,12 @@ class MaintenanceConfig:
         self.DailyBreakdownChanceWhenShouldBeBroken = None
 
 class MaintenanceCosts:
+    Empty = None
     def __init__(self):
         self.Product = None
         self.MaintenancePerMonth = None
         self.MaxMaintenancePerMonth = None
+        self.ExtraBufferDuration = None
         self.InitialMaintenanceBoost = None
 
 class MaintenanceDepot:
@@ -117,6 +119,7 @@ class MaintenanceDepot:
         self.RecipesAssigned = None
         self.SpeedFactor = None
         self.DurationMultiplier = None
+        self.VirtualOutputMultiplier = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
@@ -132,6 +135,7 @@ class MaintenanceDepot:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -163,6 +167,7 @@ class MaintenanceDepotProto:
         self.Recipes = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
         self.AnimationParams = None
@@ -180,6 +185,7 @@ class MaintenanceDepotProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -195,10 +201,12 @@ class MaintenanceDepotProto:
         self.OutputPorts = None
         self.CannotBeBuiltByPlayer = False
         self.ConstructionDurationPerProduct = None
+        self.CollapseRubbleScale = None
+        self.CustomBuriedTolerance = None
+        self.CustomSuspendedTolerance = None
         self.VehicleGoalHeightAllowedRange = None
         self.DoNotStartConstructionAutomatically = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class MaintenanceManager:
     def __init__(self):
@@ -233,6 +241,8 @@ class IMaintenanceBufferReadonly:
         self.ShouldShowInUi = False
         self.ProducedTotalStats = None
         self.ConsumedTotalStats = None
+        self.MonthlyCapacityStats = None
+        self.MonthlyQuantityStats = None
 
 class MaintenanceProtoParam:
     def __init__(self):

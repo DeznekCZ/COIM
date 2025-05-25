@@ -2,6 +2,7 @@
 class Chunk64Area:
     def __init__(self):
         self.TotalChunksCount = 0
+        self.TotalTilesCount = 0
         self.Area2i = None
         self.Origin = None
         self.Size = None
@@ -107,6 +108,7 @@ class TerrainGenerationContext:
         self.ChunkArea = None
         self.Data = None
         self.BedrockMaterial = None
+        self.AllMaterials = None
 
 class TerrainGenerator:
     REPORT_PROGRESS_STEPS = 0
@@ -158,7 +160,9 @@ class WorldRegionMapAdditionalData:
         self.TotalOtherResourcesStats = None
         self.ResourceLocations = None
         self.TilesAtOrAboveElevationDataSorted = None
+        self.ThumbnailLargeData = None
         self.PreviewImagesData = None
+        self.VersionHistory = None
 
 class WorldRegionMapBaseConfig:
     def __init__(self):
@@ -192,6 +196,12 @@ class WorldRegionMapPreviewData:
         self.RequiredMods = None
         self.IsProtected = False
         self.FilePath = Option()
+
+class WorldRegionMapVersionEntry:
+    def __init__(self):
+        self.Version = 0
+        self.Description = ""
+        self.DateTimeUtc = None
 
 class ConfigurableNoise2dParamSpec:
     def __init__(self):
@@ -401,6 +411,7 @@ class IWorldRegionMapAdditionalData:
         self.TotalOtherResourcesStats = None
         self.ResourceLocations = None
         self.TilesAtOrAboveElevationDataSorted = None
+        self.ThumbnailLargeData = None
         self.PreviewImagesData = None
 
 class StartingLocationDifficulty:
@@ -429,6 +440,7 @@ class MapCacheSaveResult:
 class MapCacheLoadResult:
     Unknown = None
     Success = None
+    Disabled = None
     NoFile = None
     InvalidChecksum = None
     InvalidVersion = None
@@ -536,6 +548,7 @@ class TerrainPostProcessorPriorityBase:
     RestrictPlacement = None
     GrassOnRocks = None
     Trees = None
+    ReplaceMaterials = None
     MixedSurfaces = None
     Flowers = None
     Props = None
@@ -673,6 +686,11 @@ class IStartingLocationV2:
         self.IsDisabled = False
         self.IsUnique = False
         self.IsImportable = False
+
+class ICustomTerrainPostProcessor:
+    def __init__(self):
+        pass
+
 
 class TerrainGeneratorV2:
     MAP_HEIGHT_CAP = 0

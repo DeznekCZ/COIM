@@ -161,11 +161,13 @@ class GrassOnRocksPostProcessor:
         def __init__(self):
             self.GrassMaterialProto = None
             self.MaxIncompatibleMatCheckDistance = 0
+            self.SpreadIncompatibleMaterial = False
             self.MinAddedThickness = None
             self.MaxExaminedDepth = None
             self.MaxCoverPercentage = None
             self.ThresholdDeltaHeight = None
             self.SortingPriorityAdjustment = 0
+            self.GrassBelowMaterialContributesToEligibleThickness = False
 
 class MixedSurfaceMaterialsPostProcessor:
     def __init__(self):
@@ -202,6 +204,7 @@ class ParticleErosionPostProcessor:
     def __init__(self):
         self.Name = ""
         self.SortingPriority = 0
+        self.PassCount = 0
         self.IsUnique = False
         self.IsImportable = False
         self.Is2D = False
@@ -210,7 +213,6 @@ class ParticleErosionPostProcessor:
         self.Id = 0
         self.IsDisabled = False
         self.ParallelizationStrategy = None
-        self.PassCount = 0
         self.LastGenerationTime = None
         self.ConfigMutable = None
 
@@ -219,6 +221,8 @@ class ParticleErosionPostProcessor:
             self.AddSuppressionRegion = None
             self.AddNewPass = None
             self.SortingPriorityAdjustment = 0
+            self.PerformUnDisruptionOnSteelSlopes = False
+            self.UnDisruptionSlopeBias = None
             self.SuppressErosionRegions = None
             self.AddIgnoredMaterial = None
             self.IgnoredMaterials = None
@@ -228,6 +232,8 @@ class ParticleErosionPostProcessor:
     class ParticleErosionConfig:
         def __init__(self):
             self.Name = ""
+            self.SimulateMaterialTransfer = False
+            self.TransferredMaterialDumpMult = None
             self.LowestProcessedHeightUnderOcean = None
             self.Seed = None
             from Mafi import Fix32
@@ -314,6 +320,73 @@ class PolygonFlattenPostProcessor:
             RemoveOnly = None
             def __init__(self):
                 self.value__ = 0
+
+class PolygonMultiReplaceMaterialPostProcessor:
+    def __init__(self):
+        self.Name = ""
+        self.Id = 0
+        self.IsDisabled = False
+        self.IsUnique = False
+        self.IsImportable = False
+        self.Is2D = False
+        self.CanRotate = False
+        self.ParallelizationStrategy = None
+        self.SortingPriority = 0
+        self.PassCount = 0
+        self.LastGenerationTime = None
+        self.Config = None
+        self.ConfigMutable = None
+
+    class Configuration:
+        def __init__(self):
+            self.Polygon = None
+            self.AddNewStageConstant = None
+            self.AddNewStagePatchy = None
+            self.DistanceBiasFn = None
+            self.ExtraInfluenceDistance = None
+            self.SortingPriorityAdjustment = 0
+            self.ProcessingPhase = None
+            self.ReplacementStages = None
+            self.DistanceFnCache = None
+
+    class ReplaceStageConfig:
+        def __init__(self):
+            self.TransitionStartDistance = None
+            self.TransitionEndDistance = None
+            from Mafi import Option
+            self.RemovedAndReplacedMaterial = Option()
+            self.NewlyPlacedMaterial = Option()
+            self.TerrainBlendHeightRange = None
+            self.MaxThicknessFn = None
+            self.NewMaterialThicknessMult = None
+            self.ContributesAnyChanges = False
+            self.MaxThicknessFnCache = None
+
+class PolygonNoiseBasedReplacePostProcessor:
+    def __init__(self):
+        self.Name = ""
+        self.Id = 0
+        self.IsDisabled = False
+        self.IsUnique = False
+        self.IsImportable = False
+        self.Is2D = False
+        self.CanRotate = False
+        self.ParallelizationStrategy = None
+        self.SortingPriority = 0
+        self.PassCount = 0
+        self.LastGenerationTime = None
+        self.Config = None
+        self.ConfigMutable = None
+
+    class Configuration:
+        def __init__(self):
+            self.Polygon = None
+            self.TerrainMaterial = None
+            self.MaxInfluenceDistance = None
+            self.TerrainBlendHeightRange = None
+            self.ThicknessFn = None
+            self.SortingPriorityAdjustment = 0
+            self.ProcessingPhase = None
 
 class PolygonRampPostProcessor:
     def __init__(self):
@@ -464,6 +537,8 @@ class TerrainChunk64BitMap:
         self.BackingArray = None
 
 class TerrainPropsPostProcessor:
+    ROCKS_ON_ORES_PROPS_CONFIG_NAME = ""
+    ROCKS_ON_DISRUPTED_ORES_PROPS_CONFIG_NAME = ""
     def __init__(self):
         self.Name = ""
         self.Id = 0
@@ -497,6 +572,8 @@ class TerrainPropsPostProcessor:
         def __init__(self):
             self.AddSpawnMaterial = None
             self.AddSpawnedProps = None
+            self.PreferUndisruptedPropMaterial = False
+            self.PreferDisruptedBelowPropMaterial = False
             self.Name = ""
             self.SpawnMaterials = None
             self.MinSpawnMaterialThickness = None
@@ -527,6 +604,8 @@ class TerrainPropsPostProcessor:
             self.PlacementHeightRandom = None
             self.PropMaterialOverride = None
             self.BelowPropMaterial = None
+            self.PreferUndisruptedPropMaterial = False
+            self.PreferDisruptedBelowPropMaterial = False
 
 class TerrainUnderPropsPostProcessor:
     def __init__(self):

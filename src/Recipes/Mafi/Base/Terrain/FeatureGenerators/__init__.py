@@ -61,15 +61,19 @@ class PolygonSurfaceFeatureGenerator:
             from Mafi import Fix32
             self.SurfaceDepthMult = Fix32()
             self.MaxSurfaceThicknessFn = None
+            self.BaseToSurfaceBlendHeightRange = None
             self.AllowNonIntegerSurfaceHeights = False
             self.ContributesToOceanCoast = False
             self.DisableSubSurfaceGeneration = False
             self.SortingPriorityAdjustment = 0
+            self.TotalGeneratedBase = ""
+            self.TotalGeneratedSurface = ""
             self.TotalGeneratedChunks = 0
             self.ChunksWithNoContribution = 0
             self.ChunksWithSurfaceAtMaxThickness = 0
 
 class PolygonTerrainFeatureGenerator:
+    LATEST_VERSION = 0
     def __init__(self):
         self.Name = ""
         self.Id = 0
@@ -101,6 +105,9 @@ class PolygonTerrainFeatureGenerator:
             self.SurfaceCoverMaterial = Option()
             self.SurfaceCoverThicknessFn = None
             self.SortingPriorityAdjustment = 0
+            self.Version = 0
+            self.TotalGeneratedBase = ""
+            self.TotalGeneratedSurface = ""
             self.TotalGeneratedChunks = 0
             self.ChunksWithNoContribution = 0
 

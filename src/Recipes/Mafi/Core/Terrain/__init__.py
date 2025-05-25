@@ -1,4 +1,17 @@
 
+class CheatRestoreTerrainCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.Area = None
+
 class LandfillOnTerrainManager:
     def __init__(self):
         self.Stats = None
@@ -11,6 +24,18 @@ class OceanTerrainManager:
     def __init__(self):
         self.QueuedTilesCount = 0
         self.ProcessedLastTick = 0
+
+class PolygonTerrainArea2i:
+    def __init__(self):
+        self.BoundingBoxCenter = None
+        self.IsEmpty = False
+        self.IsNotEmpty = False
+        self.Polygon = None
+        from Mafi import Option
+        self.PolygonFast = Option()
+        self.BoundingBoxMin = None
+        self.BoundingBoxMax = None
+        self.BoundingBoxSize = None
 
 class RectangleTerrainArea2i:
     def __init__(self):
@@ -36,6 +61,7 @@ class RectangleTerrainArea2iRelative:
         self.Size = None
 
 class TerrainManager:
+    HEIGHT_AT_OCEAN = None
     MAX_DISRUPTION_DEPTH = None
     BedrockLayerThicknessDefault = None
     TERRAIN_GEN_PROGRESS_STEPS = 0
@@ -69,6 +95,9 @@ class TerrainManager:
         self.Chunk64PerWidth = 0
         self.Chunk64PerHeight = 0
         self.Chunk64TotalCount = 0
+        self.Chunk256PerWidth = 0
+        self.Chunk256PerHeight = 0
+        self.Chunk256TotalCount = 0
         self.FourSideNeighborsDeltas = None
         self.FourSideNeighborsDeltasIndices = None
         self.FourCornerNeighborsDeltas = None
@@ -91,6 +120,7 @@ class TerrainManager:
         self.MinedProducts = None
         self.DisruptedMaterialIds = None
         self.RecoveredMaterialIds = None
+        self.DisruptedMaterialParentsIds = None
         self.TerrainSurfaces = None
         self.IsGeneratingTerrain = False
         self.IsGeneratingTerrainLegacy = False
@@ -159,6 +189,8 @@ class TerrainSurfaceManager:
 
 
 class TerrainTile:
+    from Mafi import Fix32
+    ONE_OVER_TILE_SIZE_M = Fix32()
     MIN_LAYER_THICKNESS = None
     MIN_LAYER_THICKNESS_PER_DEPTH = None
     TILE_SIZE_M = 0
@@ -256,6 +288,11 @@ class VirtualResourceManager:
         pass
 
 
+class FakeTerrainOccupancyManager:
+    def __init__(self):
+        pass
+
+
 class FarmableManager:
     def __init__(self):
         pass
@@ -295,6 +332,7 @@ class TerrainTileSurfaceProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -306,7 +344,6 @@ class TerrainTileSurfaceProto:
         self.CostPerTile = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -388,6 +425,11 @@ class TerrainManagerConfig:
         self.EnableHeightSnapshotting = False
 
 class TerrainMaterialThicknessSlimExtensions:
+    def __init__(self):
+        pass
+
+
+class ITerrainOccupancyManager:
     def __init__(self):
         pass
 

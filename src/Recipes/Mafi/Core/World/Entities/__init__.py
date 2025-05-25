@@ -37,6 +37,13 @@ class WorldMapCargoShipWreck:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
+        self.Upgrader = None
+        self.PriceToUpgrade = None
+        self.ConstructionCostToUpgrade = None
+        self.UpgradeExists = False
+        self.UpgradeTitle = None
+        self.NextTier = Option()
+        self.Icon = ""
 
 class WorldMapEntity:
     def __init__(self):
@@ -78,10 +85,12 @@ class WorldMapMine:
         self.Maintenance = None
         self.CostToRepair = None
         self.QuantityAvailable = None
+        self.IsReserveUnlimited = False
         self.PriceToUpgrade = None
         self.UpgradeTitle = None
         self.UpgradeExists = False
         self.UpgradeIcon = ""
+        self.Upgrader = None
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
@@ -105,6 +114,9 @@ class WorldMapMine:
         self.HasWorkersCached = False
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
+        self.ConstructionCostToUpgrade = None
+        self.NextTier = Option()
+        self.Icon = ""
 
     class State:
         None = None
@@ -156,6 +168,7 @@ class WorldMapVillage:
         self.UpgradeTitle = None
         self.UpgradeExists = False
         self.UpgradeIcon = ""
+        self.Upgrader = None
         self.IsOwnedByPlayer = False
         self.OnConstructionDone = None
         self.OnAllConstructionProductsAvailable = None
@@ -176,6 +189,9 @@ class WorldMapVillage:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
+        self.ConstructionCostToUpgrade = None
+        self.NextTier = Option()
+        self.Icon = ""
         self.QuickTrades = None
 
 class DefaultWorldMapEntityFactory:
@@ -210,6 +226,7 @@ class WorldMapCargoShipWreckProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -218,7 +235,6 @@ class WorldMapCargoShipWreckProto:
         self.CostToRepair = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class IWorldMapEntity:
     def __init__(self):
@@ -263,6 +279,7 @@ class WorldMapEntityProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -270,7 +287,6 @@ class WorldMapEntityProto:
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
@@ -287,6 +303,7 @@ class WorldMapLocationGfxProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -295,7 +312,6 @@ class WorldMapLocationGfxProto:
         self.IconPath = ""
         self.Size = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class WorldMapMineProto:
     def __init__(self):
@@ -307,6 +323,7 @@ class WorldMapMineProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -323,7 +340,6 @@ class WorldMapMineProto:
         self.QuantityAvailable = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class WorldMapVillageProto:
     def __init__(self):
@@ -335,6 +351,7 @@ class WorldMapVillageProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -351,7 +368,6 @@ class WorldMapVillageProto:
         self.DurationPerNewPopPerReputationLevel = None
         self.Graphics = None
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class ProductToLend:
         def __init__(self):

@@ -19,6 +19,7 @@ class SurfaceDecalCategoryProto:
 
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -26,7 +27,6 @@ class SurfaceDecalCategoryProto:
         self.IsObsolete = False
         self.Order = 0.0
         self.IsPhantom = False
-        self.IsInitialized = False
 
 class SurfaceDecalValidator:
     def __init__(self):
@@ -45,13 +45,13 @@ class TerrainTileSurfaceDecalProto:
         self.IconPath = ""
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
         self.IsPhantom = False
-        self.IsInitialized = False
 
     class Gfx:
         Empty = None
