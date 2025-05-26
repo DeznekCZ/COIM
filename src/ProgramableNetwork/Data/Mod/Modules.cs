@@ -29,6 +29,7 @@ using Mafi.Core.Vehicles;
 using Mafi.Unity.InputControl;
 using Mafi.Unity.UiToolkit.Library;
 using ProgramableNetwork.Data.DataBand;
+using ProgramableNetwork.Data.Speaker;
 using ProgramableNetwork.Data.Variables;
 using System;
 using System.Linq;
@@ -632,6 +633,29 @@ namespace ProgramableNetwork
                     m.Output.Integer["count"] = GlobalDependencyResolver.Get<IVehiclesManager>().AllVehicles.Count;
                     m.Output.Integer["assignable"] = 0;
                     return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Speaker", "Connection: Speaker - play", "SPK", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddEntityField<Speaker>("speaker", "Speaker", "Must be placest next to Speaker tower", 10.ToFix32())
+                .AddInput("play", "Activate playing of tower")
+                // TODO select sound
+                // add also constant module for the sound
+                .Width(2)
+                .Action(m =>
+                {
+                    if (m.Field.Entity<Speaker>("speaker") is Speaker speaker)
+                    {
+                        speaker.SetPlaying(m.Input.Bool["play"]);
+                        return ModuleStatus.Running;
+                    }
+
+                    m.SetError("No connected speaker");
+                    return ModuleStatus.Error;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();

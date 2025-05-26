@@ -17,6 +17,7 @@ namespace ProgramableNetwork.Data.Mod
         public static EntityNotificationProto.ID InfoNotification = new EntityNotificationProto.ID("ProgramableNetwork_GeneralNotification");
         public static EntityNotificationProto.ID WarningNotification = new EntityNotificationProto.ID("ProgramableNetwork_WarningNotification");
         public static EntityNotificationProto.ID ErrorNotification = new EntityNotificationProto.ID("ProgramableNetwork_ErrorNotification");
+        public static EntityNotificationProto.ID SoundNotification = new EntityNotificationProto.ID("ProgramableNetwork_SoundNotification");
 
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
@@ -45,6 +46,15 @@ namespace ProgramableNetwork.Data.Mod
                 .SetStyle(NotificationStyle.Critical)
                 .AddEntityIcon(General.Warning128_png, ColorRgba.Red)
                 .AddIcon(General.Warning128_png)
+                .BuildAndAdd();
+
+            registrator.NotificationProtoBuilder
+                .Start("Playing", SoundNotification)
+                .Description("Controller contains issue, which may broke his behaviour")
+                .SetType(NotificationType.Continuous)
+                .SetStyle(NotificationStyle.Success)
+                .AddEntityIcon(General.Bell128_png, ColorRgba.Green)
+                .AddIcon(General.Bell128_png)
                 .BuildAndAdd();
         }
     }

@@ -6,6 +6,7 @@ using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.Datacenters;
 using Mafi.Core.Mods;
 using Mafi.Core.Prototypes;
+using ProgramableNetwork.Data.Speaker;
 
 namespace ProgramableNetwork
 {
@@ -18,6 +19,7 @@ namespace ProgramableNetwork
             public static readonly StaticEntityProto.ID Antena = new StaticEntityProto.ID("ProgramableNetwork_Antena");
             public static readonly StaticEntityProto.ID AntenaT2 = new StaticEntityProto.ID("ProgramableNetwork_AntenaT2");
             public static readonly StaticEntityProto.ID Database = new StaticEntityProto.ID("ProgramableNetwork_Database");
+            public static readonly StaticEntityProto.ID Speaker = new StaticEntityProto.ID("ProgramableNetwork_Speaker");
         }
     }
 
@@ -29,11 +31,13 @@ namespace ProgramableNetwork
             {
                 public static readonly string Controller = "Assets/ProgramableNetwork/Computer/Icon.png";
                 public static readonly string Antena = "Assets/ProgramableNetwork/Antena/Icon.png";
+                public static readonly string Speaker = "Assets/ProgramableNetwork/Speaker/Icon.png";
             }
 
             public static readonly string Controller = "Assets/ProgramableNetwork/Computer/Computer.prefab";
             public static readonly string Antena = "Assets/ProgramableNetwork/Antena/Antena.prefab";
             public static readonly string AntenaT2 = "Assets/ProgramableNetwork/Antena/AntenaT2.prefab";
+            public static readonly string Speaker = "Assets/ProgramableNetwork/Speaker/Speaker.prefab";
         }
     }
 
@@ -94,6 +98,18 @@ namespace ProgramableNetwork
                     categories: category
                 ),
                 distanceBoost: Fix32.Two
+            ));
+
+            registrator.PrototypesDb.Add(new SpeakerProto(
+                id: NewIds.Controllers.Speaker,
+                strings: Proto.CreateStr(NewIds.Controllers.Speaker, "Speaker", "Play a sound when on, the sound may be triggered Controller, or may work manually"),
+                layout: registrator.LayoutParser.ParseLayoutOrThrow("[3]"),
+                costs: ((EntityCostsTpl)Costs.Build.CP2(4).MaintenanceT1(2)).MapToEntityCosts(registrator),
+                graphics: new LayoutEntityProto.Gfx(
+                    prefabPath: NewAssets.Computers.Speaker,
+                    customIconPath: NewAssets.Computers.Icons.Speaker,
+                    categories: category
+                )
             ));
         }
     }

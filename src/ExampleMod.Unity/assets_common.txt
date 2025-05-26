@@ -31,3 +31,9 @@ computer_1324
 computer_711d
     Assets/ProgramableNetwork/Computer/Computer.prefab
 
+speaker_9036
+    Assets/ProgramableNetwork/Speaker/Icon.png
+
+speaker_a04d
+    Assets/ProgramableNetwork/Speaker/Speaker.prefab
+

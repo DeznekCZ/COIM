@@ -1,0 +1,20 @@
+ManifestFileVersion: 0
+CRC: 1517369644
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 3b115f35fd48b37cb14dd21f5cdc8ceb
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 2612ac43db082a73502ee80f2eceb73f
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 3b115f35fd48b37cb14dd21f5cdc8ceb
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/ProgramableNetwork/Speaker/Icon.png
+Dependencies: []

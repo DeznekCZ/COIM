@@ -1,0 +1,37 @@
+ManifestFileVersion: 0
+CRC: 1835525305
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: e3ce920c9940093bb3df69ddd8fb8b35
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 8ff58ff1a7fec16a053bdb52e682aa62
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: e3ce920c9940093bb3df69ddd8fb8b35
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 65
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: -1274595357, guid: 05b1a2884a81e1b48822d1862a19c596, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/ProgramableNetwork/Speaker/Speaker.prefab
+Dependencies:
+- S:/git/COIM-Derbis/src/ExampleMod.Unity/AssetBundles/antena_1406
