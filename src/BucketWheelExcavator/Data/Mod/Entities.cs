@@ -11,6 +11,7 @@ using Mafi.Collections.ImmutableCollections;
 using System;
 using System.Linq;
 using Mafi.Core.Research;
+using Mafi.Core;
 
 namespace BucketWheelExcavator
 {
@@ -72,7 +73,7 @@ namespace BucketWheelExcavator
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: "Assets/BucketWheelExcavator/BucketWheelExcavator_T1.prefab",
                     customIconPath: "Assets/BucketWheelExcavator/BucketWheelExcavator_T1_Icon.png",
-                    categories: registrator.PrototypesDb.Get<ToolbarCategoryProto>(Mafi.Base.Ids.ToolbarCategories.BuildingsForVehicles).ToImmutableArray()
+                    categories: registrator.PrototypesDb.Get<ToolbarCategoryProto>(IdsCore.ToolbarCategories.Terraforming).ToImmutableArray()
                 ),
                 fuelTanks: fuelTanks,
                 workersNeeded: 20,

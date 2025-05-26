@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <Configurations>Debug;Release</Configurations>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
@@ -26,10 +26,13 @@
 
   <ItemGroup>
     <Compile Remove="Data\Instructions\**" />
+    <Compile Remove="Data\Simulation\**" />
     <Compile Remove="Translate\**" />
     <EmbeddedResource Remove="Data\Instructions\**" />
+    <EmbeddedResource Remove="Data\Simulation\**" />
     <EmbeddedResource Remove="Translate\**" />
     <None Remove="Data\Instructions\**" />
+    <None Remove="Data\Simulation\**" />
     <None Remove="Translate\**" />
   </ItemGroup>
 
@@ -100,11 +103,7 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Data\Simulation\" />
-  </ItemGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net471\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net471\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" />
+    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" />
   </Target>
 </Project>

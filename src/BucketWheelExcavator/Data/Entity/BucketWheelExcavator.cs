@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using Mafi.Collections;
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Priorities;
@@ -10,15 +11,18 @@ using Mafi.Core.Maintenance;
 using Mafi.Core.Population;
 using Mafi.Core.Ports;
 using Mafi.Core.Ports.Io;
+using Mafi.Core.Products;
 using Mafi.Core.Terrain;
+using Mafi.Core.Terrain.Designation;
 using Mafi.Depedencies;
 using Mafi.Serialization;
 using System;
+using UnityEngine;
 
 namespace BucketWheelExcavator.Entity
 {
     [GenerateSerializer(false, null, 0)]
-    public class BucketWheelExcavator : LayoutEntity, IEntityWithGeneralPriority, IEntityWithWorkers, IMaintainedEntity, IEntityWithPorts
+    public class BucketWheelExcavator : LayoutEntity, IEntityWithGeneralPriority, IEntityWithWorkers, IMaintainedEntity, IEntityWithPorts, IEntityWithSimUpdate, IEntity/*, IEntityConstructionProgress*/
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate (object obj, BlobWriter writer)
         {
@@ -35,6 +39,10 @@ namespace BucketWheelExcavator.Entity
         private BucketWheelExcavatorProto m_proto;
         [DoNotSave(0, null)]
         private StaticEntityProto.ID m_protoId;
+        [DoNotSave(0, null)]
+        private Queueue<PartialProductQuantity> m_queue;
+        [DoNotSave(0, null)]
+        private Dict<ProductSlimId, PartialQuantity> m_overflow;
 
         [DoNotSave(0, null)]
         public new BucketWheelExcavatorProto Prototype
@@ -45,13 +53,21 @@ namespace BucketWheelExcavator.Entity
             }
         }
 
-        public BucketWheelExcavator(EntityId id, BucketWheelExcavatorProto proto, TileTransform tileTransform, EntityContext context, TerrainManager terrain, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
+        public BucketWheelExcavator(EntityId id, BucketWheelExcavatorProto proto, TileTransform tileTransform, EntityContext context, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
             : base(id, proto, tileTransform, context)
         {
             this.m_proto = proto;
             this.m_protoId = proto.Id;
             this.MaintenanceCosts = Prototype.Costs.Maintenance;
             this.m_maintenance = maintenanceProvidersFactory.CreateFor(this);
+            this.m_queue = new Queueue<PartialProductQuantity>();
+            this.m_overflow = new Dict<ProductSlimId, PartialQuantity>();
+
+            // init queue
+            for (int i = 0; i < 10; i++)
+            {
+                m_queue.Enqueue(PartialProductQuantity.None);
+            }
         }
 
         public override bool CanBePaused => true;
@@ -70,6 +86,14 @@ namespace BucketWheelExcavator.Entity
         public Fix32 Direction { get; set; }
         public Fix32 Distance { get; set; }
         public Fix32 Height { get; set; }
+
+        [DoNotSave(0, null)]
+        public Lyst<Tile3f> Buckets { get; set; }
+
+        protected override bool IsEnabledNow => IsNotPaused || m_queue.Count > 10;
+
+        [DoNotSave(0, null)]
+        public Queueue<PartialProductQuantity> Queue => m_queue;
 
         public static void Serialize(BucketWheelExcavator value, BlobWriter writer)
         {
@@ -105,6 +129,8 @@ namespace BucketWheelExcavator.Entity
             writer.WriteString(m_protoId.Value);
             writer.WriteInt(/* Version */1);
             writer.WriteGeneric(m_maintenance);
+            Queueue<PartialProductQuantity>.Serialize(m_queue, writer);
+            Dict<ProductSlimId, PartialQuantity>.Serialize(m_overflow, writer);
         }
 
         protected override void DeserializeData(BlobReader reader)
@@ -113,13 +139,80 @@ namespace BucketWheelExcavator.Entity
             m_protoId = new LayoutEntityProto.ID(reader.ReadString());
             int version = reader.ReadInt();
             m_maintenance = reader.ReadGenericAs<IEntityMaintenanceProvider>();
+            m_queue = Queueue<PartialProductQuantity>.Deserialize(reader);
+            m_overflow = Dict<ProductSlimId, PartialQuantity>.Deserialize(reader);
 
             reader.RegisterInitAfterLoad(this, nameof(initContexts), InitPriority.Normal);
         }
 
         public void SimUpdate()
         {
-            
+            if (IsEnabledNow && ConstructionState == ConstructionState.Constructed)
+            {
+                TryMoveBelt();
+                TryMine();
+            }
+        }
+
+        private void TryMine()
+        {
+            if (m_queue.Count < 10)
+            {
+                Log.Info("Mine in progress");
+                var terrain = GlobalDependencyResolver.Get<TerrainManager>();
+                var slimIdManager = GlobalDependencyResolver.Get<ProductsSlimIdManager>();
+                Lyst<PartialProductQuantity> mined = new Lyst<PartialProductQuantity>();
+                foreach (Tile3f item in Buckets)
+                {
+                    TerrainMaterialThicknessSlim minedMaterial = terrain.MineMaterial(
+                        new Tile2iAndIndex(item.Tile2i.AsSlim, terrain.GetTileIndex(item.Tile2i).Value),
+                        ThicknessTilesF.One);
+
+                    PartialProductQuantity quantity = minedMaterial.ToPartialProductQuantity(terrain);
+                    if (quantity.Quantity > Quantity.Zero)
+                    {
+                        m_queue.Enqueue(quantity);
+                        return;
+                    }
+                }
+
+                m_queue.Enqueue(PartialProductQuantity.None);
+            }
+        }
+
+        private void TryMoveBelt()
+        {
+            if (m_queue.Peek().IsNotEmpty)
+            {
+                if (ConnectedOutputPorts.First.IsConnected)
+                {
+                    PartialProductQuantity quantity = m_queue.Dequeue();
+                    if (m_overflow.TryGetValue(quantity.Product.SlimId, out PartialQuantity overflow))
+                    {
+                        quantity += overflow;
+                        m_overflow.Remove(quantity.Product.SlimId);
+                    }
+
+                    ProductQuantity fullPart = new ProductQuantity(quantity.Product, quantity.Quantity.IntegerPart);
+                    PartialQuantity fraction = quantity.Quantity.FractionalPart;
+                    Quantity rest = ConnectedOutputPorts.First.SendAsMuchAs(fullPart);
+
+                    if (rest > Quantity.Zero)
+                    {
+                        m_queue.EnqueueAt(new PartialProductQuantity(quantity.Product, rest.AsPartial + fraction), 0);
+                    }
+
+                    if (fraction > PartialQuantity.Zero)
+                    {
+                        m_overflow[quantity.Product.SlimId] = fraction;
+                    }
+                }
+            }
+            else
+            {
+                // dequeue belt slot
+                m_queue.Dequeue();
+            }
         }
 
         public Quantity ReceiveAsMuchAsFromPort(ProductQuantity pq, IoPortToken sourcePort)
