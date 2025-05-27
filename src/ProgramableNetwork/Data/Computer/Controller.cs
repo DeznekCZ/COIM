@@ -41,7 +41,7 @@ namespace ProgramableNetwork
         public Controller(EntityId id, ControllerProto proto, TileTransform transform, EntityContext context, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
             : base(id, proto, transform, context)
         {
-            Prototype = proto;
+            Prototype = proto.BasedOn ?? proto;
             ErrorMessage = "";
             m_unityConsumer = Context.UnityConsumerFactory.CreateConsumer(this);
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
@@ -54,13 +54,20 @@ namespace ProgramableNetwork
             Rows = new Lyst<Lyst<ModulePlacement>>();
             for (int i = 0; i < Prototype.Rows; i++)
             {
-                var row = new Lyst<ModulePlacement>();
+                Lyst<ModulePlacement> row = new Lyst<ModulePlacement>();
                 for (int j = 0; j < Prototype.Columns; j++)
                 {
                     row.Add((ModulePlacement)(0, true));
                 }
                 Rows.Add(row);
             }
+
+            Action initSettings = proto.InitModules(this);
+            foreach (Module module in Modules)
+            {
+                module.Prototype.ExecuteInit(module);
+            }
+            initSettings();
 
             Log.Info($"Created with {Prototype.Rows} rows, {Prototype.Columns} columns");
         }

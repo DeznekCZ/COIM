@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1311133266
+CRC: 1640950940
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: c8e00f0422a0e844d4a76c31ea1bc1d4
+    Hash: 79ec9becf2fa1cfe0190a4bd3a9149c7
   TypeTreeHash:
     serializedVersion: 2
     Hash: d27d605e56b00c7d193d3604b99a7461
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: c8e00f0422a0e844d4a76c31ea1bc1d4
+    Hash: 79ec9becf2fa1cfe0190a4bd3a9149c7
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -31,11 +31,13 @@ ClassTypes:
 SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/ProgramableNetwork/Computer/box_back.mat
+- Assets/ProgramableNetwork/Computer/Icon_VehicleImport.png
 - Assets/ProgramableNetwork/Computer/box_side.png
 - Assets/ProgramableNetwork/Computer/box_back.png
 - Assets/ProgramableNetwork/Computer/Icon.png
 - Assets/ProgramableNetwork/Computer/box_front.png
 - Assets/ProgramableNetwork/Computer/box_top.mat
+- Assets/ProgramableNetwork/Computer/Icon_FullStorage.png
 - Assets/ProgramableNetwork/Computer/box_front.mat
 - Assets/ProgramableNetwork/Computer/box_top.png
 - Assets/ProgramableNetwork/Computer/computerbox.obj

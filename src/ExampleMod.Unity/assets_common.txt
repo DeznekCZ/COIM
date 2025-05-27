@@ -27,6 +27,8 @@ computer_1324
     Assets/ProgramableNetwork/Computer/box_top.png
     Assets/ProgramableNetwork/Computer/computerbox.obj
     Assets/ProgramableNetwork/Computer/Icon.png
+    Assets/ProgramableNetwork/Computer/Icon_FullStorage.png
+    Assets/ProgramableNetwork/Computer/Icon_VehicleImport.png
 
 computer_711d
     Assets/ProgramableNetwork/Computer/Computer.prefab
