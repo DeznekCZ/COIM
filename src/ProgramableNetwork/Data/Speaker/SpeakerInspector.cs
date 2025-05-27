@@ -1,4 +1,5 @@
-﻿using Mafi.Base;
+﻿using Mafi;
+using Mafi.Base;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core;
 using Mafi.Core.Syncers;
@@ -24,14 +25,18 @@ namespace ProgramableNetwork.Data.Speaker
         {
             Toggle toggle;
             Dropdown<KeyValuePair<string, LocStrFormatted>> dropdown;
+            Slider volume;
             AddPanelRow(
-                new Label("Active".AsLoc()),
-                toggle = new Toggle(),
+                new Label("Active".AsLoc()).TextAlign(TextAlignment.LeftMiddle)
+                .FlexGrow(0.4f),
+                toggle = new Toggle().FlexGrow(0.1f),
                 dropdown = new Dropdown<KeyValuePair<string, LocStrFormatted>>(
                     optionViewFactory: (option, index, isInDropdown) => new Label(option.Value)
                 )
                 .OnValueChanged((v, i) => { Entity.SetSound(v.Key ?? UserInterface.Audio.ShipAlarm_prefab); })
                 .SetOptions(Sounds)
+                .FlexGrow(0.5f),
+                volume = new Slider().FlexGrow(1)
             );
 
             this.Observe(() => Entity.IsPlaying)
@@ -58,6 +63,16 @@ namespace ProgramableNetwork.Data.Speaker
                 });
 
             toggle.OnValueChanged((playing) => Entity.SetPlaying(playing));
+
+            this.Observe(() => Entity.Volume)
+                .Do((sound) => {
+                    volume.Value(sound.ToFloat() * 0.5f);
+                });
+
+            volume.OnValueChanged((value, _) =>
+            {
+                Entity.SetVolume(Percent.FromFloat(value * 2));
+            });
 
             EmbedStatusToTheTop();
         }

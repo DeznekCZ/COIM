@@ -43,6 +43,7 @@ namespace ProgramableNetwork.Data.Speaker
             Prototype = proto;
             ErrorMessage = "";
             Sound = Assets.Unity.UserInterface.Audio.ShipAlarm_prefab;
+            Volume = Percent.Hundred;
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
             m_maintenanceConsumer = maintenanceProvidersFactory.CreateFor(this);
             m_notificationInfoManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.SoundNotification);
@@ -79,7 +80,8 @@ namespace ProgramableNetwork.Data.Speaker
 
         public void ApplyConfig(EntityConfigData data)
         {
-            data.SetBool("isPlaying", IsPlaying);
+            IsPlaying = data.GetBool("isPlaying") ?? false;
+            Sound = data.GetString("sound").ValueOrNull ?? Assets.Unity.UserInterface.Audio.ShipAlarm_prefab;
         }
 
         public static void Serialize(Speaker value, BlobWriter writer)
@@ -122,11 +124,12 @@ namespace ProgramableNetwork.Data.Speaker
         {
             base.SerializeData(writer);
             writer.WriteString(m_protoId.Value);
-            writer.WriteInt(/* Version */1);
+            writer.WriteInt(/* Version */2);
 
             writer.WriteString(ErrorMessage ?? "");
             Option<string>.Serialize(CustomTitle, writer);
             writer.WriteString(Sound ?? Assets.Unity.UserInterface.Audio.ShipAlarm_prefab);
+            writer.WriteInt(Volume.RawValue);
             writer.WriteBool(IsPlaying);
 
             writer.WriteInt(GeneralPriority);
@@ -145,14 +148,26 @@ namespace ProgramableNetwork.Data.Speaker
 
             ErrorMessage = reader.ReadString();
             CustomTitle = Option<string>.Deserialize(reader);
-            if (version < 1)
+
+            if (version < 2)
             {
-                Sound = Assets.Unity.UserInterface.Audio.ShipAlarm_prefab;
-                IsPlaying = false;
+                if (version < 1)
+                {
+                    Sound = Assets.Unity.UserInterface.Audio.ShipAlarm_prefab;
+                    Volume = Percent.Hundred;
+                    IsPlaying = false;
+                }
+                else
+                {
+                    Sound = reader.ReadString() ?? Assets.Unity.UserInterface.Audio.ShipAlarm_prefab;
+                    Volume = Percent.Hundred;
+                    IsPlaying = reader.ReadBool();
+                }
             }
             else
             {
                 Sound = reader.ReadString() ?? Assets.Unity.UserInterface.Audio.ShipAlarm_prefab;
+                Volume = Percent.FromRaw(reader.ReadInt());
                 IsPlaying = reader.ReadBool();
             }
 
@@ -244,7 +259,7 @@ namespace ProgramableNetwork.Data.Speaker
                 {
                     var clipper = GlobalDependencyResolver.Get<UiContext>().AudioDb.GetSharedAudioUi(Sound);
 
-                    AudioSource.PlayClipAtPoint(clipper.clip, Position3f.ToVector3(), 100);
+                    AudioSource.PlayClipAtPoint(clipper.clip, Position3f.ToVector3(), Volume.ToFloat() * 100f);
                     m_nextPlay = DateTime.Now.Ticks + (long)(clipper.clip.length * TimeSpan.TicksPerSecond);
                 }
             }
@@ -277,6 +292,14 @@ namespace ProgramableNetwork.Data.Speaker
         public void SetSound(string sound)
         {
             Sound = sound;
+        }
+
+        [DoNotSave()]
+        public Percent Volume { get; private set; }
+
+        public void SetVolume(Percent volume)
+        {
+            Volume = volume;
         }
     }
 }
