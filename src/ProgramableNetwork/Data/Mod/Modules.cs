@@ -717,8 +717,16 @@ namespace ProgramableNetwork
                 var builder = registrator
                     .ModuleBuilderStart($"Boolean_And_{i}", $"Boolean: AND ({i} pins)", $"AND-{i}", Assets.Base.Products.Icons.Vegetables_svg)
                     .AddCategory(Category.Boolean)
-                    .AddOutput("b", "not A")
-                    .AddOutput("a", "A")
+                    .AddOutput("b", "not C")
+                    .AddOutput("a", "C")
+                    .Display(m =>
+                    {
+                        m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
+                        m.Display["not_c"] = m.Output.Bool["b"] ? "1" : "";
+                    })
+                    .AddDisplayFiller(i - 2)
+                    .AddDisplay("not_c", "not C", 1, led: true)
+                    .AddDisplay("c", "C", 1, led: true)
                     .AddControllerDevice()
                     // dynamic
                     .Action(ands[(i / 2) - 1]);
@@ -753,8 +761,16 @@ namespace ProgramableNetwork
                 var builder = registrator
                     .ModuleBuilderStart($"Boolean_Or_{i}", $"Boolean: OR ({i} pins)", $"OR-{i}", Assets.Base.Products.Icons.Vegetables_svg)
                     .AddCategory(Category.Boolean)
-                    .AddOutput("b", "not A")
-                    .AddOutput("a", "A")
+                    .AddOutput("b", "not C")
+                    .AddOutput("a", "C")
+                    .Display(m =>
+                    {
+                        m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
+                        m.Display["not_c"] = m.Output.Bool["b"] ? "1" : "";
+                    })
+                    .AddDisplayFiller(i - 2)
+                    .AddDisplay("not_c", "not C", 1, led: true)
+                    .AddDisplay("c", "C", 1, led: true)
                     .AddControllerDevice()
                     // dynamic
                     .Action(ors[(i / 2) - 1]);
@@ -769,8 +785,8 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Boolean)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
-                .AddOutput("b", "not A")
-                .AddOutput("a", "A")
+                .AddOutput("b", "not C")
+                .AddOutput("a", "C")
                 .AddControllerDevice()
                 // dynamic
                 .Action(m =>
@@ -781,6 +797,13 @@ namespace ProgramableNetwork
                         ) ? 1 : 0;
                         m.Output["b"] = m.Output["a"] > 0 ? 0 : 1;
                     })
+                .Display(m =>
+                {
+                    m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
+                    m.Display["not_c"] = m.Output.Bool["b"] ? "1" : "";
+                })
+                .AddDisplay("not_c", "not C", 1, led: true)
+                .AddDisplay("c", "C", 1, led: true)
                 .BuildAndAdd();
 
             registrator
@@ -788,6 +811,11 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Boolean)
                 .AddInput("a", "A")
                 .AddOutput("a", "not A")
+                .Display(m =>
+                {
+                    m.Display["a"] = m.Output.Bool["a"] ? "1" : "";
+                })
+                .AddDisplay("a", "not A", 1, led: true)
                 .AddControllerDevice()
                 // dynamic
                 .Action(m => m.Output["a"] = m.Input["a"] > 0 ? 0 : 1)
@@ -1755,6 +1783,13 @@ namespace ProgramableNetwork
                     m.Output.Bool["c"] = m.Input["a", 0] == m.FieldOrInput["b", 0];
                     m.Output.Bool["not_c"] = !m.Output.Bool["c"];
                 })
+                .Display(m =>
+                {
+                    m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
+                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                })
+                .AddDisplay("not_c", "not C", 1, led: true)
+                .AddDisplay("c", "C", 1, led: true)
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1772,6 +1807,13 @@ namespace ProgramableNetwork
                     m.Output.Bool["c"] = m.Input["a", 0] > m.FieldOrInput["b", 0];
                     m.Output.Bool["not_c"] = !m.Output.Bool["c"];
                 })
+                .Display(m =>
+                {
+                    m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
+                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                })
+                .AddDisplay("not_c", "not C", 1, led: true)
+                .AddDisplay("c", "C", 1, led: true)
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1789,6 +1831,13 @@ namespace ProgramableNetwork
                     m.Output.Bool["c"] = m.Input["a", 0] < m.FieldOrInput["b", 0];
                     m.Output.Bool["not_c"] = !m.Output.Bool["c"];
                 })
+                .Display(m =>
+                {
+                    m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
+                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                })
+                .AddDisplay("not_c", "not C", 1, led: true)
+                .AddDisplay("c", "C", 1, led: true)
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1806,6 +1855,13 @@ namespace ProgramableNetwork
                     m.Output.Bool["c"] = m.Input["a", 0] >= m.FieldOrInput["b", 0];
                     m.Output.Bool["not_c"] = !m.Output.Bool["c"];
                 })
+                .Display(m =>
+                {
+                    m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
+                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                })
+                .AddDisplay("not_c", "not C", 1, led: true)
+                .AddDisplay("c", "C", 1, led: true)
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -1823,6 +1879,13 @@ namespace ProgramableNetwork
                     m.Output.Bool["c"] = m.Input["a", 0] <= m.FieldOrInput["b", 0];
                     m.Output.Bool["not_c"] = !m.Output.Bool["c"];
                 })
+                .Display(m =>
+                {
+                    m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
+                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                })
+                .AddDisplay("not_c", "not C", 1, led: true)
+                .AddDisplay("c", "C", 1, led: true)
                 .AddControllerDevice()
                 .BuildAndAdd();
 

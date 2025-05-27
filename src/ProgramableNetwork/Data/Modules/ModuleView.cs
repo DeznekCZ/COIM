@@ -9,6 +9,7 @@ using Mafi.Unity.UiToolkit;
 using Mafi.Unity.Ui.Library;
 using Mafi.Localization;
 using System.Collections.Generic;
+using static Mafi.Unity.Assets.Unity;
 
 namespace ProgramableNetwork
 {
@@ -400,7 +401,19 @@ namespace ProgramableNetwork
 
             private UiComponent ToggleDisplay_LED(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview, bool click = true)
             {
+                if (click)
                 return ToggleDisplay_Symbol(uiContext, module, display, preview, "●", click);
+
+                var text = new DisplayWithIcon(UserInterface.General.Circle_svg);
+                text.Icon.Color(module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red);
+                text.Icon.Margin(Px.Zero);
+                text.Icon.Padding(Px.Zero);
+                text.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+                text.Color(ColorRgba.White);
+                text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
+                text.Observe(() => module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red)
+                    .Do((t) => text.Icon.Color(t));
+                return text;
             }
         }
 
