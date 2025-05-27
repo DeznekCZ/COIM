@@ -180,25 +180,26 @@ namespace ProgramableNetwork
                     id: protoId,
                     strings: Proto.CreateStr(protoId, name, description),
                     layout: registrator.LayoutParser.ParseLayoutOrThrow("[1]"),
-                costs: ((EntityCostsTpl)Costs.Build.CP2(4)).MapToEntityCosts(registrator),
-                    initModules: modules,
-                allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
-                    basedOn: originalTier1,
-                graphics: new LayoutEntityProto.Gfx(
-                    prefabPath: NewAssets.Computers.Controller,
-                        customIconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
-                    categories: category
-                )
-            ));
+                    costs: ((EntityCostsTpl)Costs.Build.CP2(4)).MapToEntityCosts(registrator),
+                        initModules: modules,
+                    allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
+                        basedOn: originalTier1,
+                    graphics: new LayoutEntityProto.Gfx(
+                        prefabPath: NewAssets.Computers.Controller,
+                            customIconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
+                        categories: category
+                    )
+                ));
                 if (template != null)
                     template.SetNextTierIndirect(next);
                 template = next;
             }
 
-            registrator.PrototypesDb.Add(new AntenaProto(
+            var antenaT1 = registrator.PrototypesDb.Add(new AntenaProto(
                 id: NewIds.Controllers.Antena,
                 strings: Proto.CreateStr(NewIds.Controllers.Antena, "Antena", "Handles signal transfer for longer distance"),
                 layout: registrator.LayoutParser.ParseLayoutOrThrow("[3]"),
+                tier: 1,
                 costs: ((EntityCostsTpl)Costs.Build.CP2(4).MaintenanceT1(2)).MapToEntityCosts(registrator),
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Antena,
@@ -207,10 +208,11 @@ namespace ProgramableNetwork
                 )
             ));
 
-            registrator.PrototypesDb.Add(new AntenaProto(
+            var antenaT2 = registrator.PrototypesDb.Add(new AntenaProto(
                 id: NewIds.Controllers.AntenaT2,
                 strings: Proto.CreateStr(NewIds.Controllers.AntenaT2, "Antena II", "Handles signal transfer for longer distance (100% bonus to range)"),
                 layout: registrator.LayoutParser.ParseLayoutOrThrow("[6][6]", "[6][6]"),
+                tier: 2,
                 costs: ((EntityCostsTpl)Costs.Build.CP3(8).MaintenanceT2(2)).MapToEntityCosts(registrator),
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.AntenaT2,
@@ -219,6 +221,8 @@ namespace ProgramableNetwork
                 ),
                 distanceBoost: Fix32.Two
             ));
+
+            antenaT1.SetNextTierIndirect(antenaT2);
 
             registrator.PrototypesDb.Add(new SpeakerProto(
                 id: NewIds.Controllers.Speaker,
