@@ -968,6 +968,9 @@ namespace ProgramableNetwork
                                       e is TrainStationModule ||
                                       e is OreSortingPlant
                     )
+                .AddBooleanField("field_product", "Product")
+                .AddProductField("product", "Product", "Select filter for product")
+                .Width(4)
                 .Action(m =>
                 {
                     LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
@@ -998,7 +1001,7 @@ namespace ProgramableNetwork
                             return ModuleStatus.Error;
                         }
 
-                        ProductProto product = m.Input.Product("product");
+                        ProductProto product = m.FieldOrInput.Product("product");
                         var buffers = new[] { foodModule.GetBuffer(0).ValueOrNull, foodModule.GetBuffer(1).ValueOrNull };
                         return GetValueFromBuffers(m, product, buffers);
                     }
@@ -1011,13 +1014,13 @@ namespace ProgramableNetwork
                             return ModuleStatus.Error;
                         }
 
-                        ProductProto product = m.Input.Product("product");
+                        ProductProto product = m.FieldOrInput.Product("product");
                         return GetValueFromBuffers(m, product, sorter.OutputBuffers.AsEnumerable().ToArray());
                     }
 
                     if (entity is Hospital hospital)
                     {
-                        ProductProto product = m.Input.Product("product");
+                        ProductProto product = m.FieldOrInput.Product("product");
                         if (product is null)
                         {
                             m.SetError("Product is not selected");
@@ -1030,7 +1033,7 @@ namespace ProgramableNetwork
 
                     if (entity is SettlementServiceModule module)
                     {
-                        ProductProto product = m.Input.Product("product");
+                        ProductProto product = m.FieldOrInput.Product("product");
                         if (product is null)
                         {
                             m.SetError("Product is not selected");
@@ -1082,18 +1085,20 @@ namespace ProgramableNetwork
                 .AddInput("product", "Product filter")
                 .AddEntityField<Transport>("entity", "Connection device", 20.ToFix32())
                 .AddBooleanField("fullstack", "Cap fullness to 100%", "Bigger tiers of transport may display value over 100%. It's caused by maximum stack size. Activating this option will be the value normalized to 100%.")
-                // TODO add filter input field
+                .AddBooleanField("field_product", "Product")
+                .AddProductField("product", "Product", "Select filter for product")
+                .Width(4)
                 .Action(m =>
                 {
                     Transport entity = m.Field.Entity<Transport>("entity");
                     Fix32 buffer = m.Input["buffer", 0];
-                    int filterId = m.Input["product", 0].RawValue;
+                    ProductProto filterId = m.FieldOrInput.Product("product");
                     bool fullstack = m.Field.Bool["fullstack"];
 
                     if (entity != null)
                     {
                         m.Output["quantity"] = entity.TransportedProducts
-                                            .Where(p => filterId == 0 || p.SlimId.Value == filterId)
+                                            .Where(p => filterId is null || p.SlimId == filterId.SlimId)
                                             .Select(p => p.Quantity.Value).Sum();
                         m.Output["capacity"] = entity.Trajectory.MaxProducts
                                              * (fullstack ? entity.Prototype.MaxQuantityPerTransportedProduct.Value : 1);
@@ -1244,10 +1249,10 @@ namespace ProgramableNetwork
                         return ModuleStatus.Running;
                     }
                 })
-                .AddDisplay("crop_3", "Crop 3rd next", 1, image: true)
-                .AddDisplay("crop_2", "Crop 2nd next", 1, image: true)
-                .AddDisplay("crop_1", "Crop next", 1, image: true)
-                .AddDisplay("crop_0", "Crop actual", 1, image: true)
+                .AddDisplay("crop_3", "Crop 4", 1, image: true)
+                .AddDisplay("crop_2", "Crop 3", 1, image: true)
+                .AddDisplay("crop_1", "Crop 2", 1, image: true)
+                .AddDisplay("crop_0", "Crop 1", 1, image: true)
                 .Display((m) =>
                 {
                     var farm = m.Field.Entity<Farm>("farm");

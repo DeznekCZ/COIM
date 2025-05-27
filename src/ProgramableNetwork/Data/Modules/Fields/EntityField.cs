@@ -89,7 +89,7 @@ namespace ProgramableNetwork
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
             Picker picker = new Picker(module, id, entitySelector, distance, updateDialog, parentWindow, inspector);
-            fieldContainer.Row(this).Add(picker);
+            fieldContainer.Row(this, module).Add(picker);
         }
 
         public void InitData(Module module)

@@ -27,7 +27,13 @@ namespace ProgramableNetwork
 
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            RowContainer row = fieldContainer.Row(this);
+            // input field definition
+            if (Id.StartsWith("field_") && module.Prototype.Inputs.Exists(i => i.Id == Id.Substring("field_".Length)))
+            {
+                return;
+            }
+
+            RowContainer row = fieldContainer.Row(this, module);
 
             bool value = module.Field.Bool[Id];
 

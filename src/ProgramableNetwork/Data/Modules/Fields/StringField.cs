@@ -26,7 +26,7 @@ namespace ProgramableNetwork
 
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            RowContainer row = fieldContainer.Row(this);
+            RowContainer row = fieldContainer.Row(this, module);
 
             var numberEditor = new TextField();
             numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
