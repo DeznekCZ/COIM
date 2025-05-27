@@ -5,6 +5,7 @@ using Mafi.Core.Entities;
 using Mafi.Localization;
 using Mafi.Serialization;
 using System;
+using System.Threading;
 using UnityEngine;
 
 namespace ProgramableNetwork
@@ -45,6 +46,7 @@ namespace ProgramableNetwork
         public Module(ModuleProto prototype, EntityContext context, Controller entity)
         {
             this.Id = DateTime.UtcNow.Ticks;
+            Thread.Sleep(1);
             Prototype = prototype;
             Context = context;
             Controller = entity;

@@ -37,58 +37,6 @@ namespace ProgramableNetwork
             // add filler
             row.AddAndReturn(new UiComponent()).Fill();
 
-            //ButtonIcon moveLeft = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.ArrowLeft128_png)
-            //    .Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
-            //    .Margin(Px.Zero)
-            //    .IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
-            //    .Icon.Padding(Sizes.IMAGE_PADDING)
-            //         .Margin(Px.Zero)
-            //    .Parent.As<ButtonIcon>().Value;
-            //moveLeft.Tooltip("Try move module to left".ToDoLoc());
-            //moveLeft.OnClick(() => controllerView.Move(m_module, x: -1));
-            //this.Observe(() => controllerView.CanMove(m_module, x: -1))
-            //    .Do(m => moveLeft.Enabled(m));
-            //row.Add(moveLeft);
-            //
-            //ButtonIcon moveRight = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.ArrowRight_svg)
-            //    .Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
-            //    .Margin(Px.Zero)
-            //    .IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
-            //    .Icon.Padding(Sizes.IMAGE_PADDING)
-            //         .Margin(Px.Zero)
-            //    .Parent.As<ButtonIcon>().Value;
-            //moveRight.Tooltip("Try move module to right".ToDoLoc());
-            //moveRight.OnClick(() => controllerView.Move(m_module, x: 1));
-            //this.Observe(() => controllerView.CanMove(m_module, x: 1))
-            //    .Do(m => moveRight.Enabled(m));
-            //row.Add(moveRight);
-            //
-            //ButtonIcon moveUp = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.UpArrow128_png)
-            //    .Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
-            //    .Margin(Px.Zero)
-            //    .IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
-            //    .Icon.Padding(Sizes.IMAGE_PADDING)
-            //         .Margin(Px.Zero)
-            //    .Parent.As<ButtonIcon>().Value;
-            //moveUp.Tooltip("Try move module to up".ToDoLoc());
-            //moveUp.OnClick(() => controllerView.Move(m_module, y: -1));
-            //this.Observe(() => controllerView.CanMove(m_module, y: -1))
-            //    .Do(m => moveUp.Enabled(m));
-            //row.Add(moveUp);
-            //
-            //ButtonIcon moveDown = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.DownArrow128_png)
-            //    .Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
-            //    .Margin(Px.Zero)
-            //    .IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
-            //    .Icon.Padding(Sizes.IMAGE_PADDING)
-            //         .Margin(Px.Zero)
-            //    .Parent.As<ButtonIcon>().Value;
-            //moveDown.Tooltip("Try move module to down".ToDoLoc());
-            //moveDown.OnClick(() => controllerView.Move(m_module, y: 1));
-            //this.Observe(() => controllerView.CanMove(m_module, y: 1))
-            //    .Do(m => moveDown.Enabled(m));
-            //row.Add(moveDown);
-
             ButtonIcon copy = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.ExportToString_svg)
                 .Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
                 .Margin(Px.Zero)
@@ -132,7 +80,7 @@ namespace ProgramableNetwork
                     m_module.NumberData[item.Key] = item.Value;
                 foreach (KeyValuePair<string, string> item in ControllerView.m_lastCreated.StringData)
                     m_module.StringData[item.Key] = item.Value;
-                m_module.Prototype.Init(m_module);
+                m_module.Prototype.ExecuteInit(m_module);
             });
             this.Observe(() => ControllerView.m_lastCreated)
                 .Do(m => paste.Enabled(!(m is null) && m.Prototype.Id == m_module.Prototype.Id));

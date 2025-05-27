@@ -51,20 +51,41 @@ namespace ProgramableNetwork
                 fieldsPanel.TextOverflow(TextOverflow.Clip);
                 fieldsPanel.TextAlign(TextAlignment.CenterMiddle);
                 fieldsPanel.Size(width * Sizes.BLOCK_SIZE, displaysExists ? Sizes.BLOCK_SIZE : (Sizes.BLOCK_SIZE * 2));
-                fieldsPanel.OnMouseEnterLeave(
-                        () => m_controller.AddPreviewHighlight(module),
-                        () => m_controller.ClearPreviewHighlight()
-                    );
                 if (!preview)
+                {
+                    fieldsPanel.OnMouseEnterLeave(
+                            () => m_controller.AddPreviewHighlight(module),
+                            () => m_controller.ClearPreviewHighlight()
+                        );
                     fieldsPanel.OnClick(() => new ModuleEditDialog(module, m_controller, uiContext, fieldsPanel, m_controller.m_controller));
-                BodyAdd(fieldsPanel);
 
-                this.Observe(() => module.Error)
-                    .Do((text) =>
+                    this.Observe(() => module.Status)
+                        .Observe(() => module.Error)
+                        .Observe(() => module.Warning)
+                        .Do((status, text, warn) =>
+                        {
+                            bool isError = status == ModuleStatus.Error;
+                            fieldsPanel.Tooltip(text.AsLoc(), enabled: !string.IsNullOrEmpty(text), isError: isError);
+
+                            if (status != ModuleStatus.Running)
+                            {
+                                fieldsPanel.Class(Cls.btn_primary);
+                                fieldsPanel.ClassRemove(Cls.btn_general);
+                            }
+                            else
+                            {
+                                fieldsPanel.Class(Cls.btn_general);
+                                fieldsPanel.ClassRemove(Cls.btn_primary);
+                            }
+                        });
+
+                    if (displaysExists)
                     {
-                        bool isError = module.Status == ModuleStatus.Error;
-                        fieldsPanel.Tooltip(text.AsLoc(), enabled: !string.IsNullOrEmpty(text), isError: isError);
-                    });
+                        this.Observe(() => DateTime.Now)
+                            .Do((time) => module.Prototype.DisplayUpdate(module));
+                    }
+                }
+                BodyAdd(fieldsPanel);
 
                 if (displaysExists)
                 {
@@ -284,6 +305,11 @@ namespace ProgramableNetwork
                     {
                         displaysPanel.Add(ToggleDisplay_LED(uiContext, module, display, preview, click : false));
                     }
+                    else if (display.DefaultText.StartsWith("[fill]"))
+                    {
+                        if (display.Width > 0)
+                            displaysPanel.Add(new Display().StateInactive().Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE));
+                    }
                     else
                     {
                         displaysPanel.Add(TextDisplay(uiContext, module, display, preview));
@@ -402,7 +428,7 @@ namespace ProgramableNetwork
             private UiComponent ToggleDisplay_LED(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview, bool click = true)
             {
                 if (click)
-                return ToggleDisplay_Symbol(uiContext, module, display, preview, "●", click);
+                    return ToggleDisplay_Symbol(uiContext, module, display, preview, "●", click);
 
                 var text = new DisplayWithIcon(UserInterface.General.Circle_svg);
                 text.Icon.Color(module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red);

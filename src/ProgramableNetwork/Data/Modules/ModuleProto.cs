@@ -470,6 +470,11 @@ namespace ProgramableNetwork
                     ));
                 return this;
             }
+            public Builder AddDisplayFiller(Fix32 width)
+            {
+                m_displays.Add(new ModuleConnectorProto("_", Str.Empty, width, "[fill]"));
+                return this;
+            }
 
             private string WriteToggleArray(string[] toggle)
             {
