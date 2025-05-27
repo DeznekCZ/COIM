@@ -16,6 +16,8 @@ using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Component;
 using static ProgramableNetwork.NewIds;
+using Mafi.Localization;
+using static Mafi.Unity.Assets.Unity;
 
 namespace ProgramableNetwork
 {
@@ -113,11 +115,9 @@ namespace ProgramableNetwork
             var controllers = m_UiContext.EntitiesManager.GetAllEntitiesOfType<Controller>();
             foreach (var controller in controllers)
             {
-                Row controllerLine = new Row();
-                controllerLine.Size(width: 100.Percent());
-
-                var controllerButton = new ButtonIcon(controller.Prototype.IconPath)
-                    //.ToolTip(this, item.CustomTitle.ValueOrNull ?? item.DefaultTitle.Value)
+                PanelWithHeader controllerPanel = m_scrollableStackContainer.AddAndReturn(new PanelWithHeader());
+                ButtonIcon gotoButton;
+                controllerPanel.Header.Add(gotoButton = new ButtonIcon(UserInterface.General.GoTo_svg)
                     .OnClick(() => m_UiContext.CameraController.PanTo(controller.Position2f))
                     .OnDoubleClick(() =>
                     {
@@ -126,15 +126,15 @@ namespace ProgramableNetwork
                             UiContext.InputMgr.ActivateNewController(inspectorController);
                         else
                             m_invalidOpSound.Play();
-                    })
-                    .Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2);
-                controllerButton.IconSize(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE * 1.5f);
-
-                controllerLine.Add(controllerButton);
+                    }));
+                controllerPanel.Header.Add(new UiComponent().FlexGrow(1));
+                controllerPanel.Header.Add(new Label(controller.GetTitle().AsLoc()));
+                controllerPanel.Header.Add(new UiComponent().FlexGrow(1));
 
                 Grid linkcontainer = new Grid(8);
                 linkcontainer.Component.FlexGrow(1);
-                controllerLine.Add(linkcontainer.Component);
+                linkcontainer.Component.Size(width: 100.Percent());
+                controllerPanel.Body.Add(linkcontainer.Component);
 
                 List<(Module module, List<EntityField> fields)> list = controller.Modules
                     .Select(module => (
@@ -205,29 +205,26 @@ namespace ProgramableNetwork
                     linkcontainer.Add( entityButton );
                 }
 
-                controllerButton
-                    .OnMouseEnterLeave(
-                        () =>
+                gotoButton.OnMouseEnterLeave(
+                    () =>
+                    {
+                        m_entityHighlighter.ClearAllHighlights();
+                        m_entityHighlighter.Highlight(controller, ColorRgba.Yellow);
+                        foreach (var entity in allEntities.Values)
                         {
-                            m_entityHighlighter.ClearAllHighlights();
-                            m_entityHighlighter.Highlight(controller, ColorRgba.Yellow);
-                            foreach (var entity in allEntities.Values)
-                            {
-                                entity.HasPosition(out Tile3f position);
-                                var line = m_linesFactory.CreateLine(position.ToVector3(), controller.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
-                                line.SetTextureMode(LineTextureMode.Tile);
-                                m_lines.Add(line);
-                                m_entityHighlighter.Highlight(entity as IRenderedEntity, ColorRgba.CornflowerBlue);
-                            }
-                        },
-                        () =>
-                        {
-                            ClearAllLines();
-                            m_entityHighlighter.ClearAllHighlights();
+                            entity.HasPosition(out Tile3f position);
+                            var line = m_linesFactory.CreateLine(position.ToVector3(), controller.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+                            line.SetTextureMode(LineTextureMode.Tile);
+                            m_lines.Add(line);
+                            m_entityHighlighter.Highlight(entity as IRenderedEntity, ColorRgba.CornflowerBlue);
                         }
-                    );
-
-                m_scrollableStackContainer.Add(controllerLine);
+                    },
+                    () =>
+                    {
+                        ClearAllLines();
+                        m_entityHighlighter.ClearAllHighlights();
+                    }
+                );
             }
         }
     }
