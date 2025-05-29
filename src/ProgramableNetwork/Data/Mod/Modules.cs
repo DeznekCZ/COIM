@@ -44,6 +44,10 @@ namespace ProgramableNetwork
 
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
+            // UI clear
+            NewModule.ClearCache();
+            TemplateModule.ClearCache();
+
             Constants(registrator);
             Buttons(registrator);
             Variables(registrator);

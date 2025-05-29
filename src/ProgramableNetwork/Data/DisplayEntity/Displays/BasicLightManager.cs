@@ -13,14 +13,14 @@ using ProgramableNetwork;
 using Mafi.Collections.ImmutableCollections;
 using System.Linq;
 using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
+using Mafi.Unity.Ui;
+using RTG;
 
 namespace ProgramableNetwork.Data.DisplayEntity.Displays
 {
     public class BasicLightManager : IDisplayEntityManager
     {
         private Renderer m_render;
-        private Color m_colorOn;
-        private Color m_colorOff;
         private PanelRow m_row;
 
         public BasicLightManager(DisplayEntity disp)
@@ -55,6 +55,7 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
             ButtonIcon colorIcon;
             Toggle toggle;
             Dropdown<LightInfo> dropdown;
+            Slider intensity;
             var components = new UiComponent[] {
                 active = new Label("Active".AsLoc()).TextAlign(TextAlignment.LeftMiddle)
                 .FlexGrow(0.4f),
@@ -64,18 +65,18 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
                     customButton: colorIcon = new ButtonIcon(UserInterface.General.Circle_svg)
                 )
                 .OnValueChanged((v, i) => {
-                    Entity.SetProperty("colorOn.R", v.on.r.ToFix32());
-                    Entity.SetProperty("colorOn.G", v.on.g.ToFix32());
-                    Entity.SetProperty("colorOn.B", v.on.b.ToFix32());
-                    Entity.SetProperty("colorOff.R", v.off.r.ToFix32());
-                    Entity.SetProperty("colorOff.G", v.off.g.ToFix32());
-                    Entity.SetProperty("colorOff.B", v.off.b.ToFix32());
+                    Entity.SetProperty("colorOn.R", v.on.R);
+                    Entity.SetProperty("colorOn.G", v.on.G);
+                    Entity.SetProperty("colorOn.B", v.on.B);
+                    Entity.SetProperty("colorOff.R", v.off.R);
+                    Entity.SetProperty("colorOff.G", v.off.G);
+                    Entity.SetProperty("colorOff.B", v.off.B);
                 })
                 .SetOptions(Colors().ToImmutableArray())
                 .FlexGrow(0.5f)
             };
 
-            m_row = panel.AddPanelRow(active, toggle, dropdown);
+            m_row = panel.AddPanelRow(components);
 
             m_row.Observe(() => Entity.IsActive)
                .Do((playing) => {
@@ -86,26 +87,63 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
                        panel.Status.AsIdle();
                });
 
-            m_row.Observe(() => m_colorOn)
-               .Observe(() => m_colorOff)
+            m_row
+               .Observe(() => new ColorRgba(
+                    Entity.GetProperty("colorOn.R", ColorRgba.Red.R).IntegerPart,
+                    Entity.GetProperty("colorOn.G", ColorRgba.Red.G).IntegerPart,
+                    Entity.GetProperty("colorOn.B", ColorRgba.Red.B).IntegerPart
+                ))
+               .Observe(() => new ColorRgba(
+                    Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(63).R).IntegerPart,
+                    Entity.GetProperty("colorOff.G", ColorRgba.Red.G).IntegerPart,
+                    Entity.GetProperty("colorOff.B", ColorRgba.Red.B).IntegerPart
+                ))
                .Do((colorOn, colorOff) => {
                    for (var i = 0; i < dropdown.OptionsCount; i++)
                    {
                        var option = dropdown.GetOptionAt(i);
                        if (option.on == colorOn && option.off == colorOff)
                        {
-                           dropdown.SetValueIndex(i);
-                           colorIcon.Icon.Color(Colors().Skip(i).First().icon);
+                           //dropdown.SetValueIndex(i);
+                           colorIcon.Icon.Color(option.icon);
                            return;
                        }
                    }
-                   dropdown.SetValueIndex(0);
-                   colorIcon.Icon.Color(Colors().First().icon);
+                   //dropdown.SetValueIndex(0);
+                   //colorIcon.Icon.Color(dropdown.GetOptionAt(0).icon);
                });
 
             toggle.OnValueChanged((playing) => Entity.SetActive(playing));
 
+            InitColorSelection(colorIcon, dropdown);
+
             return () => m_row.RemoveFromHierarchy();
+        }
+
+        private void InitColorSelection(ButtonIcon colorIcon, Dropdown<LightInfo> dropdown)
+        {
+            var colorOn = new ColorRgba(
+                Entity.GetProperty("colorOn.R", ColorRgba.Red.R).IntegerPart,
+                Entity.GetProperty("colorOn.G", ColorRgba.Red.G).IntegerPart,
+                Entity.GetProperty("colorOn.B", ColorRgba.Red.B).IntegerPart
+            );
+            var colorOff = new ColorRgba(
+                Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(63).R).IntegerPart,
+                Entity.GetProperty("colorOff.G", ColorRgba.Red.G).IntegerPart,
+                Entity.GetProperty("colorOff.B", ColorRgba.Red.B).IntegerPart
+            );
+            for (var i = 0; i < dropdown.OptionsCount; i++)
+            {
+                var option = dropdown.GetOptionAt(i);
+                //Log.Info($"At {i} OFF: {option.on.ToHex()} is {colorOn.ToHex()}");
+                //Log.Info($"At {i}  ON: {option.off.ToHex()} is {colorOff.ToHex()}");
+                if (option.on == colorOn && option.off == colorOff)
+                {
+                    dropdown.SetValueIndex(i);
+                    colorIcon.Icon.Color(option.icon);
+                    break;
+                }
+            }
         }
 
         public void RenderUpdate(GameTime time)
@@ -125,18 +163,18 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
             bool lightOn = Entity.IsEnabled && Entity.IsActive && !Entity.ElectricityConsumer.Value.NotEnoughPower;
 
             MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
-            m_colorOff = new Color(
-                Entity.GetProperty("colorOff.R", Fix32.Half).ToFloat(),
-                Entity.GetProperty("colorOff.G", Fix32.Zero).ToFloat(),
-                Entity.GetProperty("colorOff.B", Fix32.Zero).ToFloat()
+            var colorOn = new Color(
+                Entity.GetProperty("colorOn.R", ColorRgba.Red.R).ToFloat() / 127,
+                Entity.GetProperty("colorOn.G", ColorRgba.Red.G).ToFloat() / 127,
+                Entity.GetProperty("colorOn.B", ColorRgba.Red.B).ToFloat() / 127
             );
-            m_colorOn = new Color(
-                Entity.GetProperty("colorOn.R", Fix32.One).ToFloat(),
-                Entity.GetProperty("colorOn.G", Fix32.Zero).ToFloat(),
-                Entity.GetProperty("colorOn.B", Fix32.Zero).ToFloat()
+            var colorOff = new Color(
+                Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(63).R).ToFloat() / 255,
+                Entity.GetProperty("colorOff.G", ColorRgba.Red.G).ToFloat() / 255,
+                Entity.GetProperty("colorOff.B", ColorRgba.Red.B).ToFloat() / 255
             );
-            materialPropertyBlock.SetColor("_Color", m_colorOff);
-            materialPropertyBlock.SetColor("_EmissionColor", m_colorOn);
+            materialPropertyBlock.SetColor("_Color", colorOff);
+            materialPropertyBlock.SetColor("_EmissionColor", colorOn);
             m_render.SetPropertyBlock(materialPropertyBlock);
 
             if (lightOn)
@@ -149,27 +187,33 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
         {
             yield return new LightInfo
             {
-                on = Color.red,
-                off = Color.Lerp(Color.red, Color.black, 0.5f),
+                on = ColorRgba.Red,
+                off = ColorRgba.Red.SetR(63).SetA(255),
                 icon = ColorRgba.Red
             };
             yield return new LightInfo
             {
-                on = Color.yellow,
-                off = Color.Lerp(Color.yellow, Color.black, 0.5f),
+                on = ColorRgba.Yellow,
+                off = ColorRgba.Yellow.SetR(63).SetG(63),
                 icon = ColorRgba.Yellow
             };
             yield return new LightInfo
             {
-                on = Color.green,
-                off = Color.Lerp(Color.green, Color.black, 0.5f),
+                on = ColorRgba.Green,
+                off = ColorRgba.Green.SetG(63),
                 icon = ColorRgba.Green
             };
             yield return new LightInfo
             {
-                on = Color.blue,
-                off = Color.Lerp(Color.blue, Color.black, 0.5f),
+                on = ColorRgba.Blue,
+                off = ColorRgba.Blue.SetB(63),
                 icon = ColorRgba.Blue
+            };
+            yield return new LightInfo
+            {
+                on = ColorRgba.LightGray,
+                off = ColorRgba.LightGray.SetR(63).SetG(63).SetB(63),
+                icon = ColorRgba.LightGray
             };
         }
     }

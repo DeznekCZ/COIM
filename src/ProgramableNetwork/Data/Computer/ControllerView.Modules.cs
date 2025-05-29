@@ -51,9 +51,7 @@ namespace ProgramableNetwork
 
         private void AddModuleImplementation(Action refresh)
         {
-
             this.Observe(() => Entity).Do((entity) => {
-                CloseDialogs();
                 m_decription = null;
                 m_controller.OutputConnection = null;
                 m_controller.EntityHighlighterSelectable.ClearAllHighlights();
@@ -65,17 +63,6 @@ namespace ProgramableNetwork
                 }
             });
             this.Observe(WasOrderChanged, new ModuleIdComparator()).Do(RedrawComponents);
-
-            //updaterBuilder.Observe(WasUpdated).Do(UpdateChanged);
-        }
-
-        private void CloseDialogs()
-        {
-            //try { if (m_editDialog != null) m_moduleDialog.RemoveAndDestroy(m_editDialog); m_editDialog = null; }
-            //catch (Exception) { Console.WriteLine("Failed to delete edit dialog"); }
-            //try { if (m_newDialog != null) m_moduleDialog.RemoveAndDestroy(m_newDialog); m_newDialog = null; }
-            //catch (Exception) { Console.WriteLine("Failed to delete new dialog"); }
-            //m_moduleDialog.SetWidth(400);
         }
 
         private IEnumerable<long> WasOrderChanged()

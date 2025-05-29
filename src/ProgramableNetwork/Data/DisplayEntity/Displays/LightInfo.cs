@@ -5,11 +5,11 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
 {
     public struct LightInfo
     {
-        public Color on;
-        public Color off;
+        public ColorRgba on;
+        public ColorRgba off;
         public ColorRgba icon;
 
-        public LightInfo(Color on, Color off, ColorRgba icon)
+        public LightInfo(ColorRgba on, ColorRgba off, ColorRgba icon)
         {
             this.on = on;
             this.off = off;
