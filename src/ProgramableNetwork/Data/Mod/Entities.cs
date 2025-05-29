@@ -219,7 +219,7 @@ namespace ProgramableNetwork
             var antenaT1 = registrator.PrototypesDb.Add(new AntenaProto(
                 id: NewIds.Controllers.Antena,
                 strings: Proto.CreateStr(NewIds.Controllers.Antena, "Antena", "Handles signal transfer for longer distance"),
-                layout: registrator.LayoutParser.ParseLayoutOrThrow("[3]"),
+                layout: registrator.LayoutParser.ParseLayoutOrThrow("[9]"),
                 tier: 1,
                 costs: ((EntityCostsTpl)Costs.Build.CP2(4).MaintenanceT1(2)).MapToEntityCosts(registrator),
                 graphics: new LayoutEntityProto.Gfx(
@@ -232,7 +232,7 @@ namespace ProgramableNetwork
             var antenaT2 = registrator.PrototypesDb.Add(new AntenaProto(
                 id: NewIds.Controllers.AntenaT2,
                 strings: Proto.CreateStr(NewIds.Controllers.AntenaT2, "Antena II", "Handles signal transfer for longer distance (100% bonus to range)"),
-                layout: registrator.LayoutParser.ParseLayoutOrThrow("[6][6]", "[6][6]"),
+                layout: registrator.LayoutParser.ParseLayoutOrThrow("[9][9]", "[9][9]"),
                 tier: 2,
                 costs: ((EntityCostsTpl)Costs.Build.CP3(8).MaintenanceT2(2)).MapToEntityCosts(registrator),
                 graphics: new LayoutEntityProto.Gfx(
