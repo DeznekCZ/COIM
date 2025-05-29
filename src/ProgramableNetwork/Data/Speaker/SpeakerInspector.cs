@@ -43,9 +43,9 @@ namespace ProgramableNetwork.Data.Speaker
                 .Do((playing) => {
                     toggle.Value(playing);
                     if (playing)
-                        Status.AsIdle();
-                    else
                         Status.AsWorking();
+                    else
+                        Status.AsIdle();
                 });
 
             this.Observe(() => Entity.Sound)

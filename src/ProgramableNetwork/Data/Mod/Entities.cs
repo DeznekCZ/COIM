@@ -1,9 +1,11 @@
 ﻿using Mafi;
 using Mafi.Base;
 using Mafi.Base.Prototypes.Machines.ComputingEntities;
+using Mafi.Core;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.Datacenters;
+using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
 using Mafi.Core.Prototypes;
 using ProgramableNetwork.Data.Speaker;
@@ -47,8 +49,27 @@ namespace ProgramableNetwork
 
     internal class Entities : AValidatedData
     {
+
+
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
+            var pillars = new EntityLayoutParams(
+                customPlacementRange: new ThicknessIRange(0, TransportPillarProto.MAX_PILLAR_HEIGHT.Value - 1),
+                customTokens: new CustomLayoutToken[]
+                {
+                    new CustomLayoutToken("|0|", (param, height) =>
+                    {
+                        return new LayoutTokenSpec(
+                            constraint: LayoutTileConstraint.UsingPillar,
+                            heightFrom: 0,
+                            heightToExcl: height,
+                            maxTerrainHeight: 0,
+                            minTerrainHeight: 0
+                        );
+                    })
+                }
+            );
+
             ToolbarCategoryProto transportToolbarCategoryProto = registrator.PrototypesDb.Get<ToolbarCategoryProto>(Ids.ToolbarCategories.Transports).ValueOrThrow("Missing game category");
             var category = registrator.PrototypesDb.Add(new ToolbarCategoryProto(
                 id: NewIds.Controllers.Category,
@@ -69,7 +90,7 @@ namespace ProgramableNetwork
             var originalTier1 = registrator.PrototypesDb.Add(new ControllerProto(
                 id: NewIds.Controllers.Controller,
                 strings: Proto.CreateStr(NewIds.Controllers.Controller, "Controller", "Handles basic operations and automatization"),
-                layout: registrator.LayoutParser.ParseLayoutOrThrow("[1]"),
+                layout: registrator.LayoutParser.ParseLayoutOrThrow(pillars, "[1]"),
                 costs: ((EntityCostsTpl)Mafi.Base.Costs.Build.CP2(4)).MapToEntityCosts(registrator),
                 allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
                 graphics: new LayoutEntityProto.Gfx(
@@ -179,7 +200,7 @@ namespace ProgramableNetwork
                 var next = registrator.PrototypesDb.Add(new ControllerProto(
                     id: protoId,
                     strings: Proto.CreateStr(protoId, name, description),
-                    layout: registrator.LayoutParser.ParseLayoutOrThrow("[1]"),
+                    layout: registrator.LayoutParser.ParseLayoutOrThrow(pillars, "[1]"),
                     costs: ((EntityCostsTpl)Costs.Build.CP2(4)).MapToEntityCosts(registrator),
                         initModules: modules,
                     allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),

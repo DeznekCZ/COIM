@@ -9,7 +9,7 @@ using System.Collections.Generic;
 namespace ProgramableNetwork
 {
 
-    public class ControllerProto : LayoutEntityProto, ILayoutEntityProto, IProtoWithPropertiesUpdate, IProtoWithTiers
+    public class ControllerProto : LayoutEntityProto, ILayoutEntityProto, IProtoWithPropertiesUpdate, IProtoWithTiers, ILayoutEntityProtoWithElevation
     {
         public override Type EntityType { get; } = typeof(Controller);
         public int UsableTime { get; }
@@ -21,10 +21,13 @@ namespace ProgramableNetwork
         public Func<Controller, Action> InitModules { get; }
         public ITierData TierData { get; }
         public ControllerProto BasedOn { get; }
+        public bool CanBeElevated { get; }
+        public bool CanPillarsPassThrough { get; }
 
         public ControllerProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics,
             int rows = 4,
             int columns = 16,
+            bool canPillarsPassTrough = true,
             Func<Controller, Action> initModules = null,
             ControllerProto basedOn = null,
             Upoints? boostCost = null,
@@ -42,6 +45,8 @@ namespace ProgramableNetwork
             this.InitModules = initModules ?? ((controller) => () => { });
             this.TierData = new TierData(this, 1);
             this.BasedOn = basedOn;
+            this.CanBeElevated = false;
+            this.CanPillarsPassThrough = canPillarsPassTrough;
         }
 
         public static ControllerProto Phantom;

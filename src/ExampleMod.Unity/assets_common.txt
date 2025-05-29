@@ -33,6 +33,13 @@ computer_1324
 computer_711d
     Assets/ProgramableNetwork/Computer/Computer.prefab
 
+display_c421
+    Assets/ProgramableNetwork/Display/holder.mat
+    Assets/ProgramableNetwork/Display/Light.Icon.png
+
+light_75ca
+    Assets/ProgramableNetwork/Display/Light.prefab
+
 speaker_9036
     Assets/ProgramableNetwork/Speaker/Icon.png
 

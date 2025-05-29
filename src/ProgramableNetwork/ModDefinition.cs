@@ -60,6 +60,7 @@ namespace ProgramableNetwork
             registrator.RegisterData<PyModules>();
             registrator.RegisterData<DataBands>();
             registrator.RegisterData<Entities>();
+            registrator.RegisterData<Displays>();
             registrator.RegisterData<ControllerNotification>();
             registrator.RegisterData<ModuleIdsGenerator>();
 

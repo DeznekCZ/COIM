@@ -29,6 +29,7 @@ using Mafi.Core.Vehicles;
 using Mafi.Unity.InputControl;
 using Mafi.Unity.UiToolkit.Library;
 using ProgramableNetwork.Data.DataBand;
+using ProgramableNetwork.Data.DisplayEntity;
 using ProgramableNetwork.Data.Speaker;
 using ProgramableNetwork.Data.Variables;
 using System;
@@ -624,7 +625,7 @@ namespace ProgramableNetwork
 
                     if (m.FieldOrInput.EntityProtoIconified("vehicle") is DynamicEntityProto drivingEntity)
                     {
-                        var stats = GlobalDependencyResolver.Get<IVehiclesManager>().GetStats(drivingEntity);
+                        var stats = GlobalDependencyResolver.Get<IVehiclesManager>().GetStats(drivingEntity, 0xFFFFFFFFFFFFFFFF);
                         m.Output.Integer["count"] = stats.Owned;
                         m.Output.Integer["assignable"] = stats.Assignable;
                         return ModuleStatus.Running;
@@ -641,20 +642,48 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart("Connection_Speaker", "Connection: Speaker - play", "SPK", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionWrite)
+                .AddCategory(Category.Devices)
+                .AddCategory(Category.DevicesSound)
                 .AddEntityField<Speaker>("speaker", "Speaker", "Must be placest next to Speaker tower", 10.ToFix32())
-                .AddInput("play", "Activate playing of tower")
-                // TODO select sound
-                // add also constant module for the sound
-                .Width(2)
+                .AddInput("play", "Activate sound")
+                .AddBooleanField("field_play", "Activate sound")
+                .AddBooleanField("play", "Activate sound")
+                .Width(1)
                 .Action(m =>
                 {
                     if (m.Field.Entity<Speaker>("speaker") is Speaker speaker)
                     {
-                        speaker.SetPlaying(m.Input.Bool["play"]);
+                        speaker.SetPlaying(m.FieldOrInput.Bool["play"]);
                         return ModuleStatus.Running;
                     }
 
                     m.SetError("No connected speaker");
+                    return ModuleStatus.Error;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Display", "Connection: Display - active", "DIA", Assets.Base.Products.Icons.Vegetables_svg,
+                    "Connects lights and display for activation")
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddCategory(Category.Devices)
+                .AddCategory(Category.DevicesDisplay)
+                .AddEntityField<DisplayEntity>("display", "Display", "Must be placest next to display", 10.ToFix32())
+                .AddInput("active", "Activate display")
+                .AddBooleanField("field_active", "Activate display")
+                .AddBooleanField("active", "Activate display")
+                .Width(1)
+                .Action(m =>
+                {
+                    if (m.Field.Entity<DisplayEntity>("display") is DisplayEntity display)
+                    {
+                        display.SetActive(m.FieldOrInput.Bool["active"]);
+                        return ModuleStatus.Running;
+                    }
+
+                    m.SetError("No connected display");
                     return ModuleStatus.Error;
                 })
                 .AddControllerDevice()
@@ -1502,7 +1531,10 @@ namespace ProgramableNetwork
                     int actualCount = logistic.AllVehicles.Where(v => v.Prototype == drivingEntity).Count();
                     if (actualCount < count)
                     {
-                        logistic.AssignVehicle(GlobalDependencyResolver.Get<IVehiclesManager>(), drivingEntity);
+                        Option<Vehicle> v = GlobalDependencyResolver.Get<IVehiclesManager>()
+                            .GetFreeVehicle<Vehicle>(drivingEntity, logistic.Position2f, 0xFFFFFFFFFFFFFFFF);
+                        if (v.HasValue)
+                            logistic.AssignVehicle(v.Value);
                     }
                     else if (actualCount > count)
                     {
