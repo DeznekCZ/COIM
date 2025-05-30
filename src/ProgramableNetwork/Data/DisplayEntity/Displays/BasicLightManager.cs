@@ -94,7 +94,7 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
                     Entity.GetProperty("colorOn.B", ColorRgba.Red.B).IntegerPart
                 ))
                .Observe(() => new ColorRgba(
-                    Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(63).R).IntegerPart,
+                    Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(100).R).IntegerPart,
                     Entity.GetProperty("colorOff.G", ColorRgba.Red.G).IntegerPart,
                     Entity.GetProperty("colorOff.B", ColorRgba.Red.B).IntegerPart
                 ))
@@ -169,7 +169,7 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
                 Entity.GetProperty("colorOn.B", ColorRgba.Red.B).ToFloat() / 127
             );
             var colorOff = new Color(
-                Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(63).R).ToFloat() / 255,
+                Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(100).R).ToFloat() / 255,
                 Entity.GetProperty("colorOff.G", ColorRgba.Red.G).ToFloat() / 255,
                 Entity.GetProperty("colorOff.B", ColorRgba.Red.B).ToFloat() / 255
             );
@@ -188,31 +188,31 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
             yield return new LightInfo
             {
                 on = ColorRgba.Red,
-                off = ColorRgba.Red.SetR(63).SetA(255),
+                off = ColorRgba.Red.SetR(100),
                 icon = ColorRgba.Red
             };
             yield return new LightInfo
             {
                 on = ColorRgba.Yellow,
-                off = ColorRgba.Yellow.SetR(63).SetG(63),
+                off = ColorRgba.Yellow.SetR(100).SetG(100),
                 icon = ColorRgba.Yellow
             };
             yield return new LightInfo
             {
                 on = ColorRgba.Green,
-                off = ColorRgba.Green.SetG(63),
+                off = ColorRgba.Green.SetG(100),
                 icon = ColorRgba.Green
             };
             yield return new LightInfo
             {
                 on = ColorRgba.Blue,
-                off = ColorRgba.Blue.SetB(63),
+                off = ColorRgba.Blue.SetB(100),
                 icon = ColorRgba.Blue
             };
             yield return new LightInfo
             {
                 on = ColorRgba.LightGray,
-                off = ColorRgba.LightGray.SetR(63).SetG(63).SetB(63),
+                off = ColorRgba.LightGray.SetR(100).SetG(100).SetB(100),
                 icon = ColorRgba.LightGray
             };
         }
