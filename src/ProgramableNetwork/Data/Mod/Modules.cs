@@ -5,6 +5,7 @@ using Mafi.Collections;
 using Mafi.Core.Buildings.Cargo;
 using Mafi.Core.Buildings.Cargo.Modules;
 using Mafi.Core.Buildings.Farms;
+using Mafi.Core.Buildings.Mine;
 using Mafi.Core.Buildings.Offices;
 using Mafi.Core.Buildings.OreSorting;
 using Mafi.Core.Buildings.Settlements;
@@ -1569,6 +1570,9 @@ namespace ProgramableNetwork
                     )
                 .AddBooleanField("field_index", "Set index by settings", defaultValue: false)
                 .AddInt32Field("index", "Storage compartment")
+                .AddDisplayFiller(1)
+                .AddDisplay("product", "Product", 1, image: true)
+                .Display(m => m.Display["product"] = m.Output.Product("product")?.IconPath)
                 .Action(m => {
                     LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
 
@@ -1662,10 +1666,20 @@ namespace ProgramableNetwork
                                       e is CargoDepotModule ||
                                       e is SettlementFoodModule ||
                                       e is Hospital ||
+                                      e is MineTower ||
                                       e is Sorter
                     )
                 .AddBooleanField("field_index", "Set index by settings", defaultValue: false)
                 .AddInt32Field("index", "Storage compartment")
+                .AddBooleanField("field_product", "Set product by settings", defaultValue: false)
+                .AddProductField("product", "Filtered product", filter: (m, p) => true)
+                .AddDisplay("index", "Index", 1)
+                .AddDisplay("product", "Product", 1, image: true)
+                .Display(m =>
+                {
+                    m.Display["index"] = m.FieldOrInput.Integer["index"].ToString();
+                    m.Display["product"] = m.FieldOrInput.Product("product")?.IconPath;
+                })
                 .Action(m => {
                     LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
             
@@ -1743,6 +1757,26 @@ namespace ProgramableNetwork
                         }
                         else
                             return ModuleStatus.Running;
+                    }
+            
+                    if (entity is MineTower tower)
+                    {
+                        Option<ProductProto> product = m.FieldOrInput.Product("product").CreateOption();
+                        if (product.HasValue && product.Value is LooseProductProto loose)
+                        {
+                            foreach (var ecavator in tower.AllAssignedExcavators)
+                            {
+                                ecavator.SetPrioritizeProduct(loose);
+                            }
+                        }
+                        else
+                        {
+                            foreach (var ecavator in tower.AllAssignedExcavators)
+                            {
+                                ecavator.SetPrioritizeProduct(Option.None);
+                            }
+                        }
+                        return ModuleStatus.Running;
                     }
             
                     if (entity is Sorter sorter)
