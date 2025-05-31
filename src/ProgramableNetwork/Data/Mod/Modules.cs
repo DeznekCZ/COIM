@@ -28,7 +28,9 @@ using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
 using Mafi.Core.Products;
+using Mafi.Core.Trains;
 using Mafi.Core.Vehicles;
+using Mafi.Localization;
 using Mafi.Unity.InputControl;
 using Mafi.Unity.UiToolkit.Library;
 using ProgramableNetwork.Data.DataBand;
@@ -1883,6 +1885,68 @@ namespace ProgramableNetwork
                     {
                         m.SetError("Recipe can not be assigned");
                         return ModuleStatus.Error;
+                    }
+
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Station_TrainInfo", "Connection: Station", "ST-TR", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .Width(4)
+                .AddInput("direction", $"{Tr.ToggleDirection}:\n1 - {Tr.TrainStation_Loading.TranslatedString}\n2 - {Tr.TrainStation_Unloading.TranslatedString}")
+                .AddOutput("instation", Tr.TrainStatus_AtStation.TranslatedString)
+                .AddOutput("cargo", $"{Tr.EntityStatus__Working}:\n1 - {Tr.TrainStation_Loading.TranslatedString}\n2 - {Tr.TrainStation_Unloading.TranslatedString}")
+                .AddDisplayFiller(2)
+                .AddDisplay("instation", Tr.TrainStatus_AtStation.TranslatedString, 1, led: true)
+                .AddDisplay("cargo", $"{Tr.TrainStation_Loading.TranslatedString} / {Tr.TrainStation_Unloading.TranslatedString}", 1, image: true)
+                .Display(m =>
+                {
+                    m.Display["instation"] = m.Output.Bool["instation"] ? "1" : "";
+
+                    if (m.Output.Bool["unloading"])
+                        m.Display["cargo"] = Mafi.Unity.Assets.Unity.UserInterface.General.MoveUp_svg;
+                    else if (m.Output.Bool["loading"])
+                        m.Display["cargo"] = Mafi.Unity.Assets.Unity.UserInterface.General.MoveDown_svg;
+                    else
+                        m.Display["cargo"] = null;
+                })
+                .AddEntityField<TrainStationBase>("station",
+                    registrator.PrototypesDb.Get<TrainStationBaseProto>(Ids.TrainTracks.TrainStationRoot).Value.Strings.Name.TranslatedString, 20)
+                .Action(m =>
+                {
+                    TrainStationBase stationBase = m.Field.Entity<TrainStationBase>("station");
+                    if (stationBase is null)
+                    {
+                        m.SetError("Station or module is not connected");
+                        return ModuleStatus.Error;
+                    }
+
+                    TrainsManager trainsManager = GlobalDependencyResolver.Get<TrainsManager>();
+
+                    var isGroup = trainsManager.TrainStationManager
+                        .TrainStationEntities.TryGetValue(stationBase, out var group);
+
+                    var train = trainsManager
+                        .Trains.FirstOrDefault(t => isGroup && group.StationEntities.Any(g => t.CurrentStation == g.Station));
+                    m.Output.Bool["instation"] = train != null;
+
+                    if (stationBase is TrainStationModule module)
+                    {
+                        int dir = m.FieldOrInput.Integer["direction"];
+                        if (dir == 1)
+                            module.SetLoadingUnloading(true);
+                        else if (dir == 2)
+                            module.SetLoadingUnloading(false);
+                        // else unchanged
+
+                        m.Output.Bool["loading"] = module.IsLoading;
+                        m.Output.Bool["unloading"] = module.IsUnloading;
+
+                        return ModuleStatus.Running;
                     }
 
                     return ModuleStatus.Running;

@@ -622,6 +622,18 @@ namespace ProgramableNetwork
                 return this;
             }
 
+            public Builder AddCustomField(string id, string name, CustomFieldConstructorWithModule ui, Action<CustomField> data = null)
+            {
+                m_fields.Add(new CustomField(id, name, null, ui, data ?? ((field) => { })));
+                return this;
+            }
+
+            public Builder AddCustomField(string id, string name, string shortDesc, CustomFieldConstructorWithModule ui, Action<CustomField> data = null)
+            {
+                m_fields.Add(new CustomField(id, name, shortDesc, ui, data ?? ((field) => { })));
+                return this;
+            }
+
             public Builder UseComputation(PartialQuantity quantity)
             {
                 m_usedComputing = quantity;

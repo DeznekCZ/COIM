@@ -11,10 +11,19 @@ namespace ProgramableNetwork
         private string id;
         private string name;
         private string shortDesc;
-        private CustomFieldConstructor ui;
+        private CustomFieldConstructorWithModule ui;
         private Action<CustomField> data;
 
         public CustomField(string id, string name, string shortDesc, CustomFieldConstructor ui, Action<CustomField> data)
+        {
+            this.id = id;
+            this.name = name;
+            this.shortDesc = shortDesc;
+            this.ui = (a,b,c,d,e) => ui(a, b, d, e);
+            this.data = data;
+        }
+
+        public CustomField(string id, string name, string shortDesc, CustomFieldConstructorWithModule ui, Action<CustomField> data)
         {
             this.id = id;
             this.name = name;
@@ -30,7 +39,7 @@ namespace ProgramableNetwork
         public int Size => 1;
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            ui.Invoke(inspector, fieldContainer, updateDialog, new Reference((v) => module.Field[id] = v, () => module.Field[id, Fix32.Zero]));
+            ui.Invoke(inspector, fieldContainer, module, updateDialog, new Reference((v) => module.Field[id] = v, () => module.Field[id, Fix32.Zero]));
         }
 
         public void InitData(Module module)
@@ -45,4 +54,5 @@ namespace ProgramableNetwork
     }
 
     public delegate void CustomFieldConstructor(ControllerInspector Inspector, UiComponent Container, Action Refresh, Reference reference);
+    public delegate void CustomFieldConstructorWithModule(ControllerInspector Inspector, UiComponent Container, Module module, Action Refresh, Reference reference);
 }

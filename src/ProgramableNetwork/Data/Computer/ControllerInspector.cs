@@ -2,21 +2,17 @@
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
-using Mafi.Core.Input;
+using Mafi.Core.Factory.Transports;
 using Mafi.Core.Syncers;
-using Mafi.Localization;
 using Mafi.Unity;
-using Mafi.Unity.Audio;
 using Mafi.Unity.Camera;
 using Mafi.Unity.Entities;
 using Mafi.Unity.InputControl;
-using Mafi.Unity.InputControl.Inspectors;
 using Mafi.Unity.Ui;
 using Mafi.Unity.Ui.Library.Inspectors;
 using Mafi.Unity.UiStatic.Cursors;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -253,10 +249,20 @@ namespace ProgramableNetwork
             foreach (var entity in entities)
             {
                 EntityHighlighter.Highlight(entity as IRenderedEntity, ColorRgba.CornflowerBlue);
-                entity.HasPosition(out Tile3f position);
-                var line = m_linesFactory.CreateLine(position.ToVector3(), Entity.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
-                line.SetTextureMode(LineTextureMode.Tile);
-                m_lines.Add(line);
+
+                if (entity is Transport transport)
+                {
+                    var line = m_linesFactory.CreateLine(transport.StartPosition.ToCenterVector3(), Entity.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+                    line.SetTextureMode(LineTextureMode.Tile);
+                    m_lines.Add(line);
+                }
+                else
+                {
+                    entity.HasPosition(out Tile3f position);
+                    var line = m_linesFactory.CreateLine(position.ToVector3(), Entity.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+                    line.SetTextureMode(LineTextureMode.Tile);
+                    m_lines.Add(line);
+                }
             }
         }
 
