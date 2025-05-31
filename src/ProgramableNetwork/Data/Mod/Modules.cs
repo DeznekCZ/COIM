@@ -2,6 +2,7 @@
 using Mafi.Base;
 using Mafi.Base.Prototypes.Trains;
 using Mafi.Collections;
+using Mafi.Core;
 using Mafi.Core.Buildings.Cargo;
 using Mafi.Core.Buildings.Cargo.Modules;
 using Mafi.Core.Buildings.Farms;
@@ -18,6 +19,7 @@ using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.Machines;
 using Mafi.Core.Factory.NuclearReactors;
+using Mafi.Core.Factory.Recipes;
 using Mafi.Core.Factory.Sorters;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Factory.WellPumps;
@@ -1835,6 +1837,55 @@ namespace ProgramableNetwork
             
                     m.Output["product"] = 0;
                     return ModuleStatus.Error;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Recipe_Set", "Connection: Recipe (set)", "REC-S", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .Width(2)
+                .AddInput("on", "Active recipe")
+                .AddEntityField<Machine>("entity", "Building with filter", "Connectable by cable 20m from controller", distance: 20.ToFix32(),
+                    filter: (m, e) => true /* Get info about is able to set recipe */)
+                .AddBooleanField("field_on", "Active recipe")
+                .AddBooleanField("on", "Active recipe")
+                .AddCustomField("recipe", "Recipe", (inspector, settings, module, refresh, reference) => settings.Add(new RecipeSelector(inspector, module, refresh, reference)))
+                .Action(m => {
+                    Machine entity = m.Field.Entity<Machine>("entity");
+            
+                    if (entity is null)
+                    {
+                        m.SetError("Disconnected machine");
+                        return ModuleStatus.Error;
+                    }
+
+                    if (!m.FieldOrInput.Bool["on"])
+                        return ModuleStatus.Running;
+
+                    string recipeId = m.Field["recipe", (string)null];
+                    if (recipeId.IsNullOrEmpty() ||
+                        !(m.Controller.Context.ProtosDb.Get(new Mafi.Core.Prototypes.Proto.ID(recipeId)).ValueOrNull is RecipeProto recipe))
+                    {
+                        m.SetError("No recipe selected");
+                        return ModuleStatus.Error;
+                    }
+
+                    if (entity.RecipesAssigned.Count > 0 && entity.RecipesAssigned[0] != recipe)
+                    {
+                        entity.ClearAssignedRecipes();
+                        entity.AssignRecipe(recipe);
+                    }
+
+                    // in case it was not set again
+                    if (entity.RecipesAssigned.Count == 0 || entity.RecipesAssigned[0] != recipe)
+                    {
+                        m.SetError("Recipe can not be assigned");
+                        return ModuleStatus.Error;
+                    }
+
+                    return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
