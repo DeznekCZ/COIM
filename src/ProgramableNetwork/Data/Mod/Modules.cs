@@ -1559,6 +1559,7 @@ namespace ProgramableNetwork
                 .AddOutput("product", "Product type")
                 .AddEntityField<LayoutEntity>("entity", "Connection device", "Storage connectable by cable 20m from controller", distance: 20.ToFix32(),
                     filter: (m, e) => e is StorageBase || // e is SettlementWasteModule
+                                      e is TrainStationModule ||
                                       e is SettlementFoodModule ||
                                       e is Hospital ||
                                       e is SettlementModuleProto ||
@@ -1576,6 +1577,15 @@ namespace ProgramableNetwork
                     {
                         if (storage.StoredProduct.HasValue)
                             m.Output["product"] = Fix32.FromRaw((int)(uint)storage.StoredProduct.Value.SlimId.Value);
+                        else
+                            m.Output["product"] = Fix32.Zero;
+                        return ModuleStatus.Running;
+                    }
+
+                    if (entity is TrainStationModule station)
+                    {
+                        if (station.StoredProduct.HasValue)
+                            m.Output["product"] = Fix32.FromRaw((int)(uint)station.StoredProduct.Value.SlimId.Value);
                         else
                             m.Output["product"] = Fix32.Zero;
                         return ModuleStatus.Running;
@@ -1648,6 +1658,7 @@ namespace ProgramableNetwork
                 .AddInput("product", "Product type")
                 .AddEntityField<LayoutEntity>("entity", "Building with filter", "Connectable by cable 20m from controller", distance: 20.ToFix32(),
                     filter: (m, e) => e is Storage ||
+                                      e is TrainStationModule ||
                                       e is CargoDepotModule ||
                                       e is SettlementFoodModule ||
                                       e is Hospital ||
@@ -1675,6 +1686,22 @@ namespace ProgramableNetwork
                             module.ToggleClearProduct();
                         else
                             module.AssignProduct(product);
+                        return ModuleStatus.Running;
+                    }
+            
+                    if (entity is TrainStationModule station)
+                    {
+                        ProductProto product = m.FieldOrInput.Product("product");
+                        if (product is null)
+                            station.ClearAssignedProduct();
+                        else if (!station.TryAssignProduct(product))
+                        {
+                            if (station.StoredProduct.ValueOrNull != product
+                            && !(station.StoredProduct.ValueOrNull is null))
+                            {
+                                station.ClearAssignedProduct();
+                            }
+                        }
                         return ModuleStatus.Running;
                     }
             
