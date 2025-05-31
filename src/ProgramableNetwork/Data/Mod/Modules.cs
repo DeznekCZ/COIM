@@ -160,7 +160,6 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart("Variable_Read", "Variable (read)", "*C", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Control)
                 .AddCategory(Category.Arithmetic)
-                .UseComputation(0.1.Quantity())
                 .AddOutput("value", "Value")
                 .AddDisplay("name", "Variable name (should be longer)", 1)
                 .AddStringField("name", "Variable name", defaultValue: "")
@@ -198,7 +197,6 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart("Variable_Write", "Variable (write)", "*C", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Control)
                 .AddCategory(Category.Arithmetic)
-                .UseComputation(0.1.Quantity())
                 .AddDisplay("name", "Variable name (should be longer)", 1)
                 .AddStringField("name", "Variable name", defaultValue: "")
                 .AddInput("value", "Value")
@@ -1157,7 +1155,7 @@ namespace ProgramableNetwork
                                 {
                                     m.SetError(error);
                                     return ModuleStatus.Error;
-                    }
+                                }
                                 return ModuleStatus.Running;
                             }
 
@@ -1691,7 +1689,7 @@ namespace ProgramableNetwork
             registrator
                 .ModuleBuilderStart("Connection_Filter_Set", "Connection: Filter (set)", "F-S", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Connection)
-                .AddCategory(Category.ConnectionRead)
+                .AddCategory(Category.ConnectionWrite)
                 .Width(2)
                 .AddInput("index", "Storage compartment")
                 .AddInput("product", "Product type")
