@@ -1116,6 +1116,7 @@ namespace ProgramableNetwork
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
                 .AddOutput("moving", "Is moving")
+                .AddInput("direction", "Flip direction:\n1 - from close port to far port\n2 - from far port to close port")
                 .AddInput("product", "Product filter")
                 .AddEntityField<Transport>("entity", "Connection device", 20.ToFix32())
                 .AddBooleanField("fullstack", "Cap fullness to 100%", "Bigger tiers of transport may display value over 100%. It's caused by maximum stack size. Activating this option will be the value normalized to 100%.")
@@ -1138,14 +1139,44 @@ namespace ProgramableNetwork
                                              * (fullstack ? entity.Prototype.MaxQuantityPerTransportedProduct.Value : 1);
                         m.Output["fullness"] = (100.ToFix32() * m.Output["quantity"]) / m.Output["capacity"];
                         m.Output["moving"] = entity.GetStatus() == Transport.Status.Moving ? 1 : 0;
-                        return;
+
+                        int dirSet = m.Input.Integer["direction"];
+                        if (dirSet > 0 && entity.StartInputPort.Type != IoPortType.Any)
+                        { // flipper
+                            bool startHere = entity.StartPosition.DistanceSqrTo(m.Controller.Position3f.Tile3i) <
+                                             entity.EndPosition.DistanceSqrTo(m.Controller.Position3f.Tile3i);
+                            bool fromHere = startHere && entity.StartInputPort.Type == IoPortType.Input;
+
+                            if (startHere && fromHere && dirSet == 2)
+                            {
+                                if (entity.TryReverse(out string error))
+                                {
+                                    m.SetError(error);
+                                    return ModuleStatus.Error;
+                    }
+                                return ModuleStatus.Running;
+                            }
+
+                            if (!startHere && !fromHere && dirSet == 1)
+                            {
+                                if (entity.TryReverse(out string error))
+                                {
+                                    m.SetError(error);
+                                    return ModuleStatus.Error;
+                                }
+                                return ModuleStatus.Running;
+                            }
+                        }
+
+                        return ModuleStatus.Running;
                     }
 
                     m.Output["quantity"] = 0;
                     m.Output["capacity"] = 0;
                     m.Output["fullness"] = 100;
                     m.Output["moving"] = 0;
-                    throw new Exception("Entity can not be read");
+                    m.SetError("Entity can not be read");
+                    return ModuleStatus.Error;
                 })
                 .AddDisplay("quantity", "Quantity", 1.5f.ToFix32())
                 .AddDisplay("fullness", "Fullness", 1.5f.ToFix32())
