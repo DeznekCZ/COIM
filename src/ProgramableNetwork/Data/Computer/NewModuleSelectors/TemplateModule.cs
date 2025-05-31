@@ -29,7 +29,18 @@ namespace ProgramableNetwork
 
         public override string IconPath => item.Value.ModuleProto.IconPath;
 
-        public override Proto.Str Strings => item.Value.ModuleProto.Strings;
+        public override Proto.Str Strings =>
+            new Proto.Str(
+                LocalizationManager.GetLocalizedString0Arg(
+                    Id.Value,
+                    string.Join(" ",
+                        item.Value.Name,
+                        item.Value.ModuleProto.Symbol,
+                        item.Value.ModuleProto.Strings.Name.TranslatedString,
+                        item.Value.ModuleProto.Strings.DescShort.TranslatedString
+                    ),
+                    "No comment"
+                ));
 
         public override Proto.ID Id => new Proto.ID($"Template_{item.Value.ModuleProto.Id.Value}_{item.Key}");
 
@@ -43,7 +54,7 @@ namespace ProgramableNetwork
             return m_cache[Id] = new ButtonRow(new ButtonVariant().Gap(5))
             {
                 new ModuleView(new Module(item.Value.ModuleProto, m_controller.Context, m_controller), m_controllerView, m_controllerView.Inspector.Context, true, () => { }),
-                new PanelWithHeader($"Template: {Strings.Name.TranslatedString}".AsLoc())
+                new PanelWithHeader($"Template: {item.Value.ModuleProto.Strings.Name.TranslatedString}".AsLoc())
                     .Height(Sizes.BLOCK_SIZE * 4).FlexGrow(1)
                     .BodyAdd(new Label(new LocStrFormatted(item.Value.Name)).FlexGrow(1).TextAlign(TextAlignment.LeftTop).AlignSelf(Align.Stretch))
             };

@@ -21,7 +21,17 @@ namespace ProgramableNetwork
 
         public override string IconPath => lastCreated.GetIcon();
 
-        public override Proto.Str Strings => lastCreated.Prototype.Strings;
+        public override Proto.Str Strings =>
+            new Proto.Str(
+                LocalizationManager.GetLocalizedString0Arg(
+                    Id.Value,
+                    string.Join(" ",
+                        lastCreated.Prototype.Symbol,
+                        lastCreated.Prototype.Strings.Name.TranslatedString,
+                        lastCreated.Prototype.Strings.DescShort.TranslatedString
+                    ),
+                    "No comment"
+                ));
 
         public override Proto.ID Id => lastCreated.Prototype.Id;
 
@@ -32,9 +42,9 @@ namespace ProgramableNetwork
             var button = new ButtonRow(new ButtonVariant().Gap(5))
             {
                 new ModuleView(new Module(lastCreated.Prototype, m_controller.Context, m_controller), m_controllerView, m_controllerView.Inspector.Context, true, () => { }),
-                new PanelWithHeader($"Copy last created: {Strings.Name.TranslatedString}".AsLoc())
+                new PanelWithHeader($"Copy last created: {lastCreated.Prototype.Strings.Name.TranslatedString}".AsLoc())
                     .Height(Sizes.BLOCK_SIZE * 4).FlexGrow(1)
-                    .BodyAdd(new Label(Strings.DescShort).FlexGrow(1).TextAlign(TextAlignment.LeftTop).AlignSelf(Align.Stretch))
+                    .BodyAdd(new Label(lastCreated.Prototype.Strings.DescShort).FlexGrow(1).TextAlign(TextAlignment.LeftTop).AlignSelf(Align.Stretch))
             };
             return button;
         }
