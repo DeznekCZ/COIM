@@ -200,16 +200,9 @@ namespace ProgramableNetwork
                 var next = registrator.PrototypesDb.Add(new ControllerProto(
                     id: protoId,
                     strings: Proto.CreateStr(protoId, name, description),
-                    layout: registrator.LayoutParser.ParseLayoutOrThrow(pillars, "[1]"),
-                    costs: ((EntityCostsTpl)Costs.Build.CP2(4)).MapToEntityCosts(registrator),
-                        initModules: modules,
-                    allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
-                        basedOn: originalTier1,
-                    graphics: new LayoutEntityProto.Gfx(
-                        prefabPath: NewAssets.Computers.Controller,
-                            customIconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
-                        categories: category
-                    )
+                    basedOn: originalTier1,
+                    iconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
+                    initModules: modules
                 ));
                 if (template != null)
                     template.SetNextTierIndirect(next);

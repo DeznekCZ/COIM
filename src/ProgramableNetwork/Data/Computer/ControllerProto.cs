@@ -28,25 +28,40 @@ namespace ProgramableNetwork
             int rows = 4,
             int columns = 16,
             bool canPillarsPassTrough = true,
-            Func<Controller, Action> initModules = null,
-            ControllerProto basedOn = null,
+            int tierNumber = 1,
             Upoints? boostCost = null,
             Electricity? workingPower = default,
             Electricity? iddlePower = default,
             Func<ModuleProto, bool> allowedModules = null,
             IEnumerable<Tag> tags = null)
-            : base(id, strings, layout, costs, graphics, constructionDurationPerProduct: Duration.FromSec(10), boostCost ?? 0.25.Upoints(), cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
+            : base(id, strings, layout, costs, graphics, constructionDurationPerProduct: Duration.FromSec(5), boostCost ?? 0.25.Upoints(), cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
         {
             this.WorkingPower = workingPower ?? Electricity.FromKw(1);
             this.IddlePower = iddlePower ?? Electricity.FromKw(1);
-            this.Rows = rows;
+            this.Rows =rows;
             this.Columns = columns;
             this.AllowedModule = allowedModules ?? ((module) => true);
-            this.InitModules = initModules ?? ((controller) => () => { });
-            this.TierData = new TierData(this, 1);
-            this.BasedOn = basedOn;
+            this.InitModules = (controller) => () => { };
+            this.TierData =  new TierData(this, tierNumber);
+            this.BasedOn = null;
             this.CanBeElevated = false;
             this.CanPillarsPassThrough = canPillarsPassTrough;
+        }
+
+        public ControllerProto(ID id, Str strings, ControllerProto basedOn, string iconPath, Func<Controller, Action> initModules,
+            IEnumerable<Tag> tags = null)
+            : base(id, strings, basedOn.Layout, basedOn.Costs, basedOn.Graphics.WithNewIcon(iconPath), constructionDurationPerProduct: Duration.FromSec(5), basedOn.BoostCost, cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
+        {
+            this.WorkingPower = basedOn.WorkingPower;
+            this.IddlePower = basedOn.IddlePower;
+            this.Rows = basedOn.Rows;
+            this.Columns = basedOn.Columns;
+            this.AllowedModule = basedOn.AllowedModule;
+            this.InitModules = initModules ?? ((controller) => () => { });
+            this.TierData = new TierData(this, -1);
+            this.BasedOn = basedOn;
+            this.CanBeElevated = false;
+            this.CanPillarsPassThrough = BasedOn.CanPillarsPassThrough;
         }
 
         public static ControllerProto Phantom;

@@ -44,11 +44,15 @@ namespace ProgramableNetwork
             (bool created, Module module) = m_tryCreate(lastCreated.Prototype);
             if (created)
             {
+                module.Prototype.ExecuteInit(module);
+
                 foreach (KeyValuePair<string, int> item in lastCreated.NumberData)
                     module.NumberData[item.Key] = item.Value;
                 foreach (KeyValuePair<string, string> item in lastCreated.StringData)
                     module.StringData[item.Key] = item.Value;
-                module.Prototype.ExecuteInit(module);
+
+                foreach (IField field in module.Prototype.Fields)
+                    field.Validate(module);
             }
         }
     }

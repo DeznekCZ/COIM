@@ -28,6 +28,15 @@ namespace ProgramableNetwork
             action(self);
             return self;
         }
+        
+        public static LayoutEntityProto.Gfx WithNewIcon(this LayoutEntityProto.Gfx gfx, string icon)
+        {
+            if (gfx == null) return gfx;
+            var field = typeof(LayoutEntityProto.Gfx)
+                .GetField("<IconPath>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(gfx, icon);
+            return gfx;
+        }
 
         public static string GetIcon(this IEntity entity)
         {
