@@ -48,9 +48,9 @@ namespace ProgramableNetwork
             this.CanPillarsPassThrough = canPillarsPassTrough;
         }
 
-        public ControllerProto(ID id, Str strings, ControllerProto basedOn, string iconPath, Func<Controller, Action> initModules,
+        public ControllerProto(ID id, Str strings, ControllerProto basedOn, Gfx graphics, Func<Controller, Action> initModules,
             IEnumerable<Tag> tags = null)
-            : base(id, strings, basedOn.Layout, basedOn.Costs, basedOn.Graphics.WithNewIcon(iconPath), constructionDurationPerProduct: Duration.FromSec(5), basedOn.BoostCost, cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
+            : base(id, strings, basedOn.Layout, basedOn.Costs, graphics, constructionDurationPerProduct: Duration.FromSec(5), basedOn.BoostCost, cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
         {
             this.WorkingPower = basedOn.WorkingPower;
             this.IddlePower = basedOn.IddlePower;

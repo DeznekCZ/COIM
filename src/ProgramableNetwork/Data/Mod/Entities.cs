@@ -201,7 +201,11 @@ namespace ProgramableNetwork
                     id: protoId,
                     strings: Proto.CreateStr(protoId, name, description),
                     basedOn: originalTier1,
-                    iconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
+                    graphics: new LayoutEntityProto.Gfx(
+                        prefabPath: NewAssets.Computers.Controller,
+                        customIconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
+                        categories: category
+                    ),
                     initModules: modules
                 ));
                 if (template != null)
