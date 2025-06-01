@@ -1,19 +1,14 @@
 ﻿using Mafi;
+using Mafi.Core;
 using Mafi.Core.Syncers;
 using Mafi.Localization;
 using Mafi.Unity.Ui;
 using Mafi.Unity.Ui.Library;
 using Mafi.Unity.Ui.Library.Inspectors;
+using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using MultiplayerContracts.Data.Entries;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static Mafi.Base.Assets.Base.Products.Countable.Microchip;
 using static Mafi.Unity.Assets.Unity;
 
 namespace MultiplayerContracts.Data
@@ -36,15 +31,16 @@ namespace MultiplayerContracts.Data
         {
             m_list = new ContractLists();
 
-            AddPanelWithHeader(
-                m_tabs = new TabContainer().Height(400)
-            ).Header.Add(
-                new Label("Market".AsLoc()),
+            AddPanelRow(
+                new Label("Market".AsLoc())
+                    .Class(Cls.title)
+                    .TextAlign(TextAlignment.LeftMiddle)
+                    .Height(32.px()), // medium
                 new UiComponent().FlexGrow(1),
                 new TextField().With(field =>
                 {
                     field.Width(200);
-                    field.ObserveValue(() => Entity?.Address ?? "http://localhost:6542");
+                    field.ObserveValue(() => Entity?.Address ?? "localhost:6542");
                     field.OnValueChanged((e) =>
                     {
                         if (Entity != null)
@@ -52,28 +48,41 @@ namespace MultiplayerContracts.Data
                             Entity.Market = e;
                         }
                     });
+                    field.Height(32.px()); // medium
                 }),
                 new ButtonIcon(UserInterface.General.Repeat_svg)
                     .Medium()
+                    .Height(32.px())
                     .OnClick(RefreshList)
                     .ObserveEnabledWithReason(() =>
                     {
                         if (Entity is null)
+                        {
                             return new Mafi.Core.Utils.BoolWithReason(false, "No market connected".AsLoc());
+                        }
 
                         if (m_isRefeshing)
+                        {
+                            Status.As("Searching for product offers".AsLoc(), DisplayState.Warning);
                             return new Mafi.Core.Utils.BoolWithReason(false, "Searching for product offers".AsLoc());
+                        }
 
                         if (m_isNotResponding)
+                        {
+                            Status.As("Market does not responding".AsLoc(), DisplayState.Danger);
                             return new Mafi.Core.Utils.BoolWithReason(false, "Market does not responding".AsLoc());
+                        }
 
+                        Status.As(Tr.EntityStatus__Working, DisplayState.Positive);
                         return new Mafi.Core.Utils.BoolWithReason(true, "Update list of items".AsLoc());
                     }, "Update list of items".AsLoc())
             );
 
+            m_tabs = new TabContainer().Height(400);
+            MainBody.Add(m_tabs);
+
             this.Observe(() => Entity)
                 .Do(dock => RefreshList());
-
 
             // Panel for show results
             m_tabs.AddTab("Market offers".AsLoc(), m_marketList = new Column(gap: 5.px()), UserInterface.General.Tradable128_png, "Contains offers from other players".AsLoc(), switchTo: true);
@@ -146,6 +155,9 @@ namespace MultiplayerContracts.Data
 
                     foreach (Mafi.Core.ProductQuantity item in quantities)
                     {
+                        if (item.Quantity == Quantity.Zero)
+                            continue;
+
                         storage.Add(new Column(gap: 2)
                         {
                             new Icon().Value(item.Product).Large(),

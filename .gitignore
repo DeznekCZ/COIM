@@ -22,3 +22,5 @@ desktop.ini
 /src/MPContracts/bin/
 /src/MPContracts/node_modules/
 /src/MPContracts/dist
+/src/MultiplayerContracts/MultiplayerContracts.pdb
+*.zip
