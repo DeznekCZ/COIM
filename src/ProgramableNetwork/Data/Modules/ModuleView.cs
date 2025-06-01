@@ -20,6 +20,8 @@ namespace ProgramableNetwork
             private readonly Module m_module;
             private readonly ControllerView m_controller;
 
+            public Module Module => m_module;
+
             public ModuleView(Module module, ControllerView controllerView, UiContext uiContext, bool preview, Action refresh)
                 : base()
             {

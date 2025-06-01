@@ -29,6 +29,11 @@ namespace ProgramableNetwork
             return self;
         }
 
+        public static T As<T>(this object self)
+        {
+            return (T)self;
+        }
+
         public static string GetIcon(this IEntity entity)
         {
             if (entity is LayoutEntityBase positionedForGraphics)

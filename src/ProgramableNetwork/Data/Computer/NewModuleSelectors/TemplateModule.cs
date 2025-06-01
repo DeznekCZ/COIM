@@ -12,13 +12,6 @@ namespace ProgramableNetwork
 {
     public class TemplateModule : AModuleProtoSelector
     {
-        public static void ClearCache()
-        {
-            m_cache.Clear();
-        }
-
-        private static readonly Dict<Proto.ID, Button> m_cache = new Dict<Proto.ID, Button>();
-
         private KeyValuePair<string, Template> item;
 
         public TemplateModule(Controller controller, ControllerView controllerView, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate, KeyValuePair<string, Template> item)
@@ -48,12 +41,14 @@ namespace ProgramableNetwork
 
         public override Button CreateUi()
         {
-            if (m_cache.TryGetValue(Id, out Button component))
-                return component;
-
-            return m_cache[Id] = new ButtonRow(new ButtonVariant().Gap(5))
+            return new ButtonRow(new ButtonVariant().Gap(5))
             {
-                new ModuleView(new Module(item.Value.ModuleProto, m_controller.Context, m_controller), m_controllerView, m_controllerView.Inspector.Context, true, () => { }),
+                new ModuleView(new Module(item.Value.ModuleProto, m_controller.Context, m_controller), m_controllerView, m_controllerView.Inspector.Context, true, () => { })
+                    .With(mv => {
+                        mv.Module.Prototype.ExecuteInit(mv.Module, log: false);
+                        item.Value.Setting(mv.Module);
+                        mv.Module.Prototype.DisplayUpdate(mv.Module);
+                    }),
                 new PanelWithHeader($"Template: {item.Value.ModuleProto.Strings.Name.TranslatedString}".AsLoc())
                     .Height(Sizes.BLOCK_SIZE * 4).FlexGrow(1)
                     .BodyAdd(new Label(new LocStrFormatted(item.Value.Name)).FlexGrow(1).TextAlign(TextAlignment.LeftTop).AlignSelf(Align.Stretch))

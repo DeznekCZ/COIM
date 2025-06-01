@@ -1,7 +1,6 @@
 ﻿using Mafi;
 using Mafi.Base;
 using Mafi.Base.Prototypes.Trains;
-using Mafi.Collections;
 using Mafi.Core;
 using Mafi.Core.Buildings.Cargo;
 using Mafi.Core.Buildings.Cargo.Modules;
@@ -23,16 +22,13 @@ using Mafi.Core.Factory.Recipes;
 using Mafi.Core.Factory.Sorters;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Factory.WellPumps;
-using Mafi.Core.Input;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
 using Mafi.Core.Products;
 using Mafi.Core.Trains;
 using Mafi.Core.Vehicles;
-using Mafi.Localization;
 using Mafi.Unity.InputControl;
-using Mafi.Unity.UiToolkit.Library;
 using ProgramableNetwork.Data.DataBand;
 using ProgramableNetwork.Data.DisplayEntity;
 using ProgramableNetwork.Data.Speaker;
@@ -49,10 +45,6 @@ namespace ProgramableNetwork
 
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
-            // UI clear
-            NewModule.ClearCache();
-            TemplateModule.ClearCache();
-
             Constants(registrator);
             Buttons(registrator);
             Variables(registrator);
@@ -2195,7 +2187,7 @@ namespace ProgramableNetwork
                     .AddInt32Field("float", "Floating numbers", "Ammount of numbers displayed from fractional part", defaultValue: 0)
                     .AddControllerDevice()
                     // dynamic
-                    .Action(ModuleFunction(i * 2))
+                    .Display(ModuleFunction(i * 2))
                     .BuildAndAdd();
             }
 
@@ -2205,7 +2197,7 @@ namespace ProgramableNetwork
                 .AddInput("a", "Product")
                 .AddDisplay("a", "Product", 1, image: true)
                 .AddControllerDevice()
-                .Action(m => m.Display["a"] = m.Input.Product("a")?.IconPath)
+                .Display(m => m.Display["a"] = m.Input.Product("a")?.IconPath)
                 .BuildAndAdd();
 
             registrator
@@ -2214,7 +2206,7 @@ namespace ProgramableNetwork
                 .AddInput("a", "Entity")
                 .AddDisplay("a", "Entity", 1, image: true)
                 .AddControllerDevice()
-                .Action(m => m.Display["a"] = m.Input.EntityProtoIconified("a")?.IconPath)
+                .Display(m => m.Display["a"] = m.Input.EntityProtoIconified("a")?.IconPath)
                 .BuildAndAdd();
 
             registrator
@@ -2223,12 +2215,36 @@ namespace ProgramableNetwork
                 .AddInput("a", "Product")
                 .AddDisplay("a", "Product", 1, led: true)
                 .AddControllerDevice()
-                .Action(m => m.Display["a"] = m.Input["a", 0] > 0 ? "1" : "")
+                .Display(m => m.Display["a"] = m.Input["a", 0] > 0 ? "1" : "")
                 .BuildAndAdd();
         }
 
         private void RadioFM(ProtoRegistrator registrator)
         {
+            Action<Module> DisplaySignals(int digits)
+            {
+                return (Module m) =>
+                {
+                    Antena entity = m.Field.Entity<Antena>("antena");
+                    if (entity.DataBand is FMDataBand fm)
+                    {
+                        if (!entity.IsEnabled)
+                        {
+                            m.Display["fm"] = "OFF";
+                            return;
+                        }
+
+                        int value = m.Field.Integer["fm"];
+                        Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
+                        m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " MHz" : "");
+                    }
+                    else
+                    {
+                        m.Display["fm"] = "NOA";
+                    }
+                };
+            }
+
             Action<Module> ReadSignals(int digits)
             {
                 return (Module m) =>
@@ -2241,14 +2257,13 @@ namespace ProgramableNetwork
                         {
                             m.Output[names[i]] = 0;
                         }
-                        m.Display["fm"] = "NOA";
                         m.SetError("No antena connected");
                     }
                     else
                     {
                         int value = m.Field.Integer["fm"];
                         Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
-                        m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " kHz" : "");
+                        m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " MHz" : "");
 
                         if (!entity.IsEnabled)
                         {
@@ -2256,7 +2271,6 @@ namespace ProgramableNetwork
                             {
                                 m.Output[names[i]] = 0;
                             }
-                            m.Display["fm"] = "OFF";
                         }
                         else
                         {
@@ -2287,7 +2301,8 @@ namespace ProgramableNetwork
                     .AddDisplay("fm", "Frequency", i)
                     .AddControllerDevice()
                     // dynamic
-                    .Action(ReadSignals(i));
+                    .Action(ReadSignals(i))
+                    .Display(DisplaySignals(i));
 
                 for (int j = 0; j < i; j++)
                 {
@@ -2306,13 +2321,8 @@ namespace ProgramableNetwork
                     {
                         if (!entity.IsEnabled)
                         {
-                            m.Display["fm"] = "OFF";
                             return;
                         }
-
-                        int value = m.Field.Integer["fm"];
-                        Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
-                        m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " kHz" : "");
 
                         if (!entity.IsPaused)
                         {
@@ -2326,7 +2336,6 @@ namespace ProgramableNetwork
                     }
                     else
                     {
-                        m.Display["fm"] = "NOA";
                         m.SetError("No antena connected");
                     }
                 };
@@ -2344,7 +2353,8 @@ namespace ProgramableNetwork
                     .AddDisplay("fm", "Frequency", i)
                     .AddControllerDevice()
                     // dynamic
-                    .Action(WriteSignals(i));
+                    .Action(WriteSignals(i))
+                    .Display(DisplaySignals(i));
 
                 for (int j = 0; j < i; j++)
                 {
@@ -2374,7 +2384,19 @@ namespace ProgramableNetwork
                     // TODO generate noise or read data
                     {
                         m.Output["am"] = am.Read(m.Field["am", Fix32.Zero].IntegerPart, Fix32.Zero);
-
+                    }
+                    else
+                    {
+                        m.SetError("No antena connected");
+                        m.Output["am"] = Fix32.Zero;
+                    }
+                })
+                .Display((Module m) =>
+                {
+                    Antena entity = m.Field.Entity<Antena>("antena");
+                    if ((entity?.DataBand is AMDataBand am))
+                    // TODO generate noise or read data
+                    {
                         // signal value
                         int value = m.Field.Integer["am"];
                         Fix32 displayValue = (53 + value).ToFix32() * 10f.ToFix32();
@@ -2383,8 +2405,6 @@ namespace ProgramableNetwork
                     else
                     {
                         m.Display["am"] = "NOA";
-                        m.SetError("No antena connected");
-                        m.Output["am"] = Fix32.Zero;
                     }
                 })
                 .BuildAndAdd();
@@ -2406,13 +2426,8 @@ namespace ProgramableNetwork
                     {
                         if (!entity.IsEnabled)
                         {
-                            m.Display["am"] = "OFF";
                             return;
                         }
-
-                        int value = m.Field.Integer["am"];
-                        Fix32 displayValue = (53 + value).ToFix32() * 10.ToFix32();
-                        m.Display["am"] = displayValue.ToStringRounded(0);
 
                         if (!entity.IsPaused)
                         {
@@ -2421,9 +2436,28 @@ namespace ProgramableNetwork
                     }
                     else
                     {
-                        m.Display["am"] = "NOA";
                         m.SetError("No antena connected");
                         m.Output["am"] = Fix32.Zero;
+                    }
+                })
+                .Display((Module m) =>
+                {
+                    Antena entity = m.Field.Entity<Antena>("antena");
+                    if (entity?.DataBand is AMDataBand am)
+                    {
+                        if (!entity.IsEnabled)
+                        {
+                            m.Display["am"] = "OFF";
+                            return;
+                        }
+
+                        int value = m.Field.Integer["am"];
+                        Fix32 displayValue = (53 + value).ToFix32() * 10.ToFix32();
+                        m.Display["am"] = displayValue.ToStringRounded(0);
+                    }
+                    else
+                    {
+                        m.Display["am"] = "NOA";
                     }
                 })
                 .BuildAndAdd();

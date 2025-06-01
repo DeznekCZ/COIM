@@ -641,14 +641,14 @@ namespace ProgramableNetwork
             }
         }
 
-        public void ExecuteInit(Module m)
+        public void ExecuteInit(Module m, bool log = true)
         {
             foreach (var field in Fields)
             {
                 field.InitData(m);
             }
             m.SetStatus(Init.Invoke(m));
-            Log.Info($"Module initialized: {m.Id} ({m.Prototype.Id.Value}) with status {m.Status}");
+            if (log) Log.Info($"Module initialized: {m.Id} ({m.Prototype.Id.Value}) with status {m.Status}");
         }
     }
 

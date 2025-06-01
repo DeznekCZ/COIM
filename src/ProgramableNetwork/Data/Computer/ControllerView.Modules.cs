@@ -134,6 +134,15 @@ namespace ProgramableNetwork
                 searchable: true
             );
 
+            protoPicker.OnShow(() => {
+                protoPicker
+                    .GetType()
+                    .GetField("m_searchField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    .GetValue(protoPicker)
+                    .As<TextField>()
+                    .Focus();
+            });
+
             // add filler
             column.AddAndReturn(new UiComponent())
                   .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);

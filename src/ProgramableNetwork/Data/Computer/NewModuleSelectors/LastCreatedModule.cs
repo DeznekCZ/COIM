@@ -41,7 +41,17 @@ namespace ProgramableNetwork
         {
             var button = new ButtonRow(new ButtonVariant().Gap(5))
             {
-                new ModuleView(new Module(lastCreated.Prototype, m_controller.Context, m_controller), m_controllerView, m_controllerView.Inspector.Context, true, () => { }),
+                new ModuleView(new Module(lastCreated.Prototype, m_controller.Context, m_controller), m_controllerView, m_controllerView.Inspector.Context, true, () => { })
+                    .With(mv => {
+                        mv.Module.Prototype.ExecuteInit(mv.Module, log: false);
+
+                        foreach (KeyValuePair<string, int> item in lastCreated.NumberData)
+                            mv.Module.NumberData[item.Key] = item.Value;
+                        foreach (KeyValuePair<string, string> item in lastCreated.StringData)
+                            mv.Module.StringData[item.Key] = item.Value;
+
+                        mv.Module.Prototype.DisplayUpdate(mv.Module);
+                    }),
                 new PanelWithHeader($"Copy last created: {lastCreated.Prototype.Strings.Name.TranslatedString}".AsLoc())
                     .Height(Sizes.BLOCK_SIZE * 4).FlexGrow(1)
                     .BodyAdd(new Label(lastCreated.Prototype.Strings.DescShort).FlexGrow(1).TextAlign(TextAlignment.LeftTop).AlignSelf(Align.Stretch))
