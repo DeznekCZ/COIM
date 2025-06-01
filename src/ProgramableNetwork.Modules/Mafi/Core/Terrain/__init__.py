@@ -1,3 +1,15 @@
+class CheatRestoreTerrainCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class LandfillOnTerrainManager:
 
     def __init__(self):
@@ -8,6 +20,12 @@ class OceanTerrainManager:
     def __init__(self):
         self.QueuedTilesCount = int(0)
         self.ProcessedLastTick = int(0)
+class PolygonTerrainArea2i:
+
+    def __init__(self):
+        self.BoundingBoxCenter = None
+        self.IsEmpty = False
+        self.IsNotEmpty = False
 class RectangleTerrainArea2i:
 
     def __init__(self):
@@ -46,6 +64,9 @@ class TerrainManager:
         self.Chunk64PerWidth = int(0)
         self.Chunk64PerHeight = int(0)
         self.Chunk64TotalCount = int(0)
+        self.Chunk256PerWidth = int(0)
+        self.Chunk256PerHeight = int(0)
+        self.Chunk256TotalCount = int(0)
         self.FourSideNeighborsDeltas = None
         self.FourSideNeighborsDeltasIndices = None
         self.FourCornerNeighborsDeltas = None
@@ -68,6 +89,7 @@ class TerrainManager:
         self.MinedProducts = None
         self.DisruptedMaterialIds = None
         self.RecoveredMaterialIds = None
+        self.DisruptedMaterialParentsIds = None
         self.TerrainSurfaces = None
         self.IsGeneratingTerrain = False
         self.IsGeneratingTerrainLegacy = False
@@ -182,6 +204,11 @@ class VirtualResourceManager:
     def __init__(self):
         pass
 
+class FakeTerrainOccupancyManager:
+
+    def __init__(self):
+        pass
+
 class FarmableManager:
 
     def __init__(self):
@@ -215,6 +242,7 @@ class TerrainTileSurfaceProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -272,6 +300,11 @@ class TerrainManagerConfig:
         self.MapCacheForceEnableWrite = False
         self.EnableHeightSnapshotting = False
 class TerrainMaterialThicknessSlimExtensions:
+
+    def __init__(self):
+        pass
+
+class ITerrainOccupancyManager:
 
     def __init__(self):
         pass

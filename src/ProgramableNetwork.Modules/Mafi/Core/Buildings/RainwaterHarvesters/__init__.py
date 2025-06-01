@@ -10,6 +10,9 @@ class RainwaterHarvester:
         self.WaterCollectedPerDayFullRain = None
         self.StoredWater = None
         self.LogisticsOutputControl = None
+        self.MaintenanceCosts = None
+        self.Maintenance = None
+        self.IsIdleForMaintenance = False
         self.Prototype = None
         from Mafi import Option
         self.StoredProduct = Option()
@@ -40,6 +43,7 @@ class RainwaterHarvester:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -73,6 +77,7 @@ class RainwaterHarvesterProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

@@ -16,6 +16,7 @@ class CountableProductProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -27,6 +28,7 @@ class Gfx:
         self.PackingMode = None
         from Mafi import Option
         self.PrefabsPath = Option()
+        self.IconPath = str(0)
         self.IconIsCustom = False
 class CountableProductStackingMode:
 
@@ -39,6 +41,7 @@ class DetailLayerSpecProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -67,6 +70,7 @@ class FluidProductProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -125,6 +129,7 @@ class LooseProductProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -134,8 +139,10 @@ class Gfx:
 
     def __init__(self):
         self.DisplayInResources = False
+        self.ParticleColor = None
         from Mafi import Option
         self.PrefabsPath = Option()
+        self.IconPath = str(0)
         self.IconIsCustom = False
 class LooseProductSlimId:
     PhantomId = None
@@ -166,6 +173,7 @@ class MoltenProductProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -176,6 +184,7 @@ class Gfx:
     def __init__(self):
         from Mafi import Option
         self.PrefabsPath = Option()
+        self.IconPath = str(0)
         self.IconIsCustom = False
 class MoltenProductProtoBuilder:
 
@@ -234,6 +243,7 @@ class ProductProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -249,6 +259,7 @@ class Gfx:
     def __init__(self):
         from Mafi import Option
         self.PrefabsPath = Option()
+        self.IconPath = str(0)
         self.IconIsCustom = False
 class ProductSlimId:
     PhantomId = None
@@ -325,6 +336,7 @@ class TerrainMaterialProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -377,6 +389,7 @@ class VirtualProductProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -388,6 +401,7 @@ class VirtualResourceProductProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

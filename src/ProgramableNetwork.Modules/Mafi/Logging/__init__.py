@@ -19,11 +19,6 @@ class IMapEditorInfo:
     def __init__(self):
         pass
 
-class JsonWriter:
-
-    def __init__(self):
-        pass
-
 class LogEntry:
 
     def __init__(self):

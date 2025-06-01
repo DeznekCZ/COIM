@@ -19,6 +19,7 @@ class MemberWrapper:
         self.IsDirectCallSerializationDisabled = False
         self.ShouldAssignToObj = False
         self.IsSerialized = False
+        self.NeedsStaticSaveVersion = False
 class SerializerGenerator:
 
     def __init__(self):
@@ -40,4 +41,3 @@ class TypeSerializationSpec:
         from Mafi import Option
         self.SerializedDueToDerivedClass = Option()
         self.HasBaseTypeWithSomethingToSerialize = False
-        self.HasSomethingToSerialize = False

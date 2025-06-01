@@ -2,6 +2,7 @@ class Chunk64Area:
 
     def __init__(self):
         self.TotalChunksCount = int(0)
+        self.TotalTilesCount = int(0)
         self.Area2i = None
 class CoastLinesData:
 
@@ -121,7 +122,9 @@ class WorldRegionMapAdditionalData:
         self.TotalOtherResourcesStats = None
         self.ResourceLocations = None
         self.TilesAtOrAboveElevationDataSorted = None
+        self.ThumbnailLargeData = None
         self.PreviewImagesData = None
+        self.VersionHistory = None
 class WorldRegionMapBaseConfig:
 
     def __init__(self):
@@ -154,6 +157,11 @@ class WorldRegionMapPreviewData:
         self.IsProtected = False
         from Mafi import Option
         self.FilePath = Option()
+class WorldRegionMapVersionEntry:
+
+    def __init__(self):
+        pass
+
 class ConfigurableNoise2dParamSpec:
 
     def __init__(self):
@@ -353,6 +361,7 @@ class IWorldRegionMapAdditionalData:
         self.TotalOtherResourcesStats = None
         self.ResourceLocations = None
         self.TilesAtOrAboveElevationDataSorted = None
+        self.ThumbnailLargeData = None
         self.PreviewImagesData = None
 class StartingLocationDifficulty:
 
@@ -591,6 +600,11 @@ class IStartingLocationV2:
         self.IsDisabled = False
         self.IsUnique = False
         self.IsImportable = False
+class ICustomTerrainPostProcessor:
+
+    def __init__(self):
+        pass
+
 class TerrainGeneratorV2:
 
     def __init__(self):

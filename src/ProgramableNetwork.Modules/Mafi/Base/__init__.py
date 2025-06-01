@@ -158,6 +158,11 @@ class Technologies:
     def __init__(self):
         pass
 
+class Toolbar:
+
+    def __init__(self):
+        pass
+
 class Trees:
 
     def __init__(self):
@@ -189,6 +194,11 @@ class AssemblyT1:
         pass
 
 class AssemblyT2:
+
+    def __init__(self):
+        pass
+
+class AssemblyT4:
 
     def __init__(self):
         pass
@@ -463,6 +473,11 @@ class Countable:
     def __init__(self):
         pass
 
+class LensObsolete:
+
+    def __init__(self):
+        pass
+
 class Microchip:
 
     def __init__(self):
@@ -498,6 +513,11 @@ class Molten:
     def __init__(self):
         pass
 
+class Railroads:
+
+    def __init__(self):
+        pass
+
 class Roads:
 
     def __init__(self):
@@ -524,6 +544,11 @@ class T2:
         pass
 
 class T3:
+
+    def __init__(self):
+        pass
+
+class T4:
 
     def __init__(self):
         pass
@@ -723,6 +748,91 @@ class Textures:
     def __init__(self):
         pass
 
+class Trains:
+
+    def __init__(self):
+        pass
+
+class Audio:
+
+    def __init__(self):
+        pass
+
+class LevelCrossings:
+
+    def __init__(self):
+        pass
+
+class LocoT1Diesel:
+
+    def __init__(self):
+        pass
+
+class Audio:
+
+    def __init__(self):
+        pass
+
+class LocoT1Steam:
+
+    def __init__(self):
+        pass
+
+class Audio:
+
+    def __init__(self):
+        pass
+
+class Pillars:
+
+    def __init__(self):
+        pass
+
+class Stations:
+
+    def __init__(self):
+        pass
+
+class StationFluidT1:
+
+    def __init__(self):
+        pass
+
+class StationLooseT1:
+
+    def __init__(self):
+        pass
+
+class StationUnitT1:
+
+    def __init__(self):
+        pass
+
+class Ties:
+
+    def __init__(self):
+        pass
+
+class TrainTracks:
+
+    def __init__(self):
+        pass
+
+class ConcreteElevated:
+
+    def __init__(self):
+        pass
+
+class ConcreteWithBallast:
+
+    def __init__(self):
+        pass
+
+class WoodenWithBallast:
+
+    def __init__(self):
+        pass
+
 class Transports:
 
     def __init__(self):
@@ -823,6 +933,16 @@ class Tutorials:
     def __init__(self):
         pass
 
+class AssignedRoutes:
+
+    def __init__(self):
+        pass
+
+class Bidirectional:
+
+    def __init__(self):
+        pass
+
 class CargoShip:
 
     def __init__(self):
@@ -834,11 +954,6 @@ class Contracts:
         pass
 
 class CrisisManagement:
-
-    def __init__(self):
-        pass
-
-class CustomRoutes:
 
     def __init__(self):
         pass
@@ -869,6 +984,11 @@ class IronOreSmelting:
         pass
 
 class IronScrapSmelting:
+
+    def __init__(self):
+        pass
+
+class LogisticsZones:
 
     def __init__(self):
         pass
@@ -939,6 +1059,36 @@ class ToolsPlanningMode:
         pass
 
 class ToolsUnity:
+
+    def __init__(self):
+        pass
+
+class Trains:
+
+    def __init__(self):
+        pass
+
+class ExclusiveZones:
+
+    def __init__(self):
+        pass
+
+class ExtendingBiDirNetwork:
+
+    def __init__(self):
+        pass
+
+class FirstTrainLine:
+
+    def __init__(self):
+        pass
+
+class NoStoppingZones:
+
+    def __init__(self):
+        pass
+
+class TrainStationGroups:
 
     def __init__(self):
         pass
@@ -1103,6 +1253,16 @@ class IconOverlay:
     def __init__(self):
         pass
 
+class Icons:
+
+    def __init__(self):
+        pass
+
+class ProductTypes:
+
+    def __init__(self):
+        pass
+
 class Map:
 
     def __init__(self):
@@ -1124,6 +1284,11 @@ class NavOverlay:
         pass
 
 class Ports:
+
+    def __init__(self):
+        pass
+
+class Textures:
 
     def __init__(self):
         pass
@@ -1255,6 +1420,11 @@ class FuelTanks:
     def __init__(self):
         pass
 
+class Focuses:
+
+    def __init__(self):
+        pass
+
 class Islands:
 
     def __init__(self):
@@ -1340,6 +1510,16 @@ class ToolbarCategories:
     def __init__(self):
         pass
 
+class Trains:
+
+    def __init__(self):
+        pass
+
+class TrainTracks:
+
+    def __init__(self):
+        pass
+
 class Forests:
 
     def __init__(self):
@@ -1405,6 +1585,16 @@ class World:
     def __init__(self):
         pass
 
+class TrainTrackShapeType:
+
+    def __init__(self):
+        pass
+
+class TrainTrackRampType:
+
+    def __init__(self):
+        pass
+
 class CountableProductAttribute:
 
     def __init__(self):
@@ -1440,6 +1630,7 @@ class Buildings:
     HousingT1 = None
     HousingT2 = None
     HousingT3 = None
+    HousingT4 = None
     SettlementFoodModule = None
     SettlementFoodModuleT2 = None
     SettlementLandfillModule = None
@@ -1448,9 +1639,11 @@ class Buildings:
     SettlementWaterModule = None
     SettlementPowerModule = None
     SettlementHouseholdGoodsModule = None
+    SettlementLuxuryGoodsModule = None
     SettlementHouseholdAppliancesModule = None
     SettlementConsumerElectronicsModule = None
     Hospital = None
+    SettlementComputingModule = None
     SettlementSquare = None
     SettlementPillar = None
     SettlementFountain = None
@@ -1474,6 +1667,7 @@ class Buildings:
     ThermalStorage = None
     WasteSortingPlant = None
     OreSortingPlantT1 = None
+    OreSortingPlantT2 = None
     NuclearReactor = None
     NuclearReactorT2 = None
     NuclearReactorT3 = None
@@ -1486,11 +1680,11 @@ class Buildings:
     VehiclesDepot = None
     VehiclesDepot2 = None
     VehiclesDepot3 = None
-    ResearchLab = None
+    ResearchLab0 = None
+    ResearchLab1 = None
     ResearchLab2 = None
     ResearchLab3 = None
     ResearchLab4 = None
-    ResearchLab5 = None
     Beacon = None
     RainwaterHarvester = None
     TradeDock = None
@@ -1521,6 +1715,18 @@ class Buildings:
     CargoModuleFluidT3 = None
     CaptainOfficeT1 = None
     CaptainOfficeT2 = None
+    OfficeT1 = None
+    OfficeT2 = None
+    OfficeT3 = None
+    TrainDepot = None
+    TrainDepotExtension = None
+    TrainStationRoot = None
+    TrainStationUnit = None
+    TrainStationLoose = None
+    TrainStationFluid = None
+    TrainStationFuelSteam = None
+    TrainStationFuelDiesel = None
+    TrainStationEmpty = None
     RocketAssemblyDepot = None
     RocketLaunchPad = None
     RetainingWall1 = None
@@ -1560,6 +1766,10 @@ class Machines:
     SmeltingFurnaceT2 = None
     ArcFurnace = None
     ArcFurnace2 = None
+    AluminumCell = None
+    DiamondReactor = None
+    LensMaker = None
+    AlloyMixer = None
     Boiler = None
     BoilerGas = None
     BoilerElectric = None
@@ -1647,6 +1857,24 @@ class Machines:
 
 class Rockets:
     TestingRocketT0 = None
+    CargoRocketT2 = None
+
+    def __init__(self):
+        pass
+
+class Trains:
+    LevelCrossingSmall = None
+    LevelCrossingSmallRamp = None
+    LevelCrossingSmallPadding = None
+    LevelCrossingLarge = None
+    LevelCrossingLargeRamp = None
+    LevelCrossingLargePadding = None
+    LocomotiveT1Diesel = None
+    LocomotiveT1Steam = None
+    LocomotiveT1SteamTender = None
+    WagonT1Unit = None
+    WagonT1Loose = None
+    WagonT1Fluid = None
 
     def __init__(self):
         pass
@@ -1661,6 +1889,7 @@ class Transports:
     Pipe = None
     PipeT2 = None
     PipeT3 = None
+    PipeT4 = None
     MoltenMetalChannel = None
     Shaft = None
     FlatZipper = None

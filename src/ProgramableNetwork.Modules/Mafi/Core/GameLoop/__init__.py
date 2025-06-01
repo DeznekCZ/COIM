@@ -18,6 +18,7 @@ class GameLoopEvents:
         self.SyncUpdateEnd = None
         self.InputUpdate = None
         self.InputUpdateEnd = None
+        self.RenderUpdateAfterSync = None
         self.RenderUpdate = None
         self.RenderUpdateEnd = None
         self.Terminate = None
@@ -66,6 +67,7 @@ class IGameLoopEvents:
         self.SyncUpdateEnd = None
         self.InputUpdate = None
         self.InputUpdateEnd = None
+        self.RenderUpdateAfterSync = None
         self.RenderUpdate = None
         self.RenderUpdateEnd = None
         self.Terminate = None

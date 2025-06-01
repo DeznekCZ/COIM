@@ -21,6 +21,7 @@ class Shipyard:
         from Mafi import Option
         self.ModificationProgress = Option()
         self.ModificationState = None
+        self.CurrentModificationRequest = None
         from Mafi import Option
         self.DockedFleet = Option()
         self.Upgrader = None
@@ -45,6 +46,7 @@ class Shipyard:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -185,6 +187,7 @@ class ShipyardProto:
     def __init__(self):
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ReservedOceanAreasSets = None
         self.MinGroundHeight = None
         self.MaxGroundHeight = None
@@ -201,6 +204,7 @@ class ShipyardProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

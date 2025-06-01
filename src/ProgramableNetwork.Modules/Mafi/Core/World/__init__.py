@@ -111,11 +111,25 @@ class GoToLocationCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class TeleportFleetToLocationCheatCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class TravelingFleet:
 
     def __init__(self):
         self.CanBePaused = False
         self.WorkersNeeded = int(0)
+        from Mafi import Option
+        self.CustomTitle = Option()
         self.OnLocationFullyExplored = None
         self.PreviousLocationId = None
         self.CurrentLocationId = None
@@ -156,8 +170,6 @@ class TravelingFleet:
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
-        from Mafi import Option
-        self.CustomTitle = Option()
         self.Id = None
         self.DefaultTitle = None
         self.Prototype = None
@@ -318,6 +330,7 @@ class TravelingFleetProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

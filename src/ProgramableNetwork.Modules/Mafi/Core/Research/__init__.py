@@ -4,10 +4,9 @@ class ResearchNodeProto:
         self.Id = None
         self.IsUnlockedFromStart = False
         self.Parents = None
-        self.Difficulty = int(0)
-        self.TotalStepsRequired = int(0)
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -18,6 +17,16 @@ class ID:
     def __init__(self):
         pass
 
+class CostPerLevelFunc:
+
+    def __init__(self):
+        self.Method = None
+        self.Target = None
+class DescPerTimesDoneFunc:
+
+    def __init__(self):
+        self.Method = None
+        self.Target = None
 class Gfx:
 
     def __init__(self):
@@ -91,6 +100,8 @@ class ResearchNode:
     def __init__(self):
         from Mafi import Fix32
         self.RemainingSteps = Fix32()
+        self.ScienceCost = int(0)
+        self.ScienceCostLocStr = None
         self.Proto = None
         from Mafi import Fix32
         self.StepsDone = Fix32()
@@ -111,6 +122,7 @@ class ResearchNode:
         self.CanBeEnqueuedDirect = False
         self.CanBeDequeued = False
         self.IndexInQueue = int(0)
+        self.RequiresSpacePoints = False
 class InfoForUi:
 
     def __init__(self):
@@ -119,8 +131,7 @@ class InfoForUi:
 class IResearchNodeFriend:
 
     def __init__(self):
-        pass
-
+        self.Parents = None
 class ResearchNodeProtoBuilder:
 
     def __init__(self):
@@ -130,22 +141,6 @@ class State:
 
     def __init__(self):
         self.Units = None
-class ResearchCostsTpl:
-    Build = None
-    UnlockedFromStart = None
-
-    def __init__(self):
-        pass
-
-class Builder:
-
-    def __init__(self):
-        pass
-
-class ResearchCostsAttribute:
-
-    def __init__(self):
-        self.TypeId = None
 class ResearchNodeProtoBuilderExtensions:
 
     def __init__(self):
@@ -158,6 +153,7 @@ class TechnologyProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -182,6 +178,15 @@ class UnlockingConditionProtoRequired:
     def __init__(self):
         pass
 
+class Manager:
+
+    def __init__(self):
+        pass
+
+class UnlockingConditionSpaceStation:
+
+    def __init__(self):
+        self.IsSatisfied = False
 class Manager:
 
     def __init__(self):

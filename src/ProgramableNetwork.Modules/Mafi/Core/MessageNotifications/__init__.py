@@ -1,3 +1,8 @@
+class MessageNotificationType:
+
+    def __init__(self):
+        pass
+
 class IMessageNotification:
 
     def __init__(self):

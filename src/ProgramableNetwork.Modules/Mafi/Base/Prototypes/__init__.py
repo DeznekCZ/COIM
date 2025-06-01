@@ -16,6 +16,7 @@ class PopNeedDiseaseProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -29,6 +30,7 @@ class TrashDiseaseProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

@@ -14,6 +14,7 @@ class VehicleRamp:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -35,6 +36,7 @@ class VehicleRampProto:
 
     def __init__(self):
         self.EntityType = None
+        self.TierData = None
         self.Layout = None
         self.Ports = None
         self.CloningDisabled = False
@@ -47,6 +49,7 @@ class VehicleRampProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

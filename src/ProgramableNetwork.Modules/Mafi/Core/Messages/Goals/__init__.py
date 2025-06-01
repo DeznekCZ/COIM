@@ -5,6 +5,7 @@ class GoalProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -21,6 +22,7 @@ class Goal:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class GoalListTrigger:
 
     def __init__(self):
@@ -36,6 +38,7 @@ class GoalToReachProductStatsValue:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -43,6 +46,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -54,6 +58,7 @@ class GoalToConstructStaticEntity:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -61,6 +66,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -72,6 +78,7 @@ class GoalToConstructNumberOfStaticEntities:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -79,6 +86,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -90,6 +98,7 @@ class GoalToResearchNode:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -97,6 +106,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -108,6 +118,7 @@ class GoalToSetupMining:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -115,6 +126,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -126,6 +138,7 @@ class GoalToSetupDumping:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -133,6 +146,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -144,6 +158,7 @@ class GoalToReachRefugees:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -151,6 +166,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -162,6 +178,7 @@ class GoalToActivateRecipe:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -169,6 +186,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -180,6 +198,7 @@ class GoalToExploreWithShip:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -187,6 +206,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -198,6 +218,7 @@ class GoalToDiscoverWorldMine:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -205,6 +226,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -216,6 +238,7 @@ class GoalToRepairShip:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -223,6 +246,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -234,6 +258,7 @@ class GoalToRefuelShip:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -241,6 +266,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -252,6 +278,7 @@ class GoalToManShip:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -259,6 +286,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -270,6 +298,7 @@ class GoalToBuildHousing:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -277,6 +306,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -288,6 +318,7 @@ class GoalToBuildStorage:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -295,6 +326,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -306,6 +338,7 @@ class GoalToStockpileProducts:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -313,6 +346,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -324,6 +358,7 @@ class GoalToRepairCargoShip:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -331,6 +366,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -342,6 +378,7 @@ class GoalToPauseEntity:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -349,6 +386,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -360,6 +398,7 @@ class GoalToConstructFuelStation:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -367,6 +406,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -378,6 +418,7 @@ class GoalToAssignTrucksToTreeHarvester:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -385,6 +426,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -396,6 +438,7 @@ class GoalToActivateEdict:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -403,6 +446,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -414,6 +458,7 @@ class GoalListProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

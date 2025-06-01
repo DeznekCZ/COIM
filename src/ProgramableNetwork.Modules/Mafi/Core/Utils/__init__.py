@@ -34,6 +34,7 @@ class TickTimer:
         self.Ticks = None
         self.StartedAtTicks = None
         self.IsFinished = False
+        self.IsFinishedThisTick = False
         self.IsNotFinished = False
         self.PercentFinished = None
 class TimelapseData:
@@ -58,11 +59,21 @@ class XorRsr128PlusGenerator:
     def __init__(self):
         pass
 
+class AsciiGameRenderer:
+
+    def __init__(self):
+        pass
+
 class BitmapFont5Px:
 
     def __init__(self):
         pass
 
+class BoolWithReason:
+
+    def __init__(self):
+        self.IsSuccess = False
+        self.IsError = False
 class ChangelogUtils:
 
     def __init__(self):

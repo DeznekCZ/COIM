@@ -56,10 +56,13 @@ class Configuration:
         from Mafi import Fix32
         self.SurfaceDepthMult = Fix32()
         self.MaxSurfaceThicknessFn = None
+        self.BaseToSurfaceBlendHeightRange = None
         self.AllowNonIntegerSurfaceHeights = False
         self.ContributesToOceanCoast = False
         self.DisableSubSurfaceGeneration = False
         self.SortingPriorityAdjustment = int(0)
+        self.TotalGeneratedBase = str(0)
+        self.TotalGeneratedSurface = str(0)
         self.TotalGeneratedChunks = int(0)
         self.ChunksWithNoContribution = int(0)
         self.ChunksWithSurfaceAtMaxThickness = int(0)
@@ -95,6 +98,9 @@ class Configuration:
         self.SurfaceCoverMaterial = Option()
         self.SurfaceCoverThicknessFn = None
         self.SortingPriorityAdjustment = int(0)
+        self.Version = int(0)
+        self.TotalGeneratedBase = str(0)
+        self.TotalGeneratedSurface = str(0)
         self.TotalGeneratedChunks = int(0)
         self.ChunksWithNoContribution = int(0)
 class PolygonTerrainReplaceGenerator:

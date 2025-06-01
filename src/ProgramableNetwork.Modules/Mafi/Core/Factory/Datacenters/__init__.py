@@ -12,6 +12,7 @@ class DataCenter:
         self.ElectricityConsumer = Option()
         self.Maintenance = None
         self.MaintenanceCosts = None
+        self.RacksMaintenance = None
         self.WorkersNeeded = int(0)
         self.CoolantInBuffer = None
         self.CoolantOutBuffer = None
@@ -34,6 +35,7 @@ class DataCenter:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -74,6 +76,7 @@ class DataCenterProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -85,6 +88,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class RackPosition:
@@ -122,9 +126,11 @@ class DataCenterToggleRackCmd:
 class ServerRackProto:
 
     def __init__(self):
+        self.IconPath = str(0)
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

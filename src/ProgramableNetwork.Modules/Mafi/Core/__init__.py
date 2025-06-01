@@ -4,12 +4,14 @@ class FileSystemHelper:
         self.GameDataRootDirPath = str(0)
         self.GameDataRootDirPathLegacy = str(0)
         self.WorkDirPath = str(0)
+        self.BuiltInMapsPath = str(0)
 class IFileSystemHelper:
 
     def __init__(self):
         self.GameDataRootDirPath = str(0)
         self.GameDataRootDirPathLegacy = str(0)
         self.WorkDirPath = str(0)
+        self.BuiltInMapsPath = str(0)
 class FileType:
 
     def __init__(self):
@@ -73,6 +75,7 @@ class CoreModConfig:
         self.LogCommandsAsCSharp = False
         self.IsInstaBuildEnabled = False
         self.IsGodModeEnabled = False
+        self.DisableTrainTrackPathHeuristics = False
         self.DisableSimulationBackgroundThread = False
         self.DeterminismValidationEnabled = False
         self.DeterminismValidationFrequencySteps = None
@@ -103,12 +106,14 @@ class GameTime:
         from Mafi import Fix64
         self.TimeSinceLoadMs = Fix64()
         from Mafi import Fix64
+        self.WallTimeSinceLoadMs = Fix64()
+        from Mafi import Fix64
         self.TotalElapsedSeconds = Fix64()
         self.SimStepsCount = int(0)
         self.SimStepsSinceLoad = int(0)
         from Mafi import Fix64
         self.TotalElapsedSimStepsSmooth = Fix64()
-        self.DeltaSimStepsApprox = None
+        self.DeltaSimStepsApprox = float(0)
         from Mafi import Fix32
         self.TimeSinceLastSimUpdateMs = Fix32()
         self.DeltaTimeMs = float(0)
@@ -117,7 +122,8 @@ class GameTime:
         self.RelativeT = float(0)
         self.DeltaT = float(0)
         self.IsGamePaused = False
-        self.GameSpeedMult = int(0)
+        self.SimStepsPerUpdate = int(0)
+        self.GameSpeedMult = float(0)
         from Mafi import Fix32
         self.CurrSimUpdateDurationMs = Fix32()
 class IGodModeConfig:
@@ -199,6 +205,11 @@ class World:
     def __init__(self):
         pass
 
+class TrainTracks:
+
+    def __init__(self):
+        pass
+
 class Transports:
 
     def __init__(self):
@@ -214,12 +225,17 @@ class Weather:
     def __init__(self):
         pass
 
+class SpaceProgram:
+
+    def __init__(self):
+        pass
+
 class ToolbarCategories:
 
     def __init__(self):
         pass
 
-class TrCore:
+class Tr:
 
     def __init__(self):
         pass
@@ -273,12 +289,22 @@ class EntityIdOption:
 
     def __init__(self):
         self.HasValue = False
-        self.ToNullable = None
+        self.AsNullable = None
+class AsteroidId:
+
+    def __init__(self):
+        pass
+
 class IoPortId:
 
     def __init__(self):
         self.IsValid = False
 class Factory:
+
+    def __init__(self):
+        pass
+
+class LogisticsZoneId:
 
     def __init__(self):
         pass
@@ -292,6 +318,69 @@ class Factory:
     def __init__(self):
         pass
 
+class TrainGraphEdgeId:
+
+    def __init__(self):
+        self.HasValue = False
+        self.IsNone = False
+class TrainGraphNodeId:
+
+    def __init__(self):
+        self.HasValue = False
+        self.IsNone = False
+class TrainId:
+
+    def __init__(self):
+        pass
+
+class TrainIdOrNone:
+    None = None
+
+    def __init__(self):
+        self.HasValue = False
+        self.IsNone = False
+        self.Value = None
+class TrainLineId:
+
+    def __init__(self):
+        pass
+
+class TrainLineIdOrNone:
+    None = None
+
+    def __init__(self):
+        self.HasValue = False
+        self.IsNone = False
+        self.Value = None
+class TrainStationGroupId:
+
+    def __init__(self):
+        pass
+
+class TrainStationGroupIdOrNone:
+    None = None
+
+    def __init__(self):
+        self.HasValue = False
+        self.IsNone = False
+        self.Value = None
+class TrainTrackId:
+
+    def __init__(self):
+        pass
+
+class TrainTrackSuperBlockId:
+
+    def __init__(self):
+        pass
+
+class TrainTrackSuperBlockIdOrNone:
+    None = None
+
+    def __init__(self):
+        self.HasValue = False
+        self.IsNone = False
+        self.Value = None
 class VehicleJobId:
 
     def __init__(self):
@@ -341,10 +430,12 @@ class TileTransform:
         self.Transform90RotFlip = None
         self.TransformMatrix = None
 class Transform90RotFlip:
+    Identity = None
 
     def __init__(self):
         self.Rotation90 = None
         self.IsFlipped = False
+        self.ToTileTransform = None
 class IInitializer:
 
     def __init__(self):

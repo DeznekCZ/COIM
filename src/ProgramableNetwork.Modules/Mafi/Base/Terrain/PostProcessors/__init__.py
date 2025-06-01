@@ -144,11 +144,13 @@ class Configuration:
     def __init__(self):
         self.GrassMaterialProto = None
         self.MaxIncompatibleMatCheckDistance = int(0)
+        self.SpreadIncompatibleMaterial = False
         self.MinAddedThickness = None
         self.MaxExaminedDepth = None
         self.MaxCoverPercentage = None
         self.ThresholdDeltaHeight = None
         self.SortingPriorityAdjustment = int(0)
+        self.GrassBelowMaterialContributesToEligibleThickness = False
 class MixedSurfaceMaterialsPostProcessor:
 
     def __init__(self):
@@ -184,6 +186,7 @@ class ParticleErosionPostProcessor:
     def __init__(self):
         self.Name = str(0)
         self.SortingPriority = int(0)
+        self.PassCount = int(0)
         self.IsUnique = False
         self.IsImportable = False
         self.Is2D = False
@@ -192,7 +195,6 @@ class ParticleErosionPostProcessor:
         self.Id = int(0)
         self.IsDisabled = False
         self.ParallelizationStrategy = None
-        self.PassCount = int(0)
         self.LastGenerationTime = None
 class Configuration:
 
@@ -204,6 +206,8 @@ class ParticleErosionConfig:
 
     def __init__(self):
         self.Name = str(0)
+        self.SimulateMaterialTransfer = False
+        self.TransferredMaterialDumpMult = None
 class ParticleInfo:
 
     def __init__(self):
@@ -257,6 +261,69 @@ class InteractionModeEnum:
     def __init__(self):
         pass
 
+class PolygonMultiReplaceMaterialPostProcessor:
+
+    def __init__(self):
+        self.Name = str(0)
+        self.Id = int(0)
+        self.IsDisabled = False
+        self.IsUnique = False
+        self.IsImportable = False
+        self.Is2D = False
+        self.CanRotate = False
+        self.ParallelizationStrategy = None
+        self.SortingPriority = int(0)
+        self.PassCount = int(0)
+        self.LastGenerationTime = None
+        self.Config = None
+class Configuration:
+
+    def __init__(self):
+        self.Polygon = None
+        self.AddNewStageConstant = None
+        self.AddNewStagePatchy = None
+        self.DistanceBiasFn = None
+        self.ExtraInfluenceDistance = None
+        self.SortingPriorityAdjustment = int(0)
+        self.ProcessingPhase = None
+class ReplaceStageConfig:
+
+    def __init__(self):
+        self.TransitionStartDistance = None
+        self.TransitionEndDistance = None
+        from Mafi import Option
+        self.RemovedAndReplacedMaterial = Option()
+        from Mafi import Option
+        self.NewlyPlacedMaterial = Option()
+        self.TerrainBlendHeightRange = None
+        self.MaxThicknessFn = None
+        self.NewMaterialThicknessMult = None
+        self.ContributesAnyChanges = False
+class PolygonNoiseBasedReplacePostProcessor:
+
+    def __init__(self):
+        self.Name = str(0)
+        self.Id = int(0)
+        self.IsDisabled = False
+        self.IsUnique = False
+        self.IsImportable = False
+        self.Is2D = False
+        self.CanRotate = False
+        self.ParallelizationStrategy = None
+        self.SortingPriority = int(0)
+        self.PassCount = int(0)
+        self.LastGenerationTime = None
+        self.Config = None
+class Configuration:
+
+    def __init__(self):
+        self.Polygon = None
+        self.TerrainMaterial = None
+        self.MaxInfluenceDistance = None
+        self.TerrainBlendHeightRange = None
+        self.ThicknessFn = None
+        self.SortingPriorityAdjustment = int(0)
+        self.ProcessingPhase = None
 class PolygonRampPostProcessor:
 
     def __init__(self):
@@ -430,6 +497,8 @@ class PropSpawnConfig:
     def __init__(self):
         self.AddSpawnMaterial = None
         self.AddSpawnedProps = None
+        self.PreferUndisruptedPropMaterial = False
+        self.PreferDisruptedBelowPropMaterial = False
 class RecordLookup:
 
     def __init__(self):

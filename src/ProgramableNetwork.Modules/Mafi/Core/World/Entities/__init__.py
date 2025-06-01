@@ -35,6 +35,14 @@ class WorldMapCargoShipWreck:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
+        self.Upgrader = None
+        self.PriceToUpgrade = None
+        self.ConstructionCostToUpgrade = None
+        self.UpgradeExists = False
+        self.UpgradeTitle = None
+        from Mafi import Option
+        self.NextTier = Option()
+        self.Icon = str(0)
 class WorldMapEntity:
 
     def __init__(self):
@@ -75,10 +83,12 @@ class WorldMapMine:
         self.Maintenance = None
         self.CostToRepair = None
         self.QuantityAvailable = None
+        self.IsReserveUnlimited = False
         self.PriceToUpgrade = None
         self.UpgradeTitle = None
         self.UpgradeExists = False
         self.UpgradeIcon = str(0)
+        self.Upgrader = None
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
@@ -103,6 +113,10 @@ class WorldMapMine:
         self.HasWorkersCached = False
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
+        self.ConstructionCostToUpgrade = None
+        from Mafi import Option
+        self.NextTier = Option()
+        self.Icon = str(0)
 class State:
 
     def __init__(self):
@@ -147,6 +161,7 @@ class WorldMapVillage:
         self.UpgradeTitle = None
         self.UpgradeExists = False
         self.UpgradeIcon = str(0)
+        self.Upgrader = None
         self.IsOwnedByPlayer = False
         self.OnConstructionDone = None
         self.OnAllConstructionProductsAvailable = None
@@ -167,6 +182,10 @@ class WorldMapVillage:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
+        self.ConstructionCostToUpgrade = None
+        from Mafi import Option
+        self.NextTier = Option()
+        self.Icon = str(0)
 class DefaultWorldMapEntityFactory:
 
     def __init__(self):
@@ -198,6 +217,7 @@ class WorldMapCargoShipWreckProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -245,6 +265,7 @@ class WorldMapEntityProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -261,6 +282,7 @@ class WorldMapLocationGfxProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -275,6 +297,7 @@ class WorldMapMineProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -289,6 +312,7 @@ class WorldMapVillageProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

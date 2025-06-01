@@ -3,9 +3,13 @@ class LocStrFormatted:
     def __init__(self):
         self.IsEmptyOrNull = False
         self.IsNotEmpty = False
+class IntegerSiSuffixFormatter:
+
+    def __init__(self):
+        pass
+
 class LocalizationManager:
     CurrentLangInfo = None
-    TrInfoStr = None
     CurrentCultureInfo = None
     TranslationWarnings = None
     TranslationErrors = None
@@ -53,6 +57,11 @@ class LocStr4:
         pass
 
 class LocStr1Plural:
+
+    def __init__(self):
+        pass
+
+class LocStrExtensions:
 
     def __init__(self):
         pass

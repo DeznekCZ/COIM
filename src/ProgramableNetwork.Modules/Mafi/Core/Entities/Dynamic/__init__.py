@@ -16,6 +16,8 @@ class DrivingEntity:
         self.SteeringAngle = None
         self.SteeringAccelerationPercent = None
         self.DistanceToFullStop = None
+        from Mafi import Fix64
+        self.LifetimeDistanceTraveled = Fix64()
         self.IsEngineOn = False
         self.TargetIsTerminal = False
         self.DrivingState = None
@@ -48,6 +50,8 @@ class DrivingState:
 class DrivingEntityProto:
 
     def __init__(self):
+        from Mafi import Option
+        self.FuelTankProto = Option()
         self.CostToBuild = None
         self.DisruptsSurface = False
         self.IconPath = str(0)
@@ -56,6 +60,7 @@ class DrivingEntityProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -70,6 +75,7 @@ class DynamicEntityProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -116,6 +122,7 @@ class DynamicGroundEntityProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -153,27 +160,25 @@ class ExcavatorProtoBuilderState:
 class IFuelTankReadonly:
 
     def __init__(self):
-        self.Info = None
         self.Proto = None
         self.RemainingDuration = None
+        self.RemainingPercent = None
 class FuelTank:
 
     def __init__(self):
-        self.Info = None
         self.RemainingDuration = None
+        self.RemainingPercent = None
         self.Proto = None
         self.IsEmpty = False
+        self.IsFull = False
         self.IsUnderReserve = False
-class TankInfo:
-
-    def __init__(self):
-        self.IsNotNone = False
 class FuelTankProto:
 
     def __init__(self):
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -189,6 +194,16 @@ class State:
     def __init__(self):
         pass
 
+class IEntityWithFuelTank:
+
+    def __init__(self):
+        from Mafi import Option
+        self.FuelTank = Option()
+class IEntityWithFuelTankProto:
+
+    def __init__(self):
+        from Mafi import Option
+        self.FuelTankProto = Option()
 class PathfindingData:
 
     def __init__(self):
@@ -244,6 +259,8 @@ class PathFindingEntity:
         self.SteeringAngle = None
         self.SteeringAccelerationPercent = None
         self.DistanceToFullStop = None
+        from Mafi import Fix64
+        self.LifetimeDistanceTraveled = Fix64()
         self.IsEngineOn = False
         self.TargetIsTerminal = False
         self.DrivingState = None
@@ -305,6 +322,9 @@ class Vehicle:
         from Mafi import Option
         self.CustomTitle = Option()
         from Mafi import Option
+        self.AssignedZone = Option()
+        self.ZoneMask = None
+        from Mafi import Option
         self.AssignedTo = Option()
         self.NeedsJob = False
         self.NeedsRefueling = False
@@ -326,6 +346,7 @@ class Vehicle:
         from Mafi import Option
         self.CurrentJob = Option()
         self.IsIdle = False
+        self.IsEngineIdle = False
         self.CurrentJobInfo = None
         self.IsStuck = False
         self.Maintenance = None
@@ -359,6 +380,8 @@ class Vehicle:
         self.SteeringAngle = None
         self.SteeringAccelerationPercent = None
         self.DistanceToFullStop = None
+        from Mafi import Fix64
+        self.LifetimeDistanceTraveled = Fix64()
         self.TargetIsTerminal = False
         self.DrivingState = None
         self.SpeedFactor = None

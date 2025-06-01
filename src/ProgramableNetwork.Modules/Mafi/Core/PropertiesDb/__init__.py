@@ -24,6 +24,7 @@ class BooleanPropertyProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -35,6 +36,7 @@ class PropertyBoolean:
         self.Id = str(0)
         self.OnChange = None
         self.Value = False
+        self.AllModifiers = None
 class DurationPropertyProto:
 
     def __init__(self):
@@ -42,6 +44,7 @@ class DurationPropertyProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -53,6 +56,12 @@ class PropertyDuration:
         self.Id = str(0)
         self.OnChange = None
         self.Value = None
+        self.AllModifiers = None
+class PropertyGroups:
+
+    def __init__(self):
+        pass
+
 class PropertyModifiers:
 
     def __init__(self):
@@ -64,12 +73,14 @@ class PropertyPercentMult:
         self.Id = str(0)
         self.OnChange = None
         self.Value = None
+        self.AllModifiers = None
 class PropertyPercentSum:
 
     def __init__(self):
         self.Id = str(0)
         self.OnChange = None
         self.Value = None
+        self.AllModifiers = None
 class PercentPropertyProto:
 
     def __init__(self):
@@ -77,6 +88,7 @@ class PercentPropertyProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -94,6 +106,7 @@ class PropertyProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

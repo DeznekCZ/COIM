@@ -10,6 +10,8 @@ class NuclearWasteStorage:
         self.Upgrader = None
         self.ImportUntilPercent = None
         self.ExportFromPercent = None
+        self.ZoneMask = None
+        self.TransportFromPercent = None
         self.CleaningInProgress = False
         self.UsableCapacity = None
         self.AssignedInputs = None
@@ -57,6 +59,7 @@ class NuclearWasteStorage:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False

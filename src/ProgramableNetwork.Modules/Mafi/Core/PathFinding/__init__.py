@@ -1,7 +1,6 @@
 class ClearancePathabilityProvider:
 
     def __init__(self):
-        self.DataChunksCount = int(0)
         self.RecomputedChunksCount = int(0)
 class DataChunk:
 
@@ -14,6 +13,7 @@ class DataChunk:
 class CapabilityChunkData:
 
     def __init__(self):
+        self.Nodes = None
         self.IsDirty = False
 class PathabilityBitmap:
 
@@ -21,6 +21,11 @@ class PathabilityBitmap:
         pass
 
 class HeightClearancePathability:
+
+    def __init__(self):
+        pass
+
+class HeightClearancePathabilityExtensions:
 
     def __init__(self):
         pass
@@ -57,6 +62,7 @@ class IVehiclePathFindingManager:
 
     def __init__(self):
         self.QueueLength = int(0)
+        self.CurrentSimTick = None
         self.PathabilityProvider = None
 class IVehiclePathFindingTask:
 
@@ -133,6 +139,11 @@ class VehiclePathFindingTask:
         self.IsBeingProcessed = False
         from Mafi import Option
         self.Goal = Option()
+        self.EnqueuedAtTick = None
+        self.StartedProcessingAtTick = None
+        self.FinishedProcessingAtTick = None
+        self.InQueueDuration = None
+        self.PathFindingDuration = None
 class VehiclePfResultStatus:
 
     def __init__(self):
@@ -155,6 +166,10 @@ class PfNode:
         self.IsProcessed = False
         self.HasParent = False
         self.IsDirty = False
+class PfConnLine:
+
+    def __init__(self):
+        self.AsToLine2i = None
 class Edge:
 
     def __init__(self):
@@ -184,6 +199,7 @@ class VehiclePathFindingManager:
     def __init__(self):
         self.MaxStepsPerUpdate = int(0)
         self.QueueLength = int(0)
+        self.CurrentSimTick = None
         self.PathabilityProvider = None
         self.HasMoreTasksToProcess = False
         self.CompletedPfTasks = int(0)

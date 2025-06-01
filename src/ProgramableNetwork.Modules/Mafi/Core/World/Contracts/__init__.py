@@ -33,9 +33,12 @@ class ToggleContractCmd:
 class ContractProto:
 
     def __init__(self):
+        self.UpointsPerMonth = None
+        self.UpointsPer100ProductsBought = None
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

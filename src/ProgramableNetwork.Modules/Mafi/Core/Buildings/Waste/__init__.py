@@ -34,6 +34,7 @@ class WasteSortingPlant:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -67,6 +68,7 @@ class WasteSortingPlantProto:
         self.Duration = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ElectricityConsumed = None
         self.AnimationParams = None
         self.Recipes = None
@@ -82,6 +84,7 @@ class WasteSortingPlantProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -93,5 +96,6 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None

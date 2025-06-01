@@ -34,6 +34,18 @@ class AssignVehicleTypeToEntityCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class BuildVehicleForeverCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class CancelReplaceVehicleCmd:
 
     def __init__(self):
@@ -202,7 +214,31 @@ class ScrapVehicleCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class SetVehicleDepotTargetZone:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class TogglePartialTrucksLoadCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class ToggleVehicleScrapCmd:
 
     def __init__(self):
         self.AffectsSaveState = False
@@ -250,3 +286,8 @@ class VehicleCheatProductCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class VehicleCommandsProcessor:
+
+    def __init__(self):
+        pass
+

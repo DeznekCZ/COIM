@@ -116,8 +116,10 @@ class FreeConstructionManager:
 
     def __init__(self):
         self.EntityConstructionStateChanged = None
+        self.DeconstructionRatio = None
         self.EntityConstructed = None
         self.EntityStartedDeconstruction = None
+        self.EntityPauseStateChanged = None
 class GlobalInputBuffer:
 
     def __init__(self):
@@ -181,9 +183,11 @@ class GlobalLogisticsOutputBuffer:
 class IConstructionManager:
 
     def __init__(self):
+        self.DeconstructionRatio = None
         self.EntityConstructed = None
         self.EntityStartedDeconstruction = None
         self.EntityConstructionStateChanged = None
+        self.EntityPauseStateChanged = None
 class ConstructionState:
 
     def __init__(self):
@@ -208,6 +212,7 @@ class IEntityWithMultipleProductsToAssign:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -237,6 +242,7 @@ class ILayoutEntity:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -289,6 +295,7 @@ class IStaticEntity:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -329,6 +336,7 @@ class IEntityAssignedAsOutput:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -360,6 +368,7 @@ class IEntityAssignedAsInput:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -464,6 +473,7 @@ class IStaticEntityWithReservedOcean:
         self.ConstructionProgress = Option()
         self.IsConstructed = False
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.AreConstructionCubesDisabled = False
         self.DoNotAdjustTerrainDuringConstruction = False
         self.Position2f = None
@@ -494,6 +504,7 @@ class IProtoWithReservedOcean:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class ReservedOceanAreaState:
 
@@ -521,6 +532,7 @@ class StaticEntity:
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
         self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -565,6 +577,7 @@ class IStaticEntityProto:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class StaticEntityProto:
 
@@ -574,6 +587,7 @@ class StaticEntityProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

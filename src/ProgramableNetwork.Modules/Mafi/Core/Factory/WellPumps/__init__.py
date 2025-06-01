@@ -45,6 +45,7 @@ class WellInjectionPump:
         self.RecipesAssigned = None
         self.SpeedFactor = None
         self.DurationMultiplier = None
+        self.VirtualOutputMultiplier = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -61,6 +62,7 @@ class WellInjectionPump:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -97,6 +99,7 @@ class WellInjectionPumpProto:
         self.Recipes = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
         self.AnimationParams = None
@@ -112,6 +115,7 @@ class WellInjectionPumpProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -171,6 +175,7 @@ class WellPump:
         self.RecipesAssigned = None
         self.SpeedFactor = None
         self.DurationMultiplier = None
+        self.VirtualOutputMultiplier = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -187,6 +192,7 @@ class WellPump:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -223,6 +229,7 @@ class WellPumpProto:
         self.Recipes = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
         self.AnimationParams = None
@@ -238,6 +245,7 @@ class WellPumpProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

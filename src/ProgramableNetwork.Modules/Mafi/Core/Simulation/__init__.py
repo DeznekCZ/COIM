@@ -53,11 +53,15 @@ class SimLoopEvents:
         self.IsSimPaused = False
         self.SimSpeedMult = int(0)
         self.IsInSimLoop = False
+        self.UpdateBeforeCmdProc = None
         self.UpdateAfterCmdProc = None
         self.UpdateAfterSync = None
         self.UpdateStart = None
+        self.ParallelUpdateStart = None
         self.Update = None
+        self.ParallelUpdateEnd = None
         self.UpdateEnd = None
+        self.ReadGameStateFrequent = None
         self.UpdateEndForUi = None
         self.Sync = None
         self.BeforeSave = None
@@ -88,12 +92,16 @@ class ISimLoopEvents:
         self.IsSimPaused = False
         self.SimSpeedMult = int(0)
         self.IsInSimLoop = False
+        self.UpdateBeforeCmdProc = None
         self.UpdateAfterCmdProc = None
         self.UpdateAfterSync = None
         self.UpdateStart = None
+        self.ParallelUpdateStart = None
         self.Update = None
+        self.ParallelUpdateEnd = None
         self.UpdateEnd = None
         self.UpdateEndForUi = None
+        self.ReadGameStateFrequent = None
         self.Sync = None
         self.BeforeSave = None
 class SimLoopState:

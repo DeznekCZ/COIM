@@ -8,11 +8,6 @@ class ElectricityQuantityFormatter:
     def __init__(self):
         pass
 
-class IntegerSiSuffixFormatter:
-
-    def __init__(self):
-        pass
-
 class NoUnitsQuantityFormatter:
 
     def __init__(self):

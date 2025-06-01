@@ -8,6 +8,30 @@ class BufferStrategy:
     def __init__(self):
         pass
 
+class ChangeLogisticsZoneAreaCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class CreateNewLogisticsZoneCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class EntityGeneralPriorityProvider:
 
     def __init__(self):
@@ -33,6 +57,27 @@ class KeepFullEntityPriorityProvider:
     def __init__(self):
         pass
 
+class LogisticsZone:
+
+    def __init__(self):
+        self.Color = None
+        self.IsDefaultZone = False
+        self.Area = None
+        self.CanConstructMask = None
+        self.Name = None
+        self.IsDestroyed = False
+        self.ConstructionAllowedFrom = None
+class LogisticsZonesManager:
+
+    def __init__(self):
+        self.DefaultZone = None
+        self.OnZoneAdded = None
+        self.OnZoneRemoved = None
+        self.OnZoneAreaChanged = None
+        self.OnZoneConstructionChanged = None
+        self.OnZoneColorChanged = None
+        self.PlayerZonesFast = None
+        self.AllZones = None
 class RegisteredInputBuffer:
 
     def __init__(self):
@@ -51,6 +96,7 @@ class RegisteredInputBuffer:
         self.VehiclesEnforcer = Option()
         self.AllowDeliveryAtDistanceWhenBlocked = False
         self.NumberOfVehiclesAssigned = int(0)
+        self.PendingQuantity = None
         self.AllReservedJobs = None
 class RegisteredOutputBuffer:
 
@@ -71,7 +117,32 @@ class RegisteredOutputBuffer:
         self.VehiclesEnforcer = Option()
         self.AllowPickupAtDistanceWhenBlocked = False
         self.NumberOfVehiclesAssigned = int(0)
+        self.PendingQuantity = None
         self.JobsCount = int(0)
+class RemoveLogisticsZoneCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class RenameLogisticsZoneCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class RobustNavHelper:
 
     def __init__(self):
@@ -95,11 +166,47 @@ class SecondaryOutputBufferSpec:
     def __init__(self):
         pass
 
+class SetLogisticsZoneColorCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class SetVehicleLogisticsZoneCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class StaticPriorityProvider:
 
     def __init__(self):
         pass
 
+class ToggleLogisticsZoneConstructionCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class VehicleBuffersRegistry:
 
     def __init__(self):
@@ -113,6 +220,7 @@ class VehicleCargo:
         self.TotalQuantity = None
         self.FirstOrPhantom = None
         self.Count = int(0)
+        self.LifetimeLoadedQuantity = None
 class VehicleJobs:
 
     def __init__(self):
@@ -164,11 +272,6 @@ class IOutputBufferPriorityProvider:
     def __init__(self):
         pass
 
-class DefaultVehicleFactory:
-
-    def __init__(self):
-        pass
-
 class ILogisticsConfig:
 
     def __init__(self):
@@ -192,7 +295,6 @@ class IVehicleForCargoJob:
 
     def __init__(self):
         self.RemainingCapacity = None
-        self.CargoPickupDuration = None
         self.Cargo = None
         self.IsDriving = False
 class IVehiclesManager:
@@ -211,6 +313,50 @@ class IVehiclesManagerExtensions:
     def __init__(self):
         pass
 
+class IZoneMaskObserver:
+
+    def __init__(self):
+        self.ZoneMask = None
+        self.Prototype = None
+        self.CenterTile = None
+        self.OccupiedTiles = None
+        self.OccupiedVertices = None
+        self.OccupiedVerticesCombinedConstraint = None
+        self.VehicleSurfaceHeights = None
+        self.Value = None
+        self.ConstructionCost = None
+        self.ConstructionState = None
+        from Mafi import Option
+        self.ConstructionProgress = Option()
+        self.IsConstructed = False
+        self.PfTargetTiles = None
+        self.AlwaysUseCustomPfTargetTiles = False
+        self.AreConstructionCubesDisabled = False
+        self.DoNotAdjustTerrainDuringConstruction = False
+        self.Position2f = None
+        self.Position3f = None
+        self.RendererData = None
+        self.DefaultTitle = None
+        self.Id = None
+        self.Context = None
+        self.IsEnabled = False
+        self.IsPaused = False
+        self.CanBePaused = False
+        self.IsDestroyed = False
+class LogisticsZoneFast:
+
+    def __init__(self):
+        self.IsEmpty = False
+class ILogisticsZonesManager:
+
+    def __init__(self):
+        self.DefaultZone = None
+        self.AllZones = None
+        self.PlayerZonesFast = None
+        self.OnZoneAdded = None
+        self.OnZoneRemoved = None
+        self.OnZoneAreaChanged = None
+        self.OnZoneConstructionChanged = None
 class IRegisteredBuffer:
 
     def __init__(self):
@@ -233,6 +379,7 @@ class IVehicleCargo:
         self.TotalQuantity = None
         self.FirstOrPhantom = None
         self.Count = int(0)
+        self.LifetimeLoadedQuantity = None
 class VehicleFuelConsumption:
 
     def __init__(self):

@@ -48,7 +48,9 @@ class TreeData:
     def __init__(self):
         self.IsValid = False
         self.HarvestedProductId = None
-        self.Position = None
+        self.Position2i = None
+        self.Position2f = None
+        self.Position3f = None
 class TreeDataBase:
 
     def __init__(self):
@@ -66,6 +68,7 @@ class TreesManager:
         self.TreeAddedToHarvest = None
         self.TreeRemovedFromHarvest = None
         self.ManualTreePlaced = None
+        self.TreeCollapsed = None
         self.Trees = None
         self.TreesCount = int(0)
         self.Stumps = None
@@ -83,13 +86,16 @@ class ITreesChunk:
 class TreeStumpData:
 
     def __init__(self):
-        self.Position = None
+        self.IsValid = False
+        self.Position2f = None
+        self.Position3f = None
 class ForestProto:
 
     def __init__(self):
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -126,15 +132,12 @@ class TreePlantingGroupProto:
 
     def __init__(self):
         self.ProductWhenHarvested = None
-        self.TimeTo40PercentGrowth = None
-        self.TimeTo60PercentGrowth = None
-        self.TimeTo80PercentGrowth = None
-        self.TimeTo100PercentGrowth = None
         self.QuantityFormatter = None
         self.IconPath = str(0)
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -150,12 +153,6 @@ class TreeProto:
         self.Type = None
         self.EntityType = None
         self.Id = None
-        self.Costs = None
-        self.Ports = None
-        self.CannotBeReflected = False
-        self.IsUnique = False
-        self.AutoBuildMiniZippers = False
-        self.ProductWhenHarvested = None
         self.QuantityFormatter = None
         from Mafi import Option
         self.ForestProto = Option()
@@ -165,14 +162,27 @@ class TreeProto:
         self.IconPath = str(0)
         self.MapEditorIconPath = str(0)
         self.Layout = None
+        self.RendererId = int(0)
+        self.Costs = None
+        self.Ports = None
+        self.CannotBeReflected = False
+        self.IsUnique = False
+        self.AutoBuildMiniZippers = False
+        self.ProductWhenHarvested = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
 class TreeGfx:
+
+    def __init__(self):
+        pass
+
+class TreePrefabs:
 
     def __init__(self):
         pass

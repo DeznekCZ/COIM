@@ -45,6 +45,7 @@ class AnimalFarm:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -80,6 +81,7 @@ class AnimalFarmProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.AnimationParams = None
         self.Layout = None
         self.Ports = None
@@ -93,6 +95,7 @@ class AnimalFarmProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -106,6 +109,7 @@ class CropProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -174,6 +178,7 @@ class Farm:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -331,6 +336,7 @@ class FarmProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.Recipes = None
         self.Layout = None
         self.Ports = None
@@ -344,6 +350,7 @@ class FarmProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -355,6 +362,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class FarmFertileGroundValidator:

@@ -1,6 +1,8 @@
 class OreSortingPlant:
 
     def __init__(self):
+        self.OutputPortsCount = int(0)
+        self.ZoneMask = None
         self.Prototype = None
         self.AnimationParams = None
         self.AnimationStatesProvider = None
@@ -9,6 +11,7 @@ class OreSortingPlant:
         self.ElectricityConsumer = Option()
         self.Maintenance = None
         self.IsIdleForMaintenance = False
+        self.AlwaysUseCustomPfTargetTiles = False
         self.CanBePaused = False
         self.CurrentState = None
         self.AssignedOutputs = None
@@ -19,12 +22,13 @@ class OreSortingPlant:
         self.ProductsData = None
         self.AllReservedJobs = None
         self.Capacity = None
-        self.CapacityLeft = None
+        self.CapacityLeftForMixed = None
         self.SortedPerDuration = None
         self.MixedTotal = None
         self.PercentFull = None
         self.IsEmpty = False
         self.IsNotEmpty = False
+        self.ReservedTotal = None
         self.CanDisableLogisticsInput = False
         self.CanDisableLogisticsOutput = False
         self.LogisticsInputMode = None
@@ -99,6 +103,7 @@ class OreSortingPlantProto:
         self.QuantityPerDuration = None
         self.ElectricityConsumed = None
         self.AnimationParams = None
+        self.TierData = None
         self.Layout = None
         self.Ports = None
         self.CloningDisabled = False
@@ -111,6 +116,7 @@ class OreSortingPlantProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -122,6 +128,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class OreSortingPlantsManager:

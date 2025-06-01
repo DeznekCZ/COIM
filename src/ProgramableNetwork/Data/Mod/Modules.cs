@@ -750,7 +750,7 @@ namespace ProgramableNetwork
                     .Display(m =>
                     {
                         m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
-                        m.Display["not_c"] = m.Output.Bool["b"] ? "1" : "";
+                        m.Display["not_c"] = !m.Output.Bool["a"] ? "1" : "";
                     })
                     .AddDisplayFiller(i - 2)
                     .AddDisplay("not_c", "not C", 1, led: true)
@@ -794,7 +794,7 @@ namespace ProgramableNetwork
                     .Display(m =>
                     {
                         m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
-                        m.Display["not_c"] = m.Output.Bool["b"] ? "1" : "";
+                        m.Display["not_c"] = !m.Output.Bool["a"] ? "1" : "";
                     })
                     .AddDisplayFiller(i - 2)
                     .AddDisplay("not_c", "not C", 1, led: true)
@@ -828,7 +828,7 @@ namespace ProgramableNetwork
                 .Display(m =>
                 {
                     m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
-                    m.Display["not_c"] = m.Output.Bool["b"] ? "1" : "";
+                    m.Display["not_c"] = !m.Output.Bool["a"] ? "1" : "";
                 })
                 .AddDisplay("not_c", "not C", 1, led: true)
                 .AddDisplay("c", "C", 1, led: true)
@@ -839,10 +839,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Boolean)
                 .AddInput("a", "A")
                 .AddOutput("a", "not A")
-                .Display(m =>
-                {
-                    m.Display["a"] = m.Output.Bool["a"] ? "1" : "";
-                })
+                .Display(m => m.Display["a"] = !m.Input.Bool["a"] ? "1" : "")
                 .AddDisplay("a", "not A", 1, led: true)
                 .AddControllerDevice()
                 // dynamic
@@ -2024,7 +2021,7 @@ namespace ProgramableNetwork
                 .Display(m =>
                 {
                     m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
-                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                    m.Display["not_c"] = !m.Output.Bool["c"] ? "1" : "";
                 })
                 .AddDisplay("not_c", "not C", 1, led: true)
                 .AddDisplay("c", "C", 1, led: true)
@@ -2048,7 +2045,7 @@ namespace ProgramableNetwork
                 .Display(m =>
                 {
                     m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
-                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                    m.Display["not_c"] = !m.Output.Bool["c"] ? "1" : "";
                 })
                 .AddDisplay("not_c", "not C", 1, led: true)
                 .AddDisplay("c", "C", 1, led: true)
@@ -2072,7 +2069,7 @@ namespace ProgramableNetwork
                 .Display(m =>
                 {
                     m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
-                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                    m.Display["not_c"] = !m.Output.Bool["c"] ? "1" : "";
                 })
                 .AddDisplay("not_c", "not C", 1, led: true)
                 .AddDisplay("c", "C", 1, led: true)
@@ -2096,7 +2093,7 @@ namespace ProgramableNetwork
                 .Display(m =>
                 {
                     m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
-                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                    m.Display["not_c"] = !m.Output.Bool["c"] ? "1" : "";
                 })
                 .AddDisplay("not_c", "not C", 1, led: true)
                 .AddDisplay("c", "C", 1, led: true)
@@ -2120,7 +2117,7 @@ namespace ProgramableNetwork
                 .Display(m =>
                 {
                     m.Display["c"] = m.Output.Bool["c"] ? "1" : "";
-                    m.Display["not_c"] = m.Output.Bool["not_c"] ? "1" : "";
+                    m.Display["not_c"] = !m.Output.Bool["c"] ? "1" : "";
                 })
                 .AddDisplay("not_c", "not C", 1, led: true)
                 .AddDisplay("c", "C", 1, led: true)

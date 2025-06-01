@@ -12,11 +12,13 @@ class IErrorLoggerConfig:
 
     def __init__(self):
         self.DisableAnonymousErrorLogs = False
+        self.IsRunningInUnityEditor = False
 class GraylogLogger:
 
     def __init__(self):
-        self.MessagesReceived = int(0)
+        self.MessagesQueued = int(0)
         self.MessagesSent = int(0)
+        self.MessagesDiscarded = int(0)
         self.IsLoggingStarted = False
 class IGelfClient:
 

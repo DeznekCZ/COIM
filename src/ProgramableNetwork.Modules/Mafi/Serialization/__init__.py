@@ -160,6 +160,7 @@ class BlobReader:
     def __init__(self):
         self.InputStream = None
         self.DelayedDeserializationsCount = int(0)
+        self.ReadObjectsCount = int(0)
 class BlobReaderExtensions:
 
     def __init__(self):
@@ -172,6 +173,7 @@ class BlobSubReader:
         self.IsNotDone = False
         self.InputStream = None
         self.DelayedDeserializationsCount = int(0)
+        self.ReadObjectsCount = int(0)
 class BlobWriter:
 
     def __init__(self):
@@ -267,6 +269,16 @@ class GenericSerializersFactory:
         pass
 
 class IIsSafeAsHashKey:
+
+    def __init__(self):
+        pass
+
+class JsonParser:
+
+    def __init__(self):
+        pass
+
+class JsonWriter:
 
     def __init__(self):
         pass

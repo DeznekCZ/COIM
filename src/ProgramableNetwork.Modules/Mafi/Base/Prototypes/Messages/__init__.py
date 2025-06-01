@@ -4,6 +4,7 @@ class GoalToConstructVehicle:
         self.Title = str(0)
         self.IsLocked = False
         self.IsCompleted = False
+        self.IsNotAvailable = False
 class Proto:
 
     def __init__(self):
@@ -11,6 +12,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

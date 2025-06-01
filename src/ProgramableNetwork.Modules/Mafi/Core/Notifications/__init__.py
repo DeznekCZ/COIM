@@ -7,7 +7,7 @@ class INotification:
         self.Proto = None
         self.Message = None
         from Mafi import Option
-        self.Entity = Option()
+        self.Object = Option()
 class INotificationsManager:
 
     def __init__(self):
@@ -37,6 +37,7 @@ class EntityNotificationProto:
         self.IsTimeLimited = False
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -54,6 +55,7 @@ class GeneralNotificationProto:
         self.IsTimeLimited = False
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -71,6 +73,7 @@ class NotificationProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

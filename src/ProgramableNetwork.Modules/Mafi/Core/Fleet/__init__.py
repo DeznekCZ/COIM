@@ -30,26 +30,82 @@ class BattleSimulator:
     def __init__(self):
         from Mafi import Option
         self.OngoingBattle = Option()
+        from Mafi import Option
+        self.LatestBattle = Option()
         self.AllBattleResults = None
+class NotifyOnBattleOpenedCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class IBattleState:
 
     def __init__(self):
+        self.IsStarted = False
         self.Attacker = None
         self.Defender = None
         self.BattleRound = int(0)
         from Mafi import Option
         self.Result = Option()
+        self.BattleLog = None
+        self.Data = None
 class BattleState:
+
+    def __init__(self):
+        self.IsStarted = False
+        self.IsFinished = False
+        self.Attacker = None
+        self.Defender = None
+        from Mafi import Option
+        self.Result = Option()
+        self.BattleRound = int(0)
+        self.Data = None
+        self.BattleSortedEntities = None
+        self.BattleLog = None
+        self.BattleSimConfig = None
+class BattleStateData:
 
     def __init__(self):
         self.Attacker = None
         self.Defender = None
-        from Mafi import Option
-        self.Result = Option()
-        self.BattleRound = int(0)
-        self.BattleSortedEntities = None
-        self.BattleLog = None
-        self.BattleSimConfig = None
+class FleetBattleData:
+
+    def __init__(self):
+        self.Entities = None
+class FleetEntityBattleData:
+
+    def __init__(self):
+        self.Name = None
+        self.Hull = None
+        self.Armor = int(0)
+        self.CurrentHp = int(0)
+        self.MaxHp = int(0)
+        self.IsDestroyed = False
+        self.IsEscaping = False
+        self.HasEscaped = False
+        self.Weapons = None
+class FleetWeaponBattleData:
+
+    def __init__(self):
+        self.Proto = None
+        self.ShotsFired = int(0)
+        self.DamageDealt = int(0)
+        self.Range = int(0)
+        self.MaxHp = int(0)
+        self.CurrentHp = int(0)
+class DestructiblePartBattleData:
+
+    def __init__(self):
+        self.Proto = None
+        self.MaxHp = int(0)
+        self.CurrentHp = int(0)
 class IBattleAware:
 
     def __init__(self):
@@ -62,6 +118,7 @@ class DestructibleFleetPartProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -86,6 +143,7 @@ class FleetBridgePartProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -103,6 +161,7 @@ class FleetEnginePartProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -112,6 +171,8 @@ class FleetEntity:
 
     def __init__(self):
         self.Name = None
+        from Mafi import Option
+        self.EntityName = Option()
         self.BattlePriority = None
         self.HitChanceWeight = None
         self.ExtraRoundsToEscape = None
@@ -168,6 +229,7 @@ class FleetEntityPartProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -194,6 +256,7 @@ class FleetEntitySlotProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -221,6 +284,7 @@ class FleetFuelTankPartProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -233,6 +297,7 @@ class FleetEntityHullProto:
         self.IconPath = str(0)
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -267,6 +332,7 @@ class UpgradeHullProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -280,6 +346,7 @@ class FleetWeaponProto:
         self.IconPath = str(0)
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

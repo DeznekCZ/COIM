@@ -9,6 +9,7 @@ class EntityCosts:
         pass
 
 class EntityCostsTpl:
+    Build = None
 
     def __init__(self):
         pass
@@ -27,6 +28,10 @@ class IProtoWithPowerConsumption:
 
     def __init__(self):
         self.ElectricityConsumed = None
+class IProtoWithPowerProduction:
+
+    def __init__(self):
+        self.ElectricityProduced = None
 class IProtoWithUnityConsumption:
 
     def __init__(self):
@@ -58,6 +63,7 @@ class Proto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -92,6 +98,7 @@ class IProtoWithIconAndName:
         self.Id = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class IProtoWithIcon:
 
@@ -101,6 +108,7 @@ class IProtoWithIcon:
         self.Id = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class IProtoWithPropertiesUpdate:
 
@@ -109,15 +117,30 @@ class IProtoWithPropertiesUpdate:
         self.Id = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
+        self.Mod = None
+class IProtoWithTiers:
+
+    def __init__(self):
+        self.TierData = None
+        self.IconPath = str(0)
+        self.Strings = None
+        self.Id = None
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class IProtoWithUpgrade:
 
     def __init__(self):
         self.UpgradeNonGeneric = None
+        self.TierData = None
+        self.IconPath = str(0)
         self.Strings = None
         self.Id = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class IUpgradeData:
 
@@ -126,6 +149,27 @@ class IUpgradeData:
         self.NextTierNonGeneric = Option()
         from Mafi import Option
         self.PreviousTierNonGeneric = Option()
+class ITierData:
+
+    def __init__(self):
+        from Mafi import Option
+        self.NextTierIndirect = Option()
+        from Mafi import Option
+        self.PreviousTierIndirect = Option()
+        self.TierNumberForUi = int(0)
+class UpgradeExtensions:
+
+    def __init__(self):
+        pass
+
+class TierData:
+
+    def __init__(self):
+        from Mafi import Option
+        self.NextTierIndirect = Option()
+        from Mafi import Option
+        self.PreviousTierIndirect = Option()
+        self.TierNumberForUi = int(0)
 class IProto:
 
     def __init__(self):
@@ -133,6 +177,7 @@ class IProto:
         self.Id = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class ProtoChecks:
 

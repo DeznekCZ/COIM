@@ -19,6 +19,8 @@ class EntityMaintenanceProvider:
         self.IsDestroyed = False
         self.Priority = int(0)
         self.RepairCost = None
+        from Mafi import Fix64
+        self.UnpaidMaintenance = Fix64()
 class IEntityMaintenanceProvidersFactory:
 
     def __init__(self):
@@ -114,6 +116,7 @@ class MaintenanceDepot:
         self.RecipesAssigned = None
         self.SpeedFactor = None
         self.DurationMultiplier = None
+        self.VirtualOutputMultiplier = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -130,6 +133,7 @@ class MaintenanceDepot:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -162,6 +166,7 @@ class MaintenanceDepotProto:
         self.Recipes = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
         self.AnimationParams = None
@@ -177,6 +182,7 @@ class MaintenanceDepotProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -213,6 +219,9 @@ class IMaintenanceBufferReadonly:
         self.ShouldShowInUi = False
         self.ProducedTotalStats = None
         self.ConsumedTotalStats = None
+        self.MonthlyCapacityStats = None
+        self.MonthlyQuantityStats = None
+        self.ConsumedUnreportedPartial = None
 class MaintenanceProtoParam:
 
     def __init__(self):

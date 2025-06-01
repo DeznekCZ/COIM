@@ -2,6 +2,7 @@ class BitMap:
 
     def __init__(self):
         self.BackingArray = None
+        self.Capacity = int(0)
 class Enumerator:
 
     def __init__(self):
@@ -55,6 +56,11 @@ class IReadOnlySetExtensions:
     def __init__(self):
         pass
 
+class ReusableIdsManager:
+
+    def __init__(self):
+        self.Count = int(0)
+        self.HighestIssuedCount = int(0)
 class Tupple:
 
     def __init__(self):

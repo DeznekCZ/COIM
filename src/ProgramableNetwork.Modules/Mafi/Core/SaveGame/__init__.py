@@ -52,6 +52,7 @@ class ISaveConfig:
     def __init__(self):
         self.SaveCompressionType = None
         self.AutoSaveInterval = None
+        self.MaxAutoSavesCount = None
 class ISaveManager:
 
     def __init__(self):
@@ -100,6 +101,11 @@ class SaveLoadFileUtils:
 class SaveManager:
 
     def __init__(self):
+        self.AutosaveMinInterval = None
+        from Mafi import Option
+        self.LastSaveFilePath = Option()
+        from Mafi import Option
+        self.LastAutoSaveFilePath = Option()
         self.GameName = str(0)
         self.IsSavePending = False
 class SaveResult:

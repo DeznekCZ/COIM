@@ -36,6 +36,11 @@ class ILayoutEntityProtoWithElevationValidator:
 
     def __init__(self):
         self.Priority = None
+class CanBuildPillarValidationMetadata:
+
+    def __init__(self):
+        pass
+
 class InvalidEntityLayoutException:
 
     def __init__(self):
@@ -68,6 +73,7 @@ class LayoutEntity:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -101,6 +107,7 @@ class LayoutEntityBase:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -171,6 +178,7 @@ class ILayoutEntityProto:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class LayoutEntityProto:
 
@@ -188,6 +196,7 @@ class LayoutEntityProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -199,6 +208,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class VisualizedLayers:
@@ -235,6 +245,8 @@ class OccupiedTileRelative:
 
     def __init__(self):
         self.RelCoord = None
+        self.RelCoordBottom3i = None
+        self.RelCoordTop3i = None
         self.FromHeightRel = None
         self.ToHeightRelExcl = None
         self.VerticalSize = None
@@ -256,9 +268,14 @@ class OccupiedVertexRelativeExtensions:
 class ToolbarCategoryProto:
 
     def __init__(self):
+        self.Subcategories = None
+        from Mafi import Option
+        self.ParentCategory = Option()
+        self.UnlockedBy = None
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

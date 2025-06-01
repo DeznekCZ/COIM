@@ -45,6 +45,7 @@ class NuclearWasteStorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -58,6 +59,7 @@ class NuclearWasteStorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -71,6 +73,8 @@ class Storage:
         self.Upgrader = None
         self.ImportUntilPercent = None
         self.ExportFromPercent = None
+        self.ZoneMask = None
+        self.TransportFromPercent = None
         self.CleaningInProgress = False
         self.UsableCapacity = None
         self.AssignedInputs = None
@@ -118,6 +122,7 @@ class Storage:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -238,6 +243,7 @@ class StorageBase:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -272,6 +278,7 @@ class StorageBaseProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -356,6 +363,7 @@ class FluidStorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -369,6 +377,7 @@ class FluidStorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -380,6 +389,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class LooseStorageProto:
@@ -389,6 +399,7 @@ class LooseStorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -402,6 +413,7 @@ class LooseStorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -413,6 +425,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class UnitStorageProto:
@@ -422,6 +435,7 @@ class UnitStorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -435,6 +449,7 @@ class UnitStorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -450,6 +465,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class UnitStorageRackData:
@@ -469,6 +485,7 @@ class StorageProto:
         self.StorableProducts = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ProductType = None
         self.Layout = None
         self.Ports = None
@@ -482,6 +499,7 @@ class StorageProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

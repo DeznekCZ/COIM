@@ -1,7 +1,6 @@
 class TreePlanter:
 
     def __init__(self):
-        self.CargoPickupDuration = None
         self.ProductProto = None
         self.Cargo = None
         self.IsEmpty = False
@@ -16,11 +15,15 @@ class TreePlanter:
         self.ForestryTower = Option()
         self.CurrentStateDuration = None
         self.CurrentStateRemaining = None
+        self.LifetimeTreesPlanted = int(0)
         self.ArmStateChangeSpeedFactor = None
         self.CabinDirectionRelative = None
         self.CanBePaused = False
         from Mafi import Option
         self.CustomTitle = Option()
+        from Mafi import Option
+        self.AssignedZone = Option()
+        self.ZoneMask = None
         from Mafi import Option
         self.AssignedTo = Option()
         self.NeedsJob = False
@@ -43,6 +46,7 @@ class TreePlanter:
         from Mafi import Option
         self.CurrentJob = Option()
         self.IsIdle = False
+        self.IsEngineIdle = False
         self.CurrentJobInfo = None
         self.IsStuck = False
         self.Maintenance = None
@@ -76,6 +80,8 @@ class TreePlanter:
         self.SteeringAngle = None
         self.SteeringAccelerationPercent = None
         self.DistanceToFullStop = None
+        from Mafi import Fix64
+        self.LifetimeDistanceTraveled = Fix64()
         self.TargetIsTerminal = False
         self.DrivingState = None
         self.SpeedFactor = None
@@ -116,6 +122,8 @@ class TreePlanterProto:
 
     def __init__(self):
         self.EntityType = None
+        from Mafi import Option
+        self.FuelTankProto = Option()
         self.CostToBuild = None
         self.DisruptsSurface = False
         self.IconPath = str(0)
@@ -123,6 +131,7 @@ class TreePlanterProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

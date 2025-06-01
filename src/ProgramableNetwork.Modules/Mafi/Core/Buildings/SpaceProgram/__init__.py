@@ -7,11 +7,14 @@ class RocketAssemblyBuilding:
         from Mafi import Option
         self.AttachedRocketBase = Option()
         self.Prototype = None
+        self.ZoneMask = None
         self.SpawnPosition = None
         self.DespawnPosition = None
         self.SpawnDirection = None
         self.SpawnDrivePosition = None
         self.DespawnDrivePosition = None
+        from Mafi import Option
+        self.TargetLogisticsZone = Option()
         self.Upgrader = None
         self.PowerRequired = None
         from Mafi import Option
@@ -28,12 +31,15 @@ class RocketAssemblyBuilding:
         self.VehicleQueue = None
         self.BuildQueue = None
         self.ReplaceQueue = None
+        self.VehicleToReplaceQueue = None
         from Mafi import Option
         self.CurrentlyBuildVehicle = Option()
         self.Buffers = None
         from Mafi import Option
         self.VehicleConstructionProgress = Option()
         self.DestroyCallbackStarted = False
+        from Mafi import Option
+        self.ProtoToBuildForever = Option()
         self.CanDisableLogisticsInput = False
         self.CanDisableLogisticsOutput = False
         self.LogisticsInputMode = None
@@ -55,6 +61,7 @@ class RocketAssemblyBuilding:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -80,6 +87,7 @@ class RocketAssemblyBuildingProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ElectricityConsumed = None
         self.BuildableEntities = None
         self.Layout = None
@@ -94,6 +102,7 @@ class RocketAssemblyBuildingProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -104,6 +113,7 @@ class RocketLaunchPad:
     def __init__(self):
         self.CanBePaused = False
         self.State = None
+        self.RocketState = None
         self.RemainingStateDuration = None
         from Mafi import Option
         self.AttachedRocketBase = Option()
@@ -116,9 +126,12 @@ class RocketLaunchPad:
         self.IncomingRocketsQueueLength = int(0)
         self.AutoLaunch = False
         self.LaunchCountdown = None
+        self.MuteCountdown = False
         self.WaterBuffer = None
         self.IsSprinklingWater = False
         self.IsCrawlerBridgeErected = False
+        self.IsPumpingFuel = False
+        self.CargoBuffers = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -137,6 +150,7 @@ class RocketLaunchPad:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -161,6 +175,11 @@ class RocketLaunchPadState:
     def __init__(self):
         pass
 
+class RocketLaunchState:
+
+    def __init__(self):
+        pass
+
 class RocketLaunchPadProto:
 
     def __init__(self):
@@ -177,6 +196,7 @@ class RocketLaunchPadProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -188,5 +208,6 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None

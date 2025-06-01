@@ -34,6 +34,18 @@ class ClearTransportCmd:
         self.Result = None
         self.HasError = False
         self.ErrorMessage = str(0)
+class QuickClearTransportCmd:
+
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class DeconstructTransportSegmentCmd:
 
     def __init__(self):
@@ -135,6 +147,7 @@ class Stacker:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -174,6 +187,7 @@ class StackerProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -185,6 +199,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class Transport:
@@ -232,10 +247,12 @@ class Transport:
         from Mafi import Option
         self.ElectricityConsumer = Option()
         self.IsTooLongTransportNotificationOn = False
+        self.IsTooLong = False
         self.IsProductsRemovalInProgress = False
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -285,7 +302,7 @@ class TransportHelper:
     def __init__(self):
         pass
 
-class TransportSupportableTile:
+class TransportSupportInfo:
 
     def __init__(self):
         pass
@@ -336,6 +353,7 @@ class TransportPillar:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -372,6 +390,7 @@ class TransportPillarProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -392,8 +411,10 @@ class TransportProto:
 
     def __init__(self):
         self.EntityType = None
+        self.BaseMaintenanceCost = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.IconPath = str(0)
         self.CanGoUpDown = False
         self.NeedsPillars = False
@@ -401,6 +422,7 @@ class TransportProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -410,6 +432,7 @@ class Gfx:
 
     def __init__(self):
         self.IconPath = str(0)
+        self.Categories = None
 class TransportInstancedRenderingData:
 
     def __init__(self):
@@ -485,7 +508,7 @@ class TransportTrajectory:
         self.TrajectoryLength = None
         self.MaxProducts = int(0)
         self.Price = None
-        self.SupportableTiles = None
+        self.TilesSupportInfo = None
 class TransportWaypoint:
 
     def __init__(self):

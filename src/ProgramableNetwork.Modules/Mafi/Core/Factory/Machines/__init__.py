@@ -50,6 +50,7 @@ class Machine:
         self.RecipesAssigned = None
         self.SpeedFactor = None
         self.DurationMultiplier = None
+        self.VirtualOutputMultiplier = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -66,6 +67,7 @@ class Machine:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -206,6 +208,18 @@ class ClearRecipeProductsCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class ClearUnusedMachineBuffersCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class MachineProto:
 
     def __init__(self):
@@ -215,6 +229,7 @@ class MachineProto:
         self.Recipes = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
         self.AnimationParams = None
@@ -230,6 +245,7 @@ class MachineProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -246,6 +262,7 @@ class Gfx:
         self.PrefabPath = str(0)
         self.PrefabOrigin = None
         self.IconPath = str(0)
+        self.YawForGeneratedIcon = None
         self.VisualizedLayers = None
         self.Categories = None
 class MachineProtoBuilder:

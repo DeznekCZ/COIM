@@ -2,6 +2,7 @@ class ForestryTower:
 
     def __init__(self):
         self.CanBePaused = False
+        self.ZoneMask = None
         self.AssignedOutputs = None
         self.AllowNonAssignedOutput = False
         self.AssignedInputs = None
@@ -35,6 +36,7 @@ class ForestryTower:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -60,6 +62,7 @@ class ForestryTowerConfigExtensions:
 class ForestryTowerAreaChangeCmd:
 
     def __init__(self):
+        self.Area = None
         self.AffectsSaveState = False
         self.IsProcessed = False
         self.IsProcessedAndSynced = False
@@ -109,6 +112,7 @@ class ForestryTowerProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False

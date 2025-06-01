@@ -28,6 +28,9 @@ class ResearchLab:
         self.InputBuffer = Option()
         from Mafi import Option
         self.OutputBuffer = Option()
+        self.Progress = None
+        from Mafi import Fix32
+        self.StepsPerRecipe = Fix32()
         self.CanDisableLogisticsInput = False
         self.CanDisableLogisticsOutput = False
         self.LogisticsInputMode = None
@@ -49,6 +52,7 @@ class ResearchLab:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
+        self.AlwaysUseCustomPfTargetTiles = False
         self.ConstructionState = None
         self.IsConstructed = False
         self.IsNotConstructed = False
@@ -83,11 +87,14 @@ class ResearchLabProto:
         self.EntityType = None
         self.Upgrade = None
         self.UpgradeNonGeneric = None
+        self.TierData = None
         self.ElectricityConsumed = None
         self.ComputingConsumed = None
         self.UnityMonthlyCost = None
         self.UpointsCategory = None
         self.AnimationParams = None
+        from Mafi import Fix32
+        self.SpacePointsConsumedPerRecipe = Fix32()
         self.Recipes = None
         self.Layout = None
         self.Ports = None
@@ -101,18 +108,9 @@ class ResearchLabProto:
         self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
-class ResearchLabProtoBuilder:
-
-    def __init__(self):
-        self.ProtosDb = None
-        self.Registrator = None
-class State:
-
-    def __init__(self):
-        pass
-

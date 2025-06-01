@@ -96,6 +96,7 @@ class GameDifficultyConfig:
         self.BaseHealthDiff = None
         self.ResourceMiningDiff = None
         self.SettlementConsumptionDiff = None
+        self.SettlementFoodConsumptionDiff = None
         self.WorldMinesReservesDiff = None
         self.WorldMinesUnlimited = False
         self.FarmsYieldDiff = None
@@ -115,6 +116,7 @@ class GameDifficultyConfig:
         self.Starvation = None
         self.WorldMinesNoUnity = None
         self.VehiclesNoFuel = None
+        self.TrainsNoFuel = None
         self.ConsumerBroken = None
         self.PowerLow = None
         self.ComputingLow = None
@@ -168,6 +170,11 @@ class WorldMinesNoUnitySetting:
         pass
 
 class VehiclesNoFuelSetting:
+
+    def __init__(self):
+        pass
+
+class TrainsNoFuelSetting:
 
     def __init__(self):
         pass

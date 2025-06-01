@@ -130,6 +130,7 @@ class SurfaceDesignation:
         self.UnassignedTilesBitmap = None
         self.SurfaceTypeMap = None
         self.IsReadyToBeFulfilled = False
+        self.LogisticsZoneMask = None
 class EnumeratorHolder:
 
     def __init__(self):
@@ -171,6 +172,7 @@ class TerrainDesignation:
         self.ProtoId = None
         from Mafi import Option
         self.Manager = Option()
+        self.LogisticsZoneMask = None
         self.OriginTileCoord = None
         self.PlusXTileCoord = None
         self.PlusYTileCoord = None
@@ -228,6 +230,10 @@ class TerrainDesignationsManager:
         self.DesignationRemoved = None
         self.DesignationManagedTowersChanged = None
         self.DesignationReachabilityChanged = None
+        from Mafi import Option
+        self.GetFirstUnmanagedMineDesignation = Option()
+        from Mafi import Option
+        self.GetFirstUnmanagedForestryDesignation = Option()
         self.Designations = None
         self.DesignationsDict = None
         self.Count = int(0)
@@ -247,8 +253,7 @@ class TerrainDumpingManager:
 class UnreachableTerrainDesignationsManager:
 
     def __init__(self):
-        pass
-
+        self.VehiclesToClear = None
 class VehicleLastOutputBufferManager:
 
     def __init__(self):
@@ -267,12 +272,18 @@ class IDesignation:
         self.OriginTileCoord = None
         self.CenterTileCoord = None
         self.UnreachableVehiclesCount = None
+        self.LogisticsZoneMask = None
 class DesignationType:
 
     def __init__(self):
         pass
 
 class DesignationDataFactory:
+
+    def __init__(self):
+        pass
+
+class DesignationZonesUpdater:
 
     def __init__(self):
         pass
@@ -292,6 +303,7 @@ class ITerrainDesignationBlockingEntityNoEdgeProto:
         self.Strings = None
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsInitialized = False
         self.Mod = None
 class TerrainDesignationBlockingEntityNoEdgeProtoValidator:
 
@@ -324,6 +336,7 @@ class SurfaceDesignationProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
@@ -335,6 +348,7 @@ class TerrainDesignationProto:
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
+        self.IsInitialized = False
         self.Mod = None
         self.Tags = None
         self.IsNotAvailable = False
