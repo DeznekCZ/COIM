@@ -1710,7 +1710,7 @@ namespace ProgramableNetwork
                         ProductProto product = m.FieldOrInput.Product("product");
                         if (product is null)
                             storage.ToggleClearProduct();
-                        else
+                        else if (storage.StoredProduct.ValueOrNull != product)
                             storage.AssignProduct(product);
                         return ModuleStatus.Running;
                     }
@@ -1720,7 +1720,7 @@ namespace ProgramableNetwork
                         ProductProto product = m.FieldOrInput.Product("product");
                         if (product is null)
                             module.ToggleClearProduct();
-                        else
+                        else if (module.StoredProduct.ValueOrNull != product)
                             module.AssignProduct(product);
                         return ModuleStatus.Running;
                     }
@@ -1730,7 +1730,7 @@ namespace ProgramableNetwork
                         ProductProto product = m.FieldOrInput.Product("product");
                         if (product is null)
                             station.ClearAssignedProduct();
-                        else if (!station.TryAssignProduct(product))
+                        else if (station.StoredProduct.ValueOrNull != product && !station.TryAssignProduct(product))
                         {
                             if (station.StoredProduct.ValueOrNull != product
                             && !(station.StoredProduct.ValueOrNull is null))
@@ -1751,7 +1751,10 @@ namespace ProgramableNetwork
                         }
             
                         Option<ProductProto> product = m.FieldOrInput.Product("product").CreateOption();
-                        foodModule.SetProduct(product, index, false);
+                        Option<ProductProto> actual = foodModule.GetBuffer(index).AsOption<IProductBuffer, ProductProto>(b => b.Product);
+                        if (actual.ValueOrNull != product.ValueOrNull)
+                            foodModule.SetProduct(product, index, false);
+
                         if (product.HasValue || foodModule.GetBuffer(index).HasValue)
                         {
                             m.Warning = !(product.Value?.SlimId == foodModule.GetBuffer(index).Value?.Product.SlimId);

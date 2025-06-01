@@ -3,12 +3,9 @@ using Mafi.Collections;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Dynamic;
-using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Prototypes;
-using Mafi.Localization;
-using Mafi.Unity;
 using Mafi.Unity.Audio;
 using System;
 using System.Reflection;
@@ -32,6 +29,13 @@ namespace ProgramableNetwork
         public static T As<T>(this object self)
         {
             return (T)self;
+        }
+
+        public static Option<T> AsOption<I, T>(this IEquatable<I> option, Func<I,T> converter)
+            where I : class
+            where T : class
+        {
+            return (option is Option<I> opt && opt.HasValue) ? converter(opt.Value).CreateOption() : Option.None;
         }
 
         public static string GetIcon(this IEntity entity)
