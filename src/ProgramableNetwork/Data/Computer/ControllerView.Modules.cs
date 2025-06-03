@@ -16,6 +16,10 @@ using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.Ui.Library;
 using Mafi.Core.Entities.Static;
+using Mafi.Unity.UiToolkit.Library.FloatingPanel;
+using Mafi.Core.SaveGame;
+using Mafi.Core.Input;
+using UnityEngine;
 
 namespace ProgramableNetwork
 {
@@ -33,6 +37,7 @@ namespace ProgramableNetwork
         private Category m_category;
         private readonly ControllerInspector m_controller;
         private List<IDataUpdater> m_updaters;
+        private bool m_pickNew;
         private readonly Action m_refresh;
 
         public ControllerView(ControllerInspector controller, Action refresh)
@@ -48,6 +53,8 @@ namespace ProgramableNetwork
 
         public Dictionary<long, (int x, int y)> ModulePlacementCache { get; } = new Dictionary<long, (int x, int y)>();
         public ControllerInspector Inspector => m_controller;
+
+        public Module LastCreated => m_lastCreated;
 
         private void AddModuleImplementation(Action refresh)
         {
@@ -120,27 +127,39 @@ namespace ProgramableNetwork
             column.AddAndReturn(new UiComponent())
                   .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
 
+            AddHelper addHelperUI = new AddHelper(() => this);
             ButtonText button = column.AddAndReturn(new ButtonText(new LocStrFormatted("+")));
             button.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 2);
+            button.Floater(addHelperUI.Display);
+            button.OnClick(() =>
+            {
+                if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                {
+                    if (m_lastCreated != null)
+                    {
+                        if (TryPlaceAt(m_lastCreated.Prototype, targetRow, targetColumn))
+                        {
+                            m_lastCreated.Prototype.ExecuteInit(m_lastCreated, log: false);
 
-            ProtoPickerPopup<AModuleProtoSelector> protoPicker = new ProtoPickerPopup<AModuleProtoSelector>(
-                optionsProvider: () => NewModulePicker(targetRow, targetColumn),
-                optionViewFactory: (s) => s.CreateUi(),
-                onOptionSelected: (s) => s.Selected(),
-                button: button,
-                title: new LocStrFormatted("Add module"),
-                config: new ProtoPickerConfig { ItemsPerRow = 1, ItemSize = new UnityEngine.Vector2(600, Px.Auto) },
-                orderAlphabetically: false,
-                searchable: true
-            );
+                            foreach (KeyValuePair<string, int> item in m_lastCreated.NumberData)
+                                m_lastCreated.NumberData[item.Key] = item.Value;
+                            foreach (KeyValuePair<string, string> item in m_lastCreated.StringData)
+                                m_lastCreated.StringData[item.Key] = item.Value;
 
-            protoPicker.OnShow(() => {
-                protoPicker
-                    .GetType()
-                    .GetField("m_searchField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    .GetValue(protoPicker)
-                    .As<TextField>()
-                    .Focus();
+                            m_lastCreated.Prototype.DisplayUpdate(m_lastCreated);
+                            return;
+                        }
+                    }
+                    m_controller.Context.AudioDb.InvalidOp(true).Play();
+                }
+                else
+                {
+                    new PickNewModule("Pick module".AsLoc(), NewModules(targetRow, targetColumn), button);
+                }
+            }, allowKeyPresses: true);
+            button.OnRightClick(() =>
+            {
+                new PickNewModule("Pick template".AsLoc(), NewTemplates(targetRow, targetColumn), button);
             });
 
             // add filler
@@ -148,13 +167,16 @@ namespace ProgramableNetwork
                   .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
         }
 
-        private IEnumerable<AModuleProtoSelector> NewModulePicker(int targetRow, int targetColumn)
+        private IEnumerable<AModuleProtoSelector> NewTemplates(int targetRow, int targetColumn)
         {
             Controller controller = m_controller.Entity;
             StaticEntityProto.ID id = controller.Prototype.Id;
 
-            if (m_lastCreated != null && m_lastCreated.Prototype.AllowedDevices.Contains(id))
-                yield return new LastCreatedModule(m_controller.Entity, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+            foreach (ModuleProto item in controller.Context.ProtosDb
+                                            .All<ModuleProto>()
+                                            //.Where(p => p.IsAvailable)
+                                            /*.Where(p => p.AllowedDevices.Any(e => e.Equals(id)))*/)
+                yield return new NewModule(controller, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
                 {
                     if (TryPlaceAt(moduleProto, targetRow, targetColumn))
                     {
@@ -164,28 +186,19 @@ namespace ProgramableNetwork
                     {
                         return (false, null);
                     }
-                }, m_lastCreated);
+                }, item);
+        }
 
-            if (TemplateRegistrator.GetTemplates().Count > 0)
-                foreach (KeyValuePair<string, Template> item in TemplateRegistrator.GetTemplates()
-                                                                    .Where(p => p.Value.ModuleProto.AllowedDevices.Any(e => e.Equals(id))))
-                    yield return new TemplateModule(m_controller.Entity, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
-                    {
-                        if (TryPlaceAt(moduleProto, targetRow, targetColumn))
-                        {
-                            return (true, m_lastCreated);
-                        }
-                        else
-                        {
-                            return (false, null);
-                        }
-                    }, item);
+        private IEnumerable<AModuleProtoSelector> NewModules(int targetRow, int targetColumn)
+        {
+            Controller controller = m_controller.Entity;
+            StaticEntityProto.ID id = controller.Prototype.Id;
 
-            foreach (ModuleProto item in m_controller.Entity.Context.ProtosDb
+            foreach (ModuleProto item in controller.Context.ProtosDb
                                             .All<ModuleProto>()
                                             //.Where(p => p.IsAvailable)
-                                            .Where(p => p.AllowedDevices.Any(e => e.Equals(id))))
-                yield return new NewModule(m_controller.Entity, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+                                            /*.Where(p => p.AllowedDevices.Any(e => e.Equals(id)))*/)
+                yield return new NewModule(controller, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
                 {
                     if (TryPlaceAt(moduleProto, targetRow, targetColumn))
                     {

@@ -2226,7 +2226,7 @@ namespace ProgramableNetwork
                 return (Module m) =>
                 {
                     Antena entity = m.Field.Entity<Antena>("antena");
-                    if (entity.DataBand is FMDataBand fm)
+                    if (entity?.DataBand is FMDataBand fm)
                     {
                         if (!entity.IsEnabled)
                         {

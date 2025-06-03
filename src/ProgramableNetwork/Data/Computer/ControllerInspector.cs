@@ -13,9 +13,12 @@ using Mafi.Unity.Ui.Library.Inspectors;
 using Mafi.Unity.UiStatic.Cursors;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
+using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static Mafi.Unity.Assets.Unity;
+using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 
 namespace ProgramableNetwork
 {
@@ -60,7 +63,11 @@ namespace ProgramableNetwork
 
             // UI
             m_modulesPanel = AddPanelWithHeader();
-            m_modulesPanel.Header.Add(new Label(new Mafi.Localization.LocStrFormatted("Modules")));
+            m_modulesPanel.Header.Add(
+                new Label(new Mafi.Localization.LocStrFormatted("Modules"))
+                    .FlexGrow(1)
+                    .TextAlign(TextAlignment.CenterMiddle)
+                );
             m_modulesPanel.Add(m_view = new ControllerView(this, Refresh).AlignSelfCenter());
 
             HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, Assets.Unity.UserInterface.General.Connect128_png))
