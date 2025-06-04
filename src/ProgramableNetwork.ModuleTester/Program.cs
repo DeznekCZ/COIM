@@ -21,8 +21,8 @@ namespace ProgramableNetwork.ModuleTester
     {
         static void Main(string[] args)
         {
-            ExportBinaries();
-            //RunTest();
+            //ExportBinaries();
+            RunTest();
         }
 
         private static void RunTest()
@@ -38,6 +38,7 @@ namespace ProgramableNetwork.ModuleTester
 
             string[] files = new string[]
             {
+                @"..\..\..\ProgramableNetwork.Modules\Custom\latch.py",
                 @"..\..\..\ProgramableNetwork.Modules\Custom\delay.py",
                 @"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py",
                 @"..\..\..\ProgramableNetwork.Modules\Custom\memory_selector.py",

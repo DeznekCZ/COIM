@@ -12,6 +12,7 @@ using Mafi.Base;
 using Mafi.Core.Entities.Static;
 using System.Linq;
 using Mafi.Unity.UiToolkit.Component;
+using ProgramableNetwork.ModuleParser.Registrator.Definitions;
 
 namespace ProgramableNetwork
 {
@@ -473,6 +474,11 @@ namespace ProgramableNetwork
             public Builder AddDisplayFiller(Fix32 width)
             {
                 m_displays.Add(new ModuleConnectorProto("_", Str.Empty, width, "[fill]"));
+                return this;
+            }
+            public Builder AddDisplayFromPython(DisplayConstructorAction proto)
+            {
+                proto(this);
                 return this;
             }
 

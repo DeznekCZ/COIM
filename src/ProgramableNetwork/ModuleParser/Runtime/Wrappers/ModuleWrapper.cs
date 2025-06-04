@@ -179,6 +179,28 @@ namespace ProgramableNetwork.Python
             }
         }
 
+        public DisplaySetter Display => new DisplaySetter(module);
+
+        public class DisplaySetter
+        {
+            private Module module;
+
+            public DisplaySetter(Module module)
+            {
+                this.module = module;
+            }
+
+            public string get(string name, string value)
+            {
+                return module.Display[name, value];
+            }
+
+            public void set(string name, string value)
+            {
+                module.Display[name] = value;
+            }
+        }
+
         public ModuleStatus Status
         {
             get => module.Status;

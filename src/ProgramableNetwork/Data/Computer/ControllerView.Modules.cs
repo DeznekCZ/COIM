@@ -172,11 +172,8 @@ namespace ProgramableNetwork
             Controller controller = m_controller.Entity;
             StaticEntityProto.ID id = controller.Prototype.Id;
 
-            foreach (ModuleProto item in controller.Context.ProtosDb
-                                            .All<ModuleProto>()
-                                            //.Where(p => p.IsAvailable)
-                                            /*.Where(p => p.AllowedDevices.Any(e => e.Equals(id)))*/)
-                yield return new NewModule(controller, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+            foreach (KeyValuePair<string, Template> item in TemplateRegistrator.GetTemplates())
+                yield return new TemplateModule(controller, this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
                 {
                     if (TryPlaceAt(moduleProto, targetRow, targetColumn))
                     {

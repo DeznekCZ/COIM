@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Base;
 using Mafi.Core.Mods;
+using ProgramableNetwork.ModuleParser.Registrator.Definitions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -28,10 +29,14 @@ namespace ProgramableNetwork.Python
                 builder.SetName(classEntry.classContext["name"] as string);
                 builder.SetSymbol(classEntry.classContext["symbol"] as string);
 
+                if (classEntry.classContext.TryGetValue("description", out object description))
+                    builder.SetDescritpion(description as string);
                 if (classEntry.classContext.TryGetValue("inputs", out object inputs))
                     AddIO(inputs as IList, builder.AddInput);
                 if (classEntry.classContext.TryGetValue("outputs", out object outputs))
                     AddIO(outputs as IList, builder.AddOutput);
+                if (classEntry.classContext.TryGetValue("displays", out object displays))
+                    AddIO(displays as IList, builder.AddDisplayFromPython);
                 if (classEntry.classContext.TryGetValue("fields", out object fields))
                     AddFields(builder, fields as IList);
                 if (classEntry.classContext.TryGetValue("Init", out object initAction))
@@ -39,6 +44,9 @@ namespace ProgramableNetwork.Python
                 if (classEntry.classContext.TryGetValue("action", out object action) ||
                     classEntry.classContext.TryGetValue("Action", out action))
                     AddAction(builder, classEntry, action as Method);
+                if (classEntry.classContext.TryGetValue("display", out object display) ||
+                    classEntry.classContext.TryGetValue("Display", out display))
+                    AddDisplay(builder, classEntry, display as Method);
                 if (classEntry.classContext.TryGetValue("categories", out object categories))
                     AddCategories(builder, categories as List<object>);
                 if (classEntry.classContext.TryGetValue("width", out object width))
@@ -62,6 +70,14 @@ namespace ProgramableNetwork.Python
             foreach (ModuleConnectorProtoDefinition variable in modules ?? new List<ModuleConnectorProtoDefinition>())
             {
                 add(variable.id, variable.name);
+            }
+        }
+
+        private static void AddIO(IList modules, Func<DisplayConstructorAction, ModuleProto.Builder> add)
+        {
+            foreach (DisplayConstructorAction variable in modules ?? new List<DisplayConstructorAction>())
+            {
+                add(variable);
             }
         }
 
@@ -115,6 +131,16 @@ namespace ProgramableNetwork.Python
                 action.Self = wrapper;
                 object ret = Expressions.__call__(action, new List<(string name, object value)>());
                 return ret is ModuleStatus status ? status : ModuleStatus.Running;
+            });
+        }
+
+        private static void AddDisplay(ModuleProto.Builder builder, Class classContext, Method action)
+        {
+            builder.Display((module) =>
+            {
+                ModuleWrapper wrapper = new ModuleWrapper(module, classContext);
+                action.Self = wrapper;
+                Expressions.__call__(action, new List<(string name, object value)>());
             });
         }
 

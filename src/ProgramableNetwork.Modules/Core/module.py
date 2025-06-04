@@ -1,6 +1,6 @@
 from Core.categories import Category
 from Core.fields import Field, FieldValue
-from Core.io import Input, Output, InputValue, OutputValue
+from Core.io import Input, Output, Display, DisplayDefinition, InputValue, OutputValue, FieldOrInputValue, DisplayValue
 from Core.translate import LocStr, LocStr1, LocStrFormatted
 
 from Mafi.Core.Entities import Entity
@@ -22,6 +22,7 @@ class Module:
     symbol: str = "short name"
     inputs: list[Input] = []
     outputs: list[Output] = []
+    displays: list[DisplayDefinition] = []
     fields: list[Field] = []
     categories: list[Category] = []
     controllers: list[str] = []
@@ -37,6 +38,8 @@ class Module:
         self.Field = FieldValue(self)
         # defines an interface to data of field inside module
         self.FieldOrInput = FieldOrInputValue(self)
+        # defines an interface to data of displays inside module
+        self.Display = DisplayValue(self)
         # defines an interface to raw data inside module
         self.NumberData = {}
         # defines an interface to raw data inside module

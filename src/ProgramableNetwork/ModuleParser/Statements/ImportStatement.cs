@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using ProgramableNetwork.ModuleParser.Registrator.Definitions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -130,7 +131,7 @@ namespace ProgramableNetwork.Python
                 {
                     if (argument.value == "Input")
                     {
-                        return (argument.value, new Constructor(
+                        return (argument.value, (object)new Constructor(
                             (IArgumentValue[] args) => new ModuleConnectorProtoDefinition(
                                 (string)(args[0] is OrderedValue o0 ? o0.Value : null),
                                 (string)(args[1] is OrderedValue o1 ? o1.Value : null)
@@ -138,7 +139,7 @@ namespace ProgramableNetwork.Python
                     }
                     else if (argument.value == "Output")
                     {
-                        return (argument.value, new Constructor(
+                        return (argument.value, (object)new Constructor(
                             (IArgumentValue[] args) => new ModuleConnectorProtoDefinition(
                                 (string)(args[0] is OrderedValue o0 ? o0.Value : null),
                                 (string)(args[1] is OrderedValue o1 ? o1.Value : null)
@@ -146,13 +147,7 @@ namespace ProgramableNetwork.Python
                     }
                     else if (argument.value == "Display")
                     {
-                        return (argument.value, new Constructor(
-                            (IArgumentValue[] args) => new ModuleConnectorProtoDefinition(
-                                (string)(args[0] is OrderedValue o0 ? o0.Value : null),
-                                (string)(args[1] is OrderedValue o1 ? o1.Value : null),
-                                (int)(args[2] is OrderedValue o2 ? o2.Value : null),
-                                (string)(args[3] is OrderedValue o3 ? o3.Value : null)
-                            ), new string[] { "id", "name", "digits", "defaultValue" }));
+                        return (argument.value, (object)typeof(DisplayConstructor));
                     }
                     else
                     {

@@ -40,6 +40,7 @@
     <Compile Include="Custom\max.py" />
     <Compile Include="Custom\memory_selector.py" />
     <Compile Include="Custom\notification.py" />
+    <Compile Include="Custom\latch.py" />
     <Compile Include="Custom\randomizer.py" />
     <Compile Include="Custom\shift.py" />
     <Compile Include="Custom\template.py" />
