@@ -29,6 +29,7 @@ using Mafi.Core.Products;
 using Mafi.Core.Trains;
 using Mafi.Core.Vehicles;
 using Mafi.Unity.InputControl;
+using ProgramableNetwork.Data.Antene;
 using ProgramableNetwork.Data.DataBand;
 using ProgramableNetwork.Data.DisplayEntity;
 using ProgramableNetwork.Data.Speaker;
@@ -2225,7 +2226,89 @@ namespace ProgramableNetwork
 
         private void RadioFM(ProtoRegistrator registrator)
         {
-            Action<Module> DisplaySignals(int digits)
+            Action<Module> DisplayReceiveSignals(int digits)
+            {
+                return (Module m) =>
+                {
+                    int signal = (m.Output["signal"] * 5).ToIntRounded().Min(5).Max(0);
+                    m.Display["signal"] = new string('|', signal) + new string('.', 5 - signal);
+
+                    int value = m.Field.Integer["fm"];
+                    Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
+                    m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " MHz" : "");
+                };
+            }
+
+            Action<Module> ReadSignals(int digits)
+            {
+                return (Module m) =>
+                {
+                    FMManager fmManager = GlobalDependencyResolver.Get<FMManager>();
+
+                    bool logging = m.Field.Bool["logging"];
+                    if (logging) m.Field.Bool["logging"] = false;
+
+                    (Fix32 strenght, Fix32[] signals) = fmManager.Signal(m.Controller.Position3f.Tile3i, m.Field.Integer["fm"], logging);
+                    if (strenght == 0)
+                    // TODO generate noise or read data
+                    {
+                        m.Output["signal"] = 0;
+                        for (int i = 0; i < digits; i++)
+                        {
+                            m.Output[names[i]] = 0;
+                        }
+                    }
+                    else
+                    {
+                        m.Output["signal"] = strenght;
+                        int minCount = Math.Min(signals.Length, digits);
+                        for (int i = 0; i < minCount; i++)
+                        {
+                            m.Output[names[i]] = signals[i];
+                        }
+                        for (int i = minCount; i < digits; i++)
+                        {
+                            m.Output[names[i]] = 0;
+                        }
+                    }
+                };
+            }
+            foreach (int i in new int[] { 2, 4, 8, 16 })
+            {
+                var module = registrator
+                    .ModuleBuilderStart($"Radio_In_FM_{i}", $"FM receiver ({i} signals)", $"FM-R", Assets.Base.Products.Icons.Vegetables_svg)
+                    .AddCategory(Category.Antene)
+                    .AddCategory(Category.AnteneFM)
+                    .AddCustomField("fm", "FM", "Listening frequency",
+                        (inspector, settings, refresh, reference) => settings.Add(new FMDataBandChannelView(inspector, refresh, reference))
+                    )
+                    .AddControllerDevice()
+                    // dynamic
+                    .Width(i)
+                    .Action(ReadSignals(i))
+                    .Display(DisplayReceiveSignals(i));
+
+                if (i == 2)
+                {
+                    module.AddDisplay("signal", "Signal", 0.5.ToFix32());
+                    module.AddDisplay("fm", "Frequency", i - 0.5.ToFix32());
+                }
+                else
+                {
+                    module.AddDisplay("signal", "Signal", 1);
+                    module.AddDisplay("fm", "Frequency", i - 1);
+                }
+
+                for (int j = 0; j < i; j++)
+                {
+                    module.AddOutput(names[j], names[j].ToUpper());
+                }
+
+                module.AddBooleanField("logging", "Enable debug log of antene");
+                module.BuildAndAdd();
+            }
+
+            Action<Module> DisplayBroadcastSignals(int digits)
             {
                 return (Module m) =>
                 {
@@ -2249,73 +2332,6 @@ namespace ProgramableNetwork
                 };
             }
 
-            Action<Module> ReadSignals(int digits)
-            {
-                return (Module m) =>
-                {
-                    Antena entity = m.Field.Entity<Antena>("antena");
-                    if (!(entity?.DataBand is FMDataBand fm))
-                    // TODO generate noise or read data
-                    {
-                        for (int i = 0; i < digits; i++)
-                        {
-                            m.Output[names[i]] = 0;
-                        }
-                        m.SetError("No antena connected");
-                    }
-                    else
-                    {
-                        int value = m.Field.Integer["fm"];
-                        Fix32 displayValue = (171 + value).ToFix32() * 0.5f.ToFix32();
-                        m.Display["fm"] = displayValue.ToStringRounded(1) + (digits > 4 ? " MHz" : "");
-
-                        if (!entity.IsEnabled)
-                        {
-                            for (int i = 0; i < digits; i++)
-                            {
-                                m.Output[names[i]] = 0;
-                            }
-                        }
-                        else
-                        {
-                            Fix32[] signals = fm.Read(m.Field.Integer["fm"]);
-                            int minCount = Math.Min(signals.Length, digits);
-                            for (int i = 0; i < minCount; i++)
-                            {
-                                m.Output[names[i]] = signals[i];
-                            }
-                            for (int i = minCount; i < digits; i++)
-                            {
-                                m.Output[names[i]] = 0;
-                            }
-                        }
-                    }
-                };
-            }
-            foreach (int i in new int[] { 2, 4, 8, 16 })
-            {
-                var module = registrator
-                    .ModuleBuilderStart($"Radio_In_FM_{i}", $"FM receiver ({i} signals)", $"FM-R", Assets.Base.Products.Icons.Vegetables_svg)
-                    .AddCategory(Category.Antene)
-                    .AddCategory(Category.AnteneFM)
-                    .AddCustomField("fm", "FM", "Listening frequency",
-                        (inspector, settings, refresh, reference) => settings.Add(new FMDataBandChannelView(inspector, refresh, reference))
-                    )
-                    .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
-                    .AddDisplay("fm", "Frequency", i)
-                    .AddControllerDevice()
-                    // dynamic
-                    .Action(ReadSignals(i))
-                    .Display(DisplaySignals(i));
-
-                for (int j = 0; j < i; j++)
-                {
-                    module.AddOutput(names[j], names[j].ToUpper());
-                }
-
-                module.BuildAndAdd();
-            }
-
             Action<Module> WriteSignals(int digits)
             {
                 return (Module m) =>
@@ -2330,12 +2346,15 @@ namespace ProgramableNetwork
 
                         if (!entity.IsPaused)
                         {
+                            bool logging = m.Field.Bool["logging"];
+                            if (logging) m.Field.Bool["logging"] = false;
+
                             Fix32[] signals = new Fix32[digits];
                             for (int i = 0; i < digits; i++)
                             {
                                 signals[i] = m.Input[names[i], 0];
                             }
-                            fm.Update(m.Field.Integer["fm"], signals);
+                            fm.Update(m.Field.Integer["fm"], signals, logging);
                         }
                     }
                     else
@@ -2357,14 +2376,16 @@ namespace ProgramableNetwork
                     .AddDisplay("fm", "Frequency", i)
                     .AddControllerDevice()
                     // dynamic
+                    .Width(i)
                     .Action(WriteSignals(i))
-                    .Display(DisplaySignals(i));
+                    .Display(DisplayBroadcastSignals(i));
 
                 for (int j = 0; j < i; j++)
                 {
                     module.AddInput(names[j], names[j].ToUpper());
                 }
 
+                module.AddBooleanField("logging", "Enable debug log of antene");
                 module.BuildAndAdd();
             }
         }
@@ -2380,6 +2401,7 @@ namespace ProgramableNetwork
                 .AddDisplay("am", "Frequency", 2)
                 .AddOutput("am", "AM signal")
                 .AddControllerDevice()
+                .Width(2)
                 // dynamic
                 .Action((Module m) =>
                 {
@@ -2422,6 +2444,7 @@ namespace ProgramableNetwork
                 .AddDisplay("am", "Frequency", 2)
                 .AddInput("am", "AM signal")
                 .AddControllerDevice()
+                .Width(2)
                 // dynamic
                 .Action((Module m) =>
                 {

@@ -3,6 +3,7 @@ using Mafi.Base;
 using Mafi.Core;
 using Mafi.Core.Mods;
 using Newtonsoft.Json;
+using ProgramableNetwork.Data.Antene;
 using ProgramableNetwork.Data.Mod;
 using System;
 

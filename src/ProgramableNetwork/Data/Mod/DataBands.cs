@@ -36,7 +36,8 @@ namespace ProgramableNetwork
             // known signals
             registrator.PrototypesDb.Add(DataBandProto.Create<FMDataBand, FMDataBandChannel>(
                 id: DataBand_FM,
-                strings: Proto.CreateStr(DataBand_FM, "FM", "Standard Frquency Modulated signal used in classic radios. The channels are from 85.5 to 108.0 MHz and steping by 500 kHz (total 45 channels), default redirection distance is 1000 metres, Antena tower may extend it", "Commonly known radio signal description"),
+                strings: Proto.CreateStr(DataBand_FM, "FM", "Standard Frquency Modulated signal used in classic radios. The channels are from 85.5 to 108.0 MHz and steping by 500 kHz (total 45 channels)." +
+                "\nDefault redirection distance is 2 km, Antena tower may extend it.\nSignal is read always from closest antena.", "Commonly known radio signal description"),
                 (antena, context, proto) => new FMDataBand(antena, context, proto),
                 channels: 45,
                 (c0, c1) => c0.Index != c1.Index,
@@ -44,7 +45,7 @@ namespace ProgramableNetwork
                 FMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((171 + i.Index).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " MHz",
                 buttons: (inspector, dataBand) => new FMDataBandChannelView(inspector, dataBand),
-                distance: 500.ToFix32()
+                distance: 2000.ToFix32()
                 ));
 
             registrator.PrototypesDb.Add(DataBandProto.Create<AMDataBand, AMDataBandChannel>(

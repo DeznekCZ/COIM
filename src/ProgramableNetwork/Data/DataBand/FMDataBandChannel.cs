@@ -57,8 +57,8 @@ namespace ProgramableNetwork
         {
             if (Antena?.DataBand is FMDataBand targetDataBand)
             {
-                Fix32[] data = OriginalDataBand.Read(Index);
-                targetDataBand.Update(Index, data);
+                Fix32[] data = targetDataBand.Read(Index);
+                OriginalDataBand.Update(Index, data);
             }
         }
 

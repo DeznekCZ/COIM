@@ -3,6 +3,7 @@ using Mafi.Collections;
 using Mafi.Core.Entities;
 using Mafi.Core.Prototypes;
 using Mafi.Serialization;
+using ProgramableNetwork.Data.Antene;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,6 @@ namespace ProgramableNetwork
 {
     public class FMDataBand : IDataBandTyped<FMDataBandChannel>
     {
-        private static readonly int SerializerVersion = 0;
         private DataBandProto m_proto;
         private Proto.ID m_protoId;
 
@@ -27,6 +27,8 @@ namespace ProgramableNetwork
                 m_active.Add(new FMDataBandChannel() { Index = i, OriginalDataBand = this });
             }
         }
+
+        public IList<FMDataBandChannel> ActiveChannels => m_active;
 
         private FMDataBand()
         {
@@ -68,7 +70,7 @@ namespace ProgramableNetwork
         private void SerializeData(BlobWriter writer)
         {
             writer.WriteString(m_protoId.Value);
-            writer.WriteInt(SerializerVersion);
+            writer.WriteInt(/* Version */ 0);
             Lyst<FMDataBandChannel>.Serialize(m_redirected, writer);
             Lyst<FMDataBandChannel>.Serialize(m_active, writer);
         }
@@ -126,11 +128,16 @@ namespace ProgramableNetwork
             }
         }
 
-        public void Update(int index, Fix32[] value)
+        public void Update(int index, Fix32[] value, bool logging = false)
         {
             m_active[index].Value = new Fix32[value.Length];
             Array.Copy(value, m_active[index].Value, value.Length);
             m_active[index].ValidIterations = 60;
+
+            if (logging)
+            {
+                Log.Info($"[FMDataBand] Written [{index}]: {value.Length}, [{string.Join(",", value)}]");
+            }
         }
 
         public Fix32[] Read(int index)
