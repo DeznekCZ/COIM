@@ -46,7 +46,7 @@ namespace ProgramableNetwork
                 try
                 {
                     Button child = item.CreateUi();
-                    searchDict.Add(item.Id.Value, child);
+                    searchDict.Add(item.SearchString, child);
                     searchList.Add(child);
                     child.OnClick(item.Selected);
                 }

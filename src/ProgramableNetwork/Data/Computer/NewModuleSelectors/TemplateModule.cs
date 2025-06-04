@@ -20,8 +20,6 @@ namespace ProgramableNetwork
             this.item = item;
         }
 
-        public override string IconPath => item.Value.ModuleProto.IconPath;
-
         public override Proto.Str Strings =>
             new Proto.Str(
                 LocalizationManager.GetLocalizedString0Arg(
@@ -37,7 +35,12 @@ namespace ProgramableNetwork
 
         public override Proto.ID Id => new Proto.ID($"Template_{item.Value.ModuleProto.Id.Value}_{item.Key}");
 
-        public override bool IsAvailable => item.Value.ModuleProto.IsAvailable;
+        public override string SearchString => string.Join(" ",
+            item.Value.Name,
+            item.Value.ModuleProto.Symbol,
+            item.Value.ModuleProto.Strings.Name.TranslatedString,
+            item.Value.ModuleProto.Strings.DescShort.TranslatedString
+        );
 
         public override Button CreateUi()
         {

@@ -19,23 +19,14 @@ namespace ProgramableNetwork
             this.item = item;
         }
 
-        public override string IconPath => item.IconPath;
-
-        public override Proto.Str Strings =>
-            new Proto.Str(
-                LocalizationManager.GetLocalizedString0Arg(
-                    $"NewModule_{Id.Value}",
-                    string.Join(" ",
-                        item.Symbol,
-                        item.Strings.Name.TranslatedString,
-                        item.Strings.DescShort.TranslatedString
-                    ),
-                    "No comment"
-                ));
+        public override Proto.Str Strings => item.Strings;
 
         public override Proto.ID Id => item.Id;
-
-        public override bool IsAvailable => item.IsAvailable;
+        public override string SearchString => string.Join(" ",
+            item.Symbol,
+            item.Strings.Name.TranslatedString,
+            item.Strings.DescShort.TranslatedString
+        );
 
         public override Button CreateUi()
         {

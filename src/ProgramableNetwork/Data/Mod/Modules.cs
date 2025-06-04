@@ -1015,7 +1015,7 @@ namespace ProgramableNetwork
 
                     if (entity is TrainStationModule stationModule)
                     {
-                        return GetValueFromBuffers(m, null, new[] { stationModule.Buffer.ValueOrNull });
+                        return StorageValueFromBuffer(m, stationModule.StoredProduct.ValueOrNull, stationModule.Buffer.ValueOrNull);
                     }
 
                     if (entity is SettlementFoodModule foodModule)
@@ -1708,9 +1708,9 @@ namespace ProgramableNetwork
                     if (entity is Storage storage)
                     {
                         ProductProto product = m.FieldOrInput.Product("product");
-                        if (product is null)
+                        if (product is null && !(storage.CurrentQuantity > Quantity.Zero))
                             storage.ToggleClearProduct();
-                        else if (storage.StoredProduct.ValueOrNull != product)
+                        else if (storage.StoredProduct.ValueOrNull != product && !(storage.CurrentQuantity > Quantity.Zero))
                             storage.AssignProduct(product);
                         return ModuleStatus.Running;
                     }
@@ -1718,9 +1718,9 @@ namespace ProgramableNetwork
                     if (entity is CargoDepotModule module)
                     {
                         ProductProto product = m.FieldOrInput.Product("product");
-                        if (product is null)
+                        if (product is null && !(module.CurrentQuantity > Quantity.Zero))
                             module.ToggleClearProduct();
-                        else if (module.StoredProduct.ValueOrNull != product)
+                        else if (module.StoredProduct.ValueOrNull != product && !(module.CurrentQuantity > Quantity.Zero))
                             module.AssignProduct(product);
                         return ModuleStatus.Running;
                     }
@@ -1728,9 +1728,11 @@ namespace ProgramableNetwork
                     if (entity is TrainStationModule station)
                     {
                         ProductProto product = m.FieldOrInput.Product("product");
-                        if (product is null)
+                        if (product is null && !(station.StoredProductQuantity?.Quantity > Quantity.Zero))
                             station.ClearAssignedProduct();
-                        else if (station.StoredProduct.ValueOrNull != product && !station.TryAssignProduct(product))
+                        else if (station.StoredProduct.ValueOrNull != product
+                                 && !(station.StoredProductQuantity?.Quantity > Quantity.Zero)
+                                 && !station.TryAssignProduct(product))
                         {
                             if (station.StoredProduct.ValueOrNull != product
                             && !(station.StoredProduct.ValueOrNull is null))
@@ -1752,12 +1754,14 @@ namespace ProgramableNetwork
             
                         Option<ProductProto> product = m.FieldOrInput.Product("product").CreateOption();
                         Option<ProductProto> actual = foodModule.GetBuffer(index).AsOption<IProductBuffer, ProductProto>(b => b.Product);
-                        if (actual.ValueOrNull != product.ValueOrNull)
+                        if (actual.ValueOrNull != product.ValueOrNull && !(foodModule.GetBuffer(index).ValueOrNull?.Quantity > Quantity.Zero))
                             foodModule.SetProduct(product, index, false);
 
                         if (product.HasValue || foodModule.GetBuffer(index).HasValue)
                         {
                             m.Warning = !(product.Value?.SlimId == foodModule.GetBuffer(index).Value?.Product.SlimId);
+                            if (actual.HasValue && foodModule.GetBuffer(index).Value.Quantity > Quantity.Zero)
+                                m.SetError("Storage is not empty");
                             return ModuleStatus.Running;
                         }
                         else
