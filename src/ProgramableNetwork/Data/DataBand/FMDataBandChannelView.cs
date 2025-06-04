@@ -153,7 +153,7 @@ namespace ProgramableNetwork.Data.DataBand
                    .Do(index =>
                    {
                        string displayValue = ((171 + reference.Value) * 0.5f.ToFix32()).ToStringRounded(1);
-                       display.Value($"FM {displayValue} khz".AsLoc());
+                       display.Value($"FM {displayValue} Mhz".AsLoc());
                    });
 
             Row secondRow = Body.AddAndReturn(new Row());
