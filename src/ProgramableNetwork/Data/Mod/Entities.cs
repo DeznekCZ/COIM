@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Base;
 using Mafi.Base.Prototypes.Machines.ComputingEntities;
+using Mafi.Collections.ImmutableCollections;
 using Mafi.Core;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
@@ -78,13 +79,16 @@ namespace ProgramableNetwork
                 iconPath: Mafi.Unity.Assets.Unity.UserInterface.EntityIcons.Computing_png,
                 isTransportBuildAllowed: true,
                 shortcutId: "NETWORK"
-                )).SomeOption().ToImmutableArray();
+            ));
+
+            ToolbarEntryData data = new ToolbarEntryData(category);
+            ToolbarEntryData[] categories = new ToolbarEntryData[] { data };
 
             // Adapting existing
             registrator.PrototypesDb.Get<DataCenterProto>(Ids.DataCenters.DataCenter)
-                .ValueOrNull?.Graphics.SetCategories(category);
+                .ValueOrNull?.Graphics.SetCategories(categories.ToImmutableArray());
             registrator.PrototypesDb.Get<MainframeProto>(Ids.DataCenters.Mainframe)
-                .ValueOrNull?.Graphics.SetCategories(category);
+                .ValueOrNull?.Graphics.SetCategories(categories.ToImmutableArray());
 
             // New entities
             var originalTier1 = registrator.PrototypesDb.Add(new ControllerProto(
@@ -96,7 +100,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Controller,
                     customIconPath: NewAssets.Computers.Icons.Controller,
-                    categories: category
+                    categories: categories.ToImmutableArray()
                 )
             ));
 
@@ -204,7 +208,7 @@ namespace ProgramableNetwork
                     graphics: new LayoutEntityProto.Gfx(
                         prefabPath: NewAssets.Computers.Controller,
                         customIconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
-                        categories: category
+                        categories: categories.ToImmutableArray()
                     ),
                     initModules: modules
                 ));
@@ -222,7 +226,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Antena,
                     customIconPath: NewAssets.Computers.Icons.Antena,
-                    categories: category
+                    categories: categories.ToImmutableArray()
                 )
             ));
 
@@ -235,7 +239,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.AntenaT2,
                     customIconPath: NewAssets.Computers.Icons.Antena,
-                    categories: category
+                    categories: categories.ToImmutableArray()
                 ),
                 distanceBoost: Fix32.Two
             ));
@@ -250,7 +254,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Speaker,
                     customIconPath: NewAssets.Computers.Icons.Speaker,
-                    categories: category
+                    categories: categories.ToImmutableArray()
                 )
             ));
         }

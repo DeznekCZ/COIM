@@ -1,15 +1,16 @@
 ManifestFileVersion: 0
-CRC: 4167004020
+UnityVersion: 6000.0.35f1
+CRC: 3489554325
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: afc035cc7720c1d709859281978d5fff
+    Hash: ca8dfc0ad8d2d8e43c93be098a325490
   TypeTreeHash:
     serializedVersion: 2
-    Hash: d27d605e56b00c7d193d3604b99a7461
+    Hash: 3219c50854ff2a782d7e36576b5dbf5b
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: afc035cc7720c1d709859281978d5fff
+    Hash: 4e670ad58b1b56a8931cdf3fa11a7989
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -34,10 +35,13 @@ Assets:
 - Assets/ProgramableNetwork/Antena/Antena.obj
 - Assets/ProgramableNetwork/Antena/pipe.mat
 - Assets/ProgramableNetwork/Antena/support_top.mat
+- Assets/ProgramableNetwork/Antena/Influence.mat
+- Assets/ProgramableNetwork/Antena/Influence.obj
 - Assets/ProgramableNetwork/Antena/frontplate.mat
 - Assets/ProgramableNetwork/Antena/root.mat
 - Assets/ProgramableNetwork/Antena/backplate.mat
 - Assets/ProgramableNetwork/Antena/Icon.png
 - Assets/ProgramableNetwork/Antena/holder.mat
 - Assets/ProgramableNetwork/Antena/support.mat
+- Assets/ProgramableNetwork/Antena/Influence.png
 Dependencies: []

@@ -4,6 +4,9 @@ antena_1406
     Assets/ProgramableNetwork/Antena/frontplate.mat
     Assets/ProgramableNetwork/Antena/holder.mat
     Assets/ProgramableNetwork/Antena/Icon.png
+    Assets/ProgramableNetwork/Antena/Influence.mat
+    Assets/ProgramableNetwork/Antena/Influence.obj
+    Assets/ProgramableNetwork/Antena/Influence.png
     Assets/ProgramableNetwork/Antena/pipe.mat
     Assets/ProgramableNetwork/Antena/root.mat
     Assets/ProgramableNetwork/Antena/support.mat

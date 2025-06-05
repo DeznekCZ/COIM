@@ -106,7 +106,7 @@ namespace ProgramableNetwork
             return "ProgramableNetwork_Module_" + id;
         }
 
-        public static void SetCategories(this LayoutEntityProto.Gfx gfx, ImmutableArray<ToolbarCategoryProto> toolbarCategories)
+        public static void SetCategories(this LayoutEntityProto.Gfx gfx, ImmutableArray<ToolbarEntryData> toolbarCategories)
         {
             if (gfx == null) return;
             var field = typeof(LayoutEntityProto.Gfx)

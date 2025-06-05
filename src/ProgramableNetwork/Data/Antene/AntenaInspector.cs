@@ -35,6 +35,7 @@ namespace ProgramableNetwork
         private bool m_onLoading;
         private PanelWithHeader m_signalPanel;
         private ScrollColumn m_signalList;
+        private Antena m_oldEntity;
 
         public AntenaInspector(
             UiContext context,
@@ -204,11 +205,22 @@ namespace ProgramableNetwork
                 tabContainer.AddTab(item.Strings.Name, GetTabContent(item), iconAssetPath: null);
             }
 
+            m_oldEntity = Entity;
             this.Observe(() => Entity)
                 .Observe(() => Entity?.Prototype)
                 .DoOnSync((antena, proto) =>
                 {
-                    if (antena == null) return;
+                    if (m_oldEntity != null)
+                        m_oldEntity.Selected = false;
+
+                    if (antena == null)
+                    {
+                        m_oldEntity = null;
+                        return;
+                    }
+
+                    m_oldEntity = antena;
+                    antena.Selected = true;
 
                     m_signalPanel.Collapsed(antena.DataBand?.Channels?.Count() == 0);
 
@@ -242,6 +254,16 @@ namespace ProgramableNetwork
                 RefreshRedirections(Entity.DataBand);
             });
             m_onLoading = false;
+        }
+
+        protected override void OnDetached()
+        {
+            base.OnDetached();
+            if (m_oldEntity != null)
+            {
+                m_oldEntity.Selected = false;
+                m_oldEntity = null;
+            }
         }
 
         private void RefreshRedirections(IDataBand databand)

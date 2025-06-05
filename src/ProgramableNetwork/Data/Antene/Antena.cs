@@ -182,6 +182,9 @@ namespace ProgramableNetwork
         public Electricity PowerRequired { get; private set; } = Electricity.Zero;
 
         [DoNotSave(0, null)]
+        public bool Selected { get; set; }
+
+        [DoNotSave(0, null)]
         public Option<IElectricityConsumerReadonly> ElectricityConsumer => ((IElectricityConsumerReadonly)m_electricConsumer).SomeOption();
         [DoNotSave(0, null)]
         private IElectricityConsumer m_electricConsumer;

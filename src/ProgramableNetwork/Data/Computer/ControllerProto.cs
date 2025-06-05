@@ -81,7 +81,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Controller,
                     customIconPath: NewAssets.Computers.Icons.Controller,
-                    categories: ImmutableArray<ToolbarCategoryProto>.Empty
+                    categories: ImmutableArray<ToolbarEntryData>.Empty
                 )
             ));
         }
