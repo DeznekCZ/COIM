@@ -1,16 +1,16 @@
 ManifestFileVersion: 0
 UnityVersion: 6000.0.35f1
-CRC: 2277943194
+CRC: 1470412501
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 70012a629c5109d1cb1f79a8d980e44d
+    Hash: d95819ab58bea861871803014f5cf3ce
   TypeTreeHash:
     serializedVersion: 2
-    Hash: d288eb1d0cd4a4d0c2a46d4e0957cc55
+    Hash: 02891d9e88e5268131f274408ebabf71
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 8dbf45cae9d68ffd89ea9f6b9047612b
+    Hash: e1d113315b75cb07de08ab85523d5cae
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -29,10 +29,8 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 65
   Script: {instanceID: 0}
-- Class: 136
-  Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/ProgramableNetwork/Display/Light.prefab
+- Assets/ProgramableNetwork/Display/Display7.prefab
 Dependencies:
 - S:/git/COIM-Derbis/src/ExampleMod.Unity/AssetBundles/display_c421

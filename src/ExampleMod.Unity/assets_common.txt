@@ -37,8 +37,13 @@ computer_711d
     Assets/ProgramableNetwork/Computer/Computer.prefab
 
 display_c421
+    Assets/ProgramableNetwork/Display/Display7.Icon.png
+    Assets/ProgramableNetwork/Display/Display7.obj
     Assets/ProgramableNetwork/Display/holder.mat
     Assets/ProgramableNetwork/Display/Light.Icon.png
+
+display7_200a
+    Assets/ProgramableNetwork/Display/Display7.prefab
 
 light_75ca
     Assets/ProgramableNetwork/Display/Light.prefab

@@ -34,6 +34,7 @@ namespace ProgramableNetwork
         public partial class Controllers
         {
             public static readonly StaticEntityProto.ID Light = new StaticEntityProto.ID("ProgramableNetwork_Display_Light");
+            public static readonly StaticEntityProto.ID Display7 = new StaticEntityProto.ID("ProgramableNetwork_Display_Display7");
         }
     }
 
@@ -44,9 +45,11 @@ namespace ProgramableNetwork
             public partial class Icons
             {
                 public static readonly string Light = "Assets/ProgramableNetwork/Display/Light.Icon.png";
+                public static readonly string Display7 = "Assets/ProgramableNetwork/Display/Display7.Icon.png";
             }
 
             public static readonly string Light = "Assets/ProgramableNetwork/Display/Light.prefab";
+            public static readonly string Display7 = "Assets/ProgramableNetwork/Display/Display7.prefab";
         }
     }
 
@@ -87,6 +90,20 @@ namespace ProgramableNetwork
                         categories: categories.ToImmutableArray()
                     ),
                     manager: (disp) => new BasicLightManager(disp)
+                ));
+
+            registrator.PrototypesDb.Add(new DisplayEntityProto(
+                    id: NewIds.Controllers.Display7,
+                    strings: CreateStr(NewIds.Controllers.Display7, "7-segment", "Basic 7-segment display with dot"),
+                    layout: new EntityLayoutParser(registrator.PrototypesDb)
+                        .ParseLayoutOrThrow(pillars, "|1|"),
+                    costs: ((EntityCostsTpl) EntityCostsTpl.Build.Electronics(2).MaintenanceT1(0.01f)).MapToEntityCosts(registrator),
+                    graphics: new LayoutEntityProto.Gfx(
+                        prefabPath: NewAssets.Computers.Display7,
+                        customIconPath: NewAssets.Computers.Icons.Display7,
+                        categories: categories.ToImmutableArray()
+                    ),
+                    manager: (disp) => new SevenSegmentManager(disp)
                 ));
         }
     }
