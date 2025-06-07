@@ -81,14 +81,11 @@ namespace ProgramableNetwork
                 shortcutId: "NETWORK"
             ));
 
-            ToolbarEntryData data = new ToolbarEntryData(category);
-            ToolbarEntryData[] categories = new ToolbarEntryData[] { data };
-
             // Adapting existing
             registrator.PrototypesDb.Get<DataCenterProto>(Ids.DataCenters.DataCenter)
-                .ValueOrNull?.Graphics.SetCategories(categories.ToImmutableArray());
+                .ValueOrNull?.Graphics.SetCategories(registrator.GetCategoriesProtos(Ids.ToolbarCategories.Transports));
             registrator.PrototypesDb.Get<MainframeProto>(Ids.DataCenters.Mainframe)
-                .ValueOrNull?.Graphics.SetCategories(categories.ToImmutableArray());
+                .ValueOrNull?.Graphics.SetCategories(registrator.GetCategoriesProtos(Ids.ToolbarCategories.Transports));
 
             // New entities
             var originalTier1 = registrator.PrototypesDb.Add(new ControllerProto(
@@ -100,7 +97,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Controller,
                     customIconPath: NewAssets.Computers.Icons.Controller,
-                    categories: categories.ToImmutableArray()
+                    categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                 )
             ));
 
@@ -208,7 +205,7 @@ namespace ProgramableNetwork
                     graphics: new LayoutEntityProto.Gfx(
                         prefabPath: NewAssets.Computers.Controller,
                         customIconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
-                        categories: categories.ToImmutableArray()
+                        categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                     ),
                     initModules: modules
                 ));
@@ -226,7 +223,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Antena,
                     customIconPath: NewAssets.Computers.Icons.Antena,
-                    categories: categories.ToImmutableArray()
+                    categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                 )
             ));
 
@@ -239,7 +236,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.AntenaT2,
                     customIconPath: NewAssets.Computers.Icons.Antena,
-                    categories: categories.ToImmutableArray()
+                    categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                 ),
                 distanceBoost: Fix32.Two
             ));
@@ -254,7 +251,7 @@ namespace ProgramableNetwork
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Speaker,
                     customIconPath: NewAssets.Computers.Icons.Speaker,
-                    categories: categories.ToImmutableArray()
+                    categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                 )
             ));
         }

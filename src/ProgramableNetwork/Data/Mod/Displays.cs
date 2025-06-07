@@ -58,8 +58,6 @@ namespace ProgramableNetwork
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
             ToolbarCategoryProto networkCategoryProto = registrator.PrototypesDb.Get<ToolbarCategoryProto>(NewIds.Controllers.Category).ValueOrThrow("Missing game category");
-            ToolbarEntryData data = new ToolbarEntryData(networkCategoryProto);
-            ToolbarEntryData[] categories = new ToolbarEntryData[] { data };
 
             var pillars = new EntityLayoutParams(
                 customPlacementRange: new ThicknessIRange(0, TransportPillarProto.MAX_PILLAR_HEIGHT.Value - 1),
@@ -87,7 +85,7 @@ namespace ProgramableNetwork
                     graphics: new LayoutEntityProto.Gfx(
                         prefabPath: NewAssets.Computers.Light,
                         customIconPath: NewAssets.Computers.Icons.Light,
-                        categories: categories.ToImmutableArray()
+                        categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                     ),
                     manager: (disp) => new BasicLightManager(disp)
                 ));
@@ -101,7 +99,7 @@ namespace ProgramableNetwork
                     graphics: new LayoutEntityProto.Gfx(
                         prefabPath: NewAssets.Computers.Display7,
                         customIconPath: NewAssets.Computers.Icons.Display7,
-                        categories: categories.ToImmutableArray()
+                        categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                     ),
                     manager: (disp) => new SevenSegmentManager(disp)
                 ));
