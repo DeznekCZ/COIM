@@ -17,7 +17,7 @@ namespace ProgramableNetwork
         public override string Name => ModName;
 
         // Version, currently unused.
-        public override int Version => 001001;
+        public override int Version => 001006;
 
 
         // Mod constructor that lists mod dependencies as parameters.
