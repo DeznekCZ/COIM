@@ -2430,6 +2430,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Display7
       objectReference: {fileID: 0}
+    - target: {fileID: 9110464626132845028, guid: 87d5e4ef520d0f643b6ff96a446df4ca, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.07
+      objectReference: {fileID: 0}
+    - target: {fileID: 9110464626132845028, guid: 87d5e4ef520d0f643b6ff96a446df4ca, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.287
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
