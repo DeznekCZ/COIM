@@ -44,7 +44,7 @@ namespace ProgramableNetwork
                 selectedProduct: () => module.Field.Product(Id).CreateOption()
             );
 
-            fieldContainer.Row(this, module).Add(productPicker);
+            fieldContainer.Row(this, module, out _).Add(productPicker);
         }
 
         public void InitData(Module module)

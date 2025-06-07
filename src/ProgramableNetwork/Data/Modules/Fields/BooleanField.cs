@@ -33,7 +33,8 @@ namespace ProgramableNetwork
                 return;
             }
 
-            RowContainer row = fieldContainer.Row(this, module);
+            RowContainer row = fieldContainer.Row(this, module, out bool draw);
+            if (!draw) return;
 
             bool value = module.Field.Bool[Id];
 

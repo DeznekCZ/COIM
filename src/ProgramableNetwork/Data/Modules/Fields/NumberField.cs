@@ -29,7 +29,7 @@ namespace ProgramableNetwork
         private Action setter;
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            RowContainer row = fieldContainer.Row(this, module);
+            RowContainer row = fieldContainer.Row(this, module, out _);
 
             var numberEditor = new TextField();
             numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
