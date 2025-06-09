@@ -116,7 +116,7 @@ namespace ProgramableNetwork
 
                 Add(rowElement);
             }
-            drawConnectionLines()
+            drawConnectionLines();
         }
 
         private void drawConnectionLines()
@@ -127,7 +127,7 @@ namespace ProgramableNetwork
                 (3 * 2 * Sizes.IMAGE_PADDING.Pixels);
 			// The connection draw overlay texture
             Texture2D textr = new Texture2D(X, Y);
-            // Set the texture to fully transparent (since by default it's filled with half tranparent gray/grey pixels)
+            // Set the texture to fully transparent (since by default it's filled with half transparent gray/grey pixels)
 			byte[] buf = new byte[sizeof(Color) * X * Y];
 			Array.Fill<byte>(buf, 0);
 			textr.SetPixelData<byte>(buf, 0, 0);
@@ -136,7 +136,7 @@ namespace ProgramableNetwork
             //   to an input at dstPos module grid position
             void drawConnectionLine((int y1, int x1) srcPos, (int y2, int x2) dstPos)
             {
-                const int Stroke = 3 // The number of pixels on each side of the center of a line
+                const int Stroke = 3; // The number of pixels on each side of the center of a line
                 const Color ConnectionColor = Color.HSVToRGB(0.5833333f, 1f, 1f); // line color
                 // Translate module grid positions to pixel coordinates
                 Vector2 srcVec = new Vector2((((float)srcPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)srcPos.Item1 + 3.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(srcPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
