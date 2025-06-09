@@ -167,10 +167,10 @@ namespace ProgramableNetwork
                         // Get module that has the output that's connected to the currently handled input
                         Module srcMod = cv.Entity.Modules.Find((Module m) => m.Id == mc.ModuleId);
                         // Add horizontal offset to get the actual output position
-                        srcPos.Item2 += srcMod.Prototype.WidthFunction(srcMod) - srcMod.Prototype.Outputs.IndexOf(srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId));
+                        srcPos.Item2 += (srcMod.Prototype.WidthFunction(srcMod) - srcMod.Prototype.Outputs.Count) + srcMod.Prototype.Outputs.IndexOf(srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId));
                         (int y2, int x2) dstPos = cv.ModulePlacementCache[mod.Id]; // Position of the module that has the currently handled input
                         // Add horizontal offset to get the actual input position
-                        dstPos.Item2 += mod.Prototype.WidthFunction(mod) - mod.Prototype.Inputs.IndexOf(mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key));
+                        dstPos.Item2 += (mod.Prototype.WidthFunction(mod) - mod.Prototype.Inputs.Count) + mod.Prototype.Inputs.IndexOf(mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key));
                         drawConnectionLine(srcPos, dstPos);
                     }
 				}
