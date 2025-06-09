@@ -116,28 +116,33 @@ namespace ProgramableNetwork
 
                 Add(rowElement);
             }
-            drawConnectionLines();
+            //drawConnectionLines();
         }
 
         private void drawConnectionLines()
         {
             // Sizes of the connection draw overlay texture
-            int X = (Sizes.BLOCK_SIZE * cv.Entity.Prototype.Columns).Pixels.FloorToInt();
-			int Y = (4 * Sizes.BLOCK_SIZE * cv.Entity.Rows.Count).Pixels.FloorToInt() +
-                (3 * 2 * Sizes.IMAGE_PADDING.Pixels);
-			// The connection draw overlay texture
+            int X = (Sizes.BLOCK_SIZE * Entity.Prototype.Columns).Pixels.FloorToInt();
+            int Y = (4 * Sizes.BLOCK_SIZE * Entity.Rows.Count).Pixels.FloorToInt() + (3 * 2 * Sizes.IMAGE_PADDING).Pixels.FloorToInt();
+            // The connection draw overlay texture
             Texture2D textr = new Texture2D(X, Y);
             // Set the texture to fully transparent (since by default it's filled with half transparent gray/grey pixels)
-			byte[] buf = new byte[sizeof(Color) * X * Y];
-			Array.Fill<byte>(buf, 0);
-			textr.SetPixelData<byte>(buf, 0, 0);
+            //byte[] buf = new byte[sizeof(Color) * X * Y];
+            //textr.SetPixelData<byte>(buf, 0, 0);
+            for (int x = 0; x < X; x++)
+            {
+                for (int y = 0; y < Y; y++)
+                {
+                    textr.SetPixel(x, y, new Color(0, 0, 0, 0));
+                }
+            }
             // Function that draws the line
             //   from an output at srcPos module grid position
             //   to an input at dstPos module grid position
             void drawConnectionLine((int y1, int x1) srcPos, (int y2, int x2) dstPos)
             {
                 const int Stroke = 3; // The number of pixels on each side of the center of a line
-                const Color ConnectionColor = Color.HSVToRGB(0.5833333f, 1f, 1f); // line color
+                Color ConnectionColor = Color.HSVToRGB(0.5833333f, 1f, 1f); // line color
                 // Translate module grid positions to pixel coordinates
                 Vector2 srcVec = new Vector2((((float)srcPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)srcPos.Item1 + 3.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(srcPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
                 Vector2 dstVec = new Vector2((((float)dstPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)dstPos.Item1 + 0.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(dstPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
@@ -156,30 +161,31 @@ namespace ProgramableNetwork
                     }
                 }
             }
-			foreach (Module mod in cv.Entity.Modules)
-			{
-				foreach (Dict<string, ModuleConnector> keyValuePair in mod.InputModules)
-				{
+
+            foreach (Module mod in Entity.Modules)
+            {
+                foreach (KeyValuePair<string, ModuleConnector> keyValuePair in mod.InputModules)
+                {
                     ModuleConnector mc = keyValuePair.Value;
                     (int y1, int x1) srcPos; // Position of the module that has the output that's connected to the currently handled input
-                    if (cv.ModulePlacementCache.TryGetValue(mc.ModuleId, out srcPos))
+                    if (ModulePlacementCache.TryGetValue(mc.ModuleId, out srcPos))
                     {
                         // Get module that has the output that's connected to the currently handled input
-                        Module srcMod = cv.Entity.Modules.Find((Module m) => m.Id == mc.ModuleId);
+                        Module srcMod = Entity.Modules.Find((Module m) => m.Id == mc.ModuleId);
                         // Add horizontal offset to get the actual output position
-                        srcPos.Item2 += (srcMod.Prototype.WidthFunction(srcMod) - srcMod.Prototype.Outputs.Count) + srcMod.Prototype.Outputs.IndexOf(srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId));
-                        (int y2, int x2) dstPos = cv.ModulePlacementCache[mod.Id]; // Position of the module that has the currently handled input
+                        srcPos.Item2 += (srcMod.Layout.GetWidth(srcMod) - srcMod.Prototype.Outputs.Count) + srcMod.Prototype.Outputs.IndexOf(srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId));
+                        (int y2, int x2) dstPos = ModulePlacementCache[mod.Id]; // Position of the module that has the currently handled input
                         // Add horizontal offset to get the actual input position
-                        dstPos.Item2 += (mod.Prototype.WidthFunction(mod) - mod.Prototype.Inputs.Count) + mod.Prototype.Inputs.IndexOf(mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key));
+                        dstPos.Item2 += (srcMod.Layout.GetWidth(mod) - mod.Prototype.Inputs.Count) + mod.Prototype.Inputs.IndexOf(mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key));
                         drawConnectionLine(srcPos, dstPos);
                     }
-				}
-			}
-			textr.Apply(); // Push the texture changes to the GPU
-			Img img = new Img(textr);
-			img.Size(new Px?(textr.width), new Px?(textr.height));
-			cv.Add(img);
-			img.IgnoreInputPicking().AbsolutePositionCenter(null, new Px?(0)).BringToFront();
+                }
+            }
+            textr.Apply(); // Push the texture changes to the GPU
+            Img img = new Img(textr);
+            img.Size(new Px?(textr.width), new Px?(textr.height));
+            img.IgnoreInputPicking().AbsolutePositionCenter(null, new Px?(0)).BringToFront();
+            Add(img);
         }
 
         private void AddFreeSlot(Row rowElement, int targetRow, int targetColumn)
