@@ -116,6 +116,70 @@ namespace ProgramableNetwork
 
                 Add(rowElement);
             }
+            drawConnectionLines()
+        }
+
+        private void drawConnectionLines()
+        {
+            // Sizes of the connection draw overlay texture
+            int X = (Sizes.BLOCK_SIZE * cv.Entity.Prototype.Columns).Pixels.FloorToInt();
+			int Y = (4 * Sizes.BLOCK_SIZE * cv.Entity.Rows.Count).Pixels.FloorToInt() +
+                (3 * 2 * Sizes.IMAGE_PADDING.Pixels);
+			// The connection draw overlay texture
+            Texture2D textr = new Texture2D(X, Y);
+            // Set the texture to fully transparent (since by default it's filled with half tranparent gray/grey pixels)
+			byte[] buf = new byte[sizeof(Color) * X * Y];
+			Array.Fill<byte>(buf, 0);
+			textr.SetPixelData<byte>(buf, 0, 0);
+            // Function that draws the line
+            //   from an output at srcPos module grid position
+            //   to an input at dstPos module grid position
+            void drawConnectionLine((int y1, int x1) srcPos, (int y2, int x2) dstPos)
+            {
+                const int Stroke = 3 // The number of pixels on each side of the center of a line
+                const Color ConnectionColor = Color.HSVToRGB(0.5833333f, 1f, 1f); // line color
+                // Translate module grid positions to pixel coordinates
+                Vector2 srcVec = new Vector2((((float)srcPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)srcPos.Item1 + 3.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(srcPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
+                Vector2 dstVec = new Vector2((((float)dstPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)dstPos.Item1 + 0.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(dstPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
+                // Slightly modified line drawing function from here: https://discussions.unity.com/t/create-line-on-a-texture/41000
+                Vector2 t = srcVec;
+                float frac = 1f / Mathf.Sqrt(Mathf.Pow(dstVec.x - srcVec.x, 2f) + Mathf.Pow(dstVec.y - srcVec.y, 2f));
+                float ctr = 0f;
+                while ((int)t.x != (int)dstVec.x || (int)t.y != (int)dstVec.y)
+                {
+                    t = Vector2.Lerp(srcVec, dstVec, ctr);
+                    ctr += frac;
+                    // Added for loop to allow drawing thicker "lines" relatively quickly
+                    for (int off = -Stroke; off <= Stroke; off++)
+                    {
+                        textr.SetPixel((int)t.x + off, (int)t.y, ConnectionColor);
+                    }
+                }
+            }
+			foreach (Module mod in cv.Entity.Modules)
+			{
+				foreach (Dict<string, ModuleConnector> keyValuePair in mod.InputModules)
+				{
+                    ModuleConnector mc = keyValuePair.Value;
+                    (int y1, int x1) srcPos; // Position of the module that has the output that's connected to the currently handled input
+                    if (cv.ModulePlacementCache.TryGetValue(mc.ModuleId, out srcPos))
+                    {
+                        // Get module that has the output that's connected to the currently handled input
+                        Module srcMod = cv.Entity.Modules.Find((Module m) => m.Id == mc.ModuleId);
+                        // Add horizontal offset to get the actual output position
+                        srcPos.Item2 += srcMod.Prototype.WidthFunction(srcMod) - srcMod.Prototype.Outputs.IndexOf(srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId));
+                        (int y2, int x2) dstPos = cv.ModulePlacementCache[mod.Id]; // Position of the module that has the currently handled input
+                        // Add horizontal offset to get the actual input position
+                        dstPos.Item2 += mod.Prototype.WidthFunction(mod) - mod.Prototype.Inputs.IndexOf(mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key));
+                        drawConnectionLine(srcPos, dstPos);
+                    }
+				}
+			}
+			textr.Apply(); // Push the texture changes to the GPU
+			Img img = new Img(textr);
+			img.Size(new Px?(textr.width), new Px?(textr.height));
+			cv.Add(img);
+			img.IgnoreInputPicking().AbsolutePositionCenter(null, new Px?(0)).BringToFront();
         }
 
         private void AddFreeSlot(Row rowElement, int targetRow, int targetColumn)
