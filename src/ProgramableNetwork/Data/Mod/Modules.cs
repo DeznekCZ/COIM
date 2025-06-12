@@ -38,6 +38,7 @@ using ProgramableNetwork.Data.Variables;
 using System;
 using System.Linq;
 using System.Reflection;
+using static Mafi.Unity.Ui.Inspectors.RocketLaunchPadInspector;
 
 namespace ProgramableNetwork
 {
@@ -1181,56 +1182,31 @@ namespace ProgramableNetwork
 
                     if (entity is SettlementFoodModule foodModule)
                     {
-                        ProductProto product = m.FieldOrInput.Product("product");
-                        if (product is null)
-                        {
-                            m.SetError("Product is not selected");
-                            return ModuleStatus.Error;
-                        }
-
-                        var buffers = new[] { foodModule.GetBuffer(0).ValueOrNull, foodModule.GetBuffer(1).ValueOrNull };
-                        return GetValueFromBuffers(m, product, buffers);
+                        return GetValueFromBuffers(m, m.FieldOrInput.Product("product"), new[] {
+                            foodModule.GetBuffer(0).ValueOrNull,
+                            foodModule.GetBuffer(1).ValueOrNull
+                        });
                     }
 
                     if (entity is OreSortingPlant sorter)
                     {
-                        ProductProto product = m.FieldOrInput.Product("product");
-                        if (product is null)
-                        {
-                            m.SetError("Product is not selected");
-                            return ModuleStatus.Error;
-                        }
-
-                        return GetValueFromBuffers(m, product, sorter.OutputBuffers.AsEnumerable().ToArray());
+                        return GetValueFromBuffers(m, m.FieldOrInput.Product("product"), sorter.OutputBuffers.AsEnumerable().ToArray());
                     }
 
                     if (entity is Hospital hospital)
                     {
-                        ProductProto product = m.FieldOrInput.Product("product");
-                        if (product is null)
-                        {
-                            m.SetError("Product is not selected");
-                            return ModuleStatus.Error;
-                        }
-
-                        var buffers = new[] { hospital.GetBuffer(0).ValueOrNull, hospital.GetBuffer(1).ValueOrNull };
-                        return GetValueFromBuffers(m, product, buffers);
+                        return GetValueFromBuffers(m, m.FieldOrInput.Product("product"), new[] {
+                            hospital.GetBuffer(0).ValueOrNull,
+                            hospital.GetBuffer(1).ValueOrNull
+                        });
                     }
 
-                    if (entity is SettlementServiceModule module)
+                    if (entity is SettlementServiceModule serviceModule)
                     {
-                        ProductProto product = m.FieldOrInput.Product("product");
-                        if (product is null)
-                        {
-                            m.SetError("Product is not selected");
-                            return ModuleStatus.Error;
-                        }
-
-                        var buffers = new[] {
-                            (IProductBuffer)module.GetType().GetField("m_inputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(module),
-                            ((Option<IProductBuffer>)module.GetType().GetField("m_inputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(module)).ValueOrNull
-                        };
-                        return GetValueFromBuffers(m, product, buffers);
+                        return GetValueFromBuffers(m, m.FieldOrInput.Product("product"), new[] {
+                            (ProductBuffer)serviceModule.GetType().GetField("m_inputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(serviceModule),
+                            ((Option<ProductBuffer>)serviceModule.GetType().GetField("m_outputBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(serviceModule)).ValueOrNull
+                        });
                     }
 
                     if (entity is IVirtualResourceMiningEntity miner)
@@ -2125,16 +2101,36 @@ namespace ProgramableNetwork
 
         private static ModuleStatus GetValueFromBuffers(Module m, ProductProto product, IProductBuffer[] buffers)
         {
+            ProductProto productProto = product;
+            Quantity quantity = Quantity.Zero;
+            Quantity capacity = Quantity.Zero;
+
             foreach (var buffer in buffers)
             {
                 if (buffer is null) continue;
-                if (product != null && buffer.Product.Id != product.Id) continue;
+                if (productProto != null && buffer.Product.Id != productProto.Id) continue;
 
-                return StorageValueFromBuffer(m, product ?? buffer.Product, buffer);
+                productProto = buffer.Product;
+                quantity += buffer.Quantity;
+                capacity += buffer.Capacity;
             }
 
-            m.SetError("Invalid product");
-            return ModuleStatus.Error;
+            if (capacity == Quantity.Zero)
+            {
+                m.SetError(product != null ? "Invalid filter product" : "No product set in storage");
+
+                m.Output["quantity"] = 0;
+                m.Output["capacity"] = 0;
+                m.Output["fullness"] = 100f.ToFix32();
+                m.Output["product"] = Fix32.FromRaw(0);
+                return ModuleStatus.Error;
+            }
+
+            m.Output["quantity"] = quantity.Value;
+            m.Output["capacity"] = capacity.Value;
+            m.Output["fullness"] = (100f * quantity.Value / capacity.Value).ToFix32();
+            m.Output["product"] = Fix32.FromRaw(productProto.SlimId.Value);
+            return ModuleStatus.Running;
         }
 
         private static ModuleStatus GetTypeFromBuffer(Module m, Func<IProductBuffer>[] buffers)
