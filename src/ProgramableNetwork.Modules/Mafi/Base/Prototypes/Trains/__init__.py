@@ -6,6 +6,8 @@ class TrainStationFuel:
         self.CurrentPrimaryQuantity = None
         self.CapacitySecondary = None
         self.CurrentSecondaryQuantity = None
+        self.AnimationParams = None
+        self.AnimationStatesProvider = None
         self.IsWorking = False
         self.CanChangeRailTrackDirection = False
         self.CanChangeCriticality = False
@@ -81,11 +83,15 @@ class TrainStationModule:
         self.ShouldConnectToWagon = False
         self.ShouldDisconnectFromWagon = False
         self.AreParticlesEnabled = False
+        self.TransferQuantity = None
+        self.Capacity = None
         from Mafi import Option
         self.Buffer = Option()
         from Mafi import Option
         self.StoredProduct = Option()
         self.StoredProductQuantity = None
+        self.AnimationParams = None
+        self.AnimationStatesProvider = None
         self.CanChangeRailTrackDirection = False
         self.CanChangeCriticality = False
         self.CanAddToSuperBlock = False
@@ -216,6 +222,8 @@ class TrainStationFuelProto:
     def __init__(self):
         self.EntityType = None
         self.CanBeElevatedOnSupports = False
+        self.AnimationParams = None
+        self.TierData = None
         self.TrajectoryLength = None
         self.BlocksCount = int(0)
         self.MaxSpeedTilesPerTick = None
@@ -257,6 +265,7 @@ class TrainStationModuleProto:
         self.EntityType = None
         self.CanBeElevatedOnSupports = False
         self.StorableProducts = None
+        self.AnimationParams = None
         self.TrajectoryLength = None
         self.BlocksCount = int(0)
         self.MaxSpeedTilesPerTick = None

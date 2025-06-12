@@ -112,7 +112,6 @@ class ResearchNode:
         self.Parents = None
         self.AnyParentCanUnlock = False
         self.Units = None
-        self.IsLockedByParents = False
         self.IsLocked = False
         from Mafi import Option
         self.LabRequired = Option()

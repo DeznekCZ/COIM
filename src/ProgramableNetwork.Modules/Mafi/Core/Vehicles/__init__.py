@@ -1,3 +1,15 @@
+class AddVehicleReplacementTaskCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class AutoBufferLogisticsHelper:
 
     def __init__(self):
@@ -131,6 +143,18 @@ class RemoveLogisticsZoneCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class RemoveVehicleReplacementTaskCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class RenameLogisticsZoneCmd:
 
     def __init__(self):
@@ -236,6 +260,16 @@ class VehicleRecoveryManager:
     def __init__(self):
         pass
 
+class VehicleReplacementTask:
+
+    def __init__(self):
+        self.State = None
+        self.VehiclesReplaced = int(0)
+class TaskState:
+
+    def __init__(self):
+        pass
+
 class VehiclesManager:
 
     def __init__(self):
@@ -247,6 +281,11 @@ class VehiclesManager:
         self.TreePlanters = None
         self.VehiclesLimitLeft = int(0)
         self.MaxVehiclesLimit = int(0)
+class VehiclesReplacer:
+
+    def __init__(self):
+        self.ActiveReplacementTasks = None
+        self.FinishedReplacementTasks = None
 class VehicleSurfaceProvider:
 
     def __init__(self):

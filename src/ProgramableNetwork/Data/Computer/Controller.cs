@@ -571,7 +571,11 @@ namespace ProgramableNetwork
         [DoNotSave()]
         public bool IsCargoAffectedByGeneralPriority => false;
 
+        [DoNotSave()]
         public int Speed { get => m_clockSpeed; set => m_clockSpeed = value; }
+
+        [DoNotSave()]
+        public int Clock { get => m_clock; set => m_clock = value; }
         public LocStrFormatted State { get; private set; }
     }
 }

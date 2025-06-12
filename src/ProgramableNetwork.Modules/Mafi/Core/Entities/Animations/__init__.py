@@ -58,3 +58,12 @@ class RepeatableAnimationParams:
     def __init__(self):
         pass
 
+class SimpleAnimationState:
+
+    def __init__(self):
+        self.AnimationStateName = str(0)
+class SimpleAnimationParams:
+
+    def __init__(self):
+        pass
+

@@ -773,6 +773,16 @@ class Audio:
     def __init__(self):
         pass
 
+class LocoT1Hydrogen:
+
+    def __init__(self):
+        pass
+
+class Audio:
+
+    def __init__(self):
+        pass
+
 class LocoT1Steam:
 
     def __init__(self):
@@ -1726,6 +1736,7 @@ class Buildings:
     TrainStationFluid = None
     TrainStationFuelSteam = None
     TrainStationFuelDiesel = None
+    TrainStationFuelHydrogen = None
     TrainStationEmpty = None
     RocketAssemblyDepot = None
     RocketLaunchPad = None
@@ -1872,6 +1883,7 @@ class Trains:
     LocomotiveT1Diesel = None
     LocomotiveT1Steam = None
     LocomotiveT1SteamTender = None
+    LocomotiveT1Hydrogen = None
     WagonT1Unit = None
     WagonT1Loose = None
     WagonT1Fluid = None

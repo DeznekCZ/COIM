@@ -265,13 +265,17 @@ class OccupiedVertexRelativeExtensions:
     def __init__(self):
         pass
 
+class ToolbarEntryData:
+
+    def __init__(self):
+        pass
+
 class ToolbarCategoryProto:
 
     def __init__(self):
         self.Subcategories = None
         from Mafi import Option
         self.ParentCategory = Option()
-        self.UnlockedBy = None
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False

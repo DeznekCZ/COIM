@@ -1,6 +1,8 @@
 ﻿using Mafi;
 using Mafi.Core;
+using Mafi.Core.Buildings.Farms;
 using Mafi.Core.Entities;
+using Mafi.Core.Entities.Dynamic;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Syncers;
@@ -11,10 +13,12 @@ using Mafi.Unity.Ui.Library;
 using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
+using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static Mafi.Unity.Assets.Unity.Generated.Icons;
 
 namespace ProgramableNetwork
 {
@@ -29,7 +33,7 @@ namespace ProgramableNetwork
         private readonly UiContext m_UiContext;
         private DisplayWithIcon m_btnPreview;
         private ButtonIcon m_btnClear;
-        private ProtoPickerPopup<T> m_protoPicker;
+        private FloatingColumn m_protoPicker;
 
         public ProtoTab(UiContext uiContext, Module module, string fieldId, Func<Module, T, bool> filter,
             Action refresh, Window parentWindow, ControllerInspector inspector)
@@ -66,23 +70,58 @@ namespace ProgramableNetwork
             m_btnClear.Visible(false);
             Add(m_btnClear);
 
-            m_protoPicker = new ProtoPickerPopup<T>(
-                optionsProvider: GetItems,
-                optionViewFactory: (item) => new ButtonIcon(item.IconPath).Tooltip(item.Strings.Name),
-                onOptionSelected: (product) =>
-                {
-                    m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
-                    m_module.Field[m_fieldId, false] = product.Id.Value;
-                    m_refresh();
-                },
-                button: selectionButton,
-                title: Tr.ProductSelectorTitle,
-                config: new ProtoPickerConfig
-                {
-                    ItemSize = new Vector2(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2),
-                    ItemsPerRow = 6,
-                }
-            );
+            if (typeof(T).IsAssignableTo(typeof(DrivingEntityProto)))
+            {
+                m_protoPicker = new ProtoPickerPopup<DrivingEntityProto>(
+                    optionsProvider: (() => GetItems().Select(d => d is DrivingEntityProto p ? p : null)),
+                    optionViewFactory: ProtoPickerFactories.VehicleFactory,
+                    onOptionSelected: (DrivingEntityProto product) =>
+                    {
+                        m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
+                        m_module.Field[m_fieldId, false] = product.Id.Value;
+                        m_refresh();
+                    },
+                    button:  selectionButton,
+                    title: Tr.SelectVehicle_Title,
+                    config:  ProtoPickerConfig.Vehicles
+                );
+            }
+            else if (typeof(T).IsAssignableTo(typeof(ProductProto)))
+            {
+                m_protoPicker = new ProtoPickerPopup<ProductProto>(
+                    optionsProvider: (() => GetItems().Select(d => d is ProductProto p ? p : null)),
+                    optionViewFactory: ProtoPickerFactories.ProductFactory,
+                    onOptionSelected: (ProductProto product) =>
+                    {
+                        m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
+                        m_module.Field[m_fieldId, false] = product.Id.Value;
+                        m_refresh();
+                    },
+                    button:  selectionButton,
+                    title: Tr.ProductSelectorTitle,
+                    config:  ProtoPickerConfig.Products
+                );
+            }
+            else
+            {
+                m_protoPicker = new ProtoPickerPopup<T>(
+                    optionsProvider: GetItems,
+                    optionViewFactory: (item) => new ButtonIcon(item.IconPath).Tooltip(item.Strings.Name),
+                    onOptionSelected: (product) =>
+                    {
+                        m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
+                        m_module.Field[m_fieldId, false] = product.Id.Value;
+                        m_refresh();
+                    },
+                    button: selectionButton,
+                    title: Tr.ProductSelectorTitle,
+                    config: new ProtoPickerConfig
+                    {
+                        ItemSize = new Vector2(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2),
+                        ItemsPerRow = 6,
+                    }
+                );
+            }
 
             this.Observe(() => m_module.Field[m_fieldId])
                 .Do((item) => Refresh());

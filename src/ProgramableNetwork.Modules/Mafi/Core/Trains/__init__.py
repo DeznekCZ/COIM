@@ -1033,6 +1033,7 @@ class Train:
         self.DefaultTitle = None
         self.Position2f = None
         self.Position3f = None
+        self.TrainId = None
         self.TrainCarsCount = int(0)
         self.TrainCars = None
         self.Locomotives = None
@@ -1790,10 +1791,11 @@ class CargoWagonProto:
 
     def __init__(self):
         self.EntityType = None
+        self.Capacity = None
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
-        self.Costs = None
         self.Id = None
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -1806,10 +1808,11 @@ class CargoWagonUnitProto:
 
     def __init__(self):
         self.EntityType = None
+        self.Capacity = None
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
-        self.Costs = None
         self.Id = None
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -1824,14 +1827,16 @@ class Gfx:
         self.MaxProductRenderCapacity = int(0)
         self.ProductRenderOffsets = None
         self.SideViewIconPath = str(0)
+        self.IconPath = str(0)
 class CargoWagonLooseProto:
 
     def __init__(self):
         self.EntityType = None
+        self.Capacity = None
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
-        self.Costs = None
         self.Id = None
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -1844,6 +1849,7 @@ class Gfx:
 
     def __init__(self):
         self.SideViewIconPath = str(0)
+        self.IconPath = str(0)
 class TrainsDebugGameRenderer:
 
     def __init__(self):
@@ -2292,8 +2298,8 @@ class LocomotiveProto:
         self.LocomotiveFuelTankProto = Option()
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
-        self.Costs = None
         self.Id = None
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -2306,6 +2312,7 @@ class Gfx:
 
     def __init__(self):
         self.SideViewIconPath = str(0)
+        self.IconPath = str(0)
 class LocomotiveFuelTankProto:
 
     def __init__(self):
@@ -2329,8 +2336,8 @@ class TenderWagonProto:
         self.LocomotiveFuelTankProto = Option()
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
-        self.Costs = None
         self.Id = None
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -2343,6 +2350,7 @@ class ITrain:
 
     def __init__(self):
         self.Name = str(0)
+        self.TrainId = None
 class TrainDrivingMode:
 
     def __init__(self):
@@ -2358,6 +2366,7 @@ class ITrainFriend:
     def __init__(self):
         self.IsSpawned = False
         self.Name = str(0)
+        self.TrainId = None
         self.TrainCarsColorOverride = None
         from Mafi import Option
         self.TrainLine = Option()
@@ -2368,9 +2377,9 @@ class TrainCarBaseProto:
     def __init__(self):
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
+        self.Id = None
         self.EntityType = None
         self.Costs = None
-        self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -2383,6 +2392,7 @@ class Gfx:
 
     def __init__(self):
         self.SideViewIconPath = str(0)
+        self.IconPath = str(0)
 class PositionOnTrainTrack:
 
     def __init__(self):
@@ -2501,6 +2511,7 @@ class ITrainLineMember:
         from Mafi import Option
         self.CurrentScheduleItem = Option()
         self.Name = str(0)
+        self.TrainId = None
 class ITrainLineMemberFriend:
 
     def __init__(self):
@@ -2510,6 +2521,7 @@ class ITrainLineMemberFriend:
         from Mafi import Option
         self.CurrentScheduleItem = Option()
         self.Name = str(0)
+        self.TrainId = None
 class ITrainPathFindingTask:
 
     def __init__(self):

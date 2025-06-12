@@ -20,6 +20,8 @@ using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using Mafi.Core.SaveGame;
 using Mafi.Core.Input;
 using UnityEngine;
+using System.Xml.Serialization;
+using Mafi.Unity.Ports.Io;
 
 namespace ProgramableNetwork
 {
@@ -39,6 +41,10 @@ namespace ProgramableNetwork
         private List<IDataUpdater> m_updaters;
         private bool m_pickNew;
         private readonly Action m_refresh;
+        private Img img;
+        private Px X;
+        private Px Y;
+        private Texture2D textr;
 
         public ControllerView(ControllerInspector controller, Action refresh)
             : base(gap: 5)
@@ -47,6 +53,15 @@ namespace ProgramableNetwork
             m_updaters = new List<IDataUpdater>();
             m_refresh = refresh;
             AddModuleImplementation(refresh);
+
+            this.Observe(() => img)
+                .Observe(() => controller.m_higlightedOutput ?? controller.m_higlightedInput)
+                .Observe(() => controller.m_showsLinks)
+                .Do((image, highlight, force) =>
+                {
+                    if (image == null) return;
+                    image.VisibleForRender(highlight != null || force);
+                });
         }
 
         public Controller Entity => m_controller.Entity;
@@ -116,16 +131,40 @@ namespace ProgramableNetwork
 
                 Add(rowElement);
             }
-            //drawConnectionLines();
+
+            RepaintLines(Entity.Prototype, m_controller.m_higlightedOutput?.ModuleId, m_controller.m_showsLinks);
         }
 
-        private void drawConnectionLines()
+        private void RepaintLines(ControllerProto proto, long? highlight, bool forceShow)
         {
-            // Sizes of the connection draw overlay texture
-            int X = (Sizes.BLOCK_SIZE * Entity.Prototype.Columns).Pixels.FloorToInt();
-            int Y = (4 * Sizes.BLOCK_SIZE * Entity.Rows.Count).Pixels.FloorToInt() + (3 * 2 * Sizes.IMAGE_PADDING).Pixels.FloorToInt();
-            // The connection draw overlay texture
-            Texture2D textr = new Texture2D(X, Y);
+            try
+            {
+                if (img != null && img.IsAttached)
+                    img.RemoveFromHierarchy();
+
+                X = (Sizes.BLOCK_SIZE * proto.Columns);
+                Y = (4 * Sizes.BLOCK_SIZE * proto.Rows) + (3 * 5);
+                // Sizes of the connection draw overlay texture
+                // The connection draw overlay texture
+                textr = new Texture2D(X.Pixels.FloorToInt(), Y.Pixels.FloorToInt());
+                drawConnectionLines(X.Pixels.FloorToInt(), Y.Pixels.FloorToInt(), textr, highlight);
+
+                img = new Img(textr);
+                img.Size(X, Y);
+                img.IgnoreInputPicking().AbsolutePositionCenter(null, new Px?(0)).BringToFront();
+                img.VisibleForRender(false);
+                Add(img);
+            }
+            catch (Exception e)
+            {
+                Log.Error("[RepaintLines]");
+                Log.Exception(e);
+            }
+        }
+
+        private void drawConnectionLines(int X, int Y, Texture2D textr, long? moduleId)
+        {
+            Color ConnectionColor = ColorRgba.CornflowerBlue.SetA(127).ToColor(); // line color
             // Set the texture to fully transparent (since by default it's filled with half transparent gray/grey pixels)
             //byte[] buf = new byte[sizeof(Color) * X * Y];
             //textr.SetPixelData<byte>(buf, 0, 0);
@@ -142,7 +181,6 @@ namespace ProgramableNetwork
             void drawConnectionLine((int y1, int x1) srcPos, (int y2, int x2) dstPos)
             {
                 const int Stroke = 3; // The number of pixels on each side of the center of a line
-                Color ConnectionColor = Color.HSVToRGB(0.5833333f, 1f, 1f); // line color
                 // Translate module grid positions to pixel coordinates
                 Vector2 srcVec = new Vector2((((float)srcPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)srcPos.Item1 + 3.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(srcPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
                 Vector2 dstVec = new Vector2((((float)dstPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)dstPos.Item1 + 0.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(dstPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
@@ -150,6 +188,7 @@ namespace ProgramableNetwork
                 Vector2 t = srcVec;
                 float frac = 1f / Mathf.Sqrt(Mathf.Pow(dstVec.x - srcVec.x, 2f) + Mathf.Pow(dstVec.y - srcVec.y, 2f));
                 float ctr = 0f;
+                Vector2 diff = srcVec - dstVec;
                 while ((int)t.x != (int)dstVec.x || (int)t.y != (int)dstVec.y)
                 {
                     t = Vector2.Lerp(srcVec, dstVec, ctr);
@@ -157,7 +196,14 @@ namespace ProgramableNetwork
                     // Added for loop to allow drawing thicker "lines" relatively quickly
                     for (int off = -Stroke; off <= Stroke; off++)
                     {
-                        textr.SetPixel((int)t.x + off, (int)t.y, ConnectionColor);
+                        if (Mathf.Abs(diff.x) <= Mathf.Abs(diff.y))
+                        {
+                            textr.SetPixel((int)t.x + off, (int)t.y, ConnectionColor);
+                        }
+                        else
+                        {
+                            textr.SetPixel((int)t.x, (int)t.y + off, ConnectionColor);
+                        }
                     }
                 }
             }
@@ -167,6 +213,9 @@ namespace ProgramableNetwork
                 foreach (KeyValuePair<string, ModuleConnector> keyValuePair in mod.InputModules)
                 {
                     ModuleConnector mc = keyValuePair.Value;
+
+                    //if (moduleId != null && (moduleId != mod.Id || moduleId != mc.ModuleId)) continue;
+
                     (int y1, int x1) srcPos; // Position of the module that has the output that's connected to the currently handled input
                     if (ModulePlacementCache.TryGetValue(mc.ModuleId, out srcPos))
                     {
@@ -176,16 +225,12 @@ namespace ProgramableNetwork
                         srcPos.Item2 += (srcMod.Layout.GetWidth(srcMod) - srcMod.Prototype.Outputs.Count) + srcMod.Prototype.Outputs.IndexOf(srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId));
                         (int y2, int x2) dstPos = ModulePlacementCache[mod.Id]; // Position of the module that has the currently handled input
                         // Add horizontal offset to get the actual input position
-                        dstPos.Item2 += (srcMod.Layout.GetWidth(mod) - mod.Prototype.Inputs.Count) + mod.Prototype.Inputs.IndexOf(mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key));
+                        dstPos.Item2 += (mod.Layout.GetWidth(mod) - mod.Prototype.Inputs.Count) + mod.Prototype.Inputs.IndexOf(mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key));
                         drawConnectionLine(srcPos, dstPos);
                     }
                 }
             }
             textr.Apply(); // Push the texture changes to the GPU
-            Img img = new Img(textr);
-            img.Size(new Px?(textr.width), new Px?(textr.height));
-            img.IgnoreInputPicking().AbsolutePositionCenter(null, new Px?(0)).BringToFront();
-            Add(img);
         }
 
         private void AddFreeSlot(Row rowElement, int targetRow, int targetColumn)

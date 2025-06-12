@@ -193,6 +193,11 @@ class ConstructionState:
     def __init__(self):
         pass
 
+class IEntityWithCustomTerrainInteraction:
+
+    def __init__(self):
+        pass
+
 class IEntityWithMultipleProductsToAssign:
 
     def __init__(self):

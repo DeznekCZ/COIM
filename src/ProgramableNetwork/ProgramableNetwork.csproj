@@ -32,6 +32,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\antenat2_b2ea.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\antena_1406.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\antena_35ee.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\AssetBundles" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\AssetBundles.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\computer_1324.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\computer_711d.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\display7_200a.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\display_c421.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\light_75ca.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\speaker_9036.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\speaker_a04d.manifest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Mafi">
       <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.dll</HintPath>

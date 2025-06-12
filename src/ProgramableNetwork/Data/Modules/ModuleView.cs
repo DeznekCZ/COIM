@@ -174,11 +174,11 @@ namespace ProgramableNetwork
                                     background = ColorRgba.DarkGreen;
                                 }
 
-                                else if (isConnected && m_controller.m_controller.m_higlighted != null && m_controller.m_controller.OutputConnection == null &&
+                                else if (isConnected && m_controller.m_controller.m_higlightedOutput != null && m_controller.m_controller.OutputConnection == null &&
                                     module.InputModules
                                         .Where(pair => pair.Key == input.Id)
                                         .Select(pair => pair.Value)
-                                        .Any(connector => connector.Equals(m_controller.m_controller.m_higlighted)))
+                                        .Any(connector => connector.Equals(m_controller.m_controller.m_higlightedOutput)))
                                 {
                                     text = ColorRgba.White;
                                     background = ColorRgba.DarkGreen;
@@ -190,6 +190,11 @@ namespace ProgramableNetwork
                             {
                                 btn.Color(pair.text);
                             });
+
+                        btn.OnMouseEnterLeave(
+                            () => { m_controller.m_controller.m_higlightedInput = new ModuleConnector(module.Id, input.Id); },
+                            () => { m_controller.m_controller.m_higlightedInput = null; }
+                        );
                     }
                 }
             }
@@ -264,8 +269,8 @@ namespace ProgramableNetwork
                                 }
                             });
                             btn.OnMouseEnterLeave(
-                                () => { m_controller.m_controller.m_higlighted = new ModuleConnector(module.Id, output.Id); },
-                                () => { m_controller.m_controller.m_higlighted = null; }
+                                () => { m_controller.m_controller.m_higlightedOutput = new ModuleConnector(module.Id, output.Id); },
+                                () => { m_controller.m_controller.m_higlightedOutput = null; }
                             );
 
                         btn .Observe(() =>

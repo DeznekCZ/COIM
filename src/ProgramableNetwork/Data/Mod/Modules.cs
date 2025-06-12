@@ -1149,7 +1149,7 @@ namespace ProgramableNetwork
                     filter: (m, e) => e is StorageBase || // e is SettlementWasteModule
                                       e is SettlementFoodModule ||
                                       e is Hospital ||
-                                      e is SettlementModuleProto ||
+                                      e is SettlementServiceModule ||
                                       e is IVirtualResourceMiningEntity ||
                                       e is TrainStationModule ||
                                       e is OreSortingPlant
@@ -1181,26 +1181,26 @@ namespace ProgramableNetwork
 
                     if (entity is SettlementFoodModule foodModule)
                     {
-                        if (m.Input["product", Fix32.Zero] == Fix32.Zero)
+                        ProductProto product = m.FieldOrInput.Product("product");
+                        if (product is null)
                         {
                             m.SetError("Product is not selected");
                             return ModuleStatus.Error;
                         }
 
-                        ProductProto product = m.FieldOrInput.Product("product");
                         var buffers = new[] { foodModule.GetBuffer(0).ValueOrNull, foodModule.GetBuffer(1).ValueOrNull };
                         return GetValueFromBuffers(m, product, buffers);
                     }
 
                     if (entity is OreSortingPlant sorter)
                     {
-                        if (m.Input["product", Fix32.Zero] == Fix32.Zero)
+                        ProductProto product = m.FieldOrInput.Product("product");
+                        if (product is null)
                         {
                             m.SetError("Product is not selected");
                             return ModuleStatus.Error;
                         }
 
-                        ProductProto product = m.FieldOrInput.Product("product");
                         return GetValueFromBuffers(m, product, sorter.OutputBuffers.AsEnumerable().ToArray());
                     }
 
@@ -1746,7 +1746,7 @@ namespace ProgramableNetwork
                                       e is TrainStationModule ||
                                       e is SettlementFoodModule ||
                                       e is Hospital ||
-                                      e is SettlementModuleProto ||
+                                      e is SettlementServiceModule ||
                                       e is IVirtualResourceMiningEntity ||
                                       e is Sorter // ||
                                       // e is OreSortingPlant

@@ -4,20 +4,21 @@ using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Syncers;
+using Mafi.Localization;
 using Mafi.Unity;
 using Mafi.Unity.Camera;
 using Mafi.Unity.Entities;
 using Mafi.Unity.InputControl;
 using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Library;
 using Mafi.Unity.Ui.Library.Inspectors;
 using Mafi.Unity.UiStatic.Cursors;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
-using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static Mafi.Unity.Assets.Unity;
+using Display = Mafi.Unity.Ui.Library.Display;
 using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 
 namespace ProgramableNetwork
@@ -35,7 +36,9 @@ namespace ProgramableNetwork
         private readonly ControllerView m_view;
 
         // TODO
-        public ModuleConnector m_higlighted;
+        public ModuleConnector m_higlightedOutput;
+        public ModuleConnector m_higlightedInput;
+        public bool m_showsLinks;
 
         public ControllerInspector(
             UiContext context,
@@ -61,6 +64,46 @@ namespace ProgramableNetwork
             ShortcutsManager = shortcutsManager;
             m_invalidOpSound = context.AudioDb.InvalidOp();
 
+            ProgressBar bar;
+            AddPanelRow(
+                    new Label()
+                        .Value("Computing speed".AsLoc())
+                        .TextAlign(TextAlignment.LeftMiddle),
+                    new UiComponent().Fill(),
+                    bar = new ProgressBar()
+                        .HeightAuto()
+                        .Width(150),
+                    new Display()
+                        .Value(0)
+                        .Width(150)
+                        .Tooltip("Ticks per 60 seconds".AsLoc())
+                        .ObserveValue(() => $"{(600 / (1f + Entity.Speed)).ToFix32().ToStringRounded(0)} t/m"),
+                    new ButtonText("-".AsLoc())
+                        .TextAlign(TextAlignment.CenterMiddle)
+                        .Width(50)
+                        .OnClick(() => Entity.Speed++)
+                        .ObserveEnabled(() => Entity.Speed < 29),
+                    new ButtonText("+".AsLoc())
+                        .TextAlign(TextAlignment.CenterMiddle)
+                        .Width(50)
+                        .OnClick(() => Entity.Speed--)
+                        .ObserveEnabled(() => Entity.Speed > 0)
+                )
+                .BodyGap(5.px());
+
+            bar.ObserveVisibleForRender(() => Entity.Speed >= 10)
+               .Observe(() => Entity.Speed)
+               .Observe(() => Entity.Clock)
+               .Observe(() => Entity.IsEnabled)
+               .Do((speed, clock, enabled) =>
+               {
+                   bar.Color(enabled ? ColorRgba.GreenYellow : ColorRgba.DarkYellow);
+                   if (speed == clock)
+                       bar.Value(Percent.Hundred);
+                   else
+                       bar.ValueFromRatio(clock, speed);
+               });
+
             // UI
             m_modulesPanel = AddPanelWithHeader();
             m_modulesPanel.Header.Add(
@@ -70,7 +113,7 @@ namespace ProgramableNetwork
                 );
             m_modulesPanel.Add(m_view = new ControllerView(this, Refresh).AlignSelfCenter());
 
-            HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, Assets.Unity.UserInterface.General.Connect128_png))
+            HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, Mafi.Unity.Assets.Unity.UserInterface.General.Connect128_png))
                 .OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Open(context.UiRoot))
                 .OnMouseEnterLeave(AddPreviewHighlightAll, ClearPreviewHighlight);
 
@@ -225,6 +268,7 @@ namespace ProgramableNetwork
                 GetEntitiesOfModule(entities, module);
             }
             AddPreviewHighlightOfEntities(entities.Values);
+            m_showsLinks = true;
         }
 
         internal void AddPreviewHighlight(Module module)
@@ -238,6 +282,7 @@ namespace ProgramableNetwork
         {
             EntityHighlighter.ClearAllHighlights();
             ClearAllLines();
+            m_showsLinks = false;
         }
 
         private static void GetEntitiesOfModule(Dictionary<EntityId, IEntity> entities, Module module)
