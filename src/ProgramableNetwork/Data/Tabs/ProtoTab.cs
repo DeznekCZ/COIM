@@ -31,6 +31,7 @@ namespace ProgramableNetwork
         private readonly Action m_refresh;
         private readonly Window m_window;
         private readonly UiContext m_UiContext;
+        private readonly DisplayWithIcon m_btnFuelPreview;
         private DisplayWithIcon m_btnPreview;
         private ButtonIcon m_btnClear;
         private FloatingColumn m_protoPicker;
@@ -72,6 +73,17 @@ namespace ProgramableNetwork
 
             if (typeof(T).IsAssignableTo(typeof(DrivingEntityProto)))
             {
+                m_btnFuelPreview = new DisplayWithIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+                m_btnFuelPreview.Icon.Margin(0);
+                m_btnFuelPreview.Icon.Size(Sizes.IMAGE_SIZE * 1.5f, Sizes.IMAGE_SIZE * 1.5f);
+                m_btnFuelPreview.Icon.Padding(0);
+                m_btnFuelPreview.Margin(0);
+                m_btnFuelPreview.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE * 1.5f);
+                InsertAt(1, m_btnFuelPreview);
+
+                var veh = m_UiContext.ProtosDb.Get<DrivingEntityProto>(new Proto.ID(m_module.Field[m_fieldId, false])).ValueOrNull;
+                m_btnPreview.Icon.Value(veh);
+                m_btnFuelPreview.Icon.Value(veh?.FuelTankProto.Value?.Product);
                 m_protoPicker = new ProtoPickerPopup<DrivingEntityProto>(
                     optionsProvider: (() => GetItems().Select(d => d is DrivingEntityProto p ? p : null)),
                     optionViewFactory: ProtoPickerFactories.VehicleFactory,
@@ -81,13 +93,14 @@ namespace ProgramableNetwork
                         m_module.Field[m_fieldId, false] = product.Id.Value;
                         m_refresh();
                     },
-                    button:  selectionButton,
+                    button: selectionButton,
                     title: Tr.SelectVehicle_Title,
-                    config:  ProtoPickerConfig.Vehicles
+                    config: ProtoPickerConfig.Vehicles
                 );
             }
             else if (typeof(T).IsAssignableTo(typeof(ProductProto)))
             {
+                m_btnPreview.Icon.Value(m_UiContext.ProtosDb.Get<ProductProto>(new Proto.ID(m_module.Field[m_fieldId, false])).ValueOrNull);
                 m_protoPicker = new ProtoPickerPopup<ProductProto>(
                     optionsProvider: (() => GetItems().Select(d => d is ProductProto p ? p : null)),
                     optionViewFactory: ProtoPickerFactories.ProductFactory,
@@ -104,6 +117,7 @@ namespace ProgramableNetwork
             }
             else
             {
+                m_btnPreview.Icon.Value(m_UiContext.ProtosDb.Get<T>(new Proto.ID(m_module.Field[m_fieldId, false])).ValueOrNull);
                 m_protoPicker = new ProtoPickerPopup<T>(
                     optionsProvider: GetItems,
                     optionViewFactory: (item) => new ButtonIcon(item.IconPath).Tooltip(item.Strings.Name),
@@ -153,27 +167,31 @@ namespace ProgramableNetwork
 
         public void Refresh()
         {
-            string slimId = m_module.Field[m_fieldId, ""];
+            string fullId = m_module.Field[m_fieldId, ""];
 
-            if (string.IsNullOrEmpty(slimId))
+            if (string.IsNullOrEmpty(fullId))
             {
                 m_btnPreview.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+                m_btnFuelPreview?.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
                 m_btnClear.Visible(false);
                 return;
             }
 
             T foundProduct = m_module.Context.ProtosDb
-                .Get<T>(new Proto.ID(slimId)).ValueOrNull;
+                .Get<T>(new Proto.ID(fullId)).ValueOrNull;
 
             if (foundProduct == null)
             {
                 m_module.Field[m_fieldId] = Fix32.Zero;
                 m_btnPreview.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
+                m_btnFuelPreview?.Icon.Value(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
                 m_btnClear.Visible(false);
                 return;
             }
 
-            m_btnPreview.Icon.Value(foundProduct.IconPath);
+            m_btnPreview.Icon.Value(foundProduct);
+            if (foundProduct is DrivingEntityProto veh)
+                m_btnFuelPreview.Icon.Value(veh.FuelTankProto.ValueOrNull?.Product);
             m_btnClear.Visible(true);
         }
     }
