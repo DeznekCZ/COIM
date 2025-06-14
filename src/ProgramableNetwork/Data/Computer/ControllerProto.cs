@@ -48,7 +48,7 @@ namespace ProgramableNetwork
             this.CanPillarsPassThrough = canPillarsPassTrough;
         }
 
-        public ControllerProto(ID id, Str strings, ControllerProto basedOn, Gfx graphics, Func<Controller, Action> initModules,
+        public ControllerProto(ID id, Str strings, ControllerProto basedOn, Gfx graphics, ControllerTemplate.ModulePlacement initModules,
             IEnumerable<Tag> tags = null)
             : base(id, strings, basedOn.Layout, basedOn.Costs, graphics, constructionDurationPerProduct: Duration.FromSec(5), basedOn.BoostCost, cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
         {
@@ -57,7 +57,7 @@ namespace ProgramableNetwork
             this.Rows = basedOn.Rows;
             this.Columns = basedOn.Columns;
             this.AllowedModule = basedOn.AllowedModule;
-            this.InitModules = initModules ?? ((controller) => () => { });
+            this.InitModules = (controller) => initModules.Invoke(controller).Invoke;
             this.TierData = new TierData(this, -1);
             this.BasedOn = basedOn;
             this.CanBeElevated = false;

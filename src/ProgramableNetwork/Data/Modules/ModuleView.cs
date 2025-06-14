@@ -326,14 +326,40 @@ namespace ProgramableNetwork
 
             private UiComponent TextDisplay(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview)
             {
-                var text = new Display(module.Display[display.Id, display.DefaultText].AsLoc());
+                var text = new StatusDisplay();
+                text.Class(Cls.displayFont);
+                text.PaddingLeftRight(6.px());
+                text.As(StatusText(module.Display[display.Id, display.DefaultText], out DisplayState state), state);
                 text.TextOverflow(TextOverflow.Clip);
                 text.TextAlign(TextAlignment.RightMiddle);
                 text.Color(ColorRgba.White);
                 text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
                 text.Observe(() => module.Display[display.Id, display.DefaultText])
-                    .Do((t) => text.Value(t.AsLoc()));
+                    .Do((t) => {
+                        text.As(StatusText(t, out DisplayState stateN), stateN);
+                    });
                 return text;
+            }
+
+            private LocStrFormatted StatusText(string text, out DisplayState state)
+            {
+                state = DisplayState.Neutral;
+                if (text.StartsWith("#"))
+                {
+                    switch (text[1])
+                    {
+                        case 'E':
+                            state = DisplayState.Danger; break;
+                        case 'W':
+                            state = DisplayState.Warning; break;
+                        case 'I':
+                            state = DisplayState.Inactive; break;
+                        case 'P':
+                            state = DisplayState.Positive; break;
+                    }
+                    return text.Substring(2).AsLoc();
+                }
+                return text.AsLoc();
             }
 
             private UiComponent ImageDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)

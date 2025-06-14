@@ -76,16 +76,10 @@ namespace ProgramableNetwork
                 id: NewIds.Controllers.Category,
                 strings: Proto.CreateStr(NewIds.Controllers.Category, "Network", "Contains buildings for for work with network (computation, controller)"),
                 order: transportToolbarCategoryProto.Order + 1,
-                iconPath: Mafi.Unity.Assets.Unity.UserInterface.EntityIcons.Computing_png,
+                iconPath: Mafi.Unity.Assets.Unity.UserInterface.General.Connect128_png,
                 isTransportBuildAllowed: true,
                 shortcutId: "NETWORK"
             ));
-
-            // Adapting existing
-            registrator.PrototypesDb.Get<DataCenterProto>(Ids.DataCenters.DataCenter)
-                .ValueOrNull?.Graphics.SetCategories(registrator.GetCategoriesProtos(Ids.ToolbarCategories.Transports));
-            registrator.PrototypesDb.Get<MainframeProto>(Ids.DataCenters.Mainframe)
-                .ValueOrNull?.Graphics.SetCategories(registrator.GetCategoriesProtos(Ids.ToolbarCategories.Transports));
 
             // New entities
             var originalTier1 = registrator.PrototypesDb.Add(new ControllerProto(
@@ -104,98 +98,8 @@ namespace ProgramableNetwork
             ControllerProto.RegisterPhantom(registrator);
 
             ControllerProto template = null;
-            foreach (var (id, name, description, modules) /* Expand */
-                in new (string id, string name, string description, Func<Controller, Action> modules)[]
-                {
-                    (
-                        "FullStorage",
-                        "Storage overflow",
-                        "Reads storage and disables selected buildings connected by switch of modules (by default there is only one switch off)",
-                        (controller) =>
-                        {
-                            int i = 0;
-
-                            ModuleProto storageProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID("Connection_Storage".ModuleId())).Value;
-                            Module storage = new Module(storageProto, controller.Context, controller);
-                            Thread.Sleep(1);
-                            controller.Modules.Add(storage);
-                            controller.Rows[0][i++] = ModulePlacement.Origin(storage.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(storage.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(storage.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(storage.Id);
-
-                            ModuleProto ltProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID("Compare_Int_Greater".ModuleId())).Value;
-                            Module lt = new Module(ltProto, controller.Context, controller);
-                            Thread.Sleep(1);
-                            controller.Modules.Add(lt);
-                            controller.Rows[0][i++] = ModulePlacement.Origin(lt.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(lt.Id);
-
-                            lt.InputModules["a"] = new ModuleConnector(storage.Id, "fullness");
-
-                            ModuleProto switchOffProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID("Connection_SwitchOff".ModuleId())).Value;
-                            Module switchOff = new Module(switchOffProto, controller.Context, controller);
-                            Thread.Sleep(1);
-                            controller.Modules.Add(switchOff);
-                            controller.Rows[0][i++] = ModulePlacement.Origin(switchOff.Id);
-
-                            switchOff.InputModules["pause"] = new ModuleConnector(lt.Id, "c");
-
-                            return () =>
-                            {
-                                lt.Field.Bool["field_b"] = true;
-                                lt.Field.Integer["b"] = 99;
-                            };
-                        }
-                    ),
-                    (
-                        "VehicleImport",
-                        "Vehicle import",
-                        "Reads storage and assing vehicle when amound of stored resources is bellow 50%",
-                        (controller) =>
-                        {
-                            int i = 0;
-
-                            ModuleProto storageProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID("Connection_Storage".ModuleId())).Value;
-                            Module storage = new Module(storageProto, controller.Context, controller);
-                            controller.Modules.Add(storage);
-                            controller.Rows[0][i++] = ModulePlacement.Origin(storage.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(storage.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(storage.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(storage.Id);
-
-                            ModuleProto ltProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID("Compare_Int_Lower".ModuleId())).Value;
-                            Module lt = new Module(ltProto, controller.Context, controller);
-                            controller.Modules.Add(lt);
-                            controller.Rows[0][i++] = ModulePlacement.Origin(lt.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(lt.Id);
-
-                            lt.InputModules["a"] = new ModuleConnector(storage.Id, "fullness");
-
-                            ModuleProto vehicleProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID("Constant_Vehicle".ModuleId())).Value;
-                            Module vehicle = new Module(vehicleProto, controller.Context, controller);
-                            controller.Modules.Add(vehicle);
-                            controller.Rows[0][i++] = ModulePlacement.Origin(vehicle.Id);
-
-                            ModuleProto vehicleSetProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID("Connection_Vehicle_Set".ModuleId())).Value;
-                            Module vehicleSet = new Module(vehicleSetProto, controller.Context, controller);
-                            controller.Modules.Add(vehicleSet);
-                            controller.Rows[0][i++] = ModulePlacement.Origin(vehicleSet.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(vehicleSet.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(vehicleSet.Id);
-                            controller.Rows[0][i++] = ModulePlacement.Rest(vehicleSet.Id);
-
-                            vehicleSet.InputModules["count"] = new ModuleConnector(lt.Id, "c");
-                            vehicleSet.InputModules["vehicle"] = new ModuleConnector(vehicle.Id, "value");
-
-                            return () =>
-                            {
-                                lt.Field.Bool["field_b"] = true;
-                                lt.Field.Integer["b"] = 50;
-                            };
-                        }
-                    )
-                })
+            ControllerTemplate[] values = GetControllerTemplates(registrator);
+            foreach (var (id, name, description, modules) /* Expand */ in values)
             {
                 var protoId = NewIds.Controllers.ControllerTemplate(id);
                 var next = registrator.PrototypesDb.Add(new ControllerProto(
@@ -209,15 +113,14 @@ namespace ProgramableNetwork
                     ),
                     initModules: modules
                 ));
-                if (template != null)
-                    template.SetNextTierIndirect(next);
+                template?.SetNextTierIndirect(next);
                 template = next;
             }
 
             var antenaT1 = registrator.PrototypesDb.Add(new AntenaProto(
                 id: NewIds.Controllers.Antena,
                 strings: Proto.CreateStr(NewIds.Controllers.Antena, "Antena", "Handles signal transfer for longer distance"),
-                layout: registrator.LayoutParser.ParseLayoutOrThrow("[9]"),
+                layout: registrator.LayoutParser.ParseLayoutOrThrow("[4]"),
                 tier: 1,
                 costs: ((EntityCostsTpl)Costs.Build.CP2(4).MaintenanceT1(2)).MapToEntityCosts(registrator),
                 graphics: new LayoutEntityProto.Gfx(
@@ -254,6 +157,89 @@ namespace ProgramableNetwork
                     categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                 )
             ));
+        }
+
+        private ControllerTemplate[] GetControllerTemplates(ProtoRegistrator registrator)
+        {
+            return new ControllerTemplate[]
+            {
+                new ControllerTemplate(
+                    "FullStorage",
+                    "Storage overflow",
+                    "Reads storage and disables selected buildings connected by switch of modules (by default there is only one switch off)",
+                    (controller) =>
+                    {
+                        int i = 0;
+                        Module storage = AddToController(registrator, controller, 0, ref i, "Connection_Storage");
+                        Thread.Sleep(1);
+
+                        Module lt = AddToController(registrator, controller, 0, ref i, "Compare_Int_Greater");
+                        Thread.Sleep(1);
+
+                        Module switchOff = AddToController(registrator, controller, 0, ref i, "Connection_SwitchOff");
+                        Thread.Sleep(1);
+
+                        Connect(lt, "a", storage, "fullness");
+                        Connect(switchOff, "pause", lt, "c");
+
+                        return () =>
+                        {
+                            lt.Field.Bool["field_b"] = true;
+                            lt.Field.Integer["b"] = 99;
+                        };
+                    }
+                ),
+                new ControllerTemplate(
+                    "VehicleImport",
+                    "Vehicle import",
+                    "Reads storage and assing vehicle when amound of stored resources is bellow 50%",
+                    (controller) =>
+                    {
+                        int i = 0;
+
+                        Module storage = AddToController(registrator, controller, 0, ref i, "Connection_Storage");
+                        Thread.Sleep(1);
+
+                        Module lt = AddToController(registrator, controller, 0, ref i, "Compare_Int_Lower");
+                        Thread.Sleep(1);
+
+                        Module vehicle = AddToController(registrator, controller, 0, ref i, "Constant_Vehicle");
+                        Thread.Sleep(1);
+
+                        Module vehicleSet = AddToController(registrator, controller, 0, ref i, "Connection_Vehicle_Set");
+                        Thread.Sleep(1);
+
+                        Connect(lt, "a", storage, "fullness");
+                        Connect(vehicleSet, "count", lt, "c");
+                        Connect(vehicleSet, "vehicle", vehicle, "value");
+
+                        return () =>
+                        {
+                            lt.Field.Bool["field_b"] = true;
+                            lt.Field.Integer["b"] = 50;
+                        };
+                    }
+                )
+            };
+        }
+
+        private static void Connect(Module inputModule, string input, Module outputModule, string output)
+        {
+            inputModule.InputModules[input] = new ModuleConnector(outputModule.Id, output);
+        }
+
+        private static Module AddToController(ProtoRegistrator registrator, Controller controller, int row, ref int column, string moduleProto)
+        {
+            ModuleProto storageProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID(moduleProto.ModuleId())).Value;
+            Module module = new Module(storageProto, controller.Context, controller);
+
+            controller.Modules.Add(module);
+            controller.Rows[row][column++] = ModulePlacement.Origin(module.Id);
+            int width = module.Layout.GetWidth(module);
+            for (int j = 1; j < width; j++)
+                controller.Rows[row][column++] = ModulePlacement.Rest(module.Id);
+
+            return module;
         }
     }
 }

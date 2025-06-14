@@ -38,7 +38,10 @@ using ProgramableNetwork.Data.Variables;
 using System;
 using System.Linq;
 using System.Reflection;
-using static Mafi.Unity.Ui.Inspectors.RocketLaunchPadInspector;
+using static Mafi.Unity.Assets.Unity;
+using LayoutEntity = Mafi.Core.Entities.Static.Layout.LayoutEntity;
+using Transport = Mafi.Core.Factory.Transports.Transport;
+using Vehicle = Mafi.Core.Entities.Dynamic.Vehicle;
 
 namespace ProgramableNetwork
 {
@@ -538,7 +541,8 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
 
             registrator
-                .ModuleBuilderStart("Stats_Electricity", "Statistic: Electricity", "PWR", Assets.Base.Products.Icons.Vegetables_svg)
+                .ModuleBuilderStart("Stats_Electricity", "Statistic: Electricity", "PWR", Assets.Base.Products.Icons.Vegetables_svg,
+                    "Reads globaly used electricity and returns consumption, production, capacity and usage of the capacity")
                 .AddCategory(Category.Stats)
                 .AddOutput("consumption", "Consumption")
                 .AddOutput("production", "Production")
@@ -559,6 +563,39 @@ namespace ProgramableNetwork
                     m.Output["production"] = production.LastDay.Value.ToFix32();
                     m.Output["capacity"] = capacity.LastDay.Value.ToFix32();
                     m.Output["usage"] = 100.ToFix32() * (consumption.LastDay.Value.ToFix32() / capacity.LastDay.Value.ToFix32());
+                })
+                .AddDisplay("consumption", "Consumption", 1.2f.ToFix32())
+                .AddDisplay("production", "Production", 1.8f.ToFix32())
+                .AddDisplay("power", "Power", 1, image: true)
+                .Display(m =>
+                {
+                    var stage = new[] { "kW", "MW", "GW", "TW" };
+                    var cons = m.Output["consumption"];
+                    var prod = m.Output["production"];
+                    var consUnit = 0;
+                    var state = "";
+                    if (prod == 0 || cons > prod)
+                        state = "#E";
+                    else if (cons < (prod * 0.75f.ToFix32()))
+                        state = "#P";
+                    else if (cons == prod)
+                        state = "#W";
+                    else
+                        state = "";
+
+                    while (cons > 100.ToFix32() || prod > 100.ToFix32())
+                    {
+                        cons /= 1000;
+                        prod /= 1000;
+                        consUnit++;
+                    }
+
+                    int indexCons = cons > 19.ToFix32() ? 0 : 1;
+                    int indexProd = prod > 19.ToFix32() ? 0 : 1;
+
+                    m.Display["consumption"] = $"{state}{cons.ToStringRounded(indexCons)}";
+                    m.Display["production"] = $"{state}{prod.ToStringRounded(indexProd)} {stage[consUnit]}";
+                    m.Display["power"] = UserInterface.General.Electricity_svg;
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
