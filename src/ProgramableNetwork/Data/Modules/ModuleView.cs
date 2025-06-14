@@ -10,6 +10,7 @@ using Mafi.Unity.Ui.Library;
 using Mafi.Localization;
 using System.Collections.Generic;
 using static Mafi.Unity.Assets.Unity;
+using System.Globalization;
 
 namespace ProgramableNetwork
 {
@@ -341,7 +342,24 @@ namespace ProgramableNetwork
                 return text;
             }
 
-            private LocStrFormatted StatusText(string text, out DisplayState state)
+            private string StatusIcon(string text, out DisplayState state, out ColorRgba color)
+            {
+                text = StatusIcon(text, out state);
+                color = ColorRgba.White;
+                if (text.StartsWith("#C"))
+                {
+                    int r = int.Parse(text.Substring(2, 2), NumberStyles.HexNumber);
+                    int g = int.Parse(text.Substring(4, 2), NumberStyles.HexNumber);
+                    int b = int.Parse(text.Substring(6, 2), NumberStyles.HexNumber);
+
+                    color = new ColorRgba(r, g, b);
+
+                    return text.Substring(8);
+                }
+                return text;
+            }
+
+            private string StatusIcon(string text, out DisplayState state)
             {
                 state = DisplayState.Neutral;
                 if (text.StartsWith("#"))
@@ -356,22 +374,36 @@ namespace ProgramableNetwork
                             state = DisplayState.Inactive; break;
                         case 'P':
                             state = DisplayState.Positive; break;
+                        default:
+                            return text;
                     }
-                    return text.Substring(2).AsLoc();
+                    return text.Substring(2);
                 }
-                return text.AsLoc();
+                return text;
+            }
+
+            private LocStrFormatted StatusText(string text, out DisplayState state)
+            {
+                return StatusIcon(text, out state).AsLoc();
             }
 
             private UiComponent ImageDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
-                var text = new DisplayWithIcon(module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png]);
+                var text = new DisplayWithIcon(StatusIcon(module.Display[display.Id, UserInterface.General.Empty128_png], out DisplayState state, out ColorRgba color));
+                text.State(state);
+                text.Icon.Color(color);
                 text.Icon.Margin(Px.Zero);
                 text.Icon.Padding(Px.Zero);
                 text.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
                 text.Color(ColorRgba.White);
                 text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
-                text.Observe(() => module.Display[display.Id, Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png])
-                    .Do((t) => text.Icon.Value(t));
+                text.Observe(() => module.Display[display.Id, UserInterface.General.Empty128_png])
+                    .Do((t) =>
+                    {
+                        text.Icon.Value(StatusIcon(t, out DisplayState newState, out ColorRgba newColor));
+                        text.Icon.Color(newColor);
+                        text.State(newState);
+                    });
                 return text;
             }
 
@@ -413,7 +445,7 @@ namespace ProgramableNetwork
 
             private Button ToggleDisplay_DoubleText(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview, string[] options)
             {
-                var text = new ButtonText(new Mafi.Localization.LocStrFormatted(module.Display[display.Id, options[0]]));
+                var text = new ButtonText(new LocStrFormatted(module.Display[display.Id, options[0]]));
                 text.TextOverflow(TextOverflow.Clip);
                 text.TextAlign(TextAlignment.CenterMiddle);
                 text.FontSize(10);
@@ -436,7 +468,7 @@ namespace ProgramableNetwork
 
             private UiComponent ToggleDisplay_Symbol(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview, string symbol, bool click = true)
             {
-                ButtonText text = new ButtonText(new Mafi.Localization.LocStrFormatted(symbol));
+                ButtonText text = new ButtonText(new LocStrFormatted(symbol));
                 text.TextOverflow(TextOverflow.Clip);
                 text.TextAlign(TextAlignment.CenterMiddle);
                 text.FontSize(10);
@@ -464,14 +496,20 @@ namespace ProgramableNetwork
                     return ToggleDisplay_Symbol(uiContext, module, display, preview, "●", click);
 
                 var text = new DisplayWithIcon(UserInterface.General.Circle_svg);
-                text.Icon.Color(module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red);
+                string value = StatusIcon(module.Display[display.Id, ""], out DisplayState state);
+                text.Icon.Color(value.Length > 0 ? ColorRgba.Green : ColorRgba.Red);
                 text.Icon.Margin(Px.Zero);
                 text.Icon.Padding(Px.Zero);
                 text.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+                text.State(state);
                 text.Color(ColorRgba.White);
                 text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
-                text.Observe(() => module.Display[display.Id, ""].Length > 0 ? ColorRgba.Green : ColorRgba.Red)
-                    .Do((t) => text.Icon.Color(t));
+                text.Observe(() => (color: StatusIcon(module.Display[display.Id, ""], out DisplayState newState).Length > 0 ? ColorRgba.Green : ColorRgba.Red, state: newState))
+                    .Do((pair) =>
+                    {
+                        text.Icon.Color(pair.color);
+                        text.State(pair.state);
+                    });
                 return text;
             }
         }

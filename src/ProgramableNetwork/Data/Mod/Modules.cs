@@ -555,14 +555,14 @@ namespace ProgramableNetwork
                         .GetField("m_electricityManager", BindingFlags.Instance | BindingFlags.NonPublic)
                         .GetValue(m.Controller.ElectricityConsumer.Value) as ElectricityManager;
 
-                    Mafi.Core.Stats.ElectricityAvgStats consumption = electricity.ConsumptionStats;
-                    Mafi.Core.Stats.ElectricityAvgStats production = electricity.ProductionStats;
-                    Mafi.Core.Stats.ElectricityAvgStats capacity = electricity.GenerationCapacityStats;
+                    Electricity consumption = electricity.DemandedThisTick;
+                    Electricity production = electricity.GeneratedThisTick;
+                    Electricity capacity = electricity.GenerationCapacityThisTick;
 
-                    m.Output["consumption"] = consumption.LastDay.Value.ToFix32();
-                    m.Output["production"] = production.LastDay.Value.ToFix32();
-                    m.Output["capacity"] = capacity.LastDay.Value.ToFix32();
-                    m.Output["usage"] = 100.ToFix32() * (consumption.LastDay.Value.ToFix32() / capacity.LastDay.Value.ToFix32());
+                    m.Output["consumption"] = consumption.Value.ToFix32();
+                    m.Output["production"] = production.Value.ToFix32();
+                    m.Output["capacity"] = capacity.Value.ToFix32();
+                    m.Output["usage"] = 100.ToFix32() * (consumption.Value.ToFix32() / capacity.Value.ToFix32());
                 })
                 .AddDisplay("consumption", "Consumption", 1.2f.ToFix32())
                 .AddDisplay("production", "Production", 1.8f.ToFix32())
@@ -572,13 +572,14 @@ namespace ProgramableNetwork
                     var stage = new[] { "kW", "MW", "GW", "TW" };
                     var cons = m.Output["consumption"];
                     var prod = m.Output["production"];
+                    var cap = m.Output["capacity"];
                     var consUnit = 0;
                     var state = "";
                     if (prod == 0 || cons > prod)
                         state = "#E";
                     else if (cons < (prod * 0.75f.ToFix32()))
                         state = "#P";
-                    else if (cons == prod)
+                    else if (cons > (cap * 0.75f.ToFix32()))
                         state = "#W";
                     else
                         state = "";
@@ -638,9 +639,26 @@ namespace ProgramableNetwork
                     m.Output["a"] = buffer.Quantity.Value.ToFix32();
                     m.Output["c"] = buffer.Capacity.Value.ToFix32();
                     m.Output["p"] = 100.ToFix32() * (buffer.Quantity.Value.ToFix32() / buffer.Capacity.Value.ToFix32());
-                    m.Output["u"] = (productStats.CreatedByProduction.LastMonth - productStats.UsedTotalStats.LastMonth)
-                                        .ToQuantity().Value.Value.ToFix32();
+                    m.Output["u"] = (((productStats.CreatedByProduction.LastMonth - productStats.UsedTotalStats.LastMonth)
+                                        .ToQuantity().Value.Value / 10) * 10).ToFix32();
                     return ModuleStatus.Running;
+                })
+                .AddDisplay("product", "Product", 1, image: true)
+                .AddDisplay("direction", "Surplus/Deficit", 1, image: true)
+                .AddDisplay("value", "Value", 2)
+                .Display(m =>
+                {
+                    bool surplus = m.Output["u"] > Fix32.Zero;
+                    bool deficit = m.Output["u"] < Fix32.Zero;
+
+                    string color = surplus ? "#C00FF00" : deficit ? "#CFF0000" : "";
+                    string direction = surplus ? UserInterface.General.MoveUp_svg : deficit ? UserInterface.General.MoveDown_svg : UserInterface.General.Minus128_png;
+                    Fix32 value = m.Output["p"];
+                    string state = value < 25 ? "#E" : value < 50 ? "#W" : value < 75 ? "" : "#P";
+
+                    m.Display["product"] = m.Field.Product("m")?.IconPath;
+                    m.Display["direction"] = $"{color}{direction}";
+                    m.Display["value"] = $"{state}{value.ToStringRounded(0)} %";
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
