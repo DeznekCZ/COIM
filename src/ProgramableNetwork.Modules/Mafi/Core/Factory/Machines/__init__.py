@@ -3,7 +3,6 @@ class IEntityWithBoost:
     def __init__(self):
         self.IsBoostRequested = False
         self.BoostCost = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -11,6 +10,7 @@ class IEntityWithBoost:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class Machine:
 
     def __init__(self):

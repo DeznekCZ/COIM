@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProgramableNetwork.Data.DataBand
+namespace ProgramableNetwork.Ui.DataBand
 {
     public class FMDataBandChannelView : PanelRow
     {

@@ -12,6 +12,7 @@ class NuclearWasteStorage:
         self.ExportFromPercent = None
         self.ZoneMask = None
         self.TransportFromPercent = None
+        self.TransportUntilPercent = None
         self.CleaningInProgress = False
         self.UsableCapacity = None
         self.AssignedInputs = None

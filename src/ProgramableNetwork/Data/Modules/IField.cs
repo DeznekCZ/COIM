@@ -13,7 +13,7 @@ namespace ProgramableNetwork
         int Size { get; }
 
         void Validate(Module module);
-        void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog);
+        void Init(Ui.ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog);
         void InitData(Module module);
     }
 }

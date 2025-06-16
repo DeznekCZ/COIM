@@ -6,7 +6,7 @@ using Mafi.Unity.UiToolkit.Library;
 using System;
 using Mafi.Unity.Ui.Library;
 
-namespace ProgramableNetwork.Data.DataBand
+namespace ProgramableNetwork.Ui.DataBand
 {
     public class AMDataBandChannelView : PanelRow
     {

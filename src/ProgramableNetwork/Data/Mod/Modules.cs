@@ -654,7 +654,7 @@ namespace ProgramableNetwork
                     string color = surplus ? "#C00FF00" : deficit ? "#CFF0000" : "";
                     string direction = surplus ? UserInterface.General.MoveUp_svg : deficit ? UserInterface.General.MoveDown_svg : UserInterface.General.Minus128_png;
                     Fix32 value = m.Output["p"];
-                    string state = value < 25 ? "#E" : value < 50 ? "#W" : value < 75 ? "" : "#P";
+                    string state = value < 25 ? "#E" : value < 50 ? "#W" : value < 75 ? "" : "#E";
 
                     m.Display["product"] = m.Field.Product("m")?.IconPath;
                     m.Display["direction"] = $"{color}{direction}";
@@ -2039,7 +2039,7 @@ namespace ProgramableNetwork
                     filter: (m, e) => true /* Get info about is able to set recipe */)
                 .AddBooleanField("field_on", "Active recipe")
                 .AddBooleanField("on", "Active recipe")
-                .AddCustomField("recipe", "Recipe", (inspector, settings, module, refresh, reference) => settings.Add(new RecipeSelector(inspector, module, refresh, reference)))
+                .AddCustomField("recipe", "Recipe", (inspector, settings, module, refresh, reference) => settings.Add(new Ui.RecipeSelector(inspector, module, refresh, reference)))
                 .Action(m => {
                     Machine entity = m.Field.Entity<Machine>("entity");
             
@@ -2491,7 +2491,7 @@ namespace ProgramableNetwork
                     .AddCategory(Category.Antene)
                     .AddCategory(Category.AnteneFM)
                     .AddCustomField("fm", "FM", "Listening frequency",
-                        (inspector, settings, refresh, reference) => settings.Add(new FMDataBandChannelView(inspector, refresh, reference))
+                        (inspector, settings, refresh, reference) => settings.Add(new Ui.DataBand.FMDataBandChannelView(inspector, refresh, reference))
                     )
                     .AddControllerDevice()
                     // dynamic
@@ -2581,7 +2581,7 @@ namespace ProgramableNetwork
                     .AddCategory(Category.Antene)
                     .AddCategory(Category.AnteneFM)
                     .AddCustomField("fm", "FM", "Broadcasting frequency",
-                        (inspector, settings, refresh, reference) => settings.Add(new FMDataBandChannelView(inspector, refresh, reference))
+                        (inspector, settings, refresh, reference) => settings.Add(new Ui.DataBand.FMDataBandChannelView(inspector, refresh, reference))
                     )
                     .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                     .AddDisplay("fm", "Frequency", i)
@@ -2607,7 +2607,7 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart($"Radio_In_AM", $"AM receiver", $"AM-R", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Antene)
                 .AddCategory(Category.AnteneAM)
-                .AddCustomField("am", "AM", "Listening frequency", (inspector, settings, refresh, reference) => settings.Add(new AMDataBandChannelView(inspector, refresh, reference)))
+                .AddCustomField("am", "AM", "Listening frequency", (inspector, settings, refresh, reference) => settings.Add(new Ui.DataBand.AMDataBandChannelView(inspector, refresh, reference)))
                 .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                 .AddDisplay("am", "Frequency", 2)
                 .AddOutput("am", "AM signal")
@@ -2650,7 +2650,7 @@ namespace ProgramableNetwork
                 .ModuleBuilderStart($"Radio_Out_AM", $"AM broadcaster", $"AM-B", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Antene)
                 .AddCategory(Category.AnteneAM)
-                .AddCustomField("am", "AM", "Listening frequency", (inspector, settings, refresh, reference) => settings.Add(new AMDataBandChannelView(inspector, refresh, reference)))
+                .AddCustomField("am", "AM", "Listening frequency", (inspector, settings, refresh, reference) => settings.Add(new Ui.DataBand.AMDataBandChannelView(inspector, refresh, reference)))
                 .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
                 .AddDisplay("am", "Frequency", 2)
                 .AddInput("am", "AM signal")

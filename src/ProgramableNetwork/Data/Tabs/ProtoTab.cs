@@ -20,7 +20,7 @@ using System.Linq;
 using UnityEngine;
 using static Mafi.Unity.Assets.Unity.Generated.Icons;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class ProtoTab<T> : Row/*, IRefreshable*/
         where T : EntityProto, IProtoWithIcon

@@ -1,7 +1,7 @@
 ﻿using Mafi;
 using UnityEngine;
 
-namespace ProgramableNetwork.Data.DisplayEntity.Displays
+namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 {
     public struct LightInfo
     {

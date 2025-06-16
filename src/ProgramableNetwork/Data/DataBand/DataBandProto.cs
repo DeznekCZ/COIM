@@ -20,7 +20,7 @@ namespace ProgramableNetwork
             Func<BlobReader, TDataBand> deserializer,
             Fix32? distance = null,
             Func<EntityContext, TDataBandChannel, string> channelDisplay = null,
-            Func<AntenaInspector, TDataBandChannel, UiComponent> buttons = null,
+            Func<Ui.AntenaInspector, TDataBandChannel, UiComponent> buttons = null,
             IEnumerable<Tag> tags = null
         )
             where TDataBand : IDataBandTyped<TDataBandChannel>
@@ -47,7 +47,7 @@ namespace ProgramableNetwork
             Func<BlobReader, IDataBand> deserializer,
             Fix32 distance,
             Func<EntityContext, IDataBandChannel, string> channelDisplay,
-            Func<AntenaInspector, IDataBandChannel, UiComponent> buttons,
+            Func<Ui.AntenaInspector, IDataBandChannel, UiComponent> buttons,
             IEnumerable<Tag> tags) : base(id, strings, tags)
         {
             Constructor = constructor;
@@ -63,7 +63,7 @@ namespace ProgramableNetwork
         public Func<Antena, EntityContext, DataBandProto, IDataBand> Constructor { get; }
         public int Channels { get; }
         public Func<EntityContext, IDataBandChannel, string> Display { get; }
-        public Func<AntenaInspector, IDataBandChannel, UiComponent> Buttons { get; }
+        public Func<Ui.AntenaInspector, IDataBandChannel, UiComponent> Buttons { get; }
         public Fix32 Distance { get; }
         public Func<IDataBandChannel, IDataBandChannel, bool> Comparator { get; }
         public Action<IDataBand, BlobWriter> Serializer { get; }

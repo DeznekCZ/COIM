@@ -5,7 +5,7 @@ using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     internal class EntityTypeField<T> : IField
         where T : EntityProto, IProtoWithIcon

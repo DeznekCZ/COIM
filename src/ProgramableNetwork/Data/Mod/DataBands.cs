@@ -44,7 +44,7 @@ namespace ProgramableNetwork
                 FMDataBand.Serialize,
                 FMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((171 + i.Index).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " MHz",
-                buttons: (inspector, dataBand) => new FMDataBandChannelView(inspector, dataBand),
+                buttons: (inspector, dataBand) => new Ui.DataBand.FMDataBandChannelView(inspector, dataBand),
                 distance: 2000.ToFix32()
                 ));
 
@@ -57,7 +57,7 @@ namespace ProgramableNetwork
                 AMDataBand.Serialize,
                 AMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((53 + i.Index).ToFix32() * 10.ToFix32()).IntegerPart + " kHz",
-                buttons: (inspector, dataBand) => new AMDataBandChannelView(inspector, dataBand),
+                buttons: (inspector, dataBand) => new Ui.DataBand.AMDataBandChannelView(inspector, dataBand),
                 distance: 500.ToFix32()
                 ));
         }

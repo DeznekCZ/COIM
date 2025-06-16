@@ -12,15 +12,9 @@ namespace ProgramableNetwork.Data.DisplayEntity
         DisplayEntity Entity { get; }
         DisplayEntityProto Proto { get; }
         DisplayEntityMb Mb { get; }
+        Ui.DisplayEntity.IDisplayEntityInspector Inspector { get; }
 
         void Init(DisplayEntityMb mb);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="panel"></param>
-        /// <returns>Clearing function</returns>
-        Action Inspector(DisplayEntityInspector panel);
         void RenderUpdate(GameTime time);
         void SyncUpdate(GameTime time);
     }

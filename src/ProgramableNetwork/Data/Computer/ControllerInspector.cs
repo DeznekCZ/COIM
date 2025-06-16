@@ -21,7 +21,7 @@ using UnityEngine;
 using Display = Mafi.Unity.Ui.Library.Display;
 using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
     public partial class ControllerInspector : BaseInspector<Controller>, ISelectionInspector<IEntity, EntitySelector, Controller>

@@ -4,7 +4,7 @@ using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Linq;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class StringField : IField
     {

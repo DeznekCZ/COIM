@@ -8,7 +8,7 @@ using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Linq;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     internal class ProductField : IField
     {

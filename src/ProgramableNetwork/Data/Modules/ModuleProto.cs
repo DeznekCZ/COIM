@@ -13,6 +13,7 @@ using Mafi.Core.Entities.Static;
 using System.Linq;
 using Mafi.Unity.UiToolkit.Component;
 using ProgramableNetwork.ModuleParser.Registrator.Definitions;
+using ProgramableNetwork.Ui;
 
 namespace ProgramableNetwork
 {

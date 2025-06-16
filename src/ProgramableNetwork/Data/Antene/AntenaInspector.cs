@@ -22,7 +22,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
     public class AntenaInspector : BaseInspector<Antena>, ISelectionInspector<Antena, AntenaSelector, Antena>

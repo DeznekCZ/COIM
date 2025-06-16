@@ -62,7 +62,7 @@ namespace ProgramableNetwork
             }
         }
 
-        public UiComponent CreateUI(AntenaInspector antenaInspector, IDataBandChannel channel)
+        public UiComponent CreateUI(Ui.AntenaInspector antenaInspector, IDataBandChannel channel)
         {
             return OriginalDataBand.Prototype.Buttons(antenaInspector, channel);
         }

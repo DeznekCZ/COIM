@@ -168,7 +168,7 @@ namespace ProgramableNetwork
             {
                 foreach (IField item in this.Prototype.Fields)
                 {
-                    if (!(item is EntityField) && NumberData.TryGetValue("field__" + item.Id, out var value))
+                    if (item is not Ui.EntityField && NumberData.TryGetValue("field__" + item.Id, out var value))
                     {
                         NumberData["field__" + item.Id] = value.ToFix32().RawValue;
                     }

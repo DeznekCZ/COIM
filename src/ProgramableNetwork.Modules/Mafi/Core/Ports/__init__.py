@@ -21,10 +21,10 @@ class IEntityWithPorts:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None

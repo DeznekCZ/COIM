@@ -23,7 +23,6 @@ class SetGlobalPriorityCmd:
 class IEntityWithCustomPriority:
 
     def __init__(self):
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -31,13 +30,13 @@ class IEntityWithCustomPriority:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IEntityWithGeneralPriority:
 
     def __init__(self):
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.IsCargoAffectedByGeneralPriority = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -45,6 +44,7 @@ class IEntityWithGeneralPriority:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class EntityWithGeneralPriorityExtensions:
 
     def __init__(self):

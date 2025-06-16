@@ -1113,7 +1113,6 @@ class Train:
         self.ReservedStationGroupSlots = None
         self.DrivingMode = None
         self.NotifyingCannotScrap = False
-        self.NotifyingIdle = False
         from Mafi import Option
         self.CurrentStation = Option()
         self.IsBeingScrapped = False
@@ -1977,13 +1976,13 @@ class IEntityWithTrainTrack:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2022,13 +2021,13 @@ class INotifyTrainApproachingEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2072,13 +2071,13 @@ class IEntityWithTrainTrackFriend:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2130,13 +2129,13 @@ class ITrainDepot:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2346,6 +2345,11 @@ class TenderWagonProto:
         self.IsNotAvailable = False
         self.IsAvailable = False
         self.IsObsolete = False
+class Gfx:
+
+    def __init__(self):
+        self.SideViewIconPath = str(0)
+        self.IconPath = str(0)
 class ITrain:
 
     def __init__(self):
@@ -2422,13 +2426,13 @@ class ITrainDepotExtensionParent:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class ITrainDepotExtensionParentProto:
 
     def __init__(self):
@@ -2522,6 +2526,11 @@ class ITrainLineMemberFriend:
         self.CurrentScheduleItem = Option()
         self.Name = str(0)
         self.TrainId = None
+class TrainLineWarning:
+
+    def __init__(self):
+        pass
+
 class ITrainPathFindingTask:
 
     def __init__(self):
@@ -2668,13 +2677,13 @@ class ITrainStationBase:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2717,13 +2726,13 @@ class ITrainStationRoot:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2771,13 +2780,13 @@ class ITrainStationModule:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2825,13 +2834,13 @@ class ITrainStationModuleFriend:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2872,13 +2881,13 @@ class ITrainStationFuel:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None

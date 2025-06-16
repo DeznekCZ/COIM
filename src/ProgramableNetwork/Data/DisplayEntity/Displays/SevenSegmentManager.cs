@@ -15,52 +15,25 @@ using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 using Mafi.Unity.Ui;
 using RTG;
 using Mafi.Unity.UiToolkit;
-using System.Linq.Expressions;
-using Mafi.Unity.Ui.Library;
 using UnityEngine;
 using Display = Mafi.Unity.Ui.Library.Display;
 
-namespace ProgramableNetwork.Data.DisplayEntity.Displays
+namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 {
-    public class SevenSegmentManager : IDisplayEntityManager
+    public class SevenSegmentInspector : IDisplayEntityInspector
     {
         public static string[] SEGMENTS = new string[] { "A", "B", "C", "D", "E", "F", "G", "DP" };
-        private Dictionary<string, Renderer> m_render;
         private PanelRow m_row;
         private PanelWithHeader m_act;
-        private Color m_oldColorOn;
-        private Color m_oldColorOff;
 
-        public SevenSegmentManager(DisplayEntity disp)
+        public SevenSegmentInspector(Data.DisplayEntity.DisplayEntity entity)
         {
-            Entity = disp;
-            Proto = Entity.Prototype;
-            m_oldColorOn = Color.black;
-            m_oldColorOff = Color.black;
+            Entity = entity;
         }
 
-        public DisplayEntity Entity { get; }
+        public Data.DisplayEntity.DisplayEntity Entity { get; }
 
-        public DisplayEntityProto Proto { get; }
-
-        public DisplayEntityMb Mb { get; private set; }
-
-        public void Init(DisplayEntityMb mb)
-        {
-            Mb = mb;
-
-            m_render = new Dictionary<string, Renderer>();
-
-            foreach (var item in SEGMENTS)
-            {
-                m_render[item] = mb.gameObject.TryFindChild(item, out var light) ? light.GetComponent<Renderer>() : throw new NullReferenceException($"missing object '{item}' with render");
-                m_render[item].material = new Material(m_render[item].material);
-            }
-
-            ApplyColors();
-        }
-
-        public Action Inspector(DisplayEntityInspector panel)
+        public Action Create(DisplayEntityInspector panel)
         {
             Label active;
             ButtonIcon colorIcon;
@@ -158,31 +131,38 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
             }
         }
 
-        private IEnumerable<UiComponent> Toggles(DisplayEntityInspector panel)
+        public static IEnumerable<LightInfo> Colors()
         {
-            foreach (var item in SEGMENTS)
+            yield return new LightInfo
             {
-                var toggle = new Toggle();
-                var group = new Column(2)
-                {
-                    new Label((item == "DP" ? "Dot" : item).AsLoc())
-                        .TextAlign(TextAlignment.CenterMiddle)
-                        .FlexGrow(1),
-                    toggle
-                }.FlexGrow(1);
-                NewMethod(panel, toggle, item);
-
-                yield return group;
-            }
-
-            void NewMethod(DisplayEntityInspector insp, Toggle toggle, string item)
+                on = ColorRgba.Red,
+                off = ColorRgba.Red.SetR(100),
+                icon = ColorRgba.Red
+            };
+            yield return new LightInfo
             {
-                toggle.ObserveValue(() => insp.Entity.GetProperty(item, Fix32.Zero) > Fix32.Zero);
-                toggle.OnValueChanged(on => {
-                    insp.Entity.SetProperty(item, on ? Fix32.One : Fix32.Zero);
-                    insp.Entity.SetActive(true);
-                });
-            }
+                on = ColorRgba.Yellow,
+                off = ColorRgba.Yellow.SetR(100).SetG(100),
+                icon = ColorRgba.Yellow
+            };
+            yield return new LightInfo
+            {
+                on = ColorRgba.Green,
+                off = ColorRgba.Green.SetG(100),
+                icon = ColorRgba.Green
+            };
+            yield return new LightInfo
+            {
+                on = ColorRgba.Blue,
+                off = ColorRgba.Blue.SetB(100),
+                icon = ColorRgba.Blue
+            };
+            yield return new LightInfo
+            {
+                on = ColorRgba.LightGray,
+                off = ColorRgba.LightGray.SetR(100).SetG(100).SetB(100),
+                icon = ColorRgba.LightGray
+            };
         }
 
         private void InitColorSelection(ButtonIcon colorIcon, Dropdown<LightInfo> dropdown)
@@ -209,6 +189,78 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
                     break;
                 }
             }
+        }
+
+        private IEnumerable<UiComponent> Toggles(DisplayEntityInspector panel)
+        {
+            foreach (var item in SEGMENTS)
+            {
+                var toggle = new Toggle();
+                var group = new Column(2)
+                {
+                    new Label((item == "DP" ? "Dot" : item).AsLoc())
+                        .TextAlign(TextAlignment.CenterMiddle)
+                        .FlexGrow(1),
+                    toggle
+                }.FlexGrow(1);
+                NewMethod(panel, toggle, item);
+
+                yield return group;
+            }
+
+            void NewMethod(DisplayEntityInspector insp, Toggle toggle, string item)
+            {
+                toggle.ObserveValue(() => insp.Entity.GetProperty(item, Fix32.Zero) > Fix32.Zero);
+                toggle.OnValueChanged(on => {
+                    insp.Entity.SetProperty(item, on ? Fix32.One : Fix32.Zero);
+                    insp.Entity.SetActive(true);
+                });
+            }
+        }
+    }
+
+}
+
+namespace ProgramableNetwork.Data.DisplayEntity.Displays
+{
+
+    public class SevenSegmentManager : IDisplayEntityManager
+    {
+        public static string[] SEGMENTS = new string[] { "A", "B", "C", "D", "E", "F", "G", "DP" };
+        private Dictionary<string, Renderer> m_render;
+        private Color m_oldColorOn;
+        private Color m_oldColorOff;
+
+        public SevenSegmentManager(DisplayEntity disp)
+        {
+            Entity = disp;
+            Proto = Entity.Prototype;
+            Inspector = new Ui.DisplayEntity.Displays.SevenSegmentInspector(disp);
+            m_oldColorOn = Color.black;
+            m_oldColorOff = Color.black;
+        }
+
+        public DisplayEntity Entity { get; }
+
+        public DisplayEntityProto Proto { get; }
+
+        public DisplayEntityMb Mb { get; private set; }
+
+        public Ui.DisplayEntity.IDisplayEntityInspector Inspector { get; }
+
+        public void Init(DisplayEntityMb mb)
+        {
+            Mb = mb;
+
+            m_render = new Dictionary<string, Renderer>();
+
+            foreach (var item in SEGMENTS)
+            {
+                m_render[item] = mb.gameObject.TryFindChild(item, out var light) ? light.GetComponent<Renderer>() : throw new NullReferenceException($"missing object '{item}' with render");
+                m_render[item].material = new Material(m_render[item].material);
+            }
+
+            ApplyColors();
         }
 
         public void RenderUpdate(GameTime time)
@@ -257,40 +309,6 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
                 else
                     render.Value.material.DisableKeyword("_EMISSION");
             }
-        }
-
-        public static IEnumerable<LightInfo> Colors()
-        {
-            yield return new LightInfo
-            {
-                on = ColorRgba.Red,
-                off = ColorRgba.Red.SetR(100),
-                icon = ColorRgba.Red
-            };
-            yield return new LightInfo
-            {
-                on = ColorRgba.Yellow,
-                off = ColorRgba.Yellow.SetR(100).SetG(100),
-                icon = ColorRgba.Yellow
-            };
-            yield return new LightInfo
-            {
-                on = ColorRgba.Green,
-                off = ColorRgba.Green.SetG(100),
-                icon = ColorRgba.Green
-            };
-            yield return new LightInfo
-            {
-                on = ColorRgba.Blue,
-                off = ColorRgba.Blue.SetB(100),
-                icon = ColorRgba.Blue
-            };
-            yield return new LightInfo
-            {
-                on = ColorRgba.LightGray,
-                off = ColorRgba.LightGray.SetR(100).SetG(100).SetB(100),
-                icon = ColorRgba.LightGray
-            };
         }
     }
 }

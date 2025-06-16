@@ -11,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using static ProgramableNetwork.AMDataBandChannel;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class MineActionTab : ButtonIcon/*, IRefreshable*/
     {

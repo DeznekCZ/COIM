@@ -19,7 +19,7 @@ using static ProgramableNetwork.NewIds;
 using Mafi.Localization;
 using static Mafi.Unity.Assets.Unity;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     [GlobalDependency(RegistrationMode.AsSelf)]
     public class ConnectionInfo : Window

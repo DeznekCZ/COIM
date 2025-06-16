@@ -133,7 +133,6 @@ class ISettlementServiceModule:
 
     def __init__(self):
         self.ProvidedNeed = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -141,6 +140,7 @@ class ISettlementServiceModule:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class ISettlementSquareModule:
 
     def __init__(self):
@@ -166,13 +166,13 @@ class ISettlementSquareModule:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class ISettlementSquareModuleProto:
 
     def __init__(self):

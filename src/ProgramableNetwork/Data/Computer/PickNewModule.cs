@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using static Mafi.Unity.Assets.Unity;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class PickNewModule : FloatingColumn
     {

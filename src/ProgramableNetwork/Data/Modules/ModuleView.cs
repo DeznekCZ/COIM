@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using static Mafi.Unity.Assets.Unity;
 using System.Globalization;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public partial class ControllerView
     {

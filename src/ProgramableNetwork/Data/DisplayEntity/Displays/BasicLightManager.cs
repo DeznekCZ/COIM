@@ -15,41 +15,22 @@ using System.Linq;
 using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 using Mafi.Unity.Ui;
 using RTG;
+using Mafi.Core.Entities;
 
-namespace ProgramableNetwork.Data.DisplayEntity.Displays
+namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 {
-    public class BasicLightManager : IDisplayEntityManager
+    public class BasicLightManager : IDisplayEntityInspector
     {
-        private Renderer m_render;
         private PanelRow m_row;
 
-        public BasicLightManager(DisplayEntity disp)
+        public BasicLightManager(Data.DisplayEntity.DisplayEntity entity)
         {
-            Entity = disp;
-            Proto = Entity.Prototype;
+            this.Entity = entity;
         }
 
-        public DisplayEntity Entity { get; }
+        public Data.DisplayEntity.DisplayEntity Entity { get; }
 
-        public DisplayEntityProto Proto { get; }
-
-        public DisplayEntityMb Mb { get; private set; }
-
-        public void Init(DisplayEntityMb mb)
-        {
-            Mb = mb;
-
-            if (!mb.gameObject.TryFindChild("light", out var light))
-                throw new NullReferenceException("missing 'light' object");
-
-            m_render = light.GetComponent<Renderer>();
-            if (m_render is null)
-                throw new NullReferenceException("missing renderer on 'light' object");
-
-            ApplyColors();
-        }
-
-        public Action Inspector(DisplayEntityInspector panel)
+        public Action Create(DisplayEntityInspector panel)
         {
             Label active;
             ButtonIcon colorIcon;
@@ -146,6 +127,75 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
             }
         }
 
+        public static IEnumerable<LightInfo> Colors()
+        {
+            yield return new LightInfo
+            {
+                on = ColorRgba.Red,
+                off = ColorRgba.Red.SetR(100),
+                icon = ColorRgba.Red
+            };
+            yield return new LightInfo
+            {
+                on = ColorRgba.Yellow,
+                off = ColorRgba.Yellow.SetR(100).SetG(100),
+                icon = ColorRgba.Yellow
+            };
+            yield return new LightInfo
+            {
+                on = ColorRgba.Green,
+                off = ColorRgba.Green.SetG(100),
+                icon = ColorRgba.Green
+            };
+            yield return new LightInfo
+            {
+                on = ColorRgba.Blue,
+                off = ColorRgba.Blue.SetB(100),
+                icon = ColorRgba.Blue
+            };
+            yield return new LightInfo
+            {
+                on = ColorRgba.LightGray,
+                off = ColorRgba.LightGray.SetR(100).SetG(100).SetB(100),
+                icon = ColorRgba.LightGray
+            };
+        }
+    }
+}
+
+namespace ProgramableNetwork.Data.DisplayEntity.Displays
+{
+    public class BasicLightManager : IDisplayEntityManager
+    {
+        private Renderer m_render;
+
+        public BasicLightManager(DisplayEntity disp)
+        {
+            Entity = disp;
+            Proto = Entity.Prototype;
+            Inspector = new Ui.DisplayEntity.Displays.BasicLightManager(disp);
+        }
+
+        public DisplayEntity Entity { get; }
+
+        public DisplayEntityProto Proto { get; }
+        public Ui.DisplayEntity.IDisplayEntityInspector Inspector { get; }
+        public DisplayEntityMb Mb { get; private set; }
+
+        public void Init(DisplayEntityMb mb)
+        {
+            Mb = mb;
+
+            if (!mb.gameObject.TryFindChild("light", out var light))
+                throw new NullReferenceException("missing 'light' object");
+
+            m_render = light.GetComponent<Renderer>();
+            if (m_render is null)
+                throw new NullReferenceException("missing renderer on 'light' object");
+
+            ApplyColors();
+        }
+
         public void RenderUpdate(GameTime time)
         {
             // Nothing to do
@@ -181,40 +231,6 @@ namespace ProgramableNetwork.Data.DisplayEntity.Displays
                 m_render.material.EnableKeyword("_EMISSION");
             else
                 m_render.material.DisableKeyword("_EMISSION");
-        }
-
-        public static IEnumerable<LightInfo> Colors()
-        {
-            yield return new LightInfo
-            {
-                on = ColorRgba.Red,
-                off = ColorRgba.Red.SetR(100),
-                icon = ColorRgba.Red
-            };
-            yield return new LightInfo
-            {
-                on = ColorRgba.Yellow,
-                off = ColorRgba.Yellow.SetR(100).SetG(100),
-                icon = ColorRgba.Yellow
-            };
-            yield return new LightInfo
-            {
-                on = ColorRgba.Green,
-                off = ColorRgba.Green.SetG(100),
-                icon = ColorRgba.Green
-            };
-            yield return new LightInfo
-            {
-                on = ColorRgba.Blue,
-                off = ColorRgba.Blue.SetB(100),
-                icon = ColorRgba.Blue
-            };
-            yield return new LightInfo
-            {
-                on = ColorRgba.LightGray,
-                off = ColorRgba.LightGray.SetR(100).SetG(100).SetB(100),
-                icon = ColorRgba.LightGray
-            };
         }
     }
 }

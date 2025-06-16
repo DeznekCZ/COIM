@@ -23,7 +23,7 @@ using UnityEngine;
 using System.Xml.Serialization;
 using Mafi.Unity.Ports.Io;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class Sizes
     {

@@ -13,7 +13,7 @@ using Mafi.Unity.UiToolkit;
 using Mafi.Core.Syncers;
 using Mafi.Unity.Ui.Library;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class EntityField : IField
     {

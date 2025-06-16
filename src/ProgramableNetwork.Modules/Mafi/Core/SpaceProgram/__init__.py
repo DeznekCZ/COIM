@@ -14,6 +14,7 @@ class Asteroid:
 
     def __init__(self):
         self.Radius = None
+        self.TrueRadius = None
         self.TotalVolumeTiles3 = int(0)
         self.TotalQuantity = None
         self.MineableProducts = None
@@ -324,7 +325,6 @@ class IRocketOwner:
         from Mafi import Option
         self.AttachedRocketBase = Option()
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -332,6 +332,7 @@ class IRocketOwner:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IRocketOwnerExtensions:
 
     def __init__(self):

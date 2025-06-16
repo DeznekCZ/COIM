@@ -40,7 +40,6 @@ class IMaintainedEntity:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.IsCargoAffectedByGeneralPriority = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -48,6 +47,7 @@ class IMaintainedEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IMaintenanceConfig:
 
     def __init__(self):

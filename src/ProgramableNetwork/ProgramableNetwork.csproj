@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
     <Configurations>Debug;Release</Configurations>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
@@ -12,14 +13,14 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
-    <DefineConstants>DEBUG</DefineConstants>
+    <DefineConstants>$(DefineConstants);DEV_ONLY</DefineConstants>
     <OutputPath>bin\Debug\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
-    <DefineConstants></DefineConstants>
+    <DefineConstants>$(DefineConstants);DEV_ONLY</DefineConstants>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
@@ -123,6 +124,6 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\Newtonsoft.Json.dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo&#xD;&#xA;robocopy .\..\ProgramableNetwork.Modules\Custom &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules&quot; | echo&#xD;&#xA;robocopy .\..\ProgramableNetwork.Modules\Core &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules\Core&quot; | echo" />
+    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\Newtonsoft.Json.dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;robocopy . &quot;%25COI_ROOT%25\Captain of Industry_Data\Managed\$(MSBuildProjectName)&quot; *.cs /S | echo %25ERRORLEVEL%25&#xD;&#xA;robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo %25ERRORLEVEL%25&#xD;&#xA;robocopy .\..\ProgramableNetwork.Modules\Custom &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules&quot; | echo %25ERRORLEVEL%25&#xD;&#xA;robocopy .\..\ProgramableNetwork.Modules\Core &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules\Core&quot; | echo %25ERRORLEVEL%25" />
   </Target>
 </Project>

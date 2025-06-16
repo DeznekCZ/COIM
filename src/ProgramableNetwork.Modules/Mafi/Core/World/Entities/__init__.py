@@ -200,7 +200,6 @@ class IUpgradableWorldEntity:
         self.UpgradeIcon = str(0)
         self.IsOwnedByPlayer = False
         self.Location = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -208,6 +207,7 @@ class IUpgradableWorldEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class WorldMapCargoShipWreckProto:
 
     def __init__(self):
@@ -228,7 +228,6 @@ class IWorldMapEntity:
     def __init__(self):
         self.IsOwnedByPlayer = False
         self.Location = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -236,6 +235,7 @@ class IWorldMapEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IWorldMapRepairableEntity:
 
     def __init__(self):
@@ -248,7 +248,6 @@ class IWorldMapRepairableEntity:
         self.OnAllConstructionProductsAvailable = None
         self.IsOwnedByPlayer = False
         self.Location = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -256,6 +255,7 @@ class IWorldMapRepairableEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class WorldMapEntityProto:
 
     def __init__(self):

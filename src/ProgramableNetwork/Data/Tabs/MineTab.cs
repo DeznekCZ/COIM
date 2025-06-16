@@ -9,12 +9,12 @@ using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Linq;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class MineTab : ButtonIcon/*, IRefreshable*/
     {
         public MineTab(UiContext uiContext, Antena module, AMDataBandChannel fieldId, Fix32 distanceBoost,
-            Window parentWindow, AntenaInspector inspector)
+            Window parentWindow, Ui.AntenaInspector inspector)
             : base(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png)
         {
             this.Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2);

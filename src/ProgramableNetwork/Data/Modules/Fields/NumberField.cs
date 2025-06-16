@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class NumberField<T> : IField
     {

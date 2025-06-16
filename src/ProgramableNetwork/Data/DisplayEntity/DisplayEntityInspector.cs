@@ -8,9 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProgramableNetwork.Data.DisplayEntity
+namespace ProgramableNetwork.Ui.DisplayEntity
 {
-    public class DisplayEntityInspector : BaseInspector<DisplayEntity>
+    public class DisplayEntityInspector : BaseInspector<Data.DisplayEntity.DisplayEntity>
     {
         private Action m_clear;
 
@@ -24,7 +24,7 @@ namespace ProgramableNetwork.Data.DisplayEntity
                     m_clear?.Invoke();
                     if (manager is null) return;
 
-                    m_clear = manager.Inspector(this);
+                    m_clear = manager.Inspector.Create(this);
                 });
         }
     }

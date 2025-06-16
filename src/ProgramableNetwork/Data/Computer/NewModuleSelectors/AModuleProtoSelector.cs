@@ -3,7 +3,7 @@ using Mafi.Unity.UiToolkit.Library;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Mods;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public abstract class AModuleProtoSelector
     {

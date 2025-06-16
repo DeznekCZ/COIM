@@ -8,7 +8,7 @@ using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System.Collections.Generic;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class ModuleEditDialog : FloatingColumn
     {

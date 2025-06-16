@@ -78,7 +78,6 @@ class IEntityWithWorkers:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.IsCargoAffectedByGeneralPriority = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -86,6 +85,7 @@ class IEntityWithWorkers:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class EntityWithWorkersExtensions:
 
     def __init__(self):
@@ -166,7 +166,6 @@ class IUnityConsumingEntity:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.IsCargoAffectedByGeneralPriority = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -174,6 +173,7 @@ class IUnityConsumingEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class UnityConsumer:
 
     def __init__(self):

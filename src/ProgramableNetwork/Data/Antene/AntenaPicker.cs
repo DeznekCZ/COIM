@@ -8,7 +8,7 @@ using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class AntenaPicker : Row
     {

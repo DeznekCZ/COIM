@@ -223,13 +223,13 @@ class IEntityWithMultipleProductsToAssign:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class ILayoutEntity:
 
     def __init__(self):
@@ -253,13 +253,13 @@ class ILayoutEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IProductBufferReadOnly:
 
     def __init__(self):
@@ -306,13 +306,13 @@ class IStaticEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IStaticEntityExtensions:
 
     def __init__(self):
@@ -347,13 +347,13 @@ class IEntityAssignedAsOutput:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IEntityAssignedAsInput:
 
     def __init__(self):
@@ -379,13 +379,13 @@ class IEntityAssignedAsInput:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IStaticEntityWithQueue:
 
     def __init__(self):
@@ -484,13 +484,13 @@ class IStaticEntityWithReservedOcean:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IProtoWithReservedOcean:
 
     def __init__(self):

@@ -75,6 +75,7 @@ class Storage:
         self.ExportFromPercent = None
         self.ZoneMask = None
         self.TransportFromPercent = None
+        self.TransportUntilPercent = None
         self.CleaningInProgress = False
         self.UsableCapacity = None
         self.AssignedInputs = None
@@ -151,7 +152,6 @@ class IEntityWithAlertAbove:
         self.AlertWhenAboveEnabled = False
         self.AlertWhenAbove = None
         self.AreAlertsAvailable = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -159,13 +159,13 @@ class IEntityWithAlertAbove:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IEntityWithAlertBelow:
 
     def __init__(self):
         self.AlertWhenBelowEnabled = False
         self.AlertWhenBelow = None
         self.AreAlertsAvailable = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -173,11 +173,11 @@ class IEntityWithAlertBelow:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class IEntityWithStorageAlert:
 
     def __init__(self):
         self.AreAlertsAvailable = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -185,6 +185,7 @@ class IEntityWithStorageAlert:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 class StorageAlertSetEnabledCmd:
 
     def __init__(self):

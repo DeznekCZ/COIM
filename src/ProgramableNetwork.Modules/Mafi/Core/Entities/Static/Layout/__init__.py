@@ -270,6 +270,11 @@ class ToolbarEntryData:
     def __init__(self):
         pass
 
+class AllSubcategoryPolicy:
+
+    def __init__(self):
+        pass
+
 class ToolbarCategoryProto:
 
     def __init__(self):

@@ -1,7 +1,7 @@
 ﻿using Mafi.Unity.UiToolkit.Component;
 using UnityEngine.UIElements;
 
-namespace ProgramableNetwork.Data.Modules
+namespace ProgramableNetwork.Ui.Modules
 {
     public class ConnectionLine : UiComponent<VisualElement>
     {

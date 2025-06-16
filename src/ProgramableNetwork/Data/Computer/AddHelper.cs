@@ -8,7 +8,7 @@ using Mafi.Unity.UiToolkit.Library;
 using System;
 using static Mafi.Unity.Assets.Unity;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class AddHelper
     {

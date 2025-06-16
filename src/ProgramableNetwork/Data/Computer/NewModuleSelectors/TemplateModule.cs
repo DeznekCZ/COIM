@@ -6,9 +6,9 @@ using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Collections.Generic;
-using static ProgramableNetwork.ControllerView;
+using static ProgramableNetwork.Ui.ControllerView;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public class TemplateModule : AModuleProtoSelector
     {

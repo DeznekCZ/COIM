@@ -9,7 +9,7 @@ using Mafi.Core.Syncers;
 using Mafi.Unity.Ui.Library;
 using Mafi.Core;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Ui
 {
     public static class IFieldExtensions
     {
