@@ -38,7 +38,9 @@ using ProgramableNetwork.Data.Variables;
 using System;
 using System.Linq;
 using System.Reflection;
+using static Mafi.Base.Assets.Base.Buildings;
 using static Mafi.Unity.Assets.Unity;
+using CargoDepot = Mafi.Core.Buildings.Cargo.CargoDepot;
 using LayoutEntity = Mafi.Core.Entities.Static.Layout.LayoutEntity;
 using Transport = Mafi.Core.Factory.Transports.Transport;
 using Vehicle = Mafi.Core.Entities.Dynamic.Vehicle;
@@ -1287,6 +1289,114 @@ namespace ProgramableNetwork
                     m.Display["product"] = m.Output.Product("product")?.IconPath;
                     m.Display["quantity"] = Thousands(m.Output.Integer["quantity"]);
                     m.Display["fullness"] = $"{m.Output.Integer["fullness"]}%";
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Storage_Flow_In_Set", "Connection: Flow (in, set)", "FS")
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddCategory(Category.Control)
+                .Width(2)
+                .AddInput("p", "Percentage")
+                .AddEntityField<Storage>("s", "Storage")
+                .Action(m =>
+                {
+                    Storage storage = m.Field.Entity<Storage>("s");
+                    if (storage is null)
+                    {
+                        m.SetError("Storage is not connected");
+                        return ModuleStatus.Error;
+                    }
+
+                    Percent percentage = Percent.FromPercentVal((m.Input.Integer["p"] / 10) * 10);
+                    if (percentage != storage.TransportUntilPercent)
+                        storage.SetTransportUntilPercent(percentage);
+
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Storage_Flow_In_Get", "Connection: Flow (in, get)", "FG")
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddCategory(Category.Control)
+                .Width(1)
+                .AddOutput("p", "Percentage")
+                .AddEntityField<Storage>("s", "Storage")
+                .Action(m =>
+                {
+                    Storage storage = m.Field.Entity<Storage>("s");
+                    if (storage is null)
+                    {
+                        m.SetError("Storage is not connected");
+                        return ModuleStatus.Error;
+                    }
+
+                    m.Output["p"] = storage.TransportUntilPercent.ToIntPercentRounded();
+                    return ModuleStatus.Running;
+                })
+                .AddDisplay("p", "Percentage", 1)
+                .Display(m =>
+                {
+                    m.Display["p"] = m.Output["p"].IntegerPart.ToString();
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Storage_Flow_Out_Set", "Connection: Flow (out, set)", "FS")
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddCategory(Category.Control)
+                .Width(2)
+                .AddInput("p", "Percentage")
+                .AddEntityField<Storage>("s", "Storage")
+                .Action(m =>
+                {
+                    Storage storage = m.Field.Entity<Storage>("s");
+                    if (storage is null)
+                    {
+                        m.SetError("Storage is not connected");
+                        return ModuleStatus.Error;
+                    }
+
+                    Percent percentage = Percent.FromPercentVal((m.Input.Integer["p"] / 10) * 10);
+                    if (percentage != storage.TransportFromPercent)
+                        storage.SetTransportFromPercent(percentage);
+
+                    return ModuleStatus.Running;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Storage_Flow_Out_Get", "Connection: Flow (out, get)", "FG")
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddCategory(Category.Control)
+                .Width(1)
+                .AddOutput("p", "Percentage")
+                .AddEntityField<Storage>("s", "Storage")
+                .Action(m =>
+                {
+                    Storage storage = m.Field.Entity<Storage>("s");
+                    if (storage is null)
+                    {
+                        m.SetError("Storage is not connected");
+                        return ModuleStatus.Error;
+                    }
+
+                    m.Output["p"] = storage.TransportFromPercent.ToIntPercentRounded();
+                    return ModuleStatus.Running;
+                })
+                .AddDisplay("p", "Percentage", 1)
+                .Display(m =>
+                {
+                    m.Display["p"] = m.Output["p"].IntegerPart.ToString();
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();

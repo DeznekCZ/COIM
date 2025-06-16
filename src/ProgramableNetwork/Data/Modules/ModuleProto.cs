@@ -661,9 +661,9 @@ namespace ProgramableNetwork
 
     public static class ModuleProtoExtensions
     {
-        public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id, string name, string symbol, string gfx, string description = "")
+        public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id, string name, string symbol, string gfx = null, string description = "")
         {
-            return new ModuleProto.Builder(registrator, id, name, description, symbol, new ModuleProto.Gfx(gfx));
+            return new ModuleProto.Builder(registrator, id, name, description, symbol, new ModuleProto.Gfx(gfx ?? Assets.Base.Products.Icons.Vegetables_svg));
         }
 
         public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id)
