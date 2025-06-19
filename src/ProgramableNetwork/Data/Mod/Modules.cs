@@ -89,7 +89,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
         }
 
-        private static void Variables(ProtoRegistrator registrator)
+        private void Variables(ProtoRegistrator registrator)
         {
             registrator
                 .ModuleBuilderStart("VariableNetwork_Read", "Network Variable (read)", "*N", Assets.Base.Products.Icons.Vegetables_svg)
@@ -219,7 +219,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
         }
 
-        private static void Constants(ProtoRegistrator registrator)
+        private void Constants(ProtoRegistrator registrator)
         {
             registrator
                 .ModuleBuilderStart("Constant", "Constant (integer)", "#I", Assets.Base.Products.Icons.Vegetables_svg)
@@ -327,7 +327,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
         }
 
-        private static void Arithmetic(ProtoRegistrator registrator)
+        private void Arithmetic(ProtoRegistrator registrator)
         {
             registrator
                 .ModuleBuilderStart("Sum", "C = A + B", "A+B", Assets.Base.Products.Icons.Vegetables_svg)
@@ -483,17 +483,17 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
         }
 
-        private static Fix32 Min(Fix32 a, Fix32 b)
+        private Fix32 Min(Fix32 a, Fix32 b)
         {
             return a < b ? a : b;
         }
 
-        private static Fix32 Min(Fix32 a, int b)
+        private Fix32 Min(Fix32 a, int b)
         {
             return a < b.ToFix32() ? a : b.ToFix32();
         }
 
-        private static Fix32 Min(int a, Fix32 b)
+        private Fix32 Min(int a, Fix32 b)
         {
             return a.ToFix32() < b ? a.ToFix32() : b;
         }
@@ -1114,7 +1114,7 @@ namespace ProgramableNetwork
             }
         }
 
-        private static void Connections(ProtoRegistrator registrator)
+        private void Connections(ProtoRegistrator registrator)
         {
             registrator
                 .ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (4 pin, input)", "C-IN", Assets.Base.Products.Icons.Vegetables_svg)
@@ -1172,7 +1172,7 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionWrite)
                 .AddInput("pause", "Pause")
-                .AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", distance: 20.ToFix32(), filter: (m,e) => e.CanBePaused || e is CargoDepot)
+                .AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", distance: 20.ToFix32(), filter: (m, e) => e.CanBePaused || e is CargoDepot)
                 .Action(m =>
                 {
                     StaticEntity entity = m.Field.Entity<StaticEntity>("entity");
@@ -1293,113 +1293,7 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator
-                .ModuleBuilderStart("Connection_Storage_Flow_In_Set", "Connection: Flow (in, set)", "FS")
-                .AddCategory(Category.Connection)
-                .AddCategory(Category.ConnectionWrite)
-                .AddCategory(Category.Control)
-                .Width(2)
-                .AddInput("p", "Percentage")
-                .AddEntityField<Storage>("s", "Storage")
-                .Action(m =>
-                {
-                    Storage storage = m.Field.Entity<Storage>("s");
-                    if (storage is null)
-                    {
-                        m.SetError("Storage is not connected");
-                        return ModuleStatus.Error;
-                    }
-
-                    Percent percentage = Percent.FromPercentVal((m.Input.Integer["p"] / 10) * 10);
-                    if (percentage != storage.TransportUntilPercent)
-                        storage.SetTransportUntilPercent(percentage);
-
-                    return ModuleStatus.Running;
-                })
-                .AddControllerDevice()
-                .BuildAndAdd();
-
-            registrator
-                .ModuleBuilderStart("Connection_Storage_Flow_In_Get", "Connection: Flow (in, get)", "FG")
-                .AddCategory(Category.Connection)
-                .AddCategory(Category.ConnectionWrite)
-                .AddCategory(Category.Control)
-                .Width(1)
-                .AddOutput("p", "Percentage")
-                .AddEntityField<Storage>("s", "Storage")
-                .Action(m =>
-                {
-                    Storage storage = m.Field.Entity<Storage>("s");
-                    if (storage is null)
-                    {
-                        m.SetError("Storage is not connected");
-                        return ModuleStatus.Error;
-                    }
-
-                    m.Output["p"] = storage.TransportUntilPercent.ToIntPercentRounded();
-                    return ModuleStatus.Running;
-                })
-                .AddDisplay("p", "Percentage", 1)
-                .Display(m =>
-                {
-                    m.Display["p"] = m.Output["p"].IntegerPart.ToString();
-                })
-                .AddControllerDevice()
-                .BuildAndAdd();
-
-            registrator
-                .ModuleBuilderStart("Connection_Storage_Flow_Out_Set", "Connection: Flow (out, set)", "FS")
-                .AddCategory(Category.Connection)
-                .AddCategory(Category.ConnectionWrite)
-                .AddCategory(Category.Control)
-                .Width(2)
-                .AddInput("p", "Percentage")
-                .AddEntityField<Storage>("s", "Storage")
-                .Action(m =>
-                {
-                    Storage storage = m.Field.Entity<Storage>("s");
-                    if (storage is null)
-                    {
-                        m.SetError("Storage is not connected");
-                        return ModuleStatus.Error;
-                    }
-
-                    Percent percentage = Percent.FromPercentVal((m.Input.Integer["p"] / 10) * 10);
-                    if (percentage != storage.TransportFromPercent)
-                        storage.SetTransportFromPercent(percentage);
-
-                    return ModuleStatus.Running;
-                })
-                .AddControllerDevice()
-                .BuildAndAdd();
-
-            registrator
-                .ModuleBuilderStart("Connection_Storage_Flow_Out_Get", "Connection: Flow (out, get)", "FG")
-                .AddCategory(Category.Connection)
-                .AddCategory(Category.ConnectionWrite)
-                .AddCategory(Category.Control)
-                .Width(1)
-                .AddOutput("p", "Percentage")
-                .AddEntityField<Storage>("s", "Storage")
-                .Action(m =>
-                {
-                    Storage storage = m.Field.Entity<Storage>("s");
-                    if (storage is null)
-                    {
-                        m.SetError("Storage is not connected");
-                        return ModuleStatus.Error;
-                    }
-
-                    m.Output["p"] = storage.TransportFromPercent.ToIntPercentRounded();
-                    return ModuleStatus.Running;
-                })
-                .AddDisplay("p", "Percentage", 1)
-                .Display(m =>
-                {
-                    m.Display["p"] = m.Output["p"].IntegerPart.ToString();
-                })
-                .AddControllerDevice()
-                .BuildAndAdd();
+            TransportAndLogisticsLimits(registrator);
 
             registrator
                 .ModuleBuilderStart("Connection_Transport", "Connection: Transport", "TRANS", Assets.Base.Products.Icons.Vegetables_svg, "Transport connectable by cable 20m from controller")
@@ -1431,7 +1325,7 @@ namespace ProgramableNetwork
                         m.Output["capacity"] = entity.Trajectory.MaxProducts
                                              * (fullstack ? entity.Prototype.MaxQuantityPerTransportedProduct.Value : 1);
                         m.Output["fullness"] = (100.ToFix32() * m.Output["quantity"]) / m.Output["capacity"];
-                        m.Output["moving"] = entity.GetStatus() == Transport.Status.Moving ? 1 : 0;
+                        m.Output["moving"] = entity.GetStatus() == Mafi.Core.Factory.Transports.Transport.Status.Moving ? 1 : 0;
 
                         int dirSet = m.Input.Integer["direction"];
                         if (dirSet > 0 && entity.StartInputPort.Type != IoPortType.Any)
@@ -1522,7 +1416,8 @@ namespace ProgramableNetwork
                 .Width(4)
                 .UseComputation(PartialQuantity.One * 2)
                 .AddEntityField<NuclearReactor>("reactor", "Connection reactor", "Must be placed next to reactor (2 metres)", 5.ToFix32())
-                .Action(m => {
+                .Action(m =>
+                {
                     var reactor = m.Field.Entity<NuclearReactor>("reactor");
 
                     m.Output["heat"] = reactor.HeatAmount.ToFix32();
@@ -1554,7 +1449,8 @@ namespace ProgramableNetwork
                 .AddOutput("fertilizer", "Actual fertilizer level")
                 .Width(4)
                 .AddEntityField<Farm>("farm", "Managed farm", "Farm placed next to controller (2 metres)", 5.ToFix32())
-                .Action(m => {
+                .Action(m =>
+                {
                     var farm = m.Field.Entity<Farm>("farm");
                     if (farm is null)
                     {
@@ -1643,7 +1539,8 @@ namespace ProgramableNetwork
                 .AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
                     distance: 20.ToFix32(),
                     filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
-                .Action(m => {
+                .Action(m =>
+                {
                     IEntity entity = m.Field.Entity<IEntity>("logistic");
                     if (entity is IEntityWithLogisticsControl logistic)
                     {
@@ -1672,7 +1569,8 @@ namespace ProgramableNetwork
                 .AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
                     distance: 20.ToFix32(),
                     filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
-                .Action(m => {
+                .Action(m =>
+                {
                     IEntity entity = m.Field.Entity<IEntity>("logistic");
                     if (entity is IEntityWithLogisticsControl logistic)
                     {
@@ -1701,7 +1599,8 @@ namespace ProgramableNetwork
                 .AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
                     distance: 20.ToFix32(),
                     filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
-                .Action(m => {
+                .Action(m =>
+                {
                     IEntity entity = m.Field.Entity<IEntity>("logistic");
                     if (entity is IEntityWithLogisticsControl logistic)
                     {
@@ -1730,7 +1629,8 @@ namespace ProgramableNetwork
                 .AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
                     distance: 20.ToFix32(),
                     filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
-                .Action(m => {
+                .Action(m =>
+                {
                     IEntity entity = m.Field.Entity<IEntity>("logistic");
                     if (entity is IEntityWithLogisticsControl logistic)
                     {
@@ -1757,7 +1657,8 @@ namespace ProgramableNetwork
                 .AddCategory(Category.ConnectionWrite)
                 .AddInput("priority", "Priority: 1 - 15")
                 .AddEntityField<IEntityWithGeneralPriority>("logistic", "Logistic building", "Any logistic building (20 metres)", 20.ToFix32())
-                .Action(m => {
+                .Action(m =>
+                {
                     var logistic = m.Field.Entity<IEntityWithGeneralPriority>("logistic");
                     if (logistic is null)
                     {
@@ -1776,7 +1677,8 @@ namespace ProgramableNetwork
                 .AddCategory(Category.ConnectionRead)
                 .AddOutput("priority", "Priority: 1 - 15")
                 .AddEntityField<IEntityWithGeneralPriority>("building", "Building", "Any building with configurable priority (20 metres)", 20.ToFix32())
-                .Action(m => {
+                .Action(m =>
+                {
                     var logistic = m.Field.Entity<IEntityWithGeneralPriority>("building");
                     if (logistic is null)
                     {
@@ -1799,8 +1701,9 @@ namespace ProgramableNetwork
                 .AddEntityField<IEntityAssignedWithVehicles>("building", "Building", "Any building with configurable priority (20 metres)", 20.ToFix32())
                 .AddBooleanField("field_vehicle", "Select by settings", defaultValue: false)
                 .AddEntityTypeField<DrivingEntityProto>("vehicle", "Vehicle", "Any suppoted vehicle type",
-                    filter: (m,p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
-                .Action(m => {
+                    filter: (m, p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
+                .Action(m =>
+                {
                     var logistic = m.Field.Entity<IEntityAssignedWithVehicles>("building");
                     if (logistic is null)
                     {
@@ -1836,10 +1739,11 @@ namespace ProgramableNetwork
                 .AddEntityField<IEntityAssignedWithVehicles>("building", "Building", "Any building with configurable priority (20 metres)", 20.ToFix32())
                 .AddBooleanField("field_vehicle", "Select type by settings", defaultValue: false)
                 .AddEntityTypeField<DrivingEntityProto>("vehicle", "Vehicle", "Any suppoted vehicle type",
-                    filter: (m,p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
+                    filter: (m, p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
                 .AddBooleanField("field_count", "Set count by settings", defaultValue: false)
                 .AddInt32Field("count", "Vehicle count", defaultValue: 0)
-                .Action(m => {
+                .Action(m =>
+                {
                     var logistic = m.Field.Entity<IEntityAssignedWithVehicles>("building");
                     if (logistic is null)
                     {
@@ -1890,14 +1794,15 @@ namespace ProgramableNetwork
                                       e is SettlementServiceModule ||
                                       e is IVirtualResourceMiningEntity ||
                                       e is Sorter // ||
-                                      // e is OreSortingPlant
+                                                  // e is OreSortingPlant
                     )
                 .AddBooleanField("field_index", "Set index by settings", defaultValue: false)
                 .AddInt32Field("index", "Storage compartment")
                 .AddDisplayFiller(1)
                 .AddDisplay("product", "Product", 1, image: true)
                 .Display(m => m.Display["product"] = m.Output.Product("product")?.IconPath)
-                .Action(m => {
+                .Action(m =>
+                {
                     LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
 
                     if (entity is StorageBase storage)
@@ -2004,9 +1909,10 @@ namespace ProgramableNetwork
                     m.Display["index"] = m.FieldOrInput.Integer["index"].ToString();
                     m.Display["product"] = m.FieldOrInput.Product("product")?.IconPath;
                 })
-                .Action(m => {
+                .Action(m =>
+                {
                     LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
-            
+
                     if (entity is Storage storage)
                     {
                         ProductProto product = m.FieldOrInput.Product("product");
@@ -2016,7 +1922,7 @@ namespace ProgramableNetwork
                             storage.AssignProduct(product);
                         return ModuleStatus.Running;
                     }
-            
+
                     if (entity is CargoDepotModule module)
                     {
                         ProductProto product = m.FieldOrInput.Product("product");
@@ -2026,7 +1932,7 @@ namespace ProgramableNetwork
                             module.AssignProduct(product);
                         return ModuleStatus.Running;
                     }
-            
+
                     if (entity is TrainStationModule station)
                     {
                         ProductProto product = m.FieldOrInput.Product("product");
@@ -2044,7 +1950,7 @@ namespace ProgramableNetwork
                         }
                         return ModuleStatus.Running;
                     }
-            
+
                     if (entity is SettlementFoodModule foodModule)
                     {
                         int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
@@ -2053,7 +1959,7 @@ namespace ProgramableNetwork
                             m.SetError("Invalid compartment index");
                             return ModuleStatus.Error;
                         }
-            
+
                         Option<ProductProto> product = m.FieldOrInput.Product("product").CreateOption();
                         Option<ProductProto> actual = foodModule.GetBuffer(index).AsOption<IProductBuffer, ProductProto>(b => b.Product);
                         if (actual.ValueOrNull != product.ValueOrNull && !(foodModule.GetBuffer(index).ValueOrNull?.Quantity > Quantity.Zero))
@@ -2069,7 +1975,7 @@ namespace ProgramableNetwork
                         else
                             return ModuleStatus.Running;
                     }
-            
+
                     if (entity is Hospital hospital)
                     {
                         int index = m.FieldOrInput["index", Fix32.Zero].IntegerPart;
@@ -2078,7 +1984,7 @@ namespace ProgramableNetwork
                             m.SetError("Invalid compartment index");
                             return ModuleStatus.Error;
                         }
-            
+
                         Option<ProductProto> product = m.FieldOrInput.Product("product").CreateOption();
                         hospital.SetProduct(product, index, false);
                         if (product.HasValue || hospital.GetBuffer(index).HasValue)
@@ -2089,7 +1995,7 @@ namespace ProgramableNetwork
                         else
                             return ModuleStatus.Running;
                     }
-            
+
                     if (entity is MineTower tower)
                     {
                         Option<ProductProto> product = m.FieldOrInput.Product("product").CreateOption();
@@ -2109,7 +2015,7 @@ namespace ProgramableNetwork
                         }
                         return ModuleStatus.Running;
                     }
-            
+
                     if (entity is Sorter sorter)
                     {
                         ProductProto newProduct = m.FieldOrInput.Product("product");
@@ -2132,7 +2038,7 @@ namespace ProgramableNetwork
                         }
                         return ModuleStatus.Running;
                     }
-            
+
                     m.Output["product"] = 0;
                     return ModuleStatus.Error;
                 })
@@ -2150,9 +2056,10 @@ namespace ProgramableNetwork
                 .AddBooleanField("field_on", "Active recipe")
                 .AddBooleanField("on", "Active recipe")
                 .AddCustomField("recipe", "Recipe", (inspector, settings, module, refresh, reference) => settings.Add(new Ui.RecipeSelector(inspector, module, refresh, reference)))
-                .Action(m => {
+                .Action(m =>
+                {
                     Machine entity = m.Field.Entity<Machine>("entity");
-            
+
                     if (entity is null)
                     {
                         m.SetError("Disconnected machine");
@@ -2251,7 +2158,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
         }
 
-        private static string Thousands(int v)
+        private string Thousands(int v)
         {
             if (v > 1100000)
                 return (v / 1000000).ToString();
@@ -2264,7 +2171,7 @@ namespace ProgramableNetwork
             return v.ToString();
         }
 
-        private static ModuleStatus GetValueFromBuffers(Module m, ProductProto product, IProductBuffer[] buffers)
+        private ModuleStatus GetValueFromBuffers(Module m, ProductProto product, IProductBuffer[] buffers)
         {
             ProductProto productProto = product;
             Quantity quantity = Quantity.Zero;
@@ -2298,7 +2205,7 @@ namespace ProgramableNetwork
             return ModuleStatus.Running;
         }
 
-        private static ModuleStatus GetTypeFromBuffer(Module m, Func<IProductBuffer>[] buffers)
+        private ModuleStatus GetTypeFromBuffer(Module m, Func<IProductBuffer>[] buffers)
         {
             if (buffers.Length == 1)
             {
@@ -2317,7 +2224,7 @@ namespace ProgramableNetwork
             return ModuleStatus.Running;
         }
 
-        private static ModuleStatus StorageValueFromBuffer(Module m, ProductProto product, IProductBuffer buffer)
+        private ModuleStatus StorageValueFromBuffer(Module m, ProductProto product, IProductBuffer buffer)
         {
             m.Output["quantity"] = buffer?.Quantity.Value ?? 0;
             m.Output["capacity"] = buffer?.Capacity.Value ?? 0;
@@ -2326,7 +2233,7 @@ namespace ProgramableNetwork
             return ModuleStatus.Running;
         }
 
-        private static bool FarmProductFilter(Module m, ProductProto product)
+        private bool FarmProductFilter(Module m, ProductProto product)
         {
             return m.Context.ProtosDb.First<CropProto>(crop => !crop.IsEmptyCrop && crop.ProductProduced.Product.SlimId == product.SlimId).HasValue;
         }
