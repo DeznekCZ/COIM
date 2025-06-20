@@ -462,14 +462,15 @@ namespace ProgramableNetwork
             /// <param name="name">Displayerd tooltip value</param>
             /// <param name="width">taken module width</param>
             /// <returns></returns>
-            public Builder AddDisplay(string id, string name, Fix32 width, bool image = false, string[] toggle = null, bool entity = false, bool led = false)
+            public Builder AddDisplay(string id, string name, Fix32 width, string defaultText = null, bool image = false, string[] toggle = null, bool entity = false, bool led = false)
             {
                 m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width,
+                    defaultText ?? (
                     image ? "[image]" :
                     led ? "[led]":
                     toggle != null ? "[toggle]" + WriteToggleArray(toggle) :
                     (new string('0', width.IntegerPart * 2) + "|")
-                    ));
+                    )));
                 return this;
             }
             public Builder AddDisplayFiller(Fix32 width)

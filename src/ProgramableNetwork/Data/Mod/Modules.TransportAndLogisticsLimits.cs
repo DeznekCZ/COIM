@@ -1,49 +1,7 @@
 ﻿using Mafi;
-using Mafi.Base;
-using Mafi.Base.Prototypes.Trains;
-using Mafi.Core;
-using Mafi.Core.Buildings.Cargo;
-using Mafi.Core.Buildings.Cargo.Modules;
-using Mafi.Core.Buildings.Farms;
-using Mafi.Core.Buildings.Mine;
-using Mafi.Core.Buildings.Offices;
-using Mafi.Core.Buildings.OreSorting;
-using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
-using Mafi.Core.Entities;
-using Mafi.Core.Entities.Dynamic;
-using Mafi.Core.Entities.Priorities;
-using Mafi.Core.Entities.Static;
-using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Factory.ElectricPower;
-using Mafi.Core.Factory.Machines;
-using Mafi.Core.Factory.NuclearReactors;
-using Mafi.Core.Factory.Recipes;
-using Mafi.Core.Factory.Sorters;
-using Mafi.Core.Factory.Transports;
-using Mafi.Core.Factory.WellPumps;
-using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
-using Mafi.Core.Population;
-using Mafi.Core.Products;
-using Mafi.Core.Trains;
-using Mafi.Core.Vehicles;
-using Mafi.Unity.InputControl;
-using ProgramableNetwork.Data.Antene;
-using ProgramableNetwork.Data.DataBand;
-using ProgramableNetwork.Data.DisplayEntity;
-using ProgramableNetwork.Data.DisplayEntity.Displays;
-using ProgramableNetwork.Data.Speaker;
-using ProgramableNetwork.Data.Variables;
-using System;
-using System.Linq;
-using System.Reflection;
-using static Mafi.Base.Assets.Base.Buildings;
 using static Mafi.Unity.Assets.Unity;
-using CargoDepot = Mafi.Core.Buildings.Cargo.CargoDepot;
-using LayoutEntity = Mafi.Core.Entities.Static.Layout.LayoutEntity;
-using Transport = Mafi.Core.Factory.Transports.Transport;
-using Vehicle = Mafi.Core.Entities.Dynamic.Vehicle;
 
 namespace ProgramableNetwork
 {
@@ -82,7 +40,7 @@ namespace ProgramableNetwork
                 })
                 .AddDisplayFiller(1)
                 .AddDisplay("t", "Type", 1, image: true)
-                .Display(m => m.Display["t"] = UserInterface.Toolbar.Transports_svg)
+                .Display(m => m.Display["t"] = $"#CAAAA00{UserInterface.Toolbar.Transports_svg}")
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -106,10 +64,10 @@ namespace ProgramableNetwork
                     m.Output["p"] = storage.TransportUntilPercent.ToIntPercentRounded();
                     return ModuleStatus.Running;
                 })
-                .AddDisplay("p", "Percentage", 1)
+                .AddDisplay("p", "Percentage", 1, defaultText: "#CAAAA00100")
                 .Display(m =>
                 {
-                    m.Display["p"] = m.Output["p"].IntegerPart.ToString();
+                    m.Display["p"] = $"#CAAAA00{m.Output["p"].IntegerPart}";
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -139,7 +97,7 @@ namespace ProgramableNetwork
                 })
                 .AddDisplayFiller(1)
                 .AddDisplay("t", "Type", 1, image: true)
-                .Display(m => m.Display["t"] = UserInterface.Toolbar.Transports_svg)
+                .Display(m => m.Display["t"] = $"#C6688FF{UserInterface.Toolbar.Transports_svg}")
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -163,10 +121,10 @@ namespace ProgramableNetwork
                     m.Output["p"] = storage.TransportFromPercent.ToIntPercentRounded();
                     return ModuleStatus.Running;
                 })
-                .AddDisplay("p", "Percentage", 1)
+                .AddDisplay("p", "Percentage", 1, defaultText: "#CC6688FF0")
                 .Display(m =>
                 {
-                    m.Display["p"] = m.Output["p"].IntegerPart.ToString();
+                    m.Display["p"] = $"#C6688FF{m.Output["p"].IntegerPart}";
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -199,7 +157,7 @@ namespace ProgramableNetwork
                 })
                 .AddDisplayFiller(1)
                 .AddDisplay("t", "Type", 1, image: true)
-                .Display(m => m.Display["t"] = UserInterface.Toolbar.Vehicles_svg)
+                .Display(m => m.Display["t"] = $"#C00AA00{UserInterface.Toolbar.Vehicles_svg}")
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -223,10 +181,10 @@ namespace ProgramableNetwork
                     m.Output["p"] = storage.ImportUntilPercent.ToIntPercentRounded();
                     return ModuleStatus.Running;
                 })
-                .AddDisplay("p", "Percentage", 1)
+                .AddDisplay("p", "Percentage", 1, defaultText: "#C00AA000")
                 .Display(m =>
                 {
-                    m.Display["p"] = m.Output["p"].IntegerPart.ToString();
+                    m.Display["p"] = $"#C00AA00{m.Output["p"].IntegerPart}";
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
@@ -256,7 +214,7 @@ namespace ProgramableNetwork
                 })
                 .AddDisplayFiller(1)
                 .AddDisplay("t", "Type", 1, image: true)
-                .Display(m => m.Display["t"] = UserInterface.Toolbar.Vehicles_svg)
+                .Display(m => m.Display["t"] = $"#CCC0000{UserInterface.Toolbar.Vehicles_svg}")
                 .AddControllerDevice()
                 .BuildAndAdd();
 
@@ -280,10 +238,10 @@ namespace ProgramableNetwork
                     m.Output["p"] = storage.ExportFromPercent.ToIntPercentRounded();
                     return ModuleStatus.Running;
                 })
-                .AddDisplay("p", "Percentage", 1)
+                .AddDisplay("p", "Percentage", 1, defaultText: "#CCC0000100")
                 .Display(m =>
                 {
-                    m.Display["p"] = m.Output["p"].IntegerPart.ToString();
+                    m.Display["p"] = $"#CCC0000{m.Output["p"].IntegerPart}";
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();

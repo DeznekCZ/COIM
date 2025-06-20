@@ -330,68 +330,70 @@ namespace ProgramableNetwork.Ui
                 var text = new StatusDisplay();
                 text.Class(Cls.displayFont);
                 text.PaddingLeftRight(6.px());
-                text.As(StatusText(module.Display[display.Id, display.DefaultText], out DisplayState state), state);
+                text.Value(StatusText(module.Display[display.Id, display.DefaultText], out DisplayState? state, out ColorRgba? color).AsLoc());
+                if (state.HasValue) text.State(state ?? DisplayState.Neutral);
+                if (color.HasValue) text.TextColor(color);
                 text.TextOverflow(TextOverflow.Clip);
                 text.TextAlign(TextAlignment.RightMiddle);
                 text.Color(ColorRgba.White);
                 text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
                 text.Observe(() => module.Display[display.Id, display.DefaultText])
                     .Do((t) => {
-                        text.As(StatusText(t, out DisplayState stateN), stateN);
+                        text.Value(StatusText(t, out DisplayState? stateN, out ColorRgba? colorN).AsLoc());
+                        if (stateN.HasValue) text.State(stateN ?? DisplayState.Neutral);
+                        if (colorN.HasValue) text.TextColor(colorN);
                     });
                 return text;
             }
 
-            private string StatusIcon(string text, out DisplayState state, out ColorRgba color)
+            private string StatusText(string text, out DisplayState? state, out ColorRgba? color)
             {
-                text = StatusIcon(text, out state);
-                color = ColorRgba.White;
-                if (text.StartsWith("#C"))
-                {
-                    int r = int.Parse(text.Substring(2, 2), NumberStyles.HexNumber);
-                    int g = int.Parse(text.Substring(4, 2), NumberStyles.HexNumber);
-                    int b = int.Parse(text.Substring(6, 2), NumberStyles.HexNumber);
+                state = null;
+                color = null;
 
-                    color = new ColorRgba(r, g, b);
+                if (text.IsNullOrEmpty()) return "";
 
-                    return text.Substring(8);
-                }
-                return text;
-            }
-
-            private string StatusIcon(string text, out DisplayState state)
-            {
-                state = DisplayState.Neutral;
-                if (text.StartsWith("#"))
+                while (text.StartsWith("#"))
                 {
                     switch (text[1])
                     {
                         case 'E':
-                            state = DisplayState.Danger; break;
+                            state = DisplayState.Danger;
+                            text = text.Substring(2);
+                            break;
                         case 'W':
-                            state = DisplayState.Warning; break;
+                            state = DisplayState.Warning;
+                            text = text.Substring(2);
+                            break;
                         case 'I':
-                            state = DisplayState.Inactive; break;
+                            state = DisplayState.Inactive;
+                            text = text.Substring(2);
+                            break;
                         case 'P':
-                            state = DisplayState.Positive; break;
+                            state = DisplayState.Positive;
+                            text = text.Substring(2);
+                            break;
+                        case 'C':
+                            int r = int.Parse(text.Substring(2, 2), NumberStyles.HexNumber);
+                            int g = int.Parse(text.Substring(4, 2), NumberStyles.HexNumber);
+                            int b = int.Parse(text.Substring(6, 2), NumberStyles.HexNumber);
+
+                            color = new ColorRgba(r, g, b);
+
+                            text = text.Substring(8);
+                            break;
                         default:
-                            return text;
+                            throw new NotImplementedException($"Missing type of format: {text[1]}!");
                     }
-                    return text.Substring(2);
                 }
                 return text;
             }
 
-            private LocStrFormatted StatusText(string text, out DisplayState state)
-            {
-                return StatusIcon(text, out state).AsLoc();
-            }
-
             private UiComponent ImageDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
             {
-                var text = new DisplayWithIcon(StatusIcon(module.Display[display.Id, UserInterface.General.Empty128_png], out DisplayState state, out ColorRgba color));
-                text.State(state);
-                text.Icon.Color(color);
+                var text = new DisplayWithIcon(StatusText(module.Display[display.Id, UserInterface.General.Empty128_png], out DisplayState? state, out ColorRgba? color));
+                if (state.HasValue) text.State(state ?? DisplayState.Neutral);
+                if (color.HasValue) text.Icon.Color(color);
                 text.Icon.Margin(Px.Zero);
                 text.Icon.Padding(Px.Zero);
                 text.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
@@ -400,9 +402,9 @@ namespace ProgramableNetwork.Ui
                 text.Observe(() => module.Display[display.Id, UserInterface.General.Empty128_png])
                     .Do((t) =>
                     {
-                        text.Icon.Value(StatusIcon(t, out DisplayState newState, out ColorRgba newColor));
-                        text.Icon.Color(newColor);
-                        text.State(newState);
+                        text.Icon.Value(StatusText(t, out DisplayState? newState, out ColorRgba? newColor));
+                        if (newState.HasValue) text.State(newState ?? DisplayState.Neutral);
+                        if (newColor.HasValue) text.Icon.Color(newColor);
                     });
                 return text;
             }
@@ -496,19 +498,24 @@ namespace ProgramableNetwork.Ui
                     return ToggleDisplay_Symbol(uiContext, module, display, preview, "●", click);
 
                 var text = new DisplayWithIcon(UserInterface.General.Circle_svg);
-                string value = StatusIcon(module.Display[display.Id, ""], out DisplayState state);
-                text.Icon.Color(value.Length > 0 ? ColorRgba.Green : ColorRgba.Red);
+                string value = StatusText(module.Display[display.Id, ""], out DisplayState? state, out ColorRgba? color);
+                text.Icon.Color(color.HasValue ? color : value.Length > 0 ? ColorRgba.Green : ColorRgba.Red);
                 text.Icon.Margin(Px.Zero);
                 text.Icon.Padding(Px.Zero);
                 text.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
-                text.State(state);
+                if (state.HasValue) text.State(state ?? DisplayState.Neutral);
                 text.Color(ColorRgba.White);
                 text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
-                text.Observe(() => (color: StatusIcon(module.Display[display.Id, ""], out DisplayState newState).Length > 0 ? ColorRgba.Green : ColorRgba.Red, state: newState))
+                text.Observe(() => (color: StatusText(module.Display[display.Id, ""], out DisplayState? newState, out ColorRgba? userColor).Length > 0 ? ColorRgba.Green : ColorRgba.Red, state: newState, userColor))
                     .Do((pair) =>
                     {
-                        text.Icon.Color(pair.color);
-                        text.State(pair.state);
+                        if (pair.userColor != null)
+                            text.Icon.Color(pair.userColor);
+                        else
+                            text.Icon.Color(pair.color);
+
+                        if (pair.state.HasValue)
+                            text.State(pair.state ?? DisplayState.Neutral);
                     });
                 return text;
             }
