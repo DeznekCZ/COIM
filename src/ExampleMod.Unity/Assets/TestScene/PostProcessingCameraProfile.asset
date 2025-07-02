@@ -83,13 +83,13 @@ MonoBehaviour:
     value: 1
   threshold:
     overrideState: 1
-    value: 0.9
+    value: 0.7
   softKnee:
     overrideState: 0
     value: 0.5
   clamp:
-    overrideState: 0
-    value: 65472
+    overrideState: 1
+    value: 3
   diffusion:
     overrideState: 0
     value: 6
@@ -140,12 +140,12 @@ MonoBehaviour:
     value: 0.3
   toneCurveToeLength:
     overrideState: 1
-    value: 0.4
+    value: 0.3
   toneCurveShoulderStrength:
     overrideState: 1
     value: 1
   toneCurveShoulderLength:
-    overrideState: 1
+    overrideState: 0
     value: 1.5
   toneCurveShoulderAngle:
     overrideState: 0
@@ -180,10 +180,10 @@ MonoBehaviour:
     value: 0
   postExposure:
     overrideState: 1
-    value: 1
+    value: 0.9
   contrast:
-    overrideState: 0
-    value: 0
+    overrideState: 1
+    value: 10
   mixerRedOutRedIn:
     overrideState: 0
     value: 100
@@ -212,8 +212,8 @@ MonoBehaviour:
     overrideState: 0
     value: 100
   lift:
-    overrideState: 0
-    value: {x: 1, y: 1, z: 1, w: -0.22788925}
+    overrideState: 1
+    value: {x: 1, y: 1, z: 1, w: -0.09702775}
   gamma:
     overrideState: 1
     value: {x: 1, y: 1, z: 1, w: -0.34482753}
@@ -1469,7 +1469,7 @@ MonoBehaviour:
     value: 1
   intensity:
     overrideState: 1
-    value: 1
+    value: 0.1
   color:
     overrideState: 0
     value: {r: 0, g: 0, b: 0, a: 1}
@@ -1486,8 +1486,11 @@ MonoBehaviour:
     overrideState: 0
     value: -12
   thicknessModifier:
+    overrideState: 1
+    value: 5
+  zBias:
     overrideState: 0
-    value: 1
+    value: 0.0001
   directLightingStrength:
     overrideState: 0
     value: 0
