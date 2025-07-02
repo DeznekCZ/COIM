@@ -20,7 +20,7 @@ namespace ProgramableNetwork.Python
             this.right = right;
         }
 
-        public Reference<object> GetReference(IDictionary<string, object> context)
+        public virtual Reference<object> GetReference(IDictionary<string, object> context)
         {
             throw new System.NotImplementedException();
         }

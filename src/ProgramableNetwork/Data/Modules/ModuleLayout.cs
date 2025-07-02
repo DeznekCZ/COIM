@@ -21,6 +21,7 @@ namespace ProgramableNetwork
             Displays = proto.Displays == null ? 0 : Sum(proto.Displays.Select(d => d.Width)).IntegerPart;
             Fields = proto.Fields?.Count ?? 0;
             Display = proto.DisplayFunction;
+            BaseWidth = proto.BaseWidth;
             DynamicWidth = proto.WidthFunction;
         }
 
@@ -37,6 +38,7 @@ namespace ProgramableNetwork
         public int Outputs { get; }
         public int Displays { get; }
         public int Fields { get; }
+        public int BaseWidth { get; }
         public Action<Module, UiComponent> Display { get; }
         public Func<Module, int> DynamicWidth { get; }
 
@@ -50,7 +52,7 @@ namespace ProgramableNetwork
             if (DynamicWidth != null)
                 return DynamicWidth.Invoke(module);
             else
-                return Math.Max(1, Math.Max(Math.Max(Inputs, Outputs), Math.Max(Displays, Fields)));
+                return BaseWidth;
         }
     }
 }

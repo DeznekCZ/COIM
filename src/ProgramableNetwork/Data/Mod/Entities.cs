@@ -9,6 +9,7 @@ using Mafi.Core.Factory.Datacenters;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
 using Mafi.Core.Prototypes;
+using Mafi.Core.Roads;
 using ProgramableNetwork.Data.Speaker;
 using System;
 using System.Threading;
@@ -71,52 +72,6 @@ namespace ProgramableNetwork
                 }
             );
 
-            ToolbarCategoryProto transportToolbarCategoryProto = registrator.PrototypesDb.Get<ToolbarCategoryProto>(Ids.ToolbarCategories.Transports).ValueOrThrow("Missing game category");
-            var category = registrator.PrototypesDb.Add(new ToolbarCategoryProto(
-                id: NewIds.Controllers.Category,
-                strings: Proto.CreateStr(NewIds.Controllers.Category, "Network", "Contains buildings for for work with network (computation, controller)"),
-                order: transportToolbarCategoryProto.Order + 1,
-                iconPath: Mafi.Unity.Assets.Unity.UserInterface.General.Connect128_png,
-                isTransportBuildAllowed: true,
-                shortcutId: "NETWORK"
-            ));
-
-            // New entities
-            var originalTier1 = registrator.PrototypesDb.Add(new ControllerProto(
-                id: NewIds.Controllers.Controller,
-                strings: Proto.CreateStr(NewIds.Controllers.Controller, "Controller", "Handles basic operations and automatization"),
-                layout: registrator.LayoutParser.ParseLayoutOrThrow(pillars, "[1]"),
-                costs: ((EntityCostsTpl)Mafi.Base.Costs.Build.CP2(4)).MapToEntityCosts(registrator),
-                allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
-                graphics: new LayoutEntityProto.Gfx(
-                    prefabPath: NewAssets.Computers.Controller,
-                    customIconPath: NewAssets.Computers.Icons.Controller,
-                    categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
-                )
-            ));
-
-            ControllerProto.RegisterPhantom(registrator);
-
-            ControllerProto template = null;
-            ControllerTemplate[] values = GetControllerTemplates(registrator);
-            foreach (var (id, name, description, modules) /* Expand */ in values)
-            {
-                var protoId = NewIds.Controllers.ControllerTemplate(id);
-                var next = registrator.PrototypesDb.Add(new ControllerProto(
-                    id: protoId,
-                    strings: Proto.CreateStr(protoId, name, description),
-                    basedOn: originalTier1,
-                    graphics: new LayoutEntityProto.Gfx(
-                        prefabPath: NewAssets.Computers.Controller,
-                        customIconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
-                        categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
-                    ),
-                    initModules: modules
-                ));
-                template?.SetNextTierIndirect(next);
-                template = next;
-            }
-
             var antenaT1 = registrator.PrototypesDb.Add(new AntenaProto(
                 id: NewIds.Controllers.Antena,
                 strings: Proto.CreateStr(NewIds.Controllers.Antena, "Antena", "Handles signal transfer for longer distance"),
@@ -157,89 +112,6 @@ namespace ProgramableNetwork
                     categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                 )
             ));
-        }
-
-        private ControllerTemplate[] GetControllerTemplates(ProtoRegistrator registrator)
-        {
-            return new ControllerTemplate[]
-            {
-                new ControllerTemplate(
-                    "FullStorage",
-                    "Storage overflow",
-                    "Reads storage and disables selected buildings connected by switch of modules (by default there is only one switch off)",
-                    (controller) =>
-                    {
-                        int i = 0;
-                        Module storage = AddToController(registrator, controller, 0, ref i, "Connection_Storage");
-                        Thread.Sleep(1);
-
-                        Module lt = AddToController(registrator, controller, 0, ref i, "Compare_Int_Greater");
-                        Thread.Sleep(1);
-
-                        Module switchOff = AddToController(registrator, controller, 0, ref i, "Connection_SwitchOff");
-                        Thread.Sleep(1);
-
-                        Connect(lt, "a", storage, "fullness");
-                        Connect(switchOff, "pause", lt, "c");
-
-                        return () =>
-                        {
-                            lt.Field.Bool["field_b"] = true;
-                            lt.Field.Integer["b"] = 99;
-                        };
-                    }
-                ),
-                new ControllerTemplate(
-                    "VehicleImport",
-                    "Vehicle import",
-                    "Reads storage and assing vehicle when amound of stored resources is bellow 50%",
-                    (controller) =>
-                    {
-                        int i = 0;
-
-                        Module storage = AddToController(registrator, controller, 0, ref i, "Connection_Storage");
-                        Thread.Sleep(1);
-
-                        Module lt = AddToController(registrator, controller, 0, ref i, "Compare_Int_Lower");
-                        Thread.Sleep(1);
-
-                        Module vehicle = AddToController(registrator, controller, 0, ref i, "Constant_Vehicle");
-                        Thread.Sleep(1);
-
-                        Module vehicleSet = AddToController(registrator, controller, 0, ref i, "Connection_Vehicle_Set");
-                        Thread.Sleep(1);
-
-                        Connect(lt, "a", storage, "fullness");
-                        Connect(vehicleSet, "count", lt, "c");
-                        Connect(vehicleSet, "vehicle", vehicle, "value");
-
-                        return () =>
-                        {
-                            lt.Field.Bool["field_b"] = true;
-                            lt.Field.Integer["b"] = 50;
-                        };
-                    }
-                )
-            };
-        }
-
-        private static void Connect(Module inputModule, string input, Module outputModule, string output)
-        {
-            inputModule.InputModules[input] = new ModuleConnector(outputModule.Id, output);
-        }
-
-        private static Module AddToController(ProtoRegistrator registrator, Controller controller, int row, ref int column, string moduleProto)
-        {
-            ModuleProto storageProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID(moduleProto.ModuleId())).Value;
-            Module module = new Module(storageProto, controller.Context, controller);
-
-            controller.Modules.Add(module);
-            controller.Rows[row][column++] = ModulePlacement.Origin(module.Id);
-            int width = module.Layout.GetWidth(module);
-            for (int j = 1; j < width; j++)
-                controller.Rows[row][column++] = ModulePlacement.Rest(module.Id);
-
-            return module;
         }
     }
 }

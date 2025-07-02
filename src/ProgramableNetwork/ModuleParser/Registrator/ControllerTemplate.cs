@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ProgramableNetwork
+namespace ProgramableNetwork.Python
 {
     public struct ControllerTemplate
     {

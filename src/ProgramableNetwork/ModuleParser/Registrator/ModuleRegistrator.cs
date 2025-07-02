@@ -11,7 +11,7 @@ namespace ProgramableNetwork.Python
 {
     public class ModuleRegistrator
     {
-        public static void Register(ProtoRegistrator registrator, string file, out List<Class> templates)
+        public static void Register(ProtoRegistrator registrator, string file, out List<Class> templates, out List<Class> controllers)
         {
             Token[] tokens = Tokenizer.ParseFile(file);
             Block block = Lexer.Parse(tokens);
@@ -61,6 +61,11 @@ namespace ProgramableNetwork.Python
 
             templates = context.Values
                 .Where(v => v is Class c && c.baseTypes.Contains(typeof(Template)))
+                .Cast<Class>()
+                .ToList();
+
+            controllers = context.Values
+                .Where(v => v is Class c && c.baseTypes.Contains(typeof(ControllerTemplate)))
                 .Cast<Class>()
                 .ToList();
         }

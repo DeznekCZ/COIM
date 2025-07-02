@@ -62,6 +62,11 @@ namespace ProgramableNetwork.Python
             }
         }
 
+        internal static void AddControllers(List<Class> allControllers)
+        {
+            throw new NotImplementedException();
+        }
+
         internal static void ClearTemplates()
         {
             templates = new Dictionary<string, Template>();

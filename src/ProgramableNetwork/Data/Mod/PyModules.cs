@@ -6,22 +6,27 @@ using System.IO;
 
 namespace ProgramableNetwork.Data.Mod
 {
-    internal class PyModules : IModData
+    public class PyModules : IModData
     {
         public void RegisterData(ProtoRegistrator registrator)
         {
-            DirectoryInfo modules = new DirectoryInfo(typeof(PyModules).Assembly.Location + "/../Modules");
+            string path = System.Environment.GetEnvironmentVariable("APPDATA") + @"\Captain of Industry\Mods\ProgramableNetwork\Modules";
+            DirectoryInfo modules = new DirectoryInfo(path);
+            //DirectoryInfo modules = new DirectoryInfo(typeof(PyModules).Assembly.Location + "/../Modules");
             Log.Info("Location of modules: " + modules.FullName);
 
             List<Class> allTemplates = new List<Class>();
+
+            ControllerTemplates.Clear();
 
             int failed = 0;
             foreach (FileInfo file in modules.EnumerateFiles())
             {
                 try
                 {
-                    ModuleRegistrator.Register(registrator, file.FullName, out var templates);
+                    ModuleRegistrator.Register(registrator, file.FullName, out var templates, out var controllers);
                     allTemplates.AddRange(templates);
+                    ControllerTemplates.AddControllers(controllers);
                 }
                 catch (System.Exception e)
                 {

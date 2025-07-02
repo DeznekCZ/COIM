@@ -5,7 +5,7 @@ using static Mafi.Unity.Assets.Unity;
 
 namespace ProgramableNetwork
 {
-    internal partial class Modules : AValidatedData
+    public partial class Modules : AValidatedData
     {
         private void TransportAndLogisticsLimits(ProtoRegistrator registrator)
         {

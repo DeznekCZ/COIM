@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -436,11 +437,6 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException("Range operator is not defined");
         }
 
-        public static object __index__(object left, object right)
-        {
-            throw new NotImplementedException("Index operator is not defined");
-        }
-
         public static void __setitem__(object target, object index, object value)
         {
             if (target is List<object> list)
@@ -451,6 +447,12 @@ namespace ProgramableNetwork.Python
             if (target is IDictionary<string, object> dict)
             {
                 dict[__str__(index)] = value;
+                return;
+            }
+            if (target?.GetType().GetMethod("__setitem__") is MethodInfo methodInfo)
+            {
+                methodInfo.Invoke(target, [index, value]);
+                return;
             }
             throw new NotImplementedException("__setitem__");
         }
@@ -464,6 +466,10 @@ namespace ProgramableNetwork.Python
             if (target is IDictionary<string, object> dict)
             {
                 return dict.TryGetValue(__str__(index), out object value) ? value : null;
+            }
+            if (target?.GetType().GetMethod("__getitem__") is MethodInfo methodInfo)
+            {
+                return methodInfo.Invoke(target, [index]);
             }
             throw new NotImplementedException("__getitem__");
         }

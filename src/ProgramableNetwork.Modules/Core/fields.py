@@ -41,7 +41,11 @@ class FieldValue:
     def get_bool(self, name: str, default: bool) -> bool: pass
     def get_int(self, name: str, default: int) -> int: pass
     def get_ent(self, name: str) -> Entity: pass
-    def get_str(self, name: str, default: str) -> Entity: pass
+    def get_str(self, name: str, default: str) -> str: pass
+    def set(self, name: str, value: Fix32): pass
+    def set_bool(self, name: str, value: bool): pass
+    def set_int(self, name: str, value: int): pass
+    def set_str(self, name: str, value: str): pass
 
 class FieldOrInputValue:
     def __init__(self, module): pass

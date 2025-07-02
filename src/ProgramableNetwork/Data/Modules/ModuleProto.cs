@@ -148,6 +148,7 @@ namespace ProgramableNetwork
         public List<Category> Categories { get; }
         public List<IField> Fields { get; }
         public Electricity UsedPower { get; }
+        public int BaseWidth { get; }
         public PartialQuantity UsedComputing { get; }
         public Action<Module, UiComponent> DisplayFunction { get; }
         public Func<Module, int> WidthFunction { get; }
@@ -228,7 +229,7 @@ namespace ProgramableNetwork
 
         public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> m_init, Action<Module> m_display, bool isInputModule, bool isOutputModule, Electricity usedPower, PartialQuantity usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
-            Action<Module, UiComponent> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
+            Action<Module, UiComponent> m_displayFunction, int baseWidth, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
             Symbol = m_symbol;
@@ -246,6 +247,12 @@ namespace ProgramableNetwork
             Graphics = gfx;
             DisplayFunction = m_displayFunction;
             WidthFunction = m_widthFunction;
+            BaseWidth = baseWidth > 0 ? baseWidth
+                :    Inputs.Count
+                .Max(Outputs.Count)
+                .Max(Fields.Count)
+                .Max(Displays.Select(d => d.Width).Sum(d => d.ToFloat()).RoundToInt())
+                ;
             AllowedDevices = m_allowedDevices;
             Categories = m_categories;
             SetAvailability(false);
@@ -276,6 +283,7 @@ namespace ProgramableNetwork
             private bool m_customBuild;
             private bool m_customMaintenance;
             private List<Category> m_categories = new List<Category>();
+            private int m_baseWidth;
 
             public Action<Module, UiComponent> m_displayFunction { get; }
             public Func<Module, int> m_widthFunction { get; private set; }
@@ -339,6 +347,7 @@ namespace ProgramableNetwork
                     m_displays,
                     m_fields,
                     m_displayFunction,
+                    m_baseWidth,
                     m_widthFunction,
                     m_symbol,
                     m_allowedDevices,
@@ -518,9 +527,27 @@ namespace ProgramableNetwork
                 return this;
             }
 
+            /// <summary>
+            /// Overrides default width calculation
+            /// </summary>
+            /// <param name="slots"></param>
+            /// <returns></returns>
             public Builder Width(int slots)
             {
-                m_widthFunction = (m) => slots;
+                m_baseWidth = slots;
+                return this;
+            }
+
+            /// <summary>
+            /// Dynamic width definition
+            /// TODO make an reaction for extension
+            /// TODO make replacer for modules, that are converted to dynamic width
+            /// </summary>
+            /// <param name="slots"></param>
+            /// <returns></returns>
+            public Builder Width(Func<Module, int> slots)
+            {
+                m_widthFunction = slots;
                 return this;
             }
 

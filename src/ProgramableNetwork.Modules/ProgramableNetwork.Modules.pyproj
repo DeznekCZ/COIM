@@ -35,6 +35,7 @@
     <Compile Include="Custom\connection_isactive.py" />
     <Compile Include="Core\fields.py" />
     <Compile Include="Core\module.py" />
+    <Compile Include="Custom\controller_template.py" />
     <Compile Include="Custom\equal_selector.py" />
     <Compile Include="Custom\flipflop.py" />
     <Compile Include="Custom\max.py" />

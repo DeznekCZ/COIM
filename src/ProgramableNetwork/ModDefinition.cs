@@ -3,7 +3,6 @@ using Mafi.Base;
 using Mafi.Core;
 using Mafi.Core.Mods;
 using Newtonsoft.Json;
-using ProgramableNetwork.Data.Antene;
 using ProgramableNetwork.Data.Mod;
 using System;
 
@@ -32,23 +31,8 @@ namespace ProgramableNetwork
 
         public override void RegisterPrototypes(ProtoRegistrator registrator) {
             Log.Info($"{ModName}: registering prototypes");
-            // Test of serialization
-            try
-            {
-                JsonConvert.DeserializeObject<EntityInfo>(
-                    JsonConvert.SerializeObject(new EntityInfo()
-                    {
-                        Id = 5,
-                        Prototype = "proto",
-                        X = 0,
-                        Y = 0
-                    }));
-            }
-            catch (Exception e)
-            {
-                Log.Exception(e);
-                throw;
-            }
+            CustomAssetManager.Clear();
+
 
             // Register all prototypes here.
 
@@ -60,6 +44,7 @@ namespace ProgramableNetwork
             registrator.RegisterData<Modules>();
             registrator.RegisterData<PyModules>();
             registrator.RegisterData<DataBands>();
+            registrator.RegisterData<ControllerTemplates>();
             registrator.RegisterData<Entities>();
             registrator.RegisterData<Displays>();
             registrator.RegisterData<ControllerNotification>();

@@ -166,6 +166,7 @@ namespace ProgramableNetwork.Python
             else if (name == "Core.template")
             {
                 context["Template"] = typeof(Template);
+                context["Controller"] = typeof(ControllerTemplate);
             }
 
             else if (name == "Core.ids")
@@ -207,7 +208,10 @@ namespace ProgramableNetwork.Python
                     context[item.value] = AppDomain
                         .CurrentDomain
                         .GetAssemblies()
-                        .SelectMany(a => a.GetExportedTypes())
+                        .SelectMany(a =>
+                            a.GetName().Name == "ProgramableNetwork"
+                                ? []
+                                : a.GetExportedTypes())
                         .First(t => t.FullName == fullName);
                 }
             }

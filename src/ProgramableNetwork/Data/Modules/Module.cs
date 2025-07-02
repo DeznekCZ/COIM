@@ -5,6 +5,7 @@ using Mafi.Core.Entities;
 using Mafi.Localization;
 using Mafi.Serialization;
 using System;
+using System.Linq;
 using System.Threading;
 using UnityEngine;
 
@@ -51,9 +52,9 @@ namespace ProgramableNetwork
             Context = context;
             Controller = entity;
             Status = ModuleStatus.Init;
-            NumberData = new Dict<string, int>();
-            StringData = new Dict<string, string>();
-            InputModules = new Dict<string, ModuleConnector>();
+            NumberData = [];
+            StringData = [];
+            InputModules = [];
         }
 
         public Controller Controller { get; set; }
@@ -69,6 +70,12 @@ namespace ProgramableNetwork
                 m_protoId = value.Id.Value;
                 m_proto = value;
             }
+        }
+
+        public ModuleConnector this[string id]
+        {
+            get => Prototype.Outputs.Any(c => c.Id == id) ? new(Id, id) : throw new ArgumentException($"Missing output '{id}' in module '{Prototype.Id}'");
+            set => InputModules[id] = Prototype.Inputs.Any(c => c.Id == id) ? value : throw new ArgumentException($"Missing input '{id}' in module '{Prototype.Id}'");
         }
 
         public EntityContext Context { get; set; }

@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Collections;
 using Mafi.Core.Entities;
+using System;
 
 namespace ProgramableNetwork.Python
 {
@@ -9,7 +10,7 @@ namespace ProgramableNetwork.Python
         public readonly Module module;
         public readonly Class @class;
 
-        public ModuleWrapper(Module module, Class @class)
+        public ModuleWrapper(Module module, Class @class = null)
         {
             this.module = module;
             this.@class = @class;
@@ -229,5 +230,22 @@ namespace ProgramableNetwork.Python
         public Dict<string, string> StringData => module.StringData;
         public ModuleProto Prototype => module.Prototype;
         public Controller Controller => module.Controller;
+
+        public void __setitem__(object key, object value)
+        {
+            if (key is string id && value is ModuleConnector connector)
+            {
+                module.InputModules[id] = connector;
+            }
+        }
+
+        public object __getitem__(object key)
+        {
+            if (key is string id)
+            {
+                return new ModuleConnector(module.Id, id);
+            }
+            throw new NotImplementedException("Invalid indexer for ModuleWrapper");
+        }
     }
 }

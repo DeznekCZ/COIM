@@ -154,7 +154,9 @@ namespace ProgramableNetwork.Python
 
         protected object NullCheck(string format)
         {
-            return expressionValue is null ? throw new NullReferenceException(string.Format(format, this.expression)) : expressionValue;
+            return expressionValue is null
+                ? throw new NullReferenceException(string.Format(format, this.expression.Path))
+                : expressionValue;
         }
     }
 }

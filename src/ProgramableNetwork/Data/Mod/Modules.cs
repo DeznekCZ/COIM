@@ -28,6 +28,7 @@ using Mafi.Core.Population;
 using Mafi.Core.Products;
 using Mafi.Core.Trains;
 using Mafi.Core.Vehicles;
+using Mafi.Localization;
 using Mafi.Unity.InputControl;
 using ProgramableNetwork.Data.Antene;
 using ProgramableNetwork.Data.DataBand;
@@ -47,7 +48,7 @@ using Vehicle = Mafi.Core.Entities.Dynamic.Vehicle;
 
 namespace ProgramableNetwork
 {
-    internal partial class Modules : AValidatedData
+    public partial class Modules : AValidatedData
     {
         static readonly string[] names = new string[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "m", "n", "o", "p", "q" };
 
@@ -2118,7 +2119,7 @@ namespace ProgramableNetwork
                         m.Display["cargo"] = null;
                 })
                 .AddEntityField<TrainStationBase>("station",
-                    registrator.PrototypesDb.Get<TrainStationBaseProto>(Ids.TrainTracks.TrainStationRoot).Value.Strings.Name.TranslatedString, 20)
+                    registrator.PrototypesDb.Get<TrainStationBaseProto>(Ids.TrainTracks.TrainStationRoot).ValueOrNull?.Strings.Name.TranslatedString ?? "Train station", 20)
                 .Action(m =>
                 {
                     TrainStationBase stationBase = m.Field.Entity<TrainStationBase>("station");
