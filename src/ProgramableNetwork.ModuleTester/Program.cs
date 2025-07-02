@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using Mafi.Base;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core;
 using Mafi.Core.Entities;
@@ -7,6 +8,7 @@ using Mafi.Core.Game;
 using Mafi.Core.Mods;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
+using ProgramableNetwork.Data.Mod;
 using ProgramableNetwork.Python;
 using System;
 using System.Collections.Generic;
@@ -21,8 +23,8 @@ namespace ProgramableNetwork.ModuleTester
     {
         static void Main(string[] args)
         {
-            ExportBinaries();
-            //RunTest();
+            //ExportBinaries();
+            RunTest();
         }
 
         private static void RunTest()
@@ -38,53 +40,98 @@ namespace ProgramableNetwork.ModuleTester
 
             string[] files = new string[]
             {
-                @"..\..\..\ProgramableNetwork.Modules\Custom\latch.py",
-                @"..\..\..\ProgramableNetwork.Modules\Custom\delay.py",
-                @"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py",
-                @"..\..\..\ProgramableNetwork.Modules\Custom\memory_selector.py",
-                @"..\..\..\ProgramableNetwork.Modules\Custom\randomizer.py",
+                //@"..\..\..\ProgramableNetwork.Modules\Custom\latch.py",
+                //@"..\..\..\ProgramableNetwork.Modules\Custom\delay.py",
+                //@"..\..\..\ProgramableNetwork.Modules\Custom\connection_isactive.py",
+                //@"..\..\..\ProgramableNetwork.Modules\Custom\memory_selector.py",
+                //@"..\..\..\ProgramableNetwork.Modules\Custom\randomizer.py",
+                //@"..\..\..\ProgramableNetwork.Modules\Custom\template.py",
+                @"..\..\..\ProgramableNetwork.Modules\Custom\controller_template.py",
             };
 
-            foreach (var file in files)
-            {
-                ModuleRegistrator.Register(registrator, file, out _);
-            }
+            new Modules().RegisterData(registrator);
+            new PyModules().RegisterData(registrator);
 
-            protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Connection_IsActive", out ModuleProto proto);
+            //List<Class> controllerTemplates = [];
+            //foreach (var file in files)
+            //{
+            //    ModuleRegistrator.Register(registrator, file, out _, out var controllers);
+            //    ControllerTemplates.AddControllers(controllers);
+            //}
 
-            EntityManager manager = new EntityManager();
-            EntityContext entityContext = new EntityContext(null, manager, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
-            FakeProto fakeProto = new FakeProto(new FakeProto.ID("fake"));
-            manager.AddEntity(1, new FakeEntity(new EntityId(1), fakeProto, entityContext));
-            Module m = new Module(proto, entityContext, null);
-            m.Controller = new Controller(
-                new EntityId(2),
-                new ControllerProto(
-                    new Mafi.Core.Entities.Static.StaticEntityProto.ID("asd"),
+            var controllerProto = registrator.PrototypesDb.Add(new ControllerProto(
+                    NewIds.Controllers.Controller,
                     Proto.Str.Empty,
                     new EntityLayoutParser(protosDb).ParseLayoutOrThrow("[1]"),
                     new EntityCosts(),
                     new LayoutEntityProto.Gfx("path")
-                 ),
-                new TileTransform(),
-                entityContext,
-                null
-            );
+                 ));
 
-            Fix32 i = new Fix32();
-            int[] outputs = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-            while (true)
+            protosDb.TryFindProtoIgnoreCase("ProgramableNetwork_Module_Connection_IsActive", out ModuleProto proto);
+
+            registrator.PrototypesDb.Add(new ToolbarCategoryProto(
+                    Ids.ToolbarCategories.Transports,
+                    Proto.Str.Empty,
+                    1,
+                    ""
+                ));
+
+            registrator.PrototypesDb.Add(new CountableProductProto(
+                    Ids.Products.ConstructionParts2,
+                    Proto.Str.Empty,
+                    Quantity.One,
+                    true,
+                    graphics: new CountableProductProto.Gfx("", Option.None, CountableProductStackingMode.Auto)
+                ));
+
+            new ControllerTemplates().RegisterData(registrator);
+
+            EntityManager manager = new EntityManager();
+            EntityContext entityContext = new EntityContext(null, manager, null, new TestFactory(), null, null, null, null, null, null, null, new TestFactory(), new TestFactory(), new TestFactory(), protosDb, null, null, null, null, null, null, null);
+
+            foreach (var item in registrator.PrototypesDb.All<ControllerProto>())
             {
-                i += 1;
-                m.Input["0"] = i;
-                m.Field["entity"] = Fix32.FromRaw(1);
-                m.Execute();
-
-                IEnumerable<string> converted = outputs.Select(o => m.Output[o.ToString(), Fix32.Zero].ToString());
-                Console.WriteLine($"{i}, {string.Join(", ", converted)} [{m.Status}]");
-
-                Console.WriteLine("lala");
+                try
+                {
+                    var controller = new Controller(
+                        new EntityId(2),
+                        item,
+                        new TileTransform(),
+                        entityContext,
+                        new TestFactory()
+                    );
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
             }
+
+            //FakeProto fakeProto = new FakeProto(new FakeProto.ID("fake"));
+            //manager.AddEntity(1, new FakeEntity(new EntityId(1), fakeProto, entityContext));
+            //Module m = new Module(proto, entityContext, null);
+            //m.Controller = new Controller(
+            //    new EntityId(2),
+            //    controllerProto,
+            //    new TileTransform(),
+            //    entityContext,
+            //    null
+            //);
+            //
+            //Fix32 i = new Fix32();
+            //int[] outputs = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+            //while (true)
+            //{
+            //    i += 1;
+            //    m.Input["0"] = i;
+            //    m.Field["entity"] = Fix32.FromRaw(1);
+            //    m.Execute();
+            //
+            //    IEnumerable<string> converted = outputs.Select(o => m.Output[o.ToString(), Fix32.Zero].ToString());
+            //    Console.WriteLine($"{i}, {string.Join(", ", converted)} [{m.Status}]");
+            //
+            //    Console.WriteLine("lala");
+            //}
         }
 
         private static void ExportBinaries()
