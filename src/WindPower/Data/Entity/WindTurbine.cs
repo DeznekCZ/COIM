@@ -172,13 +172,15 @@ namespace WindPower.Entity
             WindDirection = windMap.GetWindDirection();
 
             WindPower = windMap.GetWindPower(CenterTile.SetZ(Position3f.Tile3i.Z), Prototype.GondolaHeight, Prototype.BladeWidth);
-            if (!IsEnabled)
+            if (!IsEnabled || !Maintenance.CanWork())
             {
                 TargetPower = Percent.Zero;
             }
             else
             {
-                TargetPower = WindPower.Clamp0To100();
+                TargetPower = Maintenance.ShouldSlowDown()
+                    ? WindPower.Clamp(Percent.Zero, Percent.Fifty)
+                    : WindPower.Clamp0To100();
             }
 
             if (TargetPower == Percent.Zero && StoredPower == Percent.Zero)
@@ -228,7 +230,8 @@ namespace WindPower.Entity
                 .FromKw((int)(Prototype.GeneratedPower.Value * StoredPower.ToFloat()))
                 .Clamp(Electricity.Zero, Prototype.GeneratedPower);
 
-            m_maintenance.SetCurrentMaintenanceTo(Speed);
+            MaintenanceCosts = Prototype.Costs.Maintenance;
+            m_maintenance.SetDynamicExtraMultiplier(Speed);
             m_maintenance.RefreshMaintenanceCost();
         }
     }

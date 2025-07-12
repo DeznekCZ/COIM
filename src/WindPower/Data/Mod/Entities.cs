@@ -5,6 +5,8 @@ using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Mods;
 using Mafi.Core.Prototypes;
+using System;
+using System.Linq;
 using WindPower.Entity;
 
 namespace WindPower
@@ -26,7 +28,33 @@ namespace WindPower
                 id: NewIds.WindPower.WindTurbine_T1,
                 strings: Proto.CreateStr(NewIds.WindPower.WindTurbine_T1, "Wind turbine", "Basic wind turbine with manual braking"),
                 layout: new EntityLayoutParser(registrator.PrototypesDb)
-                    .ParseLayoutOrThrow("[8][8][8]", "[8][8][8]", "[8][8][8]"),
+                    .ParseLayoutOrThrow(
+                        new EntityLayoutParams(
+                            customTokens: [
+                                new CustomLayoutToken("~0~", (EntityLayoutParams param, int height) =>
+                                {
+                                    return new LayoutTokenSpec(
+                                        heightFrom: height,
+                                        heightToExcl: 9,
+                                        minTerrainHeight: -10,
+                                        maxTerrainHeight: height - 1,
+                                        constraint: LayoutTileConstraint.NoRubbleAfterCollapse | LayoutTileConstraint.DisableTerrainPhysics
+                                    );
+                                })
+                            ]
+                        ),
+                        "         ~8~~8~~8~~8~~8~         ",
+                        "      ~8~~7~~7~~7~~7~~8~~8~      ",
+                        "   ~8~~7~~6~~6~~6~~6~~6~~8~~8~   ",
+                        "~8~~7~~6~~5~~5~~5~~5~~5~~6~~7~~8~",
+                        "~8~~7~~6~~5~[8][8][8]~5~~6~~7~~8~",
+                        "~8~~7~~6~~5~[8][8][8]~5~~6~~7~~8~",
+                        "~8~~7~~6~~5~[8][8][8]~5~~6~~7~~8~",
+                        "~8~~7~~6~~5~~5~~5~~5~~5~~6~~7~~8~",
+                        "   ~8~~7~~6~~6~~6~~6~~6~~7~~8~   ",
+                        "      ~8~~7~~7~~7~~7~~7~~8~      ",
+                        "         ~8~~8~~8~~8~~8~         "
+                    ),
                 costs: ((EntityCostsTpl)new EntityCostsTpl.Builder().CP2(5).MaintenanceT1(2).Product(9, Ids.Products.ConcreteSlab)).MapToEntityCosts(registrator),
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: "Assets/WindPower/WindTurbine_T1.prefab",
@@ -35,7 +63,7 @@ namespace WindPower
                     {
                         registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(Ids.ToolbarCategories.Power),
                         registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(Ids.ToolbarCategories.Power_General)
-                    }.ToImmutableArray()
+                    }.Select(t => new ToolbarEntryData(t)).ToImmutableArray()
                 ),
                 generatedPower: 1200.Kw(),
                 brakingPower: 500.KwMech(),
