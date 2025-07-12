@@ -81,6 +81,14 @@ namespace ProgramableNetwork
 
         public bool IsInitialized => true;
 
+        public bool IsLocked => false;
+
+        public bool IsUnlocked => true;
+
+        public bool IsUnlockedAndAvailable => false;
+
+        public bool IsLockedOrUnavailable => true;
+
         public bool TryGetParam<T>(out T paramValue) where T : class
         {
             paramValue = null;

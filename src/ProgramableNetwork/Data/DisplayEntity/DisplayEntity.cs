@@ -1,34 +1,37 @@
 ﻿using Mafi;
-using Mafi.Core;
-using Mafi.Core.Entities;
-using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Ports.Io;
-using System;
-using Mafi.Serialization;
-using Mafi.Core.Population;
-using Mafi.Core.Prototypes;
-using Mafi.Core.Factory.ElectricPower;
-using Mafi.Core.Factory.ComputingPower;
-using Mafi.Core.Maintenance;
-using Mafi.Core.Entities.Static;
-using static ProgramableNetwork.DataBands;
-using Mafi.Core.Notifications;
-using ProgramableNetwork.Data.Mod;
-using System.Reflection;
-using Mafi.Unity.Audio;
-using Mafi.Unity;
-using Mafi.Unity.Ui;
-using UnityEngine;
 using Mafi.Collections;
-using System.Linq;
 using Mafi.Collections.ImmutableCollections;
+using Mafi.Core;
+using Mafi.Core.Buildings.Storages;
+using Mafi.Core.Entities;
+using Mafi.Core.Entities.Static;
+using Mafi.Core.Entities.Static.Layout;
+using Mafi.Core.Entities.Static.Layout.Upgrade;
+using Mafi.Core.Factory.ComputingPower;
+using Mafi.Core.Factory.ElectricPower;
+using Mafi.Core.Maintenance;
+using Mafi.Core.Notifications;
+using Mafi.Core.Population;
+using Mafi.Core.Ports.Io;
+using Mafi.Core.Prototypes;
+using Mafi.Localization;
+using Mafi.Serialization;
+using Mafi.Unity;
+using Mafi.Unity.Audio;
+using Mafi.Unity.Ui;
+using ProgramableNetwork.Data.Mod;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using UnityEngine;
+using static ProgramableNetwork.DataBands;
 
 namespace ProgramableNetwork.Data.DisplayEntity
 {
     [GenerateSerializer(false, null, 0)]
     public class DisplayEntity : LayoutEntity, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
-        IElectricityConsumingEntity, IMaintainedEntity
+        IElectricityConsumingEntity, IMaintainedEntity, IEntityWithUpgrader, IUpgradableEntity
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate (object obj, BlobWriter writer)
         {
@@ -39,7 +42,7 @@ namespace ProgramableNetwork.Data.DisplayEntity
             ((DisplayEntity)obj).DeserializeData(reader);
         };
 
-        public DisplayEntity(EntityId id, DisplayEntityProto proto, TileTransform transform, EntityContext context, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
+        public DisplayEntity(EntityId id, DisplayEntityProto proto, TileTransform transform, EntityContext context, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory, ILayoutEntityUpgraderFactory upgraderFactory)
             : base(id, proto, transform, context)
         {
             Prototype = proto;
@@ -49,6 +52,7 @@ namespace ProgramableNetwork.Data.DisplayEntity
             m_notificationInfoManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.SoundNotification);
             DisplayManager = proto.DisplayManagerFactory(this);
             PropertiesFix32 = new Dict<string, Fix32>();
+            Upgrader = upgraderFactory.CreateInstance(this, Prototype);
         }
 
         [DoNotSave(0, null)]
@@ -138,13 +142,14 @@ namespace ProgramableNetwork.Data.DisplayEntity
         {
             base.SerializeData(writer);
             writer.WriteString(m_protoId.Value);
-            writer.WriteInt(/* Version */2);
+            writer.WriteInt(/* Version */3);
 
             writer.WriteString(ErrorMessage ?? "");
             writer.WriteBool(IsActive);
 
             writer.WriteGeneric(m_maintenanceConsumer);
             writer.WriteGeneric(m_electricConsumer);
+            writer.WriteGeneric(Upgrader);
 
             Dict<string, Fix32>.Serialize(PropertiesFix32, writer);
         }
@@ -160,6 +165,11 @@ namespace ProgramableNetwork.Data.DisplayEntity
 
             m_maintenanceConsumer = reader.ReadGenericAs<IEntityMaintenanceProvider>();
             m_electricConsumer = reader.ReadGenericAs<IElectricityConsumer>();
+
+            if (version > 2)
+            {
+                Upgrader = reader.ReadGenericAs<IUpgrader>();
+            }
 
             PropertiesFix32 = Dict<string, Fix32>.Deserialize(reader);
 
@@ -198,6 +208,7 @@ namespace ProgramableNetwork.Data.DisplayEntity
         private IEntityMaintenanceProvider m_maintenanceConsumer;
         [DoNotSave(0, null)]
         private long m_nextPlay;
+        private IUpgrader m_upgrader;
 
         [DoNotSave(0, null)]
         public bool IsIdleForMaintenance => m_maintenanceConsumer.Status.IsBroken;
@@ -259,6 +270,31 @@ namespace ProgramableNetwork.Data.DisplayEntity
         public Fix32 GetProperty(string name, Fix32? defaultValue = null)
         {
             return PropertiesFix32.TryGetValue(name, out Fix32 value) ? value : (defaultValue ?? Fix32.Zero);
+        }
+
+        public bool IsUpgradeAvailable(out LocStrFormatted errorMessage)
+        {
+            errorMessage = LocStrFormatted.Empty;
+            return true;
+        }
+
+        public void UpgradeSelf()
+        {
+            if (Prototype.Upgrade.NextTier.IsNone)
+            {
+                Log.Error("Upgrade not available!");
+            }
+            else
+            {
+                Prototype = Prototype.Upgrade.NextTier.Value;
+                DisplayManager = Prototype.DisplayManagerFactory(this);
+            }
+        }
+
+        public IUpgrader Upgrader
+        {
+            get => m_upgrader ??= GlobalDependencyResolver.Get<ILayoutEntityUpgraderFactory>().CreateInstance(this, Prototype);
+            set => m_upgrader = value;
         }
     }
 }

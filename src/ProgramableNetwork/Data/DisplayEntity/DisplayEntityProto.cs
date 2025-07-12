@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ProgramableNetwork.Data.DisplayEntity
 {
-    public class DisplayEntityProto : LayoutEntityProto, ILayoutEntityProto, IProtoWithPropertiesUpdate, ILayoutEntityProtoWithElevation
+    public class DisplayEntityProto : LayoutEntityProto, ILayoutEntityProto, IProtoWithPropertiesUpdate, ILayoutEntityProtoWithElevation, IProtoWithTiers, IProtoWithUpgrade<DisplayEntityProto>
     {
         public override Type EntityType { get; } = typeof(DisplayEntity);
         public Electricity WorkingPower { get; }
@@ -18,8 +18,12 @@ namespace ProgramableNetwork.Data.DisplayEntity
         public Func<DisplayEntity, IDisplayEntityManager> DisplayManagerFactory { get; }
         public bool CanBeElevated { get; }
         public bool CanPillarsPassThrough { get; }
+        public ITierData TierData => Upgrade.TierData;
+        public IUpgradeData UpgradeNonGeneric => Upgrade;
+        public UpgradeData<DisplayEntityProto> Upgrade { get; }
 
         public DisplayEntityProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics, Func<DisplayEntity, IDisplayEntityManager> manager,
+            int tierNumber,
             bool canBeElevated = true,
             bool canPillarsPassTrough = true,
             Fix32? distanceBoost = null,
@@ -35,6 +39,8 @@ namespace ProgramableNetwork.Data.DisplayEntity
             this.DisplayManagerFactory = manager;
             this.CanBeElevated = canBeElevated;
             this.CanPillarsPassThrough = canPillarsPassTrough;
+            this.Upgrade = new UpgradeData<DisplayEntityProto>(this);
+            this.Upgrade.TierData.TierNumberForUi = tierNumber;
         }
     }
 }

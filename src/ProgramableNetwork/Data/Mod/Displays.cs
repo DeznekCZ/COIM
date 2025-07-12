@@ -35,6 +35,7 @@ namespace ProgramableNetwork
         {
             public static readonly StaticEntityProto.ID Light = new StaticEntityProto.ID("ProgramableNetwork_Display_Light");
             public static readonly StaticEntityProto.ID Display7 = new StaticEntityProto.ID("ProgramableNetwork_Display_Display7");
+            public static readonly StaticEntityProto.ID Display16 = new StaticEntityProto.ID("ProgramableNetwork_Display_Display16");
         }
     }
 
@@ -46,10 +47,12 @@ namespace ProgramableNetwork
             {
                 public static readonly string Light = "Assets/ProgramableNetwork/Display/Light.Icon.png";
                 public static readonly string Display7 = "Assets/ProgramableNetwork/Display/Display7.Icon.png";
+                public static readonly string Display16 = "Assets/ProgramableNetwork/Display/Display16.Icon.png";
             }
 
             public static readonly string Light = "Assets/ProgramableNetwork/Display/Light.prefab";
             public static readonly string Display7 = "Assets/ProgramableNetwork/Display/Display7.prefab";
+            public static readonly string Display16 = "Assets/ProgramableNetwork/Display/Display16.prefab";
         }
     }
 
@@ -87,10 +90,11 @@ namespace ProgramableNetwork
                         customIconPath: NewAssets.Computers.Icons.Light,
                         categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                     ),
-                    manager: (disp) => new BasicLightManager(disp)
+                    manager: (disp) => new BasicLightManager(disp),
+                    tierNumber: 1
                 ));
 
-            registrator.PrototypesDb.Add(new DisplayEntityProto(
+            var seg7 = registrator.PrototypesDb.Add(new DisplayEntityProto(
                     id: NewIds.Controllers.Display7,
                     strings: CreateStr(NewIds.Controllers.Display7, "7-segment", "Basic 7-segment display with dot"),
                     layout: new EntityLayoutParser(registrator.PrototypesDb)
@@ -101,8 +105,26 @@ namespace ProgramableNetwork
                         customIconPath: NewAssets.Computers.Icons.Display7,
                         categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                     ),
-                    manager: (disp) => new SevenSegmentManager(disp)
+                    manager: (disp) => new SevenSegmentManager(disp),
+                    tierNumber: 1
                 ));
+
+            var seg16 = registrator.PrototypesDb.Add(new DisplayEntityProto(
+                    id: NewIds.Controllers.Display16,
+                    strings: CreateStr(NewIds.Controllers.Display16, "16-segment", "Advanced 16-segment display with dot"),
+                    layout: new EntityLayoutParser(registrator.PrototypesDb)
+                        .ParseLayoutOrThrow(pillars, "|1|"),
+                    costs: ((EntityCostsTpl) EntityCostsTpl.Build.Electronics2(2).MaintenanceT2(0.01.ToFix32())).MapToEntityCosts(registrator),
+                    graphics: new LayoutEntityProto.Gfx(
+                        prefabPath: NewAssets.Computers.Display16,
+                        customIconPath: NewAssets.Computers.Icons.Display16,
+                        categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
+                    ),
+                    manager: (disp) => new SixteenSegmentManager(disp),
+                    tierNumber: 2
+                ));
+
+            seg7.SetNextTier(seg16);
         }
     }
 }

@@ -33,6 +33,7 @@ namespace ProgramableNetwork
                 .AddLayoutEntityToUnlock(NewIds.Controllers.Speaker)
                 .AddLayoutEntityToUnlock(NewIds.Controllers.Light)
                 .AddLayoutEntityToUnlock(NewIds.Controllers.Display7)
+                .AddLayoutEntityToUnlock(NewIds.Controllers.Display16)
                 .AddProtosToUnlockNoIcon(registrator.PrototypesDb.All<ControllerProto>()
                                                                  .Where(c => c.BasedOn?.Id == NewIds.Controllers.Controller)
                                                                  .Select(c => (Proto.ID)(c.Id)))

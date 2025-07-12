@@ -757,22 +757,43 @@ namespace ProgramableNetwork
                 .AddCategory(Category.Devices)
                 .AddCategory(Category.DevicesDisplay)
                 .AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres", distance: 20.ToFix32(),
-                    filter: (module, entity) => entity.Prototype.Id == NewIds.Controllers.Display7)
+                    filter: (module, entity) => entity.Prototype.Id == NewIds.Controllers.Display7 || entity.Prototype.Id == NewIds.Controllers.Display16)
                 .Width(8)
                 .Action(m =>
                 {
-                    if (!(m.Field.Entity<DisplayEntity>("display") is DisplayEntity display))
+                    if (m.Field.Entity<DisplayEntity>("display") is not DisplayEntity display)
                     {
                         m.SetError("No connected display");
                         return ModuleStatus.Error;
                     }
 
                     bool active = false;
-                    foreach (var item in SevenSegmentManager.SEGMENTS)
+                    if (display.DisplayManager is SevenSegmentManager sevenSegmentManager)
                     {
-                        Fix32 thisActive = m.FieldOrInput.Bool[item] ? 1 : 0;
-                        display.SetProperty(item, thisActive);
-                        active = active || thisActive > 0;
+                        foreach (var item in SevenSegmentManager.SEGMENTS)
+                        {
+                            Fix32 thisActive = m.FieldOrInput.Bool[item] ? 1 : 0;
+                            display.SetProperty(item, thisActive);
+                            active = active || thisActive > 0;
+                        }
+                    }
+                    else if (display.DisplayManager is SixteenSegmentManager sixteenSegmentManager)
+                    {
+                        string[] halves = ["A", "D", "G"];
+                        foreach (var item in SevenSegmentManager.SEGMENTS)
+                        {
+                            Fix32 thisActive = m.FieldOrInput.Bool[item] ? 1 : 0;
+                            if (halves.Contains(item))
+                            {
+                                display.SetProperty(item + "1", thisActive);
+                                display.SetProperty(item + "2", thisActive);
+                            }
+                            else
+                            {
+                                display.SetProperty(item, thisActive);
+                            }
+                            active = active || thisActive > 0;
+                        }
                     }
 
                     display.SetActive(active);
@@ -802,14 +823,14 @@ namespace ProgramableNetwork
             seven8.BuildAndAdd();
 
             registrator
-                .ModuleBuilderStart("Connection_Display_7SEG_B", "Connection: Display - 7 segment (8-inputs)", "7-SEG", Assets.Base.Products.Icons.Vegetables_svg,
+                .ModuleBuilderStart("Connection_Display_7SEG_B", "Connection: Display - 7 segment (2-inputs)", "7-SEG", Assets.Base.Products.Icons.Vegetables_svg,
                     "Light up 7-segment display and activate lines by bits inside single number")
                 .AddCategory(Category.Connection)
                 .AddCategory(Category.ConnectionWrite)
                 .AddCategory(Category.Devices)
                 .AddCategory(Category.DevicesDisplay)
                 .AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres", distance: 20.ToFix32(),
-                    filter: (module, entity) => entity.Prototype.Id == NewIds.Controllers.Display7)
+                    filter: (module, entity) => entity.Prototype.Id == NewIds.Controllers.Display7 || entity.Prototype.Id == NewIds.Controllers.Display16)
                 .AddInput("N", "Bits")
                 .AddBooleanField("field_N", "Encoded number (Bits, 0-127)")
                 .AddInt32Field("N", "Encoded number (Bits, 0-127)")
@@ -819,7 +840,7 @@ namespace ProgramableNetwork
                 .Width(2)
                 .Action(m =>
                 {
-                    if (!(m.Field.Entity<DisplayEntity>("display") is DisplayEntity display))
+                    if (m.Field.Entity<DisplayEntity>("display") is not DisplayEntity display)
                     {
                         m.SetError("No connected display");
                         return ModuleStatus.Error;
@@ -827,11 +848,36 @@ namespace ProgramableNetwork
 
                     bool active = false;
                     int n = m.FieldOrInput.Integer["N"];
-                    for (int i = 0; i < 7; i++)
+                    if (display.DisplayManager is SevenSegmentManager sevenSegmentManager)
                     {
-                        bool thisActive = ((n >> i) & 0x1) == 0x1;
-                        display.SetProperty(SevenSegmentManager.SEGMENTS[i], thisActive ? 1 : 0);
-                        active = active || thisActive;
+                        for (int i = 0; i < 7; i++)
+                        {
+                            bool thisActive = ((n >> i) & 0x1) == 0x1;
+                            display.SetProperty(SevenSegmentManager.SEGMENTS[i], thisActive ? 1 : 0);
+                            active = active || thisActive;
+                        }
+                    }
+                    else if (display.DisplayManager is SixteenSegmentManager sixteenSegmentManager)
+                    {
+                        int[] halves = [
+                            Array.IndexOf(SevenSegmentManager.SEGMENTS, "A"),
+                            Array.IndexOf(SevenSegmentManager.SEGMENTS, "D"),
+                            Array.IndexOf(SevenSegmentManager.SEGMENTS, "G")
+                        ];
+                        for (int i = 0; i < 7; i++)
+                        {
+                            bool thisActive = ((n >> i) & 0x1) == 0x1;
+                            if (halves.Contains(i))
+                            {
+                                display.SetProperty(SevenSegmentManager.SEGMENTS[i] + "1", thisActive ? 1 : 0);
+                                display.SetProperty(SevenSegmentManager.SEGMENTS[i] + "2", thisActive ? 1 : 0);
+                            }
+                            else
+                            {
+                                display.SetProperty(SevenSegmentManager.SEGMENTS[i], thisActive ? 1 : 0);
+                            }
+                            active = active || thisActive;
+                        }
                     }
 
                     bool dp = m.FieldOrInput.Bool["DP"];
@@ -850,7 +896,59 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
 
             registrator
-                .ModuleBuilderStart("Arithmetic_Display_7SEG_B", "Arithmetic: 7 segment (8-inputs)", "7S-NB", Assets.Base.Products.Icons.Vegetables_svg,
+                .ModuleBuilderStart("Connection_Display_16SEG_B", "Connection: Display - 16 segment (2-inputs)", "16-SEG", Assets.Base.Products.Icons.Vegetables_svg,
+                    "Light up 7-segment display and activate lines by bits inside single number")
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionWrite)
+                .AddCategory(Category.Devices)
+                .AddCategory(Category.DevicesDisplay)
+                .AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres", distance: 20.ToFix32(),
+                    filter: (module, entity) => entity.Prototype.Id == NewIds.Controllers.Display7 || entity.Prototype.Id == NewIds.Controllers.Display16)
+                .AddInput("N", "Bits")
+                .AddBooleanField("field_N", "Encoded number (Bits, 0-65 535)")
+                .AddInt32Field("N", "Encoded number (Bits, 0-65 535)")
+                .AddInput("DP", "Dot")
+                .AddBooleanField("field_DP", "Dot")
+                .AddBooleanField("DP", "Dot")
+                .Width(2)
+                .Action(m =>
+                {
+                    if (m.Field.Entity<DisplayEntity>("display") is not DisplayEntity display)
+                    {
+                        m.SetError("No connected display");
+                        return ModuleStatus.Error;
+                    }
+
+                    bool active = false;
+                    int n = m.FieldOrInput.Integer["N"];
+                    if (display.DisplayManager is SixteenSegmentManager sixteenSegmentManager)
+                    {
+                        for (int i = 0; i < 16; i++)
+                        {
+                            bool thisActive = ((n >> i) & 0x1) == 0x1;
+                            display.SetProperty(SixteenSegmentManager.SEGMENTS[i], thisActive ? 1 : 0);
+                            active = active || thisActive;
+                        }
+                    }
+                    // TODO 7-segment back
+
+                    bool dp = m.FieldOrInput.Bool["DP"];
+                    display.SetProperty("DP", dp ? 1 : 0);
+                    active = active || dp;
+
+                    display.SetActive(active);
+                    return ModuleStatus.Running;
+                })
+                .AddDisplay("bits", "Bits", 2.ToFix32())
+                .Display(m =>
+                {
+                    m.Display["bits"] = $"{m.FieldOrInput.Integer["N"]:D3}";
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Arithmetic_Display_7SEG_B", "Arithmetic: 7 segment", "7S-NB", Assets.Base.Products.Icons.Vegetables_svg,
                     "Light up 7-segment display and activate lines by bits inside single number")
                 .AddCategory(Category.Arithmetic)
                 .AddInput("V", "Number")
@@ -893,6 +991,65 @@ namespace ProgramableNetwork
                             0b00000111, // segment 7
                             0b01111111, // segment 8
                             0b01101111  // segment 9
+                        }[val];
+                        m.Output["rest"] = rest.ToFix32();
+                    }
+                    return ModuleStatus.Running;
+                })
+                .AddDisplay("val", "Value", 0.75.ToFix32())
+                .AddDisplay("bits", "Bits", 1.25.ToFix32())
+                .Display(m =>
+                {
+                    m.Display["val"] = $"{m.Input["V"].IntegerPart.Abs() % 10}";
+                    m.Display["bits"] = $"{m.Output.Integer["bits"]:D3}";
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Arithmetic_Display_16SEG_B", "Arithmetic: 16 segment", "16S-NB", Assets.Base.Products.Icons.Vegetables_svg,
+                    "Light up 16-segment display and activate lines by bits inside single number")
+                .AddCategory(Category.Arithmetic)
+                .AddInput("V", "Number")
+                .AddOutput("bits", "Bits")
+                .AddOutput("rest", "Rest")
+                .Width(2)
+                .Action(m =>
+                {
+                    Fix32 v = m.Input["V"];
+                    if (v.IsNegative)
+                    {
+                        int val = 9 - (v.IntegerPart % 10);
+                        int rest = v.IntegerPart / 10;
+                        m.Output["bits"] = new int[]{
+                            0b001_100_011_0111111, // segment 0
+                            0b000_000_000_0000110, // segment 1
+                            0b000_000_111_1011011, // segment 2
+                            0b000_000_111_0001111, // segment 3
+                            0b000_000_100_1100110, // segment 4
+                            0b000_000_111_1101101, // segment 5
+                            0b000_000_111_1111101, // segment 6
+                            0b001_100_001_0000001, // segment 7
+                            0b000_000_111_1111111, // segment 8
+                            0b000_000_111_1101111  // segment 9
+                        }[val];
+                        m.Output["rest"] = rest.ToFix32();
+                    }
+                    else
+                    {
+                        int val = v.IntegerPart % 10;
+                        int rest = v.IntegerPart / 10;
+                        m.Output["bits"] = new int[]{
+                            0b001_100_011_0111111, // segment 0
+                            0b000_000_000_0000110, // segment 1
+                            0b000_000_111_1011011, // segment 2
+                            0b000_000_111_0001111, // segment 3
+                            0b000_000_100_1100110, // segment 4
+                            0b000_000_111_1101101, // segment 5
+                            0b000_000_111_1111101, // segment 6
+                            0b001_100_001_0000001, // segment 7
+                            0b000_000_111_1111111, // segment 8
+                            0b000_000_111_1101111  // segment 9
                         }[val];
                         m.Output["rest"] = rest.ToFix32();
                     }

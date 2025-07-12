@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoiMod.Editor", "CoiMod.Editor.csproj", "{8A866E08-9AEC-E7EE-E178-509966522ED7}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoiMod.Unity", "CoiMod.Unity.csproj", "{4F191515-1301-C672-CB24-D0C7077CF1CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoiMod.Editor", "CoiMod.Editor.csproj", "{8A866E08-9AEC-E7EE-E178-509966522ED7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,14 +11,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8A866E08-9AEC-E7EE-E178-509966522ED7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8A866E08-9AEC-E7EE-E178-509966522ED7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8A866E08-9AEC-E7EE-E178-509966522ED7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8A866E08-9AEC-E7EE-E178-509966522ED7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4F191515-1301-C672-CB24-D0C7077CF1CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4F191515-1301-C672-CB24-D0C7077CF1CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F191515-1301-C672-CB24-D0C7077CF1CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4F191515-1301-C672-CB24-D0C7077CF1CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A866E08-9AEC-E7EE-E178-509966522ED7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A866E08-9AEC-E7EE-E178-509966522ED7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A866E08-9AEC-E7EE-E178-509966522ED7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A866E08-9AEC-E7EE-E178-509966522ED7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
