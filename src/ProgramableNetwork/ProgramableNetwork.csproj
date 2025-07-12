@@ -42,6 +42,12 @@
     <Content Remove="..\ExampleMod.Unity\AssetBundles\computer_711d.manifest" />
     <Content Remove="..\ExampleMod.Unity\AssetBundles\display7_200a.manifest" />
     <Content Remove="..\ExampleMod.Unity\AssetBundles\display_c421.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\fonts &amp; materials_3fab" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\fonts &amp; materials_3fab.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\fonts &amp; materials_c3ca" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\fonts &amp; materials_c3ca.manifest" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\fonts &amp; materials_e750" />
+    <Content Remove="..\ExampleMod.Unity\AssetBundles\fonts &amp; materials_e750.manifest" />
     <Content Remove="..\ExampleMod.Unity\AssetBundles\light_75ca.manifest" />
     <Content Remove="..\ExampleMod.Unity\AssetBundles\speaker_9036.manifest" />
     <Content Remove="..\ExampleMod.Unity\AssetBundles\speaker_a04d.manifest" />

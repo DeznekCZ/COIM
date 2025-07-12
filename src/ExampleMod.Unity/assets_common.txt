@@ -60,15 +60,3 @@ speaker_9036
 speaker_a04d
     Assets/ProgramableNetwork/Speaker/Speaker.prefab
 
-fonts & materials_e750
-    Assets/Unity/UI Toolkit/Fonts/NotoSans/Resources/Fonts & Materials/NotoSansJP-Regular.asset
-    Assets/Unity/UI Toolkit/Fonts/NotoSans/Resources/Fonts & Materials/NotoSansKR-Regular.asset
-    Assets/Unity/UI Toolkit/Fonts/NotoSans/Resources/Fonts & Materials/NotoSansSC-Regular.asset
-    Assets/Unity/UI Toolkit/Fonts/NotoSans/Resources/Fonts & Materials/NotoSansTC-Regular.asset
-
-fonts & materials_c3ca
-    Assets/Unity/UI Toolkit/Fonts/Roboto/Resources/Fonts & Materials/Roboto-Outline.mat
-
-fonts & materials_3fab
-    Assets/Unity/UI Toolkit/Fonts/RobotoMono/Resources/Fonts & Materials/RobotoMono-Regular.asset
-
