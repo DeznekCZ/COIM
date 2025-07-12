@@ -59,11 +59,7 @@ namespace WindPower
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: "Assets/WindPower/WindTurbine_T1.prefab",
                     customIconPath: "Assets/WindPower/WindTurbine_T1_Icon.png",
-                    categories: new ToolbarCategoryProto[]
-                    {
-                        registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(Ids.ToolbarCategories.Power),
-                        registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(Ids.ToolbarCategories.Power_General)
-                    }.Select(t => new ToolbarEntryData(t)).ToImmutableArray()
+                    categories: registrator.GetCategoriesProtos(Ids.ToolbarCategories.Power_General)
                 ),
                 generatedPower: 1200.Kw(),
                 brakingPower: 500.KwMech(),
