@@ -15,9 +15,11 @@ using Mafi.Unity.Ui.Library.Inspectors;
 using Mafi.Unity.UiStatic.Cursors;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
+using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static Mafi.Unity.Assets.Unity;
 using Display = Mafi.Unity.Ui.Library.Display;
 using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 
@@ -34,6 +36,7 @@ namespace ProgramableNetwork.Ui
         private readonly List<LineMb> m_lines = new List<LineMb>();
         private readonly Material m_movingArrowsLineMaterialShared;
         private readonly ControllerView m_view;
+        private readonly ButtonIcon m_colorButton;
 
         // TODO
         public ModuleConnector m_higlightedOutput;
@@ -113,9 +116,18 @@ namespace ProgramableNetwork.Ui
                 );
             m_modulesPanel.Add(m_view = new ControllerView(this, Refresh).AlignSelfCenter());
 
-            HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, Mafi.Unity.Assets.Unity.UserInterface.General.Connect128_png))
+            HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, UserInterface.General.Connect128_png))
                 .OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Open(context.UiRoot))
                 .OnMouseEnterLeave(AddPreviewHighlightAll, ClearPreviewHighlight);
+
+            m_colorButton = new ButtonIcon(UserInterface.General.Circle_svg);
+            m_colorButton.Observe(() => Entity.Color)
+                       .Do(color => m_colorButton.Icon.Color(color));
+
+            FloatingColumn colorPicker = new ColorPicker(() => Entity);
+            m_colorButton.OnClick(() => colorPicker.Open(m_colorButton));
+
+            TopRightButtons.Add(m_colorButton);
 
             EmbedStatusToTheTop();
 

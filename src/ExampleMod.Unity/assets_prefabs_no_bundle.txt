@@ -1,1 +1,0 @@
-Assets/ProgramableNetwork/Computer/Display7.prefab

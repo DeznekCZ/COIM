@@ -1,0 +1,12 @@
+SkipSplashScreen = 0
+SkipMainMenu = 0
+LaunchMapEditor = 0
+EnableUiHotReload = 0
+SkipTutorials = 0
+AlwaysSunny = 0
+GodMode = 0
+UnlockAllProtos = 0
+InstaBuild = 0
+TraceProgramStart = 0
+TraceGameStart = 0
+ShowFatalError = 0

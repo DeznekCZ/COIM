@@ -20,6 +20,7 @@ using Mafi.Core.Notifications;
 using ProgramableNetwork.Data.Mod;
 using System.Reflection;
 using Mafi.Localization;
+using Mafi.Core.Factory.Transports;
 
 namespace ProgramableNetwork
 {
@@ -43,6 +44,7 @@ namespace ProgramableNetwork
         {
             Prototype = proto.BasedOn ?? proto;
             ErrorMessage = "";
+            Color = proto.DefaultColor;
             m_unityConsumer = Context.UnityConsumerFactory.CreateConsumer(this);
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
@@ -104,6 +106,7 @@ namespace ProgramableNetwork
             data.SetArray<Module>("controller_modules", Modules.ToImmutableArray(), Module.Serialize);
             data.SetArray<Lyst<ModulePlacement>>("controller_rows", Rows.ToImmutableArray(), Lyst<ModulePlacement>.Serialize);
             data.SetInt("controller_speed", Speed);
+            data.SetInt("color", (int)Color.Rgba);
         }
 
         public void ApplyConfig(EntityConfigData data)
@@ -142,6 +145,12 @@ namespace ProgramableNetwork
             if (newSpeed != null)
             {
                 this.Speed = newSpeed.Value;
+            }
+
+            int? color = data.GetInt("color");
+            if (color != null)
+            {
+                this.Color = (uint)color.Value;
             }
         }
 
@@ -214,6 +223,11 @@ namespace ProgramableNetwork
                     }
                 }
             }
+
+            if (Color == ColorRgba.Empty)
+            {
+                Color = m_proto.DefaultColor;
+            }
         }
 
         private EntityNotificator WithId(EntityNotificationProto.ID newNotification, EntityNotificator notification)
@@ -233,10 +247,11 @@ namespace ProgramableNetwork
         {
             base.SerializeData(writer);
             writer.WriteString(m_protoId.Value);
-            writer.WriteInt(/*Version*/ 2);
+            writer.WriteInt(/*Version*/ 3);
 
             writer.WriteString(ErrorMessage ?? "");
             Option<string>.Serialize(CustomTitle, writer);
+            ColorRgba.Serialize(Color, writer);
 
             writer.WriteInt(GeneralPriority);
             writer.WriteGeneric(m_maintenanceConsumer);
@@ -264,6 +279,14 @@ namespace ProgramableNetwork
 
             ErrorMessage = reader.ReadString();
             CustomTitle = Option<string>.Deserialize(reader);
+            if (version < 3)
+            {
+                Color = ColorRgba.Empty;
+            }
+            else
+            {
+                Color = ColorRgba.Deserialize(reader);
+            }
 
             GeneralPriority = reader.ReadInt();
             m_maintenanceConsumer = reader.ReadGenericAs<IEntityMaintenanceProvider>();
@@ -577,5 +600,10 @@ namespace ProgramableNetwork
         [DoNotSave()]
         public int Clock { get => m_clock; set => m_clock = value; }
         public LocStrFormatted State { get; private set; }
+        public ColorRgba Color { get; private set; }
+        public void SetColor(ColorRgba color)
+        {
+            Color = color;
+        }
     }
 }

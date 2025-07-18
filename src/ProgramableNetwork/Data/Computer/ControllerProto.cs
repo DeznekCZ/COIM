@@ -24,6 +24,7 @@ namespace ProgramableNetwork
         public ControllerProto BasedOn { get; }
         public bool CanBeElevated { get; }
         public bool CanPillarsPassThrough { get; }
+        public ColorRgba DefaultColor { get; }
 
         public ControllerProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics,
             int rows = 4,
@@ -34,6 +35,7 @@ namespace ProgramableNetwork
             Electricity? workingPower = default,
             Electricity? iddlePower = default,
             Func<ModuleProto, bool> allowedModules = null,
+            ColorRgba? defaultColor = null,
             IEnumerable<Tag> tags = null)
             : base(id, strings, layout, costs, graphics, constructionDurationPerProduct: Duration.FromSec(5), boostCost ?? 0.25.Upoints(), cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
         {
@@ -47,9 +49,10 @@ namespace ProgramableNetwork
             this.BasedOn = null;
             this.CanBeElevated = false;
             this.CanPillarsPassThrough = canPillarsPassTrough;
+            this.DefaultColor = defaultColor ?? ColorRgba.Yellow;
         }
 
-        public ControllerProto(ID id, Str strings, ControllerProto basedOn, Gfx graphics, ControllerTemplate.ModulePlacement initModules,
+        public ControllerProto(ID id, Str strings, ControllerProto basedOn, Gfx graphics, ControllerTemplate.ModulePlacement initModules, ColorRgba? defaultColor = null,
             IEnumerable<Tag> tags = null)
             : base(id, strings, basedOn.Layout, basedOn.Costs, graphics, constructionDurationPerProduct: Duration.FromSec(5), basedOn.BoostCost, cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
         {
@@ -63,6 +66,7 @@ namespace ProgramableNetwork
             this.BasedOn = basedOn;
             this.CanBeElevated = false;
             this.CanPillarsPassThrough = BasedOn.CanPillarsPassThrough;
+            this.DefaultColor = defaultColor ?? basedOn.DefaultColor;
         }
 
         public static ControllerProto Phantom;

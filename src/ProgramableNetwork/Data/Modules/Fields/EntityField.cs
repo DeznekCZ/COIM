@@ -48,7 +48,7 @@ namespace ProgramableNetwork.Ui
             module.NumberData.TryRemove("field__" + Id, out _);
             if (module.StringData.TryGetValue("field__" + Id, out var value))
             {
-                Log.Info("Searching for entity in module by config: " + module.Id + " with key: " + Id);
+                //Log.Info("Searching for entity in module by config: " + module.Id + " with key: " + Id);
                 entityData = JsonConvert.DeserializeObject<EntityInfo>(value);
 
                 foreach (IEntity entity in module.Controller.Context.EntitiesManager.Entities)
@@ -62,7 +62,7 @@ namespace ProgramableNetwork.Ui
                         {
                             if (module.Controller.Position2f - entityTile == entityData.Relative2)
                             {
-                                Log.Info("Found by definition");
+                                //Log.Info("Found by definition");
                                 module.Field.Entity(Id, entity); // set by position
                                 return; // BUT position changed
                             }
@@ -71,18 +71,18 @@ namespace ProgramableNetwork.Ui
                         {
                             if (module.Controller.Position3f - entityBlockTile == entityData.Relative)
                             {
-                                Log.Info("Found by definition");
+                                //Log.Info("Found by definition");
                                 module.Field.Entity(Id, entity); // set by position
                                 return; // BUT position changed
                             }
                         }
                     }
                 }
-                Log.Info("Not found");
+                //Log.Info("Not found");
             }
             else
             {
-                Log.Info("Entity is not set: " + Id + " with key: " + Id);
+                //Log.Info("Entity is not set: " + Id + " with key: " + Id);
             }
         }
 
