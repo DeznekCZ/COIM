@@ -5,6 +5,7 @@ class IEntityMaintenanceProvider:
         self.Status = None
         self.RepairCost = None
 class NoMaintenanceProvider:
+    Instance = None
 
     def __init__(self):
         self.Costs = None
@@ -73,6 +74,7 @@ class MaintenanceConfig:
         self.BrokenDurationMax = None
         self.DailyBreakdownChanceWhenShouldBeBroken = None
 class MaintenanceCosts:
+    Empty = None
 
     def __init__(self):
         pass
@@ -187,6 +189,11 @@ class MaintenanceDepotProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MaintenanceManager:
 
@@ -202,6 +209,7 @@ class ConsumptionPerProto:
         pass
 
 class ConsumptionLastTick:
+    Empty = None
 
     def __init__(self):
         pass

@@ -61,8 +61,17 @@ class MiniZipperProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Zipper:
+    MAX_DELAY = None
+    MEDIUM_DELAY = None
+    MIN_DELAY = None
+    BUFFER_SCALE = None
 
     def __init__(self):
         self.CanBePaused = False
@@ -183,4 +192,9 @@ class ZipperProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

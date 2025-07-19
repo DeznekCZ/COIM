@@ -4,6 +4,8 @@ class MovingAverageHelper:
         pass
 
 class ArrayUtils:
+    MAX_ARRAY_LENGTH = None
+    MAX_BYTE_ARRAY_LENGTH = None
 
     def __init__(self):
         pass
@@ -37,6 +39,7 @@ class FarmHash:
         pass
 
 class FastStringComparer:
+    Instance = None
 
     def __init__(self):
         pass

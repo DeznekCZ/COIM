@@ -246,6 +246,11 @@ class TrainStationFuelProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class Gfx:
@@ -288,6 +293,11 @@ class TrainStationModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class Gfx:
@@ -328,9 +338,22 @@ class TrainStationRootProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class TrainTracksData:
+    R14_MAX_SPEED = None
+    R22_MAX_SPEED = None
+    TRACK_COST_PER_TILE = None
+    TRACK_ELEVATED_COST_PER_TILE = None
+    TRACK_RAIL_ONLY_PREFABS = None
+    TRACK_WITH_BALLAST_PREFABS = None
+    TRACK_ELEVATED_PREFABS = None
+    SAMPLES_PER_10_TILES = None
 
     def __init__(self):
         pass

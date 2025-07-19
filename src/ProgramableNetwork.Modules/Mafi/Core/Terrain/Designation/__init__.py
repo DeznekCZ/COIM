@@ -106,6 +106,16 @@ class RemoveSurfaceDesignationsCmd:
         self.ErrorMessage = str(0)
 class SurfaceDesignation:
     Size = None
+    SURFACE_HEIGHT_TOLERANCE = None
+    SIZE_BITS = None
+    SIZE_MASK = None
+    SIZE_TILES = None
+    BITS_PER_CHUNK_EDGE = None
+    DESIGNATIONS_PER_CHUNK_EDGE = None
+    DESIGNATIONS_PER_CHUNK_EDGE_MASK = None
+    MASK_LOCAL_COORD = None
+    DESIGNATIONS_PER_CHUNK = None
+    AREA_TILES = None
 
     def __init__(self):
         self.Name = None
@@ -165,6 +175,17 @@ class SurfaceDesignationsManager:
         self.TerrainManager = None
 class TerrainDesignation:
     Size = None
+    SURFACE_HEIGHT_TOLERANCE = None
+    SIZE_BITS = None
+    SIZE_MASK = None
+    SIZE_TILES = None
+    BITS_PER_CHUNK_EDGE = None
+    DESIGNATIONS_PER_CHUNK_EDGE = None
+    DESIGNATIONS_PER_CHUNK_EDGE_MASK = None
+    MASK_LOCAL_COORD = None
+    DESIGNATIONS_PER_CHUNK = None
+    AREA_TILES_NO_OVERLAP = None
+    AREA_TILE_VERTICES = None
 
     def __init__(self):
         self.Name = None
@@ -274,6 +295,9 @@ class IDesignation:
         self.UnreachableVehiclesCount = None
         self.LogisticsZoneMask = None
 class DesignationType:
+    Flat = None
+    RampDown = None
+    RampUp = None
 
     def __init__(self):
         pass
@@ -301,8 +325,12 @@ class ITerrainDesignationBlockingEntityNoEdgeProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class TerrainDesignationBlockingEntityNoEdgeProtoValidator:
@@ -341,6 +369,11 @@ class SurfaceDesignationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class TerrainDesignationProto:
 
@@ -353,8 +386,14 @@ class TerrainDesignationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass

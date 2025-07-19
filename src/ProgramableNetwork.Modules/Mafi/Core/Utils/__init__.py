@@ -65,16 +65,21 @@ class AsciiGameRenderer:
         pass
 
 class BitmapFont5Px:
+    AVG_CHAR_WIDTH = None
+    AVG_CHAR_HEIGHT = None
 
     def __init__(self):
         pass
 
 class BoolWithReason:
+    Success = None
 
     def __init__(self):
         self.IsSuccess = False
         self.IsError = False
 class ChangelogUtils:
+    PATCH_NOTES_TRANSLATIONS = None
+    CHANGELOG_NAME = None
 
     def __init__(self):
         pass
@@ -108,6 +113,7 @@ class IInstaBuildConfig:
     def __init__(self):
         self.IsInstaBuildEnabled = False
 class LaunchUtils:
+    EARLY_ACCESS_LAUNCH_DATE_TIME = None
 
     def __init__(self):
         pass

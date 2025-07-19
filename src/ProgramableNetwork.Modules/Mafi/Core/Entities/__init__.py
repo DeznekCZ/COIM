@@ -15,6 +15,7 @@ class ToggleDefaultLogisticsMode:
         self.HasError = False
         self.ErrorMessage = str(0)
 class EntitiesCommandsProcessor:
+    UnityPerSurfaceTile = None
 
     def __init__(self):
         pass
@@ -142,11 +143,15 @@ class EntitiesCreator:
         pass
 
 class EntityAddReason:
+    New = None
+    Move = None
 
     def __init__(self):
         pass
 
 class EntityRemoveReason:
+    Remove = None
+    Collapse = None
 
     def __init__(self):
         pass
@@ -251,6 +256,9 @@ class EntityContext:
         pass
 
 class EntityLogisticsMode:
+    Auto = None
+    On = None
+    Off = None
 
     def __init__(self):
         pass
@@ -262,8 +270,12 @@ class IEntityProto:
         self.Costs = None
         self.Strings = None
         self.Id = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class EntityProto:
@@ -279,6 +291,11 @@ class EntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -286,6 +303,7 @@ class ID:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass
@@ -529,6 +547,9 @@ class IEntityWithSimpleLogisticsControl:
         self.IsDestroyed = False
         self.DefaultTitle = None
 class LogisticsControl:
+    Enabled = None
+    DisabledButVisible = None
+    NotAvailable = None
 
     def __init__(self):
         pass
@@ -613,6 +634,11 @@ class SoundParams:
         self.FadeOnChange = False
         self.DoNotLimit = False
 class SoundSignificance:
+    VerySmall = None
+    Small = None
+    Normal = None
+    Medium = None
+    High = None
 
     def __init__(self):
         pass

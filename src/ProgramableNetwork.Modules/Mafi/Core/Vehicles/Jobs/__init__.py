@@ -453,6 +453,7 @@ class IVehicleJobObserver:
         pass
 
 class JobResult:
+    Empty = None
 
     def __init__(self):
         from Mafi import Option

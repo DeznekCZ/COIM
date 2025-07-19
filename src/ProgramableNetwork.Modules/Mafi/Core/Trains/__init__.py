@@ -365,6 +365,7 @@ class LayoutEntityWithTrainTrackBase:
         self.IsNotPaused = False
         self.RendererData = None
 class LevelCrossing:
+    DELAY_BEFORE_OPEN = None
 
     def __init__(self):
         self.Prototype = None
@@ -468,6 +469,10 @@ class LevelCrossingsManager:
     def __init__(self):
         self.LevelCrossingTrainApproaching = None
 class Locomotive:
+    POWER_WHEN_BROKEN = None
+    POWER_ON_LOW_FUEL = None
+    ENGINE_OFF_WHEN_STOPPED = None
+    IDLE_FUEL_CONSUMPTION = None
 
     def __init__(self):
         self.Prototype = None
@@ -665,6 +670,18 @@ class ReorderDepartConditionCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class ReorderTrainLineScheduleItemCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class ReplaceEntityInScheduleCmd:
 
     def __init__(self):
         self.AffectsSaveState = False
@@ -1027,6 +1044,20 @@ class TrackPathRecord:
         pass
 
 class Train:
+    IDLE_DURATION_FOR_WARNING = None
+    IDLE_DURATION_FOR_ERROR = None
+    RESET_INCREMENTAL_RESERVATION_PERIOD = None
+    TIME_BEFORE_NO_PATH_NOTIF = None
+    RECOVERY_COST_PER_CAR = None
+    MAX_SPEED = None
+    MAX_ROLL_DRAG_SPEED = None
+    NOTIFY_APPROACHING_DISTANCE_MULT = None
+    NOTIFY_APPROACHING_MAX_INTERVAL = None
+    NOTIFY_APPROACHING_TICKS_REDUCED_PER_TILE = None
+    NOT_APPROACHING_TIMEOUT = None
+    IDLE_TIME_BEFORE_DEPART_NO_CONDITIONS = None
+    IDLE_TIME_BEFORE_DEPART_WITH_CONDITIONS = None
+    PATH_RETRY_COOLDOWN = None
 
     def __init__(self):
         self.Name = str(0)
@@ -1085,6 +1116,7 @@ class Train:
         self.OccupiedBlocksCount = int(0)
         self.OccupiedWaypointsCount = int(0)
         self.ReservedBlocks = None
+        self.OverlapReservedBlocks = None
         self.ReservedBlocksCount = int(0)
         self.ReservedWaypointsCount = int(0)
         self.UnreservedBlocksCount = int(0)
@@ -1112,6 +1144,7 @@ class Train:
         self.CurrentScheduleItem = Option()
         self.ReservedStationGroupSlots = None
         self.DrivingMode = None
+        self.ReservationWaitTime = None
         self.NotifyingCannotScrap = False
         from Mafi import Option
         self.CurrentStation = Option()
@@ -1183,6 +1216,9 @@ class TrainContainsDepartCondition:
         self.CombineAsOrInsteadOfAnd = False
         self.LastEvalResult = False
 class ComparisonMode:
+    AllProducts = None
+    AnyProduct = None
+    SpecificProduct = None
 
     def __init__(self):
         pass
@@ -1356,6 +1392,7 @@ class TrainDurationDepartConditionEditCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class TrainLine:
+    COLOR_PALETTE = None
 
     def __init__(self):
         self.Color = None
@@ -1424,6 +1461,7 @@ class TrainsManager:
     def __init__(self):
         self.Trains = None
         self.TrainsDict = None
+        self.LargestBlockWaypointCount = int(0)
         self.TrainPausedStateChanged = None
         self.SlopeDifficultyMultiplier = None
         self.FuelConsumptionMultiplier = None
@@ -1443,6 +1481,7 @@ class TrainStationAlignment:
     def __init__(self):
         self.TrainCarOffset = int(0)
 class TrainStationAlignmentPlan:
+    EMPTY_PLAN = None
 
     def __init__(self):
         pass
@@ -1529,6 +1568,7 @@ class TrainStationCheatAssignedProductCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class TrainStationGroup:
+    MAX_GROUP_SIZE = None
 
     def __init__(self):
         self.StationEntities = None
@@ -1658,6 +1698,7 @@ class TrainTrackBlockRecord:
         pass
 
 class TrainTrackNodeDirection:
+    DIR_MASK = None
 
     def __init__(self):
         self.Dx = int(0)
@@ -1728,6 +1769,7 @@ class TrainTrackPlanStep:
         pass
 
 class TrainTracksCollapseHelper:
+    TIME_TO_COLLAPSE = None
 
     def __init__(self):
         self.AnyGoingToCollapse = False
@@ -1802,6 +1844,11 @@ class CargoWagonProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class CargoWagonUnitProto:
 
@@ -1819,8 +1866,14 @@ class CargoWagonUnitProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.MaxProductRenderCapacity = int(0)
@@ -1843,6 +1896,11 @@ class CargoWagonLooseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
 
@@ -1850,6 +1908,15 @@ class Gfx:
         self.SideViewIconPath = str(0)
         self.IconPath = str(0)
 class TrainsDebugGameRenderer:
+    COLOR_TRACK_BASE = None
+    COLOR_TRACK_IN_SB = None
+    COLOR_TRACK_CRITICAL = None
+    COLOR_TRACK_RESERVED = None
+    COLOR_TRACK_RESERVED_SB = None
+    COLOR_TRACK_OCCUPIED = None
+    COLOR_TRACK_BLOCKED = None
+    TIE_WIDTH = None
+    TIE_LENGTH = None
 
     def __init__(self):
         pass
@@ -1874,8 +1941,12 @@ class IEntityWithTrainTrackBaseProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class IEntityWithTrainTrackBaseProtoExtensions:
@@ -1919,9 +1990,15 @@ class EntityWithTrainTrackBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.VisualStylePrefabsLods = None
@@ -2088,6 +2165,10 @@ class IEntityWithTrainTrackFriend:
         self.TrackPosition2f = None
         self.TrackPosition3f = None
 class TrainTrackTrajectoryDirection:
+    Unknown = None
+    Forward = None
+    Backward = None
+    Bidirectional = None
 
     def __init__(self):
         pass
@@ -2165,8 +2246,12 @@ class ITrainStationProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class ITrainTrackPathFinder:
@@ -2179,6 +2264,18 @@ class ITrainTrackPathFinder:
         self.NodesInHeap = int(0)
         self.InvalidNodes = int(0)
 class TrainTrackPathFinderFlags:
+    None = None
+    IgnoreCollisions = None
+    GoalMustBeFlat = None
+    Precomputation = None
+    AllowNonExactPointMatch = None
+    AllowOnlyStraight = None
+    DisallowR14 = None
+    DisallowR22 = None
+    DisallowR30 = None
+    DisallowG4 = None
+    DisallowG8 = None
+    AlternativeMode = None
 
     def __init__(self):
         pass
@@ -2239,6 +2336,11 @@ class LevelCrossingProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
 
@@ -2277,6 +2379,11 @@ class LevelCrossingEntranceProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
 
@@ -2306,8 +2413,14 @@ class LocomotiveProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.SideViewIconPath = str(0)
@@ -2324,6 +2437,11 @@ class LocomotiveFuelTankProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class TenderWagonProto:
 
@@ -2344,6 +2462,11 @@ class TenderWagonProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
 
@@ -2356,11 +2479,34 @@ class ITrain:
         self.Name = str(0)
         self.TrainId = None
 class TrainDrivingMode:
+    None = None
+    FollowingSchedule = None
+    DrivingToExplicitGoal = None
+    PlayerIsDriving = None
+    DrivingToScrap = None
 
     def __init__(self):
         pass
 
 class TrainStateForUi:
+    Unknown = None
+    Paused = None
+    Driving = None
+    NoLineSet = None
+    LineHasNoStations = None
+    NoValidGoals = None
+    WaitingForFreeTrack = None
+    LoadingOrUnloading = None
+    Arriving = None
+    Departing = None
+    NoPower = None
+    WaitingForDepotDoors = None
+    CannotFindPath = None
+    WaitingForSuperBlock = None
+    WaitingForBidirectionalSuperBlock = None
+    ArrivalConditionsNotMet = None
+    SelfIntersect = None
+    AtOnlyStationOnLine = None
 
     def __init__(self):
         pass
@@ -2377,6 +2523,11 @@ class ITrainFriend:
         from Mafi import Option
         self.CurrentScheduleItem = Option()
 class TrainCarBaseProto:
+    T1_CAR_LENGTH = None
+    T2_CAR_LENGTH = None
+    T1_CAR_WIDTH = None
+    T2_CAR_WIDTH = None
+    WHEEL_RADIUS = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -2391,8 +2542,15 @@ class TrainCarBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
+    WHEEL_DEFAULT_MODEL_PREFIX = None
 
     def __init__(self):
         self.SideViewIconPath = str(0)
@@ -2447,8 +2605,12 @@ class ITrainDepotExtensionParentProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class TrainDepotExtensionProto:
@@ -2474,6 +2636,11 @@ class TrainDepotExtensionProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class TrainDepotProto:
 
@@ -2505,6 +2672,11 @@ class TrainDepotProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class ITrainLineMember:
@@ -2527,6 +2699,12 @@ class ITrainLineMemberFriend:
         self.Name = str(0)
         self.TrainId = None
 class TrainLineWarning:
+    None = None
+    NoStops = None
+    DestroyedStations = None
+    OnlyOneStop = None
+    OnlyFuelStops = None
+    OnlyOneStopNotRefuel = None
 
     def __init__(self):
         pass
@@ -2557,6 +2735,11 @@ class ITrainPfTaskManaged:
         self.StartNodesMetadata = None
         self.GoalNodes = None
 class TrainPathFindingTaskStatus:
+    Unknown = None
+    Initialized = None
+    WaitingInPfQueue = None
+    PathFinding = None
+    Done = None
 
     def __init__(self):
         pass
@@ -2583,6 +2766,11 @@ class ITrainScheduleItem:
         self.DisableUnload = False
         self.SkipIfFuelHigherThan = None
 class TrainEntityModuleLimits:
+    Unrestricted = None
+    AnyCompatibleStationModulesEmpty = None
+    AllCompatibleStationModulesEmpty = None
+    AnyCompatibleStationModulesFull = None
+    AllCompatibleStationModulesFull = None
 
     def __init__(self):
         pass
@@ -2598,6 +2786,10 @@ class TrainScheduleItemsCommandsProcessor:
         pass
 
 class PreferredTrainDirection:
+    Straight = None
+    Left = None
+    Right = None
+    Random = None
 
     def __init__(self):
         pass
@@ -2613,6 +2805,15 @@ class TrainsPathFinder:
         pass
 
 class TrainsPathFinderResult:
+    Unknown = None
+    InvalidState = None
+    StillSearching = None
+    PathFound = None
+    PathWasInvalid = None
+    PathDoesNotExist = None
+    NoValidStart = None
+    NoValidGoal = None
+    ExceptionWasThrown = None
 
     def __init__(self):
         pass
@@ -2623,6 +2824,13 @@ class TrainsPathFinderConfig:
         pass
 
 class TrainStaticData:
+    TIME_TO_TRAVEL_TILES = None
+    MAX_SPEED_ESTIMATION_MAX_DURATION = None
+    MIN_TRAIN_SPEED = None
+    PUSH_PULL_WAGONS_MULT = None
+    ACCELERATION_FUN_FACTOR = None
+    MIN_SPEED_PENALTY_FOR_LOCO_NOT_AT_FRONT = None
+    Empty = None
 
     def __init__(self):
         self.SlopeDifficultyMultiplier = None
@@ -2644,6 +2852,11 @@ class TrainForcesAtGrade:
         pass
 
 class TrainStationAlignmentStatus:
+    None = None
+    Aligning = None
+    Aligned = None
+    Complete = None
+    Skipped = None
 
     def __init__(self):
         pass
@@ -2926,6 +3139,11 @@ class TrainStationBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class TrainStationModuleBaseProto:
@@ -2955,6 +3173,11 @@ class TrainStationModuleBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class TrainStationRootBaseProto:
@@ -2984,6 +3207,11 @@ class TrainStationRootBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class TrainStationValidator:
@@ -2991,11 +3219,24 @@ class TrainStationValidator:
     def __init__(self):
         self.Priority = None
 class TrainTrackRadius:
+    Inf = None
+    R14 = None
+    R22 = None
+    R30 = None
 
     def __init__(self):
         pass
 
 class TrainTrackGradeFactor:
+    G0 = None
+    G4 = None
+    G8 = None
+    G16 = None
+    G24 = None
+    GMinus4 = None
+    GMinus8 = None
+    GMinus16 = None
+    GMinus24 = None
 
     def __init__(self):
         pass
@@ -3011,11 +3252,48 @@ class TrainTrackBuilder:
         pass
 
 class TrainTrackConstants:
+    GAUGE = None
+    LAYOUT_WIDTH = None
+    TRAIN_OCCUPANCY_WIDTH = None
+    LAYOUT_HEIGHT = None
+    TRACK_RIDE_HEIGHT = None
+    TIE_SPACING = None
+    TRACK_RAIL_WIDTH = None
+    TRACK_LIP_WIDTH = None
+    MAX_BLOCKS_PER_TRACK = None
+    WAYPOINTS_COUNT_PER_BLOCK = None
+    WAYPOINTS_PER_TILE = None
+    WAYPOINT_SPACING = None
+    HALF_WAYPOINT_SPACING = None
+    START_SLOPE_CTRL_DIST = None
+    END_SLOPE_CTRL_DIST = None
+    GROUND_TOLERANCE = None
+    PILLAR_SUPPORT_DISTANCE = None
+    PILLAR_EXTENTS_ALONG_TRACK = None
+    PILLAR_EXTENTS_ACROSS_TRACK = None
+    PILLAR_SIZE_ALONG_TRACK = None
+    PILLAR_SIZE_ACROSS_TRACK = None
+    SUPPORT_NOT_COMPUTED_VAL = None
+    STD_GRADE_FACTOR = None
+    STD_GRADE_FACTOR_2X = None
+    STD_GRADE_FACTOR_3X = None
+    STD_GRADE_FACTOR_4X = None
+    STD_GRADE_1X_APPROX = None
+    STD_GRADE_2X_APPROX = None
+    STD_GRADE_3X_APPROX = None
+    STD_GRADE_4X_APPROX = None
 
     def __init__(self):
         pass
 
 class TrainTrackPathFinder:
+    PRECOMPUTED_DATA_FILE_HEADER_SIZE = None
+    PRECOMPUTED_DATA_FILE_EXTENSION = None
+    MAX_SEARCH_RANGE = None
+    PRECOMPUTED_HEURISTICS_RANGE = None
+    PRECOMPUTED_HEURISTICS_HEIGHT = None
+    PRECOMPUTED_HEURISTICS_DIR_NAME = None
+    MAX_PRECOMPUTED_HEURISTICS_KEY = None
 
     def __init__(self):
         self.ProcessedNodes = None
@@ -3045,6 +3323,7 @@ class ITrainTrackPillar:
         self.TrainTrackEntityId = None
         self.BlockIndex = int(0)
 class TrainTrackPillarAddRequest:
+    Instance = None
 
     def __init__(self):
         self.ReasonToAdd = None
@@ -3057,6 +3336,9 @@ class TrainTrackPillarRendererData:
     def __init__(self):
         self.IsValid = False
 class TrainTrackPillarProto:
+    MAX_PILLAR_HEIGHT = None
+    OCCUPANCY_MASK_SIZE = None
+    OCCUPANCY_MASK_CENTRE = None
 
     def __init__(self):
         self.EntityType = None
@@ -3069,6 +3351,11 @@ class TrainTrackPillarProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
     Empty = None
@@ -3111,6 +3398,11 @@ class TrainTrackProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
 class TrainTrackSegmentsRel:
@@ -3118,6 +3410,7 @@ class TrainTrackSegmentsRel:
     def __init__(self):
         self.Length = None
 class TrainTrackTiesGfx:
+    EMPTY = None
 
     def __init__(self):
         pass
@@ -3133,6 +3426,10 @@ class TrainTrackWaypointRel:
         pass
 
 class TrackOverlapStatus:
+    None = None
+    Left = None
+    Right = None
+    Both = None
 
     def __init__(self):
         pass
@@ -3168,11 +3465,20 @@ class TrainTrackOccupancyData:
         pass
 
 class TrainTrackState:
+    Free = None
+    Reserved = None
+    Occupied = None
+    Blocked = None
 
     def __init__(self):
         pass
 
 class TrainBlockState:
+    Free = None
+    Reserved = None
+    ClaimedBySuperBlock = None
+    Occupied = None
+    Blocked = None
 
     def __init__(self):
         pass

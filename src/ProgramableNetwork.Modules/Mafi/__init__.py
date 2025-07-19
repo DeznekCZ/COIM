@@ -9,6 +9,9 @@ class ArrayAssertionExtensions:
         pass
 
 class Assert:
+    ASSERT_CONDITIONAL = None
+    ASSERT_CONDITIONAL_DEBUG_ONLY = None
+    ENABLED = None
 
     def __init__(self):
         pass
@@ -166,6 +169,12 @@ class BuildInfoData:
 
 class BuildInfo:
     Data = None
+    COUNT = None
+    IS_DEBUG = None
+    IS_DEV_ONLY = None
+    IS_ALPHA_ONLY = None
+    CHEATS_ENABLED = None
+    SHORT_DURATION_BUILD = None
 
     def __init__(self):
         pass
@@ -180,6 +189,10 @@ class ReadOnlyArrayAssertionExtensions:
     def __init__(self):
         pass
 
+class CopyrightAttribute:
+
+    def __init__(self):
+        self.TypeId = None
 class IResolver:
 
     def __init__(self):
@@ -234,6 +247,9 @@ class DependencyRegisteredManuallyAttribute:
     def __init__(self):
         self.TypeId = None
 class RegistrationMode:
+    AsSelf = None
+    AsAllInterfaces = None
+    AsEverything = None
 
     def __init__(self):
         pass
@@ -363,6 +379,33 @@ class Aabb:
         self.IsValid = False
         self.Size = None
 class Fix32:
+    Zero = None
+    One = None
+    Quarter = None
+    Third = None
+    Half = None
+    Two = None
+    Three = None
+    Four = None
+    Eight = None
+    Epsilon = None
+    EpsilonNear = None
+    MinValue = None
+    MaxValue = None
+    MinIntValue = None
+    MaxIntValue = None
+    Tau = None
+    TauOver2 = None
+    TauOver4 = None
+    Sqrt2 = None
+    Sqrt3 = None
+    Sqrt5 = None
+    OneOverSqrt2 = None
+    OneOverSqrt3 = None
+    OneOverSqrt5 = None
+    FRACTIONAL_BITS = None
+    FRACTION_RANGE = None
+    MAX_DIGITS_PRECISION = None
 
     def __init__(self):
         self.IsZero = False
@@ -414,6 +457,12 @@ class Fix64:
     MaxValue = None
     MinIntValue = None
     MaxIntValue = None
+    EpsilonFix32NearOneSqr = None
+    Tau = None
+    TauOver4 = None
+    Sqrt2 = None
+    OneOverSqrt2 = None
+    MAX_DIGITS_PRECISION = None
 
     def __init__(self):
         self.IsZero = False
@@ -451,6 +500,7 @@ class Percent:
     Hundred = None
     MinValue = None
     MaxValue = None
+    Tau = None
 
     def __init__(self):
         self.IsZero = False
@@ -502,6 +552,7 @@ class Rgb:
 class Log:
     AcceptedLogTypes = None
     DebugInfos = None
+    LOG_FILE_RETENTION_DAYS = None
 
     def __init__(self):
         pass
@@ -512,6 +563,19 @@ class ISimStepProvider:
         self.CurrentSimStep = int(0)
         self.IsTerminated = False
 class MafiMath:
+    ONE_MINUS_TAU_OVER_4 = None
+    ONE_MINUS_TAU_OVER_2 = None
+    TAU_OVER_2_MINUS_2 = None
+    TAU_OVER_4_MINUS_1 = None
+    G = None
+    AIR_DENSITY_SEA_LEVEL = None
+    DEFAULT_FLOAT_TOLERANCE = None
+    TAU_D = None
+    SQRT2 = None
+    TAU = None
+    DEG_2_RAD = None
+    RAD_2_DEG = None
+    RAD_2_DEG_D = None
 
     def __init__(self):
         pass
@@ -536,6 +600,16 @@ class AngleDegrees1f:
     MinValue = None
     MaxValue = None
     Epsilon = None
+    HalfDegree = None
+    OneDegree = None
+    Deg22Point5 = None
+    Deg45 = None
+    Deg90 = None
+    Deg179 = None
+    Deg180 = None
+    Deg270 = None
+    Deg360 = None
+    Deg720 = None
 
     def __init__(self):
         from Mafi import Fix32
@@ -571,6 +645,10 @@ class AngleSlim:
     Zero = None
     MinValue = None
     MaxValue = None
+    RAW_VALUE_360_DEG = None
+    RAW_VALUE_90_DEG = None
+    RAW_VALUE_180_DEG = None
+    RAW_VALUE_270_DEG = None
 
     def __init__(self):
         from Mafi import Fix32
@@ -589,6 +667,56 @@ class AngleSlim:
         self.IsNotNegative = False
         self.Squared = int(0)
 class ColorRgba:
+    from Mafi import ColorRgba
+    Black = ColorRgba(0, 0, 0)
+    from Mafi import ColorRgba
+    DarkDarkGray = ColorRgba(32, 32, 32)
+    from Mafi import ColorRgba
+    DarkGray = ColorRgba(64, 64, 64)
+    from Mafi import ColorRgba
+    Gray = ColorRgba(128, 128, 128)
+    from Mafi import ColorRgba
+    LightGray = ColorRgba(192, 192, 192)
+    from Mafi import ColorRgba
+    White = ColorRgba(255, 255, 255)
+    from Mafi import ColorRgba
+    Red = ColorRgba(255, 0, 0)
+    from Mafi import ColorRgba
+    DarkRed = ColorRgba(187, 0, 0)
+    from Mafi import ColorRgba
+    Brown = ColorRgba(139, 69, 19)
+    from Mafi import ColorRgba
+    Orange = ColorRgba(255, 140, 40)
+    from Mafi import ColorRgba
+    Gold = ColorRgba(255, 191, 0)
+    from Mafi import ColorRgba
+    Yellow = ColorRgba(255, 255, 0)
+    from Mafi import ColorRgba
+    LightYellow = ColorRgba(255, 255, 224)
+    from Mafi import ColorRgba
+    DarkYellow = ColorRgba(153, 136, 34)
+    from Mafi import ColorRgba
+    GreenYellow = ColorRgba(203, 255, 46)
+    from Mafi import ColorRgba
+    Green = ColorRgba(0, 255, 0)
+    from Mafi import ColorRgba
+    DarkGreen = ColorRgba(0, 128, 0)
+    from Mafi import ColorRgba
+    Turquoise = ColorRgba(64, 224, 208)
+    from Mafi import ColorRgba
+    Cyan = ColorRgba(0, 255, 255)
+    from Mafi import ColorRgba
+    Blue = ColorRgba(0, 0, 255)
+    from Mafi import ColorRgba
+    LightBlue = ColorRgba(135, 206, 250)
+    from Mafi import ColorRgba
+    CornflowerBlue = ColorRgba(100, 149, 237)
+    from Mafi import ColorRgba
+    Magenta = ColorRgba(255, 0, 255)
+    from Mafi import ColorRgba
+    Purple = ColorRgba(136, 0, 136)
+    from Mafi import ColorRgba
+    Empty = ColorRgba(0, 0, 0, 0)
 
     def __init__(self):
         self.R = None
@@ -612,6 +740,13 @@ class Direction90:
     PlusY = None
     MinusX = None
     MinusY = None
+    AllFourDirections = None
+    PlusMinusX = None
+    PlusMinusY = None
+    PLUS_X_INDEX = None
+    PLUS_Y_INDEX = None
+    MINUS_X_INDEX = None
+    MINUS_Y_INDEX = None
 
     def __init__(self):
         self.DirectionVector = None
@@ -626,6 +761,16 @@ class Direction903d:
     MinusX = None
     MinusY = None
     MinusZ = None
+    AllSixDirections = None
+    PlusMinusX = None
+    PlusMinusY = None
+    PlusMinusZ = None
+    PLUS_X_INDEX = None
+    PLUS_Y_INDEX = None
+    PLUS_Z_INDEX = None
+    MINUS_X_INDEX = None
+    MINUS_Y_INDEX = None
+    MINUS_Z_INDEX = None
 
     def __init__(self):
         self.DirectionVector = None
@@ -641,6 +786,14 @@ class Fix64Extensions:
 
 class NeighborCoord:
     All4Neighbors = None
+    PlusX = None
+    MinusX = None
+    PlusY = None
+    MinusY = None
+    PLUS_X_INDEX = None
+    MINUS_X_INDEX = None
+    PLUS_Y_INDEX = None
+    MINUS_Y_INDEX = None
 
     def __init__(self):
         self.Dx = int(0)
@@ -652,6 +805,9 @@ class Px:
     Zero = None
     MinValue = None
     MaxValue = None
+    Auto = None
+    NotSet = None
+    POINTS_MULTIPLIER = None
 
     def __init__(self):
         self.Abs = None
@@ -664,6 +820,15 @@ class Px:
         self.IsNotNegative = False
         self.Squared = float(0)
 class Rotation90:
+    Deg0 = None
+    Deg90 = None
+    Deg180 = None
+    Deg270 = None
+    AllRotations = None
+    DEG_0_INDEX = None
+    DEG_90_INDEX = None
+    DEG_180_INDEX = None
+    DEG_270_INDEX = None
 
     def __init__(self):
         self.Dx = int(0)
@@ -677,6 +842,12 @@ class Rotation90:
         self.AngleSlim = None
         self.Quaternion = None
 class Vector2f:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         from Mafi import Fix32
@@ -726,6 +897,12 @@ class Vector2fAssertions:
         pass
 
 class Vector2i:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Sum = int(0)
@@ -771,6 +948,13 @@ class Vector2iAssertions:
         pass
 
 class Vector3f:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -820,6 +1004,13 @@ class Vector3fAssertions:
         pass
 
 class Vector3i:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -863,6 +1054,14 @@ class Vector3iAssertions:
         pass
 
 class Vector4f:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    UnitW = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -913,6 +1112,14 @@ class Vector4fAssertions:
         pass
 
 class Vector4i:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    UnitW = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -959,6 +1166,8 @@ class Vector4iAssertions:
         pass
 
 class Matrix2i:
+    Zero = None
+    Identity = None
 
     def __init__(self):
         pass
@@ -994,6 +1203,7 @@ class Vector2fAssertionExtensions:
         pass
 
 class Option:
+    None = None
 
     def __init__(self):
         pass
@@ -1004,16 +1214,33 @@ class OptionExtensions:
         pass
 
 class OptionPlus:
+    None = None
 
     def __init__(self):
         pass
 
 class GameVersion:
+    FULL_DISPLAY_VALUE = None
+    NAME = None
+    MAJOR_VERSION = None
+    MINOR_VERSION = None
+    REVISION_VERSION = None
+    HOTFIX_NAME = None
+    FULL_VERSION = None
+    UNKNOWN_VERSION_NAME = None
 
     def __init__(self):
         pass
 
 class AssemblyInfo:
+    TITLE = None
+    VERSION = None
+    VERSION_FULL = None
+    COMPANY = None
+    PRODUCT = None
+    COPYRIGHT = None
+    BUILD_TIMESTAMP_UTC_BINARY = None
+    BUILD_ID = None
 
     def __init__(self):
         pass
@@ -1110,11 +1337,21 @@ class MeansImplicitUseAttribute:
         self.TargetFlags = None
         self.TypeId = None
 class ImplicitUseKindFlags:
+    Default = None
+    Access = None
+    Assign = None
+    InstantiatedWithFixedConstructorSignature = None
+    InstantiatedNoFixedConstructorSignature = None
 
     def __init__(self):
         pass
 
 class ImplicitUseTargetFlags:
+    Default = None
+    Itself = None
+    Members = None
+    WithInheritors = None
+    WithMembers = None
 
     def __init__(self):
         pass
@@ -1167,6 +1404,8 @@ class SourceTemplateAttribute:
         self.Target = None
         self.TypeId = None
 class SourceTemplateTargetExpression:
+    Inner = None
+    Outer = None
 
     def __init__(self):
         pass
@@ -1184,6 +1423,10 @@ class CollectionAccessAttribute:
         self.CollectionAccessType = None
         self.TypeId = None
 class CollectionAccessType:
+    None = None
+    Read = None
+    ModifyExistingContent = None
+    UpdatedContent = None
 
     def __init__(self):
         pass
@@ -1198,6 +1441,10 @@ class AssertionConditionAttribute:
         self.ConditionType = None
         self.TypeId = None
 class AssertionConditionType:
+    IS_TRUE = None
+    IS_FALSE = None
+    IS_NULL = None
+    IS_NOT_NULL = None
 
     def __init__(self):
         pass
@@ -1219,6 +1466,11 @@ class RegexPatternAttribute:
     def __init__(self):
         self.TypeId = None
 class InjectedLanguage:
+    CSS = None
+    HTML = None
+    JAVASCRIPT = None
+    JSON = None
+    XML = None
 
     def __init__(self):
         pass
@@ -1526,6 +1778,130 @@ class MeansTestSubjectAttribute:
     def __init__(self):
         self.TypeId = None
 class SaveVersion:
+    BRANCH_MAP = None
+    CURRENT_SAVE_VERSION = None
+    MIN_COMPATIBLE_SAVE_VERSION = None
+    V234_THERMAL_STORAGE_NOTIF = None
+    V233_TRAIN_RESERVATION_REVAMP = None
+    V232_BETTER_UNLOCKED_PROTOS = None
+    V231_UNITY_MAX = None
+    V230_TRAIN_CRITICAL_SECTION_PUSH = None
+    V229_STORAGES_TRANSPORT_UNTIL = None
+    V228_CONFIG_ON_RECOVERY = None
+    V227_TENDER_PROTO = None
+    V226_REMOVED_TRAIN_IDLE_NOTIF = None
+    V225_INSTANCED_STATIONS = None
+    V224_TRAIN_CAP_MULT = None
+    V223_TRAIN_FUEL_FIX = None
+    V222_TINY_MAINTENANCE_CONSUMPTION_FIX = None
+    V221_TRAIN_PATHFINDING_PRIORITY = None
+    V220_TRAIN_CARGO_STATS = None
+    V219_TRAIN_STATION_UNASSIGNED_MODULES = None
+    V218_RESTORE_TRAIN_TUTORIALS = None
+    V217_TRAIN_PATHFINDING = None
+    V216_TRAIN_PATH_FROM_DEPOT = None
+    V215_TRAIN_KEEP_ALL_ALIGNMENT = None
+    V214_LOGISTICS_ZONES = None
+    V213_TRAIN_SELF_INTERSECT = None
+    V212_WAGON_PRODUCT_FILTER = None
+    V211_TRAIN_LAST_FAILED_RESERVATION = None
+    V210_TRAIN_LOAD_UNLOAD_NOTHING = None
+    V209_SAVED_TRAIN_STATUS = None
+    V208_VEHICLE_ENGINE_OFF = None
+    V207_TREE_HARVESTER_UNREACHABLES = None
+    V206_TRAIN_SKIP_ITEM_IF_HIGH_FUEL = None
+    V205_STUMPS_NO_BLOCK = None
+    V204_MAINTENANCE_STORED_STATS = None
+    V203_UNDISRUPT_PROPS = None
+    V202_LAST_BLOCKING_TRAIN = None
+    V201_BLOCK_VISUALIZER = None
+    V200_TRAIN_WARNING_STATE = None
+    V199_TRACK_COLLAPSE_INFO = None
+    V198_REFRESH_TRAIN_PROPS_DEFAULTS = None
+    V197_TRAIN_CAR_FLIPPING = None
+    V196_TRAIN_STATION_GROUPS = None
+    V195_FBR = None
+    V194_DONT_SAVE_FORCE_RUN = None
+    V193_UPDATE_3_TRAINS_RESERVATION_LENGTH = None
+    V192_UPDATE_3_TRAINS = None
+    V191_UPDATE_3_TRAIN_PAUSING = None
+    V190_UPDATE_3_LEVEL_CROSSING = None
+    V189_UPDATE_3_PRE_TRAILER = None
+    V188_UPDATE_3_EDITOR_IMPROVEMENTS_4 = None
+    V185_UPDATE_3_EDITOR_IMPROVEMENTS_3 = None
+    V183_UPDATE_3_EDITOR_IMPROVEMENTS_2 = None
+    V182_UPDATE_3_EDITOR_IMPROVEMENTS = None
+    V181_UPDATE_3_TREES = None
+    V180_UPDATE_3 = None
+    V171_SAVE_SIM_SPEED = None
+    V170_OPTIMIZED_TILE_SERIALIZATION = None
+    V169_MAP_CACHE = None
+    V168_PATHFINDER_3D_GOAL_MIN_DIST = None
+    V167_SAVE_CHECKSUM = None
+    V166_VEHICLE_RECOVERY = None
+    V165_FUEL_NOTIF = None
+    V164_DESIGNATION_STUMP_ADD = None
+    V163_REFUEL_FIX2 = None
+    V162_REFUEL_FIX = None
+    V161_MAP_NAME_LOGGING = None
+    V160_GOAL_TRACKING = None
+    V159_STARTING_LOCATION_ORDER = None
+    V158_FIX_FLOWER_CONFIG = None
+    V157_MAP_SAVE_VERSION = None
+    V156_SORTER_NOTIF = None
+    V155_MAX_REPLACED_DEPTH = None
+    V154_SCREENSHOT_FOG_DENSITY = None
+    V153_SORTER_CHANGES = None
+    V152_TOO_MANY_SHIPS = None
+    V151_EROSION_IGNORE = None
+    V150_PROTECTED_MAP = None
+    V149_REMOVED_UNUSED_PLAYER_CONFIG = None
+    V148_INTERACTION_MODE_FOR_FLATTEN_AND_RAMP = None
+    V147_EROSION_SUPPRESSION_REGIONS = None
+    V146_UPDATE_2_MAP_FIX_PROP_TER_MAT = None
+    V141_UPDATE_2_SURFACE_ON_LOWERED = None
+    V141_UPDATE_2_MAP_TR_ID = None
+    V141_UPDATE_2_INITIAL_MAP_CREATION = None
+    V141_UPDATE_2_BETTER_BEDROCK_IN_MAPS = None
+    V141_UPDATE_2_EXTRA_MAP_STATS = None
+    V140_UPDATE_2 = None
+    V132_REMOVED_FULFILLED_DESIGNATION = None
+    V131_CENTURY_STATS = None
+    V130_TERRAIN_PHYSICS_UPDATE_RAMP = None
+    V129_REACTOR_SIMPLIFICATION = None
+    V128_MACHINE_BUFFER_LEAK = None
+    V127_OFF_LIMITS_DESIGNATIONS = None
+    V126_TERRAIN_MANAGER_FIELDS = None
+    V125_TREE_HARVESTER_UNREACHABLES = None
+    V124_PROPAGATE_NO_PORT_SNAP = None
+    V123_FORESTRY_EVENTS = None
+    V122_EXCAVATOR_FIXES = None
+    V121_TRANSPORT_QUICK_DELIVER = None
+    V120_FARMABLE_MANAGER = None
+    V119_UNREACHABLE_TREE_CHUNKS = None
+    V118_TERRAIN_LOAD_CACHE = None
+    V117_TREE_PLACEMENT_FIX = None
+    V116_NUCLEAR_WASTE_FIX = None
+    V115_CAMERA_SAVE = None
+    V114_CACHE_DUMPING_DESIGNATIONS = None
+    V113_QUICK_DELIVER_FROM_TRUCKS = None
+    V112_FORESTRY_ASSIGN_OUTPUT = None
+    V111_CLONE_CONFIG_ON_REPLACE = None
+    V110_STUCK_EXCAVATOR = None
+    V109_DEPRIORITIZE_FAILED_NAVS = None
+    V108_PRIORITIES_ORDER_FIX = None
+    V107_FORESTRY_STORAGE_ASSIGNMENT = None
+    V106_NAVIGATION_THROTTLING = None
+    V105_NAVIGATION_STRUGGLING = None
+    V104_PRODUCTS_LEAK = None
+    V103_NO_MINING_PREFERRED = None
+    V102_PLANTER_UNREACHABLE = None
+    V101_NOTIFICATOR_MESS = None
+    V100_LANDFILL_STATS = None
+    V99_OCEAN_AREA_NOTIFS = None
+    V98_TREES_AND_STUMPS = None
+    V97_CONTRACTS_CONFIG = None
+    V96_UPDATE1 = None
 
     def __init__(self):
         pass
@@ -1548,6 +1924,15 @@ class ThreadUtils:
         pass
 
 class Tracing:
+    TRACING_CONDITIONAL = None
+    IS_AVAILABLE = None
+    BEGIN_PHASE_NAME = None
+    END_PHASE_NAME = None
+    COMPLETE_PHASE_NAME = None
+    BEGIN_ASYNC_PHASE_NAME = None
+    END_ASYNC_PHASE_NAME = None
+    INSTANT_PHASE_NAME = None
+    IsRecording = None
 
     def __init__(self):
         pass
@@ -1555,6 +1940,7 @@ class Tracing:
 class TracingManager:
     RecordedEventsCount = None
     IsTracingDirectlyToWriter = None
+    IsRecording = None
 
     def __init__(self):
         pass
@@ -1594,6 +1980,12 @@ class EditorButtonAttribute:
     def __init__(self):
         self.TypeId = None
 class ObjEditorIcon:
+    None = None
+    View = None
+    Delete = None
+    Edit = None
+    Clone = None
+    Randomize = None
 
     def __init__(self):
         pass
@@ -1648,6 +2040,7 @@ class EditorAutoUpdateVersionAttribute:
     def __init__(self):
         self.TypeId = None
 class PerfCounter:
+    PERF_COUNTERS_ENABLED = None
 
     def __init__(self):
         pass
@@ -1659,11 +2052,16 @@ class ThreadAssert:
         pass
 
 class ThreadType:
+    Any = None
+    Main = None
+    Sim = None
 
     def __init__(self):
         pass
 
 class ThreadNames:
+    MAIN = None
+    SIMULATION = None
 
     def __init__(self):
         pass
@@ -1801,6 +2199,11 @@ class BattleTriggerPriority:
     Zero = None
     MinValue = None
     MaxValue = None
+    Highest = None
+    Fleet = None
+    Building = None
+    Lowest = None
+    NotSupported = None
 
     def __init__(self):
         self.Abs = None
@@ -1813,6 +2216,14 @@ class BattleTriggerPriority:
         self.IsNotNegative = False
         self.Squared = None
 class Chunk256:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
+    DIMENSION_TILES = None
+    DIMENSION_TILES_BITS = None
 
     def __init__(self):
         self.OriginTile2i = None
@@ -1831,6 +2242,12 @@ class Chunk256:
         self.DecrementY = None
         self.Angle = None
 class Chunk2i:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Tile2i = None
@@ -1873,6 +2290,12 @@ class Chunk2i:
         self.DivBy8Fast = None
         self.DivBy16Fast = None
 class Chunk2iSlim:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.AsFull = None
@@ -1892,6 +2315,14 @@ class Chunk2iSlim:
         self.DecrementY = None
         self.Angle = None
 class Chunk8:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
+    DIMENSION_TILES = None
+    DIMENSION_TILES_BITS = None
 
     def __init__(self):
         self.OriginTile2i = None
@@ -1939,6 +2370,13 @@ class Duration:
     Zero = None
     MinValue = None
     MaxValue = None
+    OneTick = None
+    OneSecond = None
+    OneMinute = None
+    OneDay = None
+    OneMonth = None
+    OneYear = None
+    TICKS_PER_YEAR = None
 
     def __init__(self):
         from Mafi import Fix64
@@ -2001,6 +2439,9 @@ class Frequency:
     Zero = None
     MinValue = None
     MaxValue = None
+    None = None
+    EveryTick = None
+    EverySecond = None
 
     def __init__(self):
         self.SecondsFloored = int(0)
@@ -2017,6 +2458,8 @@ class GameDate:
     Zero = None
     MinValue = None
     MaxValue = None
+    Inception = None
+    FIRST_YEAR_NUMBER = None
 
     def __init__(self):
         self.Day = int(0)
@@ -2178,6 +2621,7 @@ class Quantity:
     Zero = None
     MinValue = None
     MaxValue = None
+    One = None
 
     def __init__(self):
         self.Abs = None
@@ -2191,6 +2635,7 @@ class Quantity:
         self.Squared = None
         self.AsLarge = None
         self.AsPartial = None
+        self.Times2Fast = None
 class QuantityLarge:
     Zero = None
     MinValue = None
@@ -2211,6 +2656,12 @@ class RelGameDate:
     Zero = None
     MinValue = None
     MaxValue = None
+    OneDay = None
+    OneMonth = None
+    OneYear = None
+    DAYS_PER_MONTH = None
+    MONTHS_PER_YEAR = None
+    DAYS_PER_YEAR = None
 
     def __init__(self):
         self.Abs = None
@@ -2257,6 +2708,7 @@ class RelTile1i:
     Zero = None
     MinValue = None
     MaxValue = None
+    One = None
 
     def __init__(self):
         self.Abs = None
@@ -2271,6 +2723,13 @@ class RelTile1i:
         self.RelTile1f = None
         self.Meters = int(0)
 class RelTile2f:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
+    Half = None
 
     def __init__(self):
         self.Vector2f = None
@@ -2323,6 +2782,12 @@ class RelTile2fAssertions:
 class RelTile2i:
     All4Neighbors = None
     All8Neighbors = None
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Vector2i = None
@@ -2370,6 +2835,14 @@ class RelTile2iAssertions:
         pass
 
 class RelTile3f:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    MinValue = None
+    MaxValue = None
+    Half = None
 
     def __init__(self):
         self.Xy = None
@@ -2421,6 +2894,13 @@ class RelTile3fAssertions:
         pass
 
 class RelTile3i:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -2472,6 +2952,9 @@ class SimStep:
     Zero = None
     MinValue = None
     MaxValue = None
+    One = None
+    STEPS_PER_SECOND = None
+    SECONDS_PER_STEP = None
 
     def __init__(self):
         self.Abs = None
@@ -2488,6 +2971,10 @@ class ThicknessTilesF:
     MinValue = None
     MaxValue = None
     Epsilon = None
+    Quarter = None
+    Half = None
+    One = None
+    Two = None
 
     def __init__(self):
         self.Abs = None
@@ -2510,6 +2997,8 @@ class ThicknessTilesI:
     Zero = None
     MinValue = None
     MaxValue = None
+    One = None
+    Two = None
 
     def __init__(self):
         self.Abs = None
@@ -2535,6 +3024,12 @@ class ThicknessTilesISlim:
         self.AsThicknessTilesI = None
         self.AsThicknessTilesF = None
 class Tile2f:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Vector2f = None
@@ -2580,6 +3075,12 @@ class Tile2fAssertions:
         pass
 
 class Tile2i:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Vector2i = None
@@ -2635,6 +3136,12 @@ class Tile2iIndex:
         self.PlusXNeighborUnchecked = None
         self.MinusXNeighborUnchecked = None
 class Tile2iSlim:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Vector2i = None
@@ -2662,6 +3169,13 @@ class Tile2iSlimAssertions:
         pass
 
 class Tile3f:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -2709,6 +3223,13 @@ class Tile3fAssertions:
         pass
 
 class Tile3i:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -2759,6 +3280,11 @@ class Tile3iAssertions:
         pass
 
 class TileInChunk2i:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    ChunkCenter = None
 
     def __init__(self):
         self.Vector2i = None
@@ -2803,6 +3329,10 @@ class TileInChunk2iAssertions:
         pass
 
 class TileInChunk2iSlim:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
 
     def __init__(self):
         self.Vector2i = None
@@ -2827,6 +3357,7 @@ class TileInChunk2iSlimAssertions:
 
 class Upoints:
     Zero = None
+    One = None
     MinValue = None
     MaxValue = None
     Epsilon = None
@@ -2883,6 +3414,13 @@ class RelTile1iExtensions:
         pass
 
 class RelTile3iSlim:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -2947,6 +3485,13 @@ class Tile2iAndIndexRel:
         pass
 
 class Tile3iSlim:
+    Zero = None
+    One = None
+    UnitX = None
+    UnitY = None
+    UnitZ = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Xy = None
@@ -2982,6 +3527,9 @@ class UpointsExtensions:
         pass
 
 class IoPortType:
+    Any = None
+    Input = None
+    Output = None
 
     def __init__(self):
         pass
@@ -3019,11 +3567,14 @@ class DebugGameRenderer:
     IsEnabled = None
     IsDisabled = None
     DependencyResolver = None
+    EMPTY_DEBUG_GAME_MAP_DRAWING = None
+    DEFAULT_PX_PER_TILE = None
 
     def __init__(self):
         pass
 
 class DebugGameMapDrawing:
+    STATIC_ENTITY_COLOR = None
 
     def __init__(self):
         from Mafi import Option

@@ -1,4 +1,5 @@
 class Calendar:
+    SIM_STEPS_PER_DAY = None
 
     def __init__(self):
         self.NewYear = None
@@ -105,6 +106,18 @@ class ISimLoopEvents:
         self.Sync = None
         self.BeforeSave = None
 class SimLoopState:
+    None = None
+    UpdateAfterSync = None
+    CommandsProcessing = None
+    UpdateStart = None
+    Update = None
+    UpdateEnd = None
+    UpdateEndForUi = None
+    Sync = None
+    Terminated = None
+    ReadGameStateFrequent = None
+    ParallelUpdateStart = None
+    ParallelUpdateEnd = None
 
     def __init__(self):
         pass

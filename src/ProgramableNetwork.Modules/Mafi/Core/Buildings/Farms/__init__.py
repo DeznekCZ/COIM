@@ -1,4 +1,5 @@
 class AnimalFarm:
+    MAX_SLIDES_STEPS = None
 
     def __init__(self):
         self.Prototype = None
@@ -66,6 +67,13 @@ class AnimalFarm:
         self.WorkersNeeded = int(0)
         self.HasWorkersCached = False
 class State:
+    Paused = None
+    Working = None
+    MissingWorkers = None
+    MissingFood = None
+    MissingWater = None
+    NoAnimals = None
+    FullOutput = None
 
     def __init__(self):
         pass
@@ -100,6 +108,11 @@ class AnimalFarmProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class CropProto:
 
@@ -114,13 +127,31 @@ class CropProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass
 
 class Farm:
+    FERTILITY_PENALTY_FOR_SAME_CROP = None
+    FERTILITY_REPLENISH_MULT_WHEN_ABOVE_100 = None
+    CROP_FERTILITY_DEMAND_MULT_WHEN_FERTILITY_ABOVE_100 = None
+    STARTING_FERTILITY = None
+    NO_YIELD_BEFORE_GROWTH_PERC = None
+    FERTILITY_PER_SLIDER_STEP = None
+    MAX_FERTILITY_SLIDER_VALUE = None
+    CROP_SLOTS_COUNT = None
+    MAX_DAYS_DISABLED = None
+    INPUT_WATER_PORT_NAME = None
+    INPUT_FERTILIZER_PORT_NAME = None
+    FERTILITY_SLIDER_STEPS = None
 
     def __init__(self):
         self.Prototype = None
@@ -200,6 +231,14 @@ class Farm:
         self.HasWorkersCached = False
         self.MaintenanceCosts = None
 class State:
+    None = None
+    Paused = None
+    Broken = None
+    NotEnoughWorkers = None
+    NoCropSelected = None
+    NotEnoughWater = None
+    LowFertility = None
+    Growing = None
 
     def __init__(self):
         pass
@@ -225,6 +264,13 @@ class Crop:
         self.YieldLostDueToPrematureHarvest = None
         self.DaysWaitingForWaterBeforeGrowthStart = int(0)
 class CropHarvestReason:
+    None = None
+    HarvestedNormally = None
+    PrematureLackOfMaintenance = None
+    PrematureNoWater = None
+    PrematureNoFertility = None
+    PrematureHarvestedByPlayer = None
+    PrematureClearedByPlayer = None
 
     def __init__(self):
         pass
@@ -355,8 +401,14 @@ class FarmProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)
@@ -366,6 +418,8 @@ class Gfx:
         self.VisualizedLayers = None
         self.Categories = None
 class FarmFertileGroundValidator:
+    MIN_FARMABLE_THICKNESS = None
+    MAX_TILES_WITH_NON_FARMABLE_MATERIAL = None
 
     def __init__(self):
         self.Priority = None

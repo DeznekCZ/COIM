@@ -41,6 +41,7 @@ class SpecialSerializerFactories:
         pass
 
 class GameDifficultyApplier:
+    DifficultyChangeTimeout = None
 
     def __init__(self):
         self.CurrentDate = None
@@ -72,11 +73,17 @@ class GameDifficultyOptionChange:
         pass
 
 class GameDifficultyPreset:
+    Easy = None
+    Normal = None
+    Hard = None
 
     def __init__(self):
         pass
 
 class PropDifficultyRating:
+    Easy = None
+    Standard = None
+    Hard = None
 
     def __init__(self):
         pass
@@ -86,6 +93,54 @@ class GameDifficultyConfig:
     ExtraStartingMaterialDefault = None
     WorldMinesReservesDefault = None
     DeconstructionRefundDefault = None
+    EASY_MECHANICS = None
+    MEDIUM_MECHANICS = None
+    HARD_MECHANICS = None
+    GameDifficulty__CustomTitle = None
+    GameDifficulty__EasyTitle = None
+    GameDifficulty__EasyDescription = None
+    GameDifficulty__EasyExplanation = None
+    GameDifficulty__NormalTitle = None
+    GameDifficulty__NormalDescription = None
+    GameDifficulty__NormalExplanation = None
+    GameDifficulty__AdmiralTitle = None
+    GameDifficulty__AdmiralDescription = None
+    GameDifficulty__AdmiralExplanation = None
+    ExtraStartingMaterialInfo = None
+    MaintenanceDiffInfo = None
+    FuelConsumptionDiffInfo = None
+    RainYieldDiffInfo = None
+    BaseHealthDiffInfo = None
+    ResourceMiningDiffInfo = None
+    SettlementConsumptionDiffInfo = None
+    SettlementFoodConsumptionDiffInfo = None
+    WorldMinesReservesInfo = None
+    FarmYieldInfo = None
+    UnityProductionDiffInfo = None
+    ConstructionCostsDiffInfo = None
+    QuickRepairInfo = None
+    WeatherDifficultyInfo = None
+    PowerSettingInfo = None
+    TreesGrowthInfo = None
+    ExtraContractsProfitInfo = None
+    DeconstructionRefundInfo = None
+    LoansDifficultyInfo = None
+    ShipsNoFuelInfo = None
+    GroundwaterPumpLowInfo = None
+    ResearchCostDiffInfo = None
+    StarvationInfo = None
+    WorldMinesNoUnityInfo = None
+    VehiclesNoFuelInfo = None
+    TrainsNoFuelInfo = None
+    ConsumerBrokenInfo = None
+    PowerLowInfo = None
+    ComputingLowInfo = None
+    QuickActionsCostInfo = None
+    DiseaseMortalityDiffInfo = None
+    OreSortingInfo = None
+    SolarPowerDiffInfo = None
+    PollutionDiffInfo = None
+    AllOptions = None
 
     def __init__(self):
         self.ExtraStartingMaterial = None
@@ -130,71 +185,101 @@ class GameDifficultyConfig:
         self.Explanation = None
         self.SelectedMechanics = None
 class QuickRepairSetting:
+    Enabled = None
+    Disabled = None
 
     def __init__(self):
         pass
 
 class WeatherDifficultySetting:
+    Easy = None
+    Standard = None
+    Dry = None
 
     def __init__(self):
         pass
 
 class LogisticsPowerSetting:
+    DoNotConsume = None
+    ConsumeIfPossible = None
+    ConsumeAlways = None
 
     def __init__(self):
         pass
 
 class DeconstructionRefundSetting:
+    Full = None
+    Partial = None
 
     def __init__(self):
         pass
 
 class ShipNoFuelSetting:
+    RunOnUnity = None
+    StopWorking = None
 
     def __init__(self):
         pass
 
 class GroundwaterPumpLowSetting:
+    SlowDown = None
+    StopWorking = None
 
     def __init__(self):
         pass
 
 class StarvationSetting:
+    ReducedWorkforce = None
+    Death = None
 
     def __init__(self):
         pass
 
 class WorldMinesNoUnitySetting:
+    SlowDown = None
+    Stop = None
 
     def __init__(self):
         pass
 
 class VehiclesNoFuelSetting:
+    SlowDown = None
+    Stop = None
 
     def __init__(self):
         pass
 
 class TrainsNoFuelSetting:
+    SlowDown = None
+    Stop = None
 
     def __init__(self):
         pass
 
 class ConsumerBrokenSetting:
+    SlowDown = None
+    Stop = None
 
     def __init__(self):
         pass
 
 class PowerLowSetting:
+    SlowDown = None
+    Stop = None
 
     def __init__(self):
         pass
 
 class ComputingLowSetting:
+    SlowDown = None
+    Stop = None
 
     def __init__(self):
         pass
 
 class OreSortingSetting:
+    Disabled = None
+    Enabled = None
 
     def __init__(self):
         pass
@@ -212,6 +297,15 @@ class PercentSettingInfo:
         self.Title = None
         self.Property = None
 class GameMechanics:
+    GameMechanic__Casual = None
+    GameMechanic__Realism = None
+    GameMechanic__Challenges = None
+    Casual = None
+    ResourcesBoost = None
+    OreSorting = None
+    Realism = None
+    RealismPlus = None
+    ReducedWorldMines = None
 
     def __init__(self):
         pass
@@ -230,6 +324,7 @@ class GameNameConfig:
         self.LoadedFile = None
         self.GameName = str(0)
 class GameStartArgs:
+    Empty = None
 
     def __init__(self):
         pass

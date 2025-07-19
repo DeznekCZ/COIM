@@ -1,9 +1,13 @@
 class EntityValidationResult:
+    Success = None
 
     def __init__(self):
         self.IsSuccess = False
         self.IsError = False
 class EntityValidationResultStatus:
+    Valid = None
+    Error = None
+    FatalError = None
 
     def __init__(self):
         pass
@@ -17,6 +21,9 @@ class IEntityPreAddValidator:
     def __init__(self):
         self.Priority = None
 class EntityValidatorPriority:
+    Low = None
+    Default = None
+    High = None
 
     def __init__(self):
         pass

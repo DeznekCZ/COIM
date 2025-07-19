@@ -84,11 +84,27 @@ class TerrainDetailsData:
         pass
 
 class TerrainFeaturesTooltips:
+    SORTING_PRIORITY_ADJUSTMENT = None
+    ORDER_MATTERS_NOTE = None
+    WHERE_TO_EDIT_PRIORITY = None
+    MAX_INFLUENCE_DISTANCE_FOR_POLYGON = None
+    POST_PROCESSING_PHASE = None
+    MATERIAL_GENERATED_STAT = None
 
     def __init__(self):
         pass
 
 class TerrainGenPriority:
+    SandCoast = None
+    RockCliffCoast = None
+    CoalRect = None
+    SandPit = None
+    IronOre = None
+    CopperOre = None
+    GoldOre = None
+    LeafTrees = None
+    ConiferTrees = None
+    CrudeOil = None
 
     def __init__(self):
         pass

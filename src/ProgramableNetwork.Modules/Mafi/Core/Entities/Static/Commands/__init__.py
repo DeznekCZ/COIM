@@ -35,6 +35,9 @@ class BatchCreateStaticEntitiesCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class BuildMiniZippersMode:
+    DeferToProto = None
+    Always = None
+    Never = None
 
     def __init__(self):
         pass

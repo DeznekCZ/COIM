@@ -73,8 +73,8 @@ namespace ProgramableNetwork.Data.Mod
             ControllerProto.RegisterPhantom(registrator);
 
             ControllerProto template = null;
-            IEnumerable<ControllerTemplate> values = GetControllerTemplates(registrator);
-            foreach (var (id, name, description, modules) /* Expand */ in values)
+            IEnumerable<ControllerTemplate> values = GetControllerTemplates(registrator, originalTier1);
+            foreach (var (id, name, description, color, modules) /* Expand */ in values)
             {
                 TryLoadTexture(NewAssets.Computers.Icons.ControllerTemplate(id));
 
@@ -88,6 +88,7 @@ namespace ProgramableNetwork.Data.Mod
                         customIconPath: NewAssets.Computers.Icons.ControllerTemplate(id),
                         categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                     ),
+                    defaultColor: color,
                     initModules: modules
                 ));
                 template?.SetNextTierIndirect(next);
@@ -108,13 +109,14 @@ namespace ProgramableNetwork.Data.Mod
                 CustomAssetManager.Alternations.Add(assetPath, texture2D);
         }
 
-        public static IEnumerable<ControllerTemplate> GetControllerTemplates(ProtoRegistrator registrator)
+        public static IEnumerable<ControllerTemplate> GetControllerTemplates(ProtoRegistrator registrator, ControllerProto basedOn)
         {
             yield return
                 new ControllerTemplate(
                     "FullStorage",
                     "Storage overflow",
                     "Reads storage and disables selected buildings connected by switch of modules (by default there is only one switch off)",
+                    ColorRgba.LightGray,
                     (controller) =>
                     {
                         int i = 0;
@@ -138,6 +140,7 @@ namespace ProgramableNetwork.Data.Mod
                     "VehicleImport",
                     "Vehicle import",
                     "Reads storage and assing vehicle when amound of stored resources is bellow 50%",
+                    ColorRgba.Orange,
                     (controller) =>
                     {
                         int i = 0;
@@ -166,13 +169,16 @@ namespace ProgramableNetwork.Data.Mod
                 string name = item.classContext.TryGetValue("name", out object oname)
                     ? (string)oname : "Template controller";
                 string description = item.classContext.TryGetValue("description", out object odescritption)
-                    ? (string)oname : "";
+                    ? (string)odescritption : "";
+                ColorRgba color = item.classContext.TryGetValue("color", out object ocolor)
+                    ? (ColorRgba)ocolor : basedOn.DefaultColor;
 
                 Log.Info($"User controller template: {id} found");
                 yield return new ControllerTemplate(
                     id,
                     name,
                     description,
+                    color,
                     new ControllerWrapper(registrator, item).Generate
                 );
             }

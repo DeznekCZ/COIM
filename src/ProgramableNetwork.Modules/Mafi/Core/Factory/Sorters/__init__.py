@@ -1,4 +1,9 @@
 class Sorter:
+    BUFFER_SCALE = None
+    MAX_DELAY = None
+    MEDIUM_DELAY = None
+    MIN_DELAY = None
+    SPECIAL_PORT_NAME = None
 
     def __init__(self):
         self.CanBePaused = False
@@ -74,6 +79,11 @@ class SorterProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class SorterToggleProductCmd:
 

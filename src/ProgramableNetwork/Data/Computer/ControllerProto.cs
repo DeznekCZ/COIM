@@ -52,7 +52,7 @@ namespace ProgramableNetwork
             this.DefaultColor = defaultColor ?? ColorRgba.Yellow;
         }
 
-        public ControllerProto(ID id, Str strings, ControllerProto basedOn, Gfx graphics, ControllerTemplate.ModulePlacement initModules, ColorRgba? defaultColor = null,
+        public ControllerProto(ID id, Str strings, ControllerProto basedOn, Gfx graphics, ControllerTemplate.ModulePlacement initModules, ColorRgba defaultColor,
             IEnumerable<Tag> tags = null)
             : base(id, strings, basedOn.Layout, basedOn.Costs, graphics, constructionDurationPerProduct: Duration.FromSec(5), basedOn.BoostCost, cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags: tags)
         {
@@ -66,7 +66,7 @@ namespace ProgramableNetwork
             this.BasedOn = basedOn;
             this.CanBeElevated = false;
             this.CanPillarsPassThrough = BasedOn.CanPillarsPassThrough;
-            this.DefaultColor = defaultColor ?? basedOn.DefaultColor;
+            this.DefaultColor = defaultColor;
         }
 
         public static ControllerProto Phantom;

@@ -9,6 +9,8 @@ class IScriptedAiPlayerActionCore:
         pass
 
 class ScriptedAiPlayer:
+    DOCK_ENTITY_NAME = None
+    SETTLEMENT_NAME = None
 
     def __init__(self):
         self.Stage = int(0)

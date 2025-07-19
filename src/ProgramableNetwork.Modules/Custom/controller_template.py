@@ -7,6 +7,7 @@ from Core.mafi import fix
 
 # used modules
 from Core.ids import Arithmetic_Display_7SEG_B, Connection_Display_7SEG_B, Runtime_Clock_2
+from Mafi import ColorRgba
 
 # tier contains 16 columns, 4 rows
 tier = 1
@@ -17,6 +18,7 @@ tier = 1
 class ClockExample(Controller):
     name = "Basic hour clock"
     description = "Creates an controller configuration for recording time from point in which was controller built."
+    color = ColorRgba.CornflowerBlue
     
     def modules(self):
         clock = self.add_module(Runtime_Clock_2, 0, 0);

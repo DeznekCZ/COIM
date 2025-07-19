@@ -8,6 +8,7 @@ class OccupiedColumn:
         pass
 
 class ConstructionManager:
+    EXTRA_CONSTRUCTION_DURATION = None
 
     def __init__(self):
         self.DeconstructionRatio = None
@@ -69,6 +70,10 @@ class DefaultStaticEntityFactory:
         pass
 
 class EntityCollapseHelper:
+    RUBBLE_ONLY_AFTER_CONSTR_PERCENT = None
+    RUBBLE_PER_TILE_MIN = None
+    RUBBLE_PER_TILE_MAX = None
+    SIM_UPDATE_FREQ = None
 
     def __init__(self):
         self.HasRemainingRubble = False
@@ -189,6 +194,15 @@ class IConstructionManager:
         self.EntityConstructionStateChanged = None
         self.EntityPauseStateChanged = None
 class ConstructionState:
+    NotInitialized = None
+    NotStarted = None
+    InConstruction = None
+    Constructed = None
+    PreparingUpgrade = None
+    BeingUpgraded = None
+    PendingDeconstruction = None
+    InDeconstruction = None
+    Deconstructed = None
 
     def __init__(self):
         pass
@@ -230,6 +244,29 @@ class IEntityWithMultipleProductsToAssign:
         self.CanBePaused = False
         self.IsDestroyed = False
         self.DefaultTitle = None
+class IEntityWithQuickRemove:
+
+    def __init__(self):
+        self.Id = None
+        self.Prototype = None
+        self.Context = None
+        self.IsEnabled = False
+        self.IsPaused = False
+        self.CanBePaused = False
+        self.IsDestroyed = False
+        self.DefaultTitle = None
+class QuickRemoveFromEntityCmd:
+
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class ILayoutEntity:
 
     def __init__(self):
@@ -411,6 +448,8 @@ class TileVertexData:
         pass
 
 class OceanAreaRecoverHelper:
+    RECOVERY_COST = None
+    DEFAULT_TILES_RECOVERED = None
 
     def __init__(self):
         pass
@@ -446,6 +485,7 @@ class ProductBuffer:
         self.UsableCapacity = None
         self.IsDestroyed = False
 class DisableQuickBuildParam:
+    Instance = None
 
     def __init__(self):
         self.AllowedProtoType = None
@@ -507,11 +547,16 @@ class IProtoWithReservedOcean:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class ReservedOceanAreaState:
+    MAX_AREAS_IN_SET = None
 
     def __init__(self):
         self.AreasSetsValidity = None
@@ -520,6 +565,8 @@ class ReservedOceanAreaState:
         self.AreasSetsValidityChanged = None
         self.IsNoValidAreasNotificationActive = False
 class StaticEntitiesTerrainInteractionManager:
+    UPDATE_FREQ_TICKS = None
+    TOLERANCE = None
 
     def __init__(self):
         self.Priority = None
@@ -557,6 +604,8 @@ class StaticEntity:
         self.IsNotPaused = False
         self.RendererData = None
 class StaticEntityOceanReservationManager:
+    MAX_OCEAN_FLOOR_HEIGHT = None
+    MIN_OCEAN_DEPTH = None
 
     def __init__(self):
         self.MonitoredAreas = None
@@ -570,6 +619,7 @@ class IOceanAreaRecord:
         self.NonOceanTilesIndices = None
         self.NonOceanTiles = int(0)
 class StaticEntityPfTargetTiles:
+    Empty = None
 
     def __init__(self):
         self.TilesCount = int(0)
@@ -580,8 +630,12 @@ class IStaticEntityProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class StaticEntityProto:
@@ -597,6 +651,11 @@ class StaticEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -604,6 +663,7 @@ class ID:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass
@@ -637,6 +697,7 @@ class UpgradesManager:
         pass
 
 class VirtualBuffersMap:
+    Empty = None
 
     def __init__(self):
         pass

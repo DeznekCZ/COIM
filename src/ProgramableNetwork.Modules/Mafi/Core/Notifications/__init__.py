@@ -42,6 +42,11 @@ class EntityNotificationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -60,6 +65,11 @@ class GeneralNotificationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -78,6 +88,11 @@ class NotificationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -85,11 +100,16 @@ class ID:
         pass
 
 class NotificationStyle:
+    Success = None
+    Warning = None
+    Critical = None
 
     def __init__(self):
         pass
 
 class NotificationType:
+    Continuous = None
+    OneTimeOnly = None
 
     def __init__(self):
         pass

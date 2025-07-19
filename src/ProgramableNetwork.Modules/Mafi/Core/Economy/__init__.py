@@ -4,6 +4,7 @@ class AssetTransactionManager:
         pass
 
 class AssetValue:
+    Empty = None
 
     def __init__(self):
         self.IsEmpty = False
@@ -30,11 +31,18 @@ class IOverflowProductsStorage:
         pass
 
 class GlobalOutputPriority:
+    SHIPYARD = None
+    INCREASED = None
+    DEFAULT = None
+    LOW = None
 
     def __init__(self):
         pass
 
 class GlobalInputPriority:
+    INCREASED = None
+    DEFAULT = None
+    LOW = None
 
     def __init__(self):
         pass

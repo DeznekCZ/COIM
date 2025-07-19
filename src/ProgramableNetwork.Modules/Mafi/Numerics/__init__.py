@@ -77,6 +77,7 @@ class Rect2i:
     def __init__(self):
         self.Size = None
 class UnitQuaternion4f:
+    Identity = None
 
     def __init__(self):
         from Mafi import Fix32
@@ -132,6 +133,9 @@ class Enumerator:
     def __init__(self):
         self.Current = None
 class Plane:
+    YzPlane = None
+    XyPlane = None
+    XzPlane = None
 
     def __init__(self):
         pass

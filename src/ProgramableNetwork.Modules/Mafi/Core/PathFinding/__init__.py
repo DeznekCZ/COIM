@@ -1,4 +1,30 @@
 class ClearancePathabilityProvider:
+    FLAT_STEEPNESS_DELTA = None
+    MAX_STEEPNESS_DELTA = None
+    TILE_FREE = None
+    TILE_BLOCKED = None
+    STEEPNESS_NO_SLOPE = None
+    STEEPNESS_SLIGHT_SLOPE = None
+    STEEPNESS_STEEP_SLOPE = None
+    ALLOW_SLIGHT_SLOPE = None
+    ALLOW_NO_SLOPE = None
+    HEIGHT_CLEARANCE_FREE = None
+    HEIGHT_CLEARANCE_7T = None
+    HEIGHT_CLEARANCE_5T = None
+    HEIGHT_CLEARANCE_4T = None
+    HEIGHT_CLEARANCE_3T = None
+    HEIGHT_CLEARANCE_2T = None
+    HEIGHT_CLEARANCE_1T = None
+    HEIGHT_CLEARANCE_BLOCKED = None
+    REQUIRE_CLEARANCE_INF = None
+    REQUIRE_CLEARANCE_7T = None
+    REQUIRE_CLEARANCE_5T = None
+    REQUIRE_CLEARANCE_4T = None
+    REQUIRE_CLEARANCE_3T = None
+    REQUIRE_CLEARANCE_2T = None
+    REQUIRE_CLEARANCE_1T = None
+    REQUIRE_NO_CLEARANCE = None
+    MAX_QUERY_CLEARANCE = None
 
     def __init__(self):
         self.RecomputedChunksCount = int(0)
@@ -21,6 +47,14 @@ class PathabilityBitmap:
         pass
 
 class HeightClearancePathability:
+    IgnoreClearance = None
+    Require1TileClearance = None
+    Require2TilesClearance = None
+    Require3TilesClearance = None
+    Require4TilesClearance = None
+    Require5TilesClearance = None
+    Require7TilesClearance = None
+    RequireInfiniteClearance = None
 
     def __init__(self):
         pass
@@ -31,6 +65,9 @@ class HeightClearancePathabilityExtensions:
         pass
 
 class SteepnessPathability:
+    IgnoreSlope = None
+    SlightSlopeAllowed = None
+    NoSlopeAllowed = None
 
     def __init__(self):
         pass
@@ -49,6 +86,14 @@ class IVehiclePathFinder:
         self.DistanceEstimationGoalCoord = None
         self.PathabilityProvider = None
 class VehiclePathFinderInitResult:
+    Unknown = None
+    GoalAlreadyReached = None
+    PathFound = None
+    ReadyForPf = None
+    NoStarts = None
+    AllStartsInvalid = None
+    NoGoals = None
+    AllGoalsInvalid = None
 
     def __init__(self):
         pass
@@ -145,6 +190,14 @@ class VehiclePathFindingTask:
         self.InQueueDuration = None
         self.PathFindingDuration = None
 class VehiclePfResultStatus:
+    Unknown = None
+    PathFound = None
+    StartInvalid = None
+    AllGoalsInvalid = None
+    NoValidGoals = None
+    PathDoesNotExist = None
+    StepLimitExceeded = None
+    Aborted = None
 
     def __init__(self):
         pass
@@ -195,6 +248,8 @@ class VehicleRoadPathSegment:
         from Mafi import Option
         self.NextSegment = Option()
 class VehiclePathFindingManager:
+    DEFAULT_STEPS_PER_UPDATE = None
+    EXTRA_STEPS_PER_QUEUED_VEHICLE = None
 
     def __init__(self):
         self.MaxStepsPerUpdate = int(0)
@@ -209,6 +264,7 @@ class PerfData:
     def __init__(self):
         self.TotalTimeMs = float(0)
 class VehiclePathFindingParams:
+    DEFAULT = None
 
     def __init__(self):
         pass

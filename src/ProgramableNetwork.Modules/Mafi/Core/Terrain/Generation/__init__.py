@@ -81,6 +81,7 @@ class TerrainGenerationContext:
         self.Area = None
         self.ExtraData = None
 class TerrainGenerator:
+    REPORT_PROGRESS_STEPS = None
 
     def __init__(self):
         self.TerrainWidth = int(0)
@@ -98,6 +99,7 @@ class TextConfigurableNoise2dFactory:
         self.Configuration = str(0)
         self.RebuildUi = False
 class WorldRegionMap:
+    MAX_MAP_FILE_NAME_LENGTH = None
 
     def __init__(self):
         self.Size = None
@@ -109,6 +111,7 @@ class WorldRegionMap:
         self.VirtualResourcesGenerators = None
         self.StartingLocations = None
 class WorldRegionMapAdditionalData:
+    MAX_DEPTH_FOR_EASY_RESOURCES = None
 
     def __init__(self):
         self.NonOceanTilesCount = int(0)
@@ -135,6 +138,9 @@ class WorldRegionMapPlayerConfig:
     def __init__(self):
         self.SetStartingLocationIndex = int(0)
 class WorldRegionMapPreviewData:
+    MAX_NAME_LENGTH = None
+    MAX_DESCRIPTION_LENGTH = None
+    MAX_AUTHOR_LENGTH = None
 
     def __init__(self):
         self.Name = str(0)
@@ -279,6 +285,9 @@ class ITerrainResourceChunkGenerator:
         pass
 
 class TerrainGeneratorBasePriority:
+    CellEdges = None
+    Resources = None
+    Trees = None
 
     def __init__(self):
         pass
@@ -364,6 +373,10 @@ class IWorldRegionMapAdditionalData:
         self.ThumbnailLargeData = None
         self.PreviewImagesData = None
 class StartingLocationDifficulty:
+    Easy = None
+    Medium = None
+    Hard = None
+    Insane = None
 
     def __init__(self):
         pass
@@ -376,11 +389,22 @@ class IMapCacheManager:
         self.LoadResult = None
         self.SaveResult = None
 class MapCacheSaveResult:
+    Unknown = None
+    Success = None
+    InvalidChecksum = None
+    FailedToWrite = None
 
     def __init__(self):
         pass
 
 class MapCacheLoadResult:
+    Unknown = None
+    Success = None
+    Disabled = None
+    NoFile = None
+    InvalidChecksum = None
+    InvalidVersion = None
+    FailedToRead = None
 
     def __init__(self):
         pass
@@ -393,6 +417,8 @@ class NoMapCacheManager:
         self.SaveResult = None
         self.LoadResult = None
 class MapCacheManager:
+    HEADER_MAP_CACHE_ASCII = None
+    HEADER_MAP_CACHE = None
 
     def __init__(self):
         from Mafi import Option
@@ -436,6 +462,7 @@ class GeneratedTerrainData:
         pass
 
 class TerrainGeneratorChunkData:
+    SIZE = None
 
     def __init__(self):
         self.Chunk = None
@@ -464,11 +491,26 @@ class ITerrainFeatureGenerator:
         self.IsUnique = False
         self.IsImportable = False
 class TerrainFeaturePriorityBase:
+    First = None
+    TerrainResources = None
+    TerrainSurfaces = None
+    PostProcessors = None
+    Last = None
 
     def __init__(self):
         pass
 
 class TerrainPostProcessorPriorityBase:
+    First = None
+    Erosion = None
+    RestrictPlacement = None
+    GrassOnRocks = None
+    Trees = None
+    ReplaceMaterials = None
+    MixedSurfaces = None
+    Flowers = None
+    Props = None
+    Last = None
 
     def __init__(self):
         pass
@@ -606,6 +648,7 @@ class ICustomTerrainPostProcessor:
         pass
 
 class TerrainGeneratorV2:
+    MAP_HEIGHT_CAP = None
 
     def __init__(self):
         pass
@@ -615,6 +658,12 @@ class TerrainGeneratorV2Config:
     def __init__(self):
         self.MaxDegreeOfParallelism = None
 class MaxDegreeOfParallelism:
+    ProcessorsCount = None
+    OneThread = None
+    TwoThreads = None
+    FourThreads = None
+    EightThreads = None
+    SixteenThreads = None
 
     def __init__(self):
         pass
@@ -625,6 +674,9 @@ class MaxDegreeOfParallelismExtensions:
         pass
 
 class TerrainPostProcessorParallelizationStrategy:
+    AnalyzeAllThenApply = None
+    AnalyzeInterleaveAndApply = None
+    CustomSchedule = None
 
     def __init__(self):
         pass

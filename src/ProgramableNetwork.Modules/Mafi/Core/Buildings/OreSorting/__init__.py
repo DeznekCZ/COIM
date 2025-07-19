@@ -1,4 +1,5 @@
 class OreSortingPlant:
+    MAX_PRODUCTS = None
 
     def __init__(self):
         self.OutputPortsCount = int(0)
@@ -72,6 +73,13 @@ class OreSortingPlant:
         self.MaintenanceCosts = None
         self.PowerRequired = None
 class State:
+    Paused = None
+    Broken = None
+    Working = None
+    MissingInput = None
+    MissingWorkers = None
+    NotEnoughPower = None
+    FullOutput = None
 
     def __init__(self):
         pass
@@ -121,6 +129,11 @@ class OreSortingPlantProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
 

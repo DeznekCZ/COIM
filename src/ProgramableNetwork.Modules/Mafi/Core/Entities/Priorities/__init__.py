@@ -1,9 +1,40 @@
 class GeneralPriorities:
+    HIGHEST_PRIORITY = None
+    LOWEST_ACTIONABLE_PRIORITY = None
+    LOWEST_PRIORITY = None
+    IGNORE = None
+    DEFAULT = None
+    HIGH = None
+    VERY_HIGH = None
+    SUPER_HIGH = None
+    LOAN_PAYMENTS = None
+    CONSTRUCTION_DECONSTRUCTION = None
+    CONSTRUCTION_DECONSTRUCTION_PRIORITIZED = None
+    CLEARING = None
+    CARGO_DEPOT_MODULE_CARGO = None
+    RUINS_EXPORT = None
+    SHIPYARD_REPAIR_IMPORT_LOW = None
+    SHIPYARD_DEFAULT_CARGO_EXPORT = None
+    TRADE_DOCK_DEFAULT_CARGO_EXPORT = None
+    VEHICLE_DEPOT_EXPORT = None
+    STORAGE_CARGO_INCREASED = None
+    VEHICLES = None
+    SHIP = None
+    CARGO_SHIPS = None
+    TRANSPORTS_ZIPPERS = None
+    STORAGE = None
+    FARM = None
+    POWER = None
+    WORLD_MINES = None
+    SETTLEMENT_MODULE = None
+    VEHICLE_DEPOT = None
 
     def __init__(self):
         pass
 
 class GlobalPrioritiesManager:
+    CONSTRUCTION_PRIORITY_ID = None
+    DECONSTRUCTION_PRIORITY_ID = None
 
     def __init__(self):
         self.ConstructionPriority = int(0)

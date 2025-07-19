@@ -102,6 +102,10 @@ class IntSumStats:
         self.IsMonthlyEvent = False
         self.AreAnnualDataFull = False
 class ItemStats:
+    QUARTER_CENTURY = None
+    MAX_YEARS_OF_ANNUAL_DATA = None
+    MAX_MONTHS_OF_MONTHLY_DATA = None
+    MAX_DAYS_OF_DAILY_DATA = None
 
     def __init__(self):
         self.HasAnyData = False
@@ -167,6 +171,11 @@ class IFuelStatsCollector:
         pass
 
 class FuelUsedBy:
+    Vehicle = None
+    CargoShip = None
+    BattleShip = None
+    PowerGenerator = None
+    Train = None
 
     def __init__(self):
         pass
@@ -177,6 +186,10 @@ class IItemStatsEvents:
         pass
 
 class StatsDataRange:
+    Last120Days = None
+    Last120Months = None
+    Last100Years = None
+    QuarterCenturies = None
 
     def __init__(self):
         pass
@@ -187,6 +200,8 @@ class IDataValuesFormatter:
         pass
 
 class RleSequence:
+    DEFAULT_RLE_CAPACITY = None
+    MAX_REPS_PER_ENTRY = None
 
     def __init__(self):
         self.Count = int(0)

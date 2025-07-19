@@ -21,6 +21,7 @@ class ILogisticsBufferReadOnly:
         self.Quantity = None
 class LogisticsBuffer:
     SingleStep = None
+    MAX_STEPS = None
 
     def __init__(self):
         self.CurrentQuantityPercent = int(0)
@@ -64,8 +65,15 @@ class NuclearWasteStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Storage:
+    IMPORT_PRIO_ID = None
+    EXPORT_PRIO_ID = None
 
     def __init__(self):
         self.Prototype = None
@@ -88,6 +96,7 @@ class Storage:
         self.ExportPriority = int(0)
         self.AreOnlyAssignedVehiclesAllowed = False
         self.AllVehicles = None
+        self.AreParticlesEnabled = False
         self.AreAlertsAvailable = False
         self.AlertWhenAboveEnabled = False
         self.AlertWhenAbove = None
@@ -107,6 +116,7 @@ class Storage:
         self.IsNotFull = False
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -227,6 +237,7 @@ class StorageBase:
         self.LogisticsOutputControl = None
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -284,6 +295,11 @@ class StorageBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class StorageCheatClearProductCmd:
 
@@ -383,8 +399,14 @@ class FluidStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)
@@ -419,8 +441,14 @@ class LooseStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)
@@ -455,8 +483,14 @@ class UnitStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.MaxProductRenderCapacity = int(0)
@@ -475,6 +509,7 @@ class UnitStorageRackData:
         pass
 
 class UnitStorageProductRackPlacementParams:
+    Default = None
 
     def __init__(self):
         pass
@@ -505,6 +540,11 @@ class StorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class StorageProtoBuilder:
 

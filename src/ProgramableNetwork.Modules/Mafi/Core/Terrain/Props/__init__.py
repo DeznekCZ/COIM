@@ -1,4 +1,5 @@
 class TerrainPropId:
+    Invalid = None
 
     def __init__(self):
         self.IsValid = False
@@ -38,6 +39,7 @@ class TerrainPropsManager:
         self.RemovedPropsCount = int(0)
         self.PropChangedAt = None
 class PropsRemovalProcessor:
+    COST_PER_PROP = None
 
     def __init__(self):
         pass
@@ -61,13 +63,21 @@ class TerrainPropProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class PropGfx:
+    Empty = None
 
     def __init__(self):
         pass
 
 class TerrainPropBoundingShape:
+    Rectangle = None
+    Circle = None
 
     def __init__(self):
         pass

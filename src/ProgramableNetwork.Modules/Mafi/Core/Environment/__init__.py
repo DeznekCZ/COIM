@@ -1,4 +1,7 @@
 class AirPollutionCategory:
+    Vehicles = None
+    Ships = None
+    Trains = None
 
     def __init__(self):
         pass
@@ -47,6 +50,7 @@ class IWeatherManager:
         self.SimSunIntensity = None
         self.WorldWetness = None
 class WeatherManager:
+    HALF_WEATHER_GFX_TRANSITION_DAYS = None
 
     def __init__(self):
         self.CurrentWeather = None
@@ -65,8 +69,14 @@ class WeatherProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass

@@ -287,6 +287,7 @@ class VehicleCheatProductCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class VehicleCommandsProcessor:
+    COST_TO_DISCARD_CARGO = None
 
     def __init__(self):
         pass

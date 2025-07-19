@@ -57,6 +57,7 @@ class CargoDepotModule:
         self.IsNotFull = False
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -97,6 +98,12 @@ class CargoDepotModule:
         self.PowerRequired = None
         self.MaintenanceCosts = None
 class State:
+    Paused = None
+    Broken = None
+    Working = None
+    MissingWorkers = None
+    NotEnoughPower = None
+    Idle = None
 
     def __init__(self):
         pass
@@ -160,8 +167,14 @@ class CargoDepotModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)

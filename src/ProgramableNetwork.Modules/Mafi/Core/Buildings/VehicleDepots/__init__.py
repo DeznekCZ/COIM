@@ -157,6 +157,12 @@ class VehicleDepotBase:
         self.WorkersNeeded = int(0)
         self.HasWorkersCached = False
 class State:
+    Idle = None
+    Paused = None
+    NotEnoughWorkers = None
+    NotEnoughPower = None
+    NotEnoughComputing = None
+    Working = None
 
     def __init__(self):
         pass
@@ -195,8 +201,14 @@ class VehicleDepotBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)
@@ -231,6 +243,11 @@ class VehicleDepotProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class VehicleDepotProtoBuilder:
 

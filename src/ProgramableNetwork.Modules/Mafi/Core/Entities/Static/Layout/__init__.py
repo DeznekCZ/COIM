@@ -1,4 +1,7 @@
 class EntityLayout:
+    VEHICLE_INACCESSIBLE_HEIGHT = None
+    VEHICLE_INACCESSIBLE_HEIGHT_REL = None
+    ANY_COMPATIBLE_PORT = None
 
     def __init__(self):
         self.CoreSize = None
@@ -8,6 +11,7 @@ class TerrainVertexRel:
         pass
 
 class EntityLayoutParams:
+    DEFAULT = None
 
     def __init__(self):
         pass
@@ -18,6 +22,10 @@ class LayoutTokenSpec:
         pass
 
 class EntityLayoutParser:
+    VEHICLE_SURFACE_EXTRA_THICKNESS = None
+    DEFAULT_HARDENED_SURFACE = None
+    DEFAULT_HARDENED_MATERIAL = None
+    MAX_TERRAIN_SURFACE_DIFF_TILES = None
 
     def __init__(self):
         pass
@@ -159,6 +167,9 @@ class LayoutEntityAddRequest:
         from Mafi import Option
         self.Metadata = Option()
 class EntityPlacementPhase:
+    First = None
+    Final = None
+    FirstAndFinal = None
 
     def __init__(self):
         pass
@@ -176,11 +187,16 @@ class ILayoutEntityProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class LayoutEntityProto:
+    DEFAULT_CONSTR_DUR_PER_PRODUCT = None
 
     def __init__(self):
         self.Layout = None
@@ -201,8 +217,14 @@ class LayoutEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)
@@ -212,6 +234,7 @@ class Gfx:
         self.VisualizedLayers = None
         self.Categories = None
 class VisualizedLayers:
+    Empty = None
 
     def __init__(self):
         pass
@@ -232,6 +255,12 @@ class LayoutTile:
         pass
 
 class LayoutTileConstraint:
+    None = None
+    Ground = None
+    Ocean = None
+    UsingPillar = None
+    DisableTerrainPhysics = None
+    NoRubbleAfterCollapse = None
 
     def __init__(self):
         pass
@@ -271,11 +300,16 @@ class ToolbarEntryData:
         pass
 
 class AllSubcategoryPolicy:
+    Enabled = None
+    EnabledAndDefault = None
+    Disabled = None
 
     def __init__(self):
         pass
 
 class ToolbarCategoryProto:
+    PHANTOM_CATEGORY_ID = None
+    Phantom = None
 
     def __init__(self):
         self.Subcategories = None
@@ -289,4 +323,9 @@ class ToolbarCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

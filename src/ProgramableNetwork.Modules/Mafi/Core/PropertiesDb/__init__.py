@@ -29,6 +29,11 @@ class BooleanPropertyProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class PropertyBoolean:
 
@@ -49,6 +54,11 @@ class DurationPropertyProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class PropertyDuration:
 
@@ -58,11 +68,17 @@ class PropertyDuration:
         self.Value = None
         self.AllModifiers = None
 class PropertyGroups:
+    RESEARCH = None
+    FOCUS = None
+    EDICT = None
+    SPACE = None
+    POPULATION = None
 
     def __init__(self):
         pass
 
 class PropertyModifiers:
+    NO_GROUP = None
 
     def __init__(self):
         pass
@@ -93,8 +109,15 @@ class PercentPropertyProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class PropertyType:
+    Multiplier = None
+    Diff = None
 
     def __init__(self):
         pass
@@ -111,6 +134,11 @@ class PropertyProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class PropsDb:
 

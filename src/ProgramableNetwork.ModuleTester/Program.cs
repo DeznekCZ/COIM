@@ -23,8 +23,8 @@ namespace ProgramableNetwork.ModuleTester
     {
         static void Main(string[] args)
         {
-            //ExportBinaries();
-            RunTest();
+            ExportBinaries();
+            //RunTest();
         }
 
         private static void RunTest()
@@ -169,21 +169,59 @@ namespace ProgramableNetwork.ModuleTester
                         stringBuilder.Append(" = None\n");
                     }
 
-                    stringBuilder.Append("\n    def __init__(self):\n");
-
-                    HashSet<string> names = new HashSet<string>();
-                    foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                    if (type == typeof(ColorRgba))
                     {
-                        AppendInstanceProperty(property, stringBuilder, names);
-                    }
-                    foreach (var property in type.GetInterfaces()
-                        .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public)))
-                    {
-                        AppendInstanceProperty(property, stringBuilder, names);
-                    }
+                        foreach (var field in type.GetFields(BindingFlags.Static | BindingFlags.Public))
+                        {
+                            stringBuilder.Append($"    from Mafi import ColorRgba\n");
+                            stringBuilder.Append("    ");
+                            stringBuilder.Append(field.Name);
+                            if (field.FieldType == typeof(ColorRgba))
+                            {
+                                ColorRgba color = (ColorRgba)field.GetValue(null);
+                                if (color.A == 255)
+                                    stringBuilder.Append($" = ColorRgba({color.R}, {color.G}, {color.B})\n");
+                                else
+                                    stringBuilder.Append($" = ColorRgba({color.R}, {color.G}, {color.B}, {color.A})\n");
+                            }
+                            else
+                            {
+                                stringBuilder.Append(" = None\n");
+                            }
+                        }
 
-                    if (names.Count == 0)
-                        stringBuilder.Append("        pass\n\n");
+                        stringBuilder.Append("\n    def __init__(self, r, g, b, a = 255):\n");
+                        stringBuilder.Append("        self.R = r\n");
+                        stringBuilder.Append("        self.G = g\n");
+                        stringBuilder.Append("        self.B = b\n");
+                        stringBuilder.Append("        self.A = a\n");
+                        stringBuilder.Append("        self.Rgba = int(str(r,16) + str(g,16) + str(b,16) + str(a,16), 16)\n\n");
+                    }
+                    else
+                    {
+                        foreach (var field in type.GetFields(BindingFlags.Static | BindingFlags.Public))
+                        {
+                            stringBuilder.Append("    ");
+                            stringBuilder.Append(field.Name);
+                            stringBuilder.Append(" = None\n");
+                        }
+
+                        stringBuilder.Append("\n    def __init__(self):\n");
+
+                        HashSet<string> names = new HashSet<string>();
+                        foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                        {
+                            AppendInstanceProperty(property, stringBuilder, names);
+                        }
+                        foreach (var property in type.GetInterfaces()
+                            .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public)))
+                        {
+                            AppendInstanceProperty(property, stringBuilder, names);
+                        }
+
+                        if (names.Count == 0)
+                            stringBuilder.Append("        pass\n\n");
+                    }
                 }
 
                 Directory.CreateDirectory(directoryname);

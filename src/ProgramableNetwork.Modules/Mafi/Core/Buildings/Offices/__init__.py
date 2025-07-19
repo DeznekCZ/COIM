@@ -48,6 +48,11 @@ class CaptainOffice:
         self.HasWorkersCached = False
         self.PowerRequired = None
 class State:
+    None = None
+    Paused = None
+    NotEnoughWorkers = None
+    NotEnoughPower = None
+    Working = None
 
     def __init__(self):
         pass
@@ -85,6 +90,11 @@ class CaptainOfficeProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class OfficeBuilding:
 
@@ -152,6 +162,13 @@ class OfficeBuilding:
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
 class State:
+    Paused = None
+    Broken = None
+    MissingSupplies = None
+    MissingWorkers = None
+    NotEnoughPower = None
+    WorkingComputingLow = None
+    Working = None
 
     def __init__(self):
         pass
@@ -182,6 +199,11 @@ class OfficeBuildingProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class OfficeBuildingsManager:
 
@@ -234,6 +256,11 @@ class OfficeFocusProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class DescriptionFunc:
 
@@ -241,6 +268,7 @@ class DescriptionFunc:
         self.Method = None
         self.Target = None
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -263,4 +291,9 @@ class OfficeFocusWithPropertiesProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

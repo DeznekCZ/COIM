@@ -16,6 +16,9 @@ class LandfillOnTerrainManager:
         self.Stats = None
         self.LandfillProduct = None
 class OceanTerrainManager:
+    OCEAN_THRESHOLD = None
+    MIN_CONNECTED_TILES_FOR_FLOODING = None
+    MAX_TILES_PER_TICK = None
 
     def __init__(self):
         self.QueuedTilesCount = int(0)
@@ -46,6 +49,23 @@ class RectangleTerrainArea2iRelative:
     def __init__(self):
         self.AreaTiles = int(0)
 class TerrainManager:
+    HEIGHT_AT_OCEAN = None
+    MAX_DISRUPTION_DEPTH = None
+    BedrockLayerThicknessDefault = None
+    TERRAIN_GEN_PROGRESS_STEPS = None
+    TERRAIN_GEN_APPLY_STEPS = None
+    TERRAIN_GEN_LOAD_STEPS = None
+    TERRAIN_DIMENSION_MULTIPLE = None
+    TERRAIN_DIMENSION_MULTIPLE_BITS = None
+    TERRAIN_DIMENSION_MIN = None
+    TERRAIN_DIMENSION_MULTIPLE_MASK = None
+    MIN_OFF_LIMITS_SIZE = None
+    DEFAULT_OFF_LIMITS_SIZE = None
+    MAX_OFF_LIMITS_SIZE = None
+    TERRAIN_DIMENSION_MAX = None
+    TERRAIN_DIMENSION_MAX_BITS = None
+    TERRAIN_AREA_MAX = None
+    TERRAIN_AREA_MAX_BITS = None
 
     def __init__(self):
         self.TerrainWidth = int(0)
@@ -132,6 +152,18 @@ class TerrainSurfaceManager:
         pass
 
 class TerrainTile:
+    ONE_OVER_TILE_SIZE_M = None
+    MIN_LAYER_THICKNESS = None
+    MIN_LAYER_THICKNESS_PER_DEPTH = None
+    TILE_SIZE_M = None
+    TILE_SIZE_M_HALF = None
+    TILE_AREA_M = None
+    TILE_VOLUME_M = None
+    RESERVED_FLAGS_COUNT = None
+    MAX_FLAGS_COUNT = None
+    FLAG_IS_ON_BOUNDARY = None
+    FLAG_IS_OFF_LIMITS = None
+    FLAG_IS_OCEAN = None
 
     def __init__(self):
         self.TileCoord = None
@@ -174,6 +206,9 @@ class TileFlagReporter:
         pass
 
 class TileSurfaceData:
+    SIZE_BYTES = None
+    IS_AUTO_PLACED_SHIFT = None
+    HEIGHT_BITS_INCL_SIGN = None
 
     def __init__(self):
         self.Height = None
@@ -235,6 +270,8 @@ class RectangleTerrainArea2iRelativeExtensions:
         pass
 
 class TerrainTileSurfaceProto:
+    PHANTOM_PRODUCT_ID = None
+    Phantom = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -247,18 +284,26 @@ class TerrainTileSurfaceProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.TextureSpec = None
         self.EdgesSpec = None
 class TileSurfaceTextureSpec:
+    Empty = None
 
     def __init__(self):
         pass
 
 class TileSurfacesEdgesSpec:
+    Empty = None
 
     def __init__(self):
         pass
@@ -266,6 +311,11 @@ class TileSurfacesEdgesSpec:
 class TerrainChunk:
     Size = None
     Size2i = None
+    BITS_TILES_PER_EDGE = None
+    MASK_LOCAL_COORD = None
+    TILES_PER_EDGE = None
+    MAX_LOCAL_COORD = None
+    TILES_PER_CHUNK = None
 
     def __init__(self):
         pass
@@ -319,6 +369,7 @@ class UnstableTerrainValidator:
     def __init__(self):
         self.Priority = None
 class UnstableTerrainMaterialParam:
+    Instance = None
 
     def __init__(self):
         self.AllowedProtoType = None

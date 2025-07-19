@@ -30,6 +30,20 @@ class INeedsSimUpdatesForInit:
         self.FailedInit = False
         self.FailedInitMessage = str(0)
 class GameLoopState:
+    None = None
+    NewGameCreated = None
+    NewGameInitialized = None
+    InitState = None
+    RendererInitState = None
+    SyncUpdateStart = None
+    SyncUpdate = None
+    InputUpdate = None
+    InputUpdateEnd = None
+    RenderUpdate = None
+    RenderUpdateEnd = None
+    Terminate = None
+    SyncUpdateEnd = None
+    RenderUpdateAfterSync = None
 
     def __init__(self):
         pass

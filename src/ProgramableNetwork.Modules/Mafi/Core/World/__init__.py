@@ -124,6 +124,7 @@ class TeleportFleetToLocationCheatCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class TravelingFleet:
+    EXPLORATION_COST_IN_KM = None
 
     def __init__(self):
         self.CanBePaused = False
@@ -188,6 +189,16 @@ class TravelingFleetManager:
         self.TravelingFleet = None
         self.FarthestLocationVisited = int(0)
 class LocationVisitCheckResult:
+    Ok = None
+    AlreadyHeadingThereOrPresent = None
+    Damaged = None
+    ShipIsBeingModified = None
+    ShipIsBeingRepaired = None
+    NotAccessible = None
+    NotEnoughFuel = None
+    NotEnoughCrew = None
+    Docking = None
+    TooFar = None
 
     def __init__(self):
         pass
@@ -298,6 +309,9 @@ class WorldMapSettlementAdoptPopsCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class LocationVisitReason:
+    General = None
+    LoadCargo = None
+    DeliverCargo = None
 
     def __init__(self):
         pass
@@ -318,6 +332,12 @@ class LineWorldMapGenerator:
         pass
 
 class FleetLocationState:
+    AtWorld = None
+    ArrivingFromWorld = None
+    Docked = None
+    DepartingToWorld = None
+    ExploreInProgress = None
+    BattleInProgress = None
 
     def __init__(self):
         pass
@@ -335,13 +355,22 @@ class TravelingFleetProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    EMPTY = None
 
     def __init__(self):
         pass
 
 class WorldMapLocationState:
+    Hidden = None
+    NotExplored = None
+    Explored = None
 
     def __init__(self):
         pass

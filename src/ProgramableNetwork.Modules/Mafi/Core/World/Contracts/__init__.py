@@ -1,19 +1,31 @@
 class ContractsManager:
+    CAP_MULTIPLIER_LARGE_SHIPS = None
 
     def __init__(self):
         self.ActiveContracts = None
         self.ProfitMultiplier = None
 class ShipDepartureCheckResult:
+    Ok = None
+    NotEnoughUpoints = None
+    WaitingForCargo = None
 
     def __init__(self):
         pass
 
 class EstablishCheckResult:
+    Ok = None
+    AlreadyActive = None
+    VillageLevelLow = None
+    ProductLocked = None
+    LacksUpoints = None
 
     def __init__(self):
         pass
 
 class CancelCheckResult:
+    Ok = None
+    NotActive = None
+    HasShipsAssigned = None
 
     def __init__(self):
         pass
@@ -43,4 +55,9 @@ class ContractProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

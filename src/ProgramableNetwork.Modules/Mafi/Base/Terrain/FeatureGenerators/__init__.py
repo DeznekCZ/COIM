@@ -67,6 +67,7 @@ class Configuration:
         self.ChunksWithNoContribution = int(0)
         self.ChunksWithSurfaceAtMaxThickness = int(0)
 class PolygonTerrainFeatureGenerator:
+    LATEST_VERSION = None
 
     def __init__(self):
         self.Name = str(0)
@@ -141,6 +142,9 @@ class SetHeightInAreaGenerator:
         self.TargetHeight = None
         self.SetStrategy = None
 class HeightSetStrategy:
+    AlwaysSetHeight = None
+    SetWhenLower = None
+    SetWhenHigher = None
 
     def __init__(self):
         pass

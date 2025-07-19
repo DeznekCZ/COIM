@@ -38,11 +38,16 @@ class RegistrationContext:
         pass
 
 class ModsLoader:
+    ASSET_BUNDLES_DIR_NAME = None
+    DLCS_DIR_NAME = None
 
     def __init__(self):
         pass
 
 class ModGroup:
+    Core = None
+    Dlc = None
+    ThirdParty = None
 
     def __init__(self):
         pass

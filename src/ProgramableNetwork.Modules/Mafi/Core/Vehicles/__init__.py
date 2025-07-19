@@ -16,6 +16,7 @@ class AutoBufferLogisticsHelper:
         self.LogisticsInputMode = None
         self.LogisticsOutputMode = None
 class BufferStrategy:
+    Ignore = None
 
     def __init__(self):
         pass
@@ -70,6 +71,9 @@ class KeepFullEntityPriorityProvider:
         pass
 
 class LogisticsZone:
+    COLOR_PALETTE = None
+    DUMMY_ALL_ZONE = None
+    DEFAULT_ZONE_MASK = None
 
     def __init__(self):
         self.Color = None
@@ -80,6 +84,9 @@ class LogisticsZone:
         self.IsDestroyed = False
         self.ConstructionAllowedFrom = None
 class LogisticsZonesManager:
+    DefaultZoneId = None
+    PLAYER_ZONES_LIMIT = None
+    ZONES_LIMIT = None
 
     def __init__(self):
         self.DefaultZone = None
@@ -168,6 +175,7 @@ class RenameLogisticsZoneCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class RobustNavHelper:
+    DEFAULT_EXTRA_TOLERANCE_PER_RETRY = None
 
     def __init__(self):
         from Mafi import Option
@@ -215,6 +223,8 @@ class SetVehicleLogisticsZoneCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class StaticPriorityProvider:
+    Ignore = None
+    LowestNoQuantityPreference = None
 
     def __init__(self):
         pass
@@ -237,6 +247,7 @@ class VehicleBuffersRegistry:
         self.AllowPartialTrucks = False
         self.NumberOfTrucksWaitingForJobs = int(0)
 class VehicleCargo:
+    MAX_MIXED_PRODUCT_COUNT = None
 
     def __init__(self):
         self.IsEmpty = False
@@ -266,11 +277,15 @@ class VehicleReplacementTask:
         self.State = None
         self.VehiclesReplaced = int(0)
 class TaskState:
+    InProgress = None
+    Finished = None
+    Cancelled = None
 
     def __init__(self):
         pass
 
 class VehiclesManager:
+    VEHICLE_RECOVERY_COST = None
 
     def __init__(self):
         self.OnVehicleDespawned = None
@@ -287,6 +302,7 @@ class VehiclesReplacer:
         self.ActiveReplacementTasks = None
         self.FinishedReplacementTasks = None
 class VehicleSurfaceProvider:
+    SURFACE_REL_HEIGHT = None
 
     def __init__(self):
         self.EntityHeights = None
@@ -401,6 +417,9 @@ class IRegisteredBuffer:
     def __init__(self):
         self.Entity = None
 class RobustNavResult:
+    Navigating = None
+    GoalReachedSuccessfully = None
+    FailGoalUnreachable = None
 
     def __init__(self):
         pass
@@ -420,6 +439,9 @@ class IVehicleCargo:
         self.Count = int(0)
         self.LifetimeLoadedQuantity = None
 class VehicleFuelConsumption:
+    None = None
+    Idle = None
+    Full = None
 
     def __init__(self):
         pass

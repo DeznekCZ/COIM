@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Mafi;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace ProgramableNetwork.Python
 {
@@ -10,13 +12,15 @@ namespace ProgramableNetwork.Python
         public string id;
         public string name;
         public string description;
+        public ColorRgba color;
         public ModulePlacement modules;
 
-        public ControllerTemplate(string id, string name, string description, ModulePlacement modules)
+        public ControllerTemplate(string id, string name, string description, ColorRgba color, ModulePlacement modules)
         {
             this.id = id;
             this.name = name;
             this.description = description;
+            this.color = color;
             this.modules = modules;
         }
 
@@ -39,22 +43,13 @@ namespace ProgramableNetwork.Python
             return hashCode;
         }
 
-        public void Deconstruct(out string id, out string name, out string description, out ModulePlacement modules)
+        public void Deconstruct(out string id, out string name, out string description, out ColorRgba color, out ModulePlacement modules)
         {
             id = this.id;
             name = this.name;
             description = this.description;
+            color = this.color;
             modules = this.modules;
-        }
-
-        public static implicit operator (string id, string name, string description, ModulePlacement modules)(ControllerTemplate value)
-        {
-            return (value.id, value.name, value.description, value.modules);
-        }
-
-        public static implicit operator ControllerTemplate((string id, string name, string description, ModulePlacement modules) value)
-        {
-            return new ControllerTemplate(value.id, value.name, value.description, value.modules);
         }
     }
 }

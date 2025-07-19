@@ -1,4 +1,5 @@
 class IoPort:
+    MAX_TRANSFER_PER_TICK = None
 
     def __init__(self):
         self.Position = None
@@ -22,12 +23,14 @@ class PortSpec:
         pass
 
 class IoPortData:
+    Invalid = None
 
     def __init__(self):
         self.IsValid = False
         self.IsConnected = False
         self.IsNotConnected = False
 class IoPortToken:
+    Invalid = None
 
     def __init__(self):
         pass
@@ -43,6 +46,11 @@ class IoPortShapeProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -50,6 +58,7 @@ class ID:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass

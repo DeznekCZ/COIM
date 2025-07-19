@@ -1,63 +1,3 @@
-class BuildTransportCmd:
-
-    def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = str(0)
-class ReverseTransportCmd:
-
-    def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = str(0)
-class ClearTransportCmd:
-
-    def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = str(0)
-class QuickClearTransportCmd:
-
-    def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = str(0)
-class DeconstructTransportSegmentCmd:
-
-    def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = str(0)
 class CanBuildTransportResult:
 
     def __init__(self):
@@ -107,6 +47,14 @@ class TransportPathFinderOptions:
         pass
 
 class TransportPathFinderFlags:
+    None = None
+    StartMustBeFlat = None
+    GoalMustBeFlat = None
+    InvertTieBreaking = None
+    BanTilesInFrontOfPorts = None
+    AllowOnlyStraight = None
+    BanStartRampsInX = None
+    BanStartRampsInY = None
 
     def __init__(self):
         pass
@@ -192,6 +140,11 @@ class StackerProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
 
@@ -203,6 +156,7 @@ class Gfx:
         self.VisualizedLayers = None
         self.Categories = None
 class Transport:
+    MAX_TRANSPORT_WAYPOINTS = None
 
     def __init__(self):
         self.LastInsertedProduct = None
@@ -272,11 +226,18 @@ class Transport:
         self.TransportedProductsMutable = None
         self.IsIdleForMaintenance = False
 class Status:
+    Idle = None
+    NotConnected = None
+    Moving = None
+    Paused = None
+    PowerLow = None
+    ProductRemoval = None
 
     def __init__(self):
         pass
 
 class TransportFlow:
+    Empty = None
 
     def __init__(self):
         self.Color = None
@@ -287,6 +248,66 @@ class TransportConfigExtensions:
     def __init__(self):
         pass
 
+class BuildTransportCmd:
+
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class ReverseTransportCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class ClearTransportCmd:
+
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class QuickClearTransportCmd:
+
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class DeconstructTransportSegmentCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class TransportCrossSection:
     Empty = None
 
@@ -314,16 +335,33 @@ class TransportTileMetadata:
         self.IsStartFlat = False
         self.IsEndFlat = False
 class TransportStartEndType:
+    Flat = None
+    RampUp = None
+    RampDown = None
+    Vertical = None
 
     def __init__(self):
         pass
 
 class TransportPillarAttachmentType:
+    NoAttachment = None
+    FlatToFlat_Straight = None
+    FlatToFlat_Turn = None
+    RampDownToRampUp_Turn = None
+    FlatToRampUp_Straight = None
+    FlatToRampUp_Turn = None
+    FlatToRampDown_Straight = None
+    FlatToRampDown_Turn = None
+    FlatToVertical = None
+    VerticalToVertical = None
+    FlatToVertical_Down = None
 
     def __init__(self):
         pass
 
 class TransportPathFinder:
+    XY_SIZE = None
+    Z_SIZE = None
 
     def __init__(self):
         self.CurrentStart = None
@@ -371,6 +409,7 @@ class TransportPillar:
         self.IsNotPaused = False
         self.RendererData = None
 class TransportPillarAddRequest:
+    Instance = None
 
     def __init__(self):
         self.ReasonToAdd = None
@@ -383,6 +422,7 @@ class TransportPillarRendererData:
     def __init__(self):
         self.IsValid = False
 class TransportPillarProto:
+    MAX_PILLAR_HEIGHT = None
 
     def __init__(self):
         self.EntityType = None
@@ -395,6 +435,11 @@ class TransportPillarProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
     Empty = None
@@ -408,6 +453,8 @@ class TransportPillarsBuilder:
         pass
 
 class TransportProto:
+    MAX_TERRAIN_PENETRATION = None
+    LENGTH_PER_COST = None
 
     def __init__(self):
         self.EntityType = None
@@ -427,8 +474,14 @@ class TransportProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -439,6 +492,7 @@ class TransportInstancedRenderingData:
         pass
 
 class FlowIndicatorSpec:
+    BIAS_TOWARD_ENDS = None
 
     def __init__(self):
         pass
@@ -464,6 +518,14 @@ class PillarVisualsSpec:
         pass
 
 class PillarLayerSpec:
+    BEAMS_MASK = None
+    FILL_PLUS_X_MASK = None
+    FILL_PLUS_Y_MASK = None
+    FILL_MINUS_X_MASK = None
+    FILL_MINUS_Y_MASK = None
+    FLIP_Y_MASK = None
+    ALL_FILLS_MASK = None
+    BEAMS_AND_ALL_FILLS_MASK = None
 
     def __init__(self):
         self.HasBeams = False

@@ -1,9 +1,15 @@
 class CoreProtoTags:
+    MechanicalShaft = None
 
     def __init__(self):
         pass
 
+class CombineUnderProtoParam:
+
+    def __init__(self):
+        self.AllowedProtoType = None
 class EntityCosts:
+    None = None
 
     def __init__(self):
         pass
@@ -68,6 +74,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -75,11 +86,15 @@ class ID:
         pass
 
 class Str:
+    Empty = None
 
     def __init__(self):
         pass
 
 class Gfx:
+    EMPTY_PATH = None
+    GENERATED_ICON_PATH_PREFIX = None
+    GENERATED_ANIMATION_PATH_PREFIX = None
 
     def __init__(self):
         pass
@@ -96,8 +111,12 @@ class IProtoWithIconAndName:
         self.IconPath = str(0)
         self.Strings = None
         self.Id = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class IProtoWithIcon:
@@ -106,8 +125,12 @@ class IProtoWithIcon:
         self.IconPath = str(0)
         self.Strings = None
         self.Id = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class IProtoWithPropertiesUpdate:
@@ -115,8 +138,12 @@ class IProtoWithPropertiesUpdate:
     def __init__(self):
         self.Strings = None
         self.Id = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class IProtoWithTiers:
@@ -126,8 +153,12 @@ class IProtoWithTiers:
         self.IconPath = str(0)
         self.Strings = None
         self.Id = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class IProtoWithUpgrade:
@@ -138,8 +169,12 @@ class IProtoWithUpgrade:
         self.IconPath = str(0)
         self.Strings = None
         self.Id = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class IUpgradeData:
@@ -175,8 +210,12 @@ class IProto:
     def __init__(self):
         self.Strings = None
         self.Id = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class ProtoChecks:
@@ -211,6 +250,11 @@ class InvalidProtoException:
         self.HelpLink = str(0)
         self.Source = str(0)
         self.HResult = int(0)
+class ProtoExtensions:
+
+    def __init__(self):
+        pass
+
 class ProtosDb:
 
     def __init__(self):

@@ -63,6 +63,12 @@ class Hospital:
         self.WorkersNeeded = int(0)
         self.HasWorkersCached = False
 class State:
+    Paused = None
+    Broken = None
+    Working = None
+    MissingInput = None
+    MissingWorkers = None
+    NotEnoughPower = None
 
     def __init__(self):
         pass
@@ -93,6 +99,11 @@ class HospitalProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ISettlementModuleProto:
 
@@ -107,8 +118,12 @@ class ISettlementModuleProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class ISettlementModuleForNeedProto:
@@ -125,8 +140,12 @@ class ISettlementModuleForNeedProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class ISettlementServiceModule:
@@ -186,11 +205,16 @@ class ISettlementSquareModuleProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class Settlement:
+    HealthBonusPerFoodCategory = None
 
     def __init__(self):
         self.TotalHousingCapacity = int(0)
@@ -245,6 +269,7 @@ class PopNeed:
         self.ShouldBeShown = False
         self.Proto = None
         self.UnityAfterLastUpdate = None
+        self.MaxAfterLastUpdate = None
         self.PossibleMaxAfterLastUpdate = None
         self.WasNotFullySatisfiedLastDay = False
         self.PercentSatisfiedLastMonth = None
@@ -319,6 +344,11 @@ class SettlementDecorationModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class SettlementFoodModule:
 
@@ -373,6 +403,12 @@ class SettlementFoodModule:
         self.WorkersNeeded = int(0)
         self.HasWorkersCached = False
 class State:
+    Paused = None
+    Broken = None
+    Working = None
+    MissingInput = None
+    MissingWorkers = None
+    NoProductAssigned = None
 
     def __init__(self):
         pass
@@ -402,6 +438,11 @@ class SettlementFoodModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class SettlementHousingEntityFactory:
 
@@ -481,8 +522,14 @@ class SettlementHousingModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)
@@ -557,6 +604,12 @@ class SettlementIspModule:
         self.HasWorkersCached = False
         self.MaintenanceCosts = None
 class State:
+    Paused = None
+    Broken = None
+    Working = None
+    MissingWorkers = None
+    NotEnoughPower = None
+    NotEnoughComputing = None
 
     def __init__(self):
         pass
@@ -584,6 +637,11 @@ class SettlementIspModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class SettlementModuleProto:
 
@@ -610,6 +668,11 @@ class SettlementModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class SettlementModuleProtoBuilder:
 
@@ -689,6 +752,13 @@ class SettlementServiceModule:
         self.PowerRequired = None
         self.MaintenanceCosts = None
 class State:
+    Paused = None
+    Broken = None
+    Working = None
+    MissingInput = None
+    MissingWorkers = None
+    NotEnoughPower = None
+    FullOutput = None
 
     def __init__(self):
         pass
@@ -711,6 +781,8 @@ class SettlementsManager:
         self.MonthsOfFood = int(0)
         self.Settlements = None
 class PopsAdditionReason:
+    RefugeesOrAdopted = None
+    Other = None
 
     def __init__(self):
         pass
@@ -791,6 +863,11 @@ class SettlementTransformerProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class SettlementWasteModule:
 
@@ -812,6 +889,7 @@ class SettlementWasteModule:
         self.LogisticsInputControl = None
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)
@@ -850,6 +928,10 @@ class SettlementWasteModule:
         self.WorkersNeeded = int(0)
         self.HasWorkersCached = False
 class State:
+    Paused = None
+    Working = None
+    MissingWorkers = None
+    FullOutput = None
 
     def __init__(self):
         pass
@@ -876,4 +958,9 @@ class SettlementWasteModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

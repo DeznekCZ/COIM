@@ -1,9 +1,18 @@
 class ShipModificationState:
+    None = None
+    Preparing = None
+    Prepared = None
+    Applying = None
 
     def __init__(self):
         pass
 
 class Shipyard:
+    FUEL_IMPORT_PRIO_ID = None
+    FUEL_EXPORT_PRIO_ID = None
+    CARGO_EXPORT_PRIO_ID = None
+    SHIP_REPAIR_IMPORT_PRIO_ID = None
+    WORLD_CARGO_IMPORT_PRIO_ID = None
 
     def __init__(self):
         self.Prototype = None
@@ -209,4 +218,9 @@ class ShipyardProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

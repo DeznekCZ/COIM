@@ -203,6 +203,7 @@ class SolarElectricityGenerator:
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
 class CompactorData:
+    COMPRESS_MULT = None
 
     def __init__(self):
         pass
@@ -232,6 +233,11 @@ class SolarElectricityGeneratorProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class VehicleRampsData:
 
@@ -271,6 +277,11 @@ class OceanLiquidDumpProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class OceanWaterPumpProto:
 
@@ -305,4 +316,9 @@ class OceanWaterPumpProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

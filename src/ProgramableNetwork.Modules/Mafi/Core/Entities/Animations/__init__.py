@@ -28,6 +28,8 @@ class AnimationWithPauseParams:
         pass
 
 class Mode:
+    ExtendPauseToFit = None
+    ScaleAnimationSpeedToFit = None
 
     def __init__(self):
         pass
@@ -45,6 +47,7 @@ class LoopAnimationState:
     def __init__(self):
         self.AnimationStateName = str(0)
 class LoopAnimationParams:
+    FullSpeed = None
 
     def __init__(self):
         pass

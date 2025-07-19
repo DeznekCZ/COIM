@@ -1,4 +1,7 @@
 class Lift:
+    BUFFER_SCALE = None
+    DELAY_BASE = None
+    DELAY_PER_HEIGHT = None
 
     def __init__(self):
         self.Prototype = None
@@ -61,8 +64,12 @@ class ILiftProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class LiftProto:
@@ -94,8 +101,14 @@ class LiftProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)

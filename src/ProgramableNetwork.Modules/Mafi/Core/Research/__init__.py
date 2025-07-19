@@ -1,4 +1,6 @@
 class ResearchNodeProto:
+    DEFAULT_COST_FN = None
+    DEFAULT_DESC_FN = None
 
     def __init__(self):
         self.Id = None
@@ -11,6 +13,11 @@ class ResearchNodeProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -28,6 +35,7 @@ class DescPerTimesDoneFunc:
         self.Method = None
         self.Target = None
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.Icons = None
@@ -91,6 +99,9 @@ class ResearchManager:
         self.ResearchedNodes = None
         self.ResearchQueue = None
 class ResearchNodeState:
+    NotResearched = None
+    Researched = None
+    InProgress = None
 
     def __init__(self):
         pass
@@ -157,12 +168,19 @@ class TechnologyProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)
 class UnlockingConditionGlobalStats:
+    LIFETIME_PRODUCTION = None
 
     def __init__(self):
         pass

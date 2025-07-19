@@ -10,8 +10,14 @@ class BirthRateCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -28,6 +34,11 @@ class DiseaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FoodProto:
 
@@ -40,6 +51,11 @@ class FoodProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FoodCategoryProto:
 
@@ -52,6 +68,11 @@ class FoodCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class HealthPointsCategoryProto:
 
@@ -65,8 +86,14 @@ class HealthPointsCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -109,6 +136,11 @@ class PopNeedProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class HealthData:
 
@@ -116,6 +148,7 @@ class HealthData:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -125,6 +158,10 @@ class IDiseaseTrigger:
         pass
 
 class PopsHealthManager:
+    MIN_HEALTH = None
+    UPOINTS_PER_HEALTHPOINT = None
+    UPOINTS_FOR_ABOVE_MIN = None
+    BASE_HEALTH_DEFAULT = None
 
     def __init__(self):
         from Mafi import Option
@@ -206,6 +243,11 @@ class UpointsCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class IUpointsManager:
 
@@ -213,6 +255,7 @@ class IUpointsManager:
         self.Quantity = None
         self.QuickActionCostMultiplier = None
 class UpointsManager:
+    UNITY_BASE_CAP = None
 
     def __init__(self):
         self.DiffForLastMonth = None
@@ -248,8 +291,14 @@ class UpointsStatsCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)

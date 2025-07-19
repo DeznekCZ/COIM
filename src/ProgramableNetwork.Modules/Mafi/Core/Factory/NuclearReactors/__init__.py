@@ -1,4 +1,15 @@
 class NuclearReactor:
+    POWER_LEVEL_HEAT_CAPACITY_DURATION = None
+    MAX_POWER_INCREASE_PER_TICK = None
+    MAX_POWER_DECREASE_PER_TICK = None
+    MELTDOWN_OVERHEAT_DAMAGE_INTERVAL = None
+    DECREASE_MAINTENANCE_MELTDOWN_DAMAGE = None
+    POWER_LEVEL_HEAT_CAPACITY = None
+    SELF_COOLING_HEAT_MARGIN = None
+    HEAT_PER_POWER_LEVEL_PER_TICK = None
+    HEAT_REMOVED_IN_MELTDOWN_PER_TICK = None
+    SELF_COOLING_PER_TICK = None
+    HEAT_EXCHANGER_HEAT_CAPACITY_MULT = None
 
     def __init__(self):
         self.MaxPowerLevel = int(0)
@@ -89,6 +100,18 @@ class Recipe:
         self.FuelMultiplier = None
         self.FuelPerMinute = None
 class State:
+    None = None
+    Broken = None
+    Paused = None
+    Meltdown = None
+    NotEnoughWorkers = None
+    NotEnoughComputing = None
+    NotEnoughMaintenance = None
+    NotEnoughInput = None
+    OutputFull = None
+    NoRecipes = None
+    Idle = None
+    Working = None
 
     def __init__(self):
         pass
@@ -167,8 +190,14 @@ class NuclearReactorProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)

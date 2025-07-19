@@ -3,6 +3,8 @@ class DrivingData:
     def __init__(self):
         self.AxlesDistance = None
 class DrivingEntity:
+    DEFAULT_DRIVING_TOLERANCE = None
+    MAX_GOAL_ANGLE_BEFORE_STARTING = None
 
     def __init__(self):
         self.DrivingData = None
@@ -43,6 +45,15 @@ class DrivingEntity:
         self.IsNotPaused = False
         self.RendererData = None
 class DrivingState:
+    Stopped = None
+    Stopping = None
+    StopAndContinueForwards = None
+    DrivingForwards = None
+    DrivingBackwards = None
+    TurningInPlace = None
+    Paused = None
+    StopAndContinueBackwards = None
+    DrivingForwardsOnRoad = None
 
     def __init__(self):
         pass
@@ -65,6 +76,11 @@ class DrivingEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class DynamicEntityProto:
 
@@ -80,6 +96,11 @@ class DynamicEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -127,8 +148,14 @@ class DynamicGroundEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -183,6 +210,11 @@ class FuelTankProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FuelTankProtoBuilder:
 
@@ -230,6 +262,9 @@ class IPathFindingVehicle:
         self.IsDestroyed = False
         self.DefaultTitle = None
 class PathFindingEntity:
+    MAX_DIST_DURING_PF_SQR = None
+    STRUGGLING_STREAK_PRIO_PENALTY = None
+    STRUGGLING_STREAK_MAX_PENALTY = None
 
     def __init__(self):
         self.IsNavigating = False
@@ -286,6 +321,12 @@ class PathFindingEntity:
         self.IsNotPaused = False
         self.RendererData = None
 class PathFindingEntityState:
+    Idle = None
+    PathFinding = None
+    DrivingToDestination = None
+    DrivingToValidLocation = None
+    FindingValidLocation = None
+    ReadyToDriveToDestination = None
 
     def __init__(self):
         pass
@@ -316,6 +357,9 @@ class TruckProtoBuilderState:
         pass
 
 class Vehicle:
+    ENGINE_OFF_WHEN_STOPPED = None
+    SPEED_WHEN_BROKEN = None
+    SPEED_ON_LOW_FUEL = None
 
     def __init__(self):
         self.CanBePaused = False
@@ -409,6 +453,9 @@ class Vehicle:
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
 class RefuelRequestIssue:
+    None = None
+    Failed = None
+    FailedAsUnreachable = None
 
     def __init__(self):
         pass

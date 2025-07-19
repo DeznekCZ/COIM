@@ -20,12 +20,19 @@ class SurfaceDecalCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class SurfaceDecalValidator:
 
     def __init__(self):
         self.Priority = None
 class TerrainTileSurfaceDecalProto:
+    PHANTOM_ID = None
+    Phantom = None
 
     def __init__(self):
         self.SlimId = None
@@ -39,8 +46,14 @@ class TerrainTileSurfaceDecalProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)

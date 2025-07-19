@@ -40,6 +40,11 @@ class MessageGroupProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageProto:
 
@@ -52,8 +57,16 @@ class MessageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class InGameMessageType:
+    Message = None
+    Tutorial = None
+    Warning = None
 
     def __init__(self):
         pass
@@ -112,116 +125,161 @@ class MessageTriggerProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageTriggerOnProtoUnlockedProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageTriggerOnQuantityProducedProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageTriggerOnEntityConstructedProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageTriggerOnEntityConstructedOrProductRunningOutProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageTriggerOnShipRepairProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageTriggerDelayedProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageTriggerGlobalProductLowProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class MessageTriggerOnEventProto:
 
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         self.Id = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

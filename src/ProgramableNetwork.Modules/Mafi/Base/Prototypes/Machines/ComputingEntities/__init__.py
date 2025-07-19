@@ -50,6 +50,12 @@ class Mainframe:
         self.HasWorkersCached = False
         self.MaintenanceCosts = None
 class State:
+    None = None
+    Working = None
+    Paused = None
+    Broken = None
+    NotEnoughWorkers = None
+    NotEnoughElectricity = None
 
     def __init__(self):
         pass
@@ -76,4 +82,9 @@ class MainframeProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

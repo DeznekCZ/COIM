@@ -47,6 +47,7 @@ class Configuration:
     def __init__(self):
         self.SortingPriorityAdjustment = int(0)
 class FlowersPostProcessor:
+    MAX_FLOWER_SPREAD_DISTANCE_SQUARED = None
 
     def __init__(self):
         self.Name = str(0)
@@ -125,6 +126,7 @@ class Chunk:
         pass
 
 class GrassOnRocksPostProcessor:
+    MAX_CHECK_DISTANCE = None
 
     def __init__(self):
         self.Name = str(0)
@@ -182,6 +184,7 @@ class Configuration:
         self.SlopeTestDistance = None
         self.SortingPriorityAdjustment = int(0)
 class ParticleErosionPostProcessor:
+    MAX_PARTICLE_TRAVEL_DISTANCE = None
 
     def __init__(self):
         self.Name = str(0)
@@ -214,6 +217,12 @@ class ParticleInfo:
         pass
 
 class TerminationReason:
+    None = None
+    ZeroGradient = None
+    OutOfBounds = None
+    LowVelocity = None
+    GoingUp = None
+    MaxStepsReached = None
 
     def __init__(self):
         pass
@@ -252,11 +261,17 @@ class Configuration:
         self.BaseMaterial = Option()
         self.SortingPriorityAdjustment = int(0)
 class TargetHeightSourceEnum:
+    ExplicitHeight = None
+    MinOfControlPointsHeights = None
+    MaxOfControlPointsHeights = None
 
     def __init__(self):
         pass
 
 class InteractionModeEnum:
+    AddAndRemove = None
+    AddOnly = None
+    RemoveOnly = None
 
     def __init__(self):
         pass
@@ -468,6 +483,8 @@ class TerrainChunk64BitMap:
     def __init__(self):
         self.BackingArray = None
 class TerrainPropsPostProcessor:
+    ROCKS_ON_ORES_PROPS_CONFIG_NAME = None
+    ROCKS_ON_DISRUPTED_ORES_PROPS_CONFIG_NAME = None
 
     def __init__(self):
         self.Name = str(0)

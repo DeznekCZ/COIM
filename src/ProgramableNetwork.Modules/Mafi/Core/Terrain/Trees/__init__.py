@@ -1,4 +1,5 @@
 class TreeId:
+    Invalid = None
 
     def __init__(self):
         self.IsValid = False
@@ -57,6 +58,9 @@ class TreeDataBase:
         pass
 
 class TreesManager:
+    GENERATED_TREE_PLANTED_AT_TICK = None
+    STUMP_SINK_RATE_PER_MONTH = None
+    MAX_FLOOR_THICKNESS_TOTAL = None
 
     def __init__(self):
         self.TreeAdded = None
@@ -100,6 +104,11 @@ class ForestProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ITreesManager:
 
@@ -142,12 +151,19 @@ class TreePlantingGroupProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class TreePlantingValidator:
 
     def __init__(self):
         self.Priority = None
 class TreeProto:
+    MAX_TREE_SPACING = None
+    MAX_BASE_SCALE_DEVIATION = None
 
     def __init__(self):
         self.Type = None
@@ -176,8 +192,14 @@ class TreeProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class TreeGfx:
+    Empty = None
 
     def __init__(self):
         pass

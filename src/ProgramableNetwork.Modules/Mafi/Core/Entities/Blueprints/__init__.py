@@ -35,6 +35,15 @@ class BlueprintsLibrary:
         self.NumberOfBackupsAvailable = int(0)
         self.Root = None
 class Status:
+    NoLibraryFound = None
+    LoadingInProgress = None
+    LoadFailedDueToFormat = None
+    LoadFailedNoAccess = None
+    LoadSuccess = None
+    SaveInProgress = None
+    SaveFailed = None
+    SaveDone = None
+    SaveDoneBackupFailed = None
 
     def __init__(self):
         pass

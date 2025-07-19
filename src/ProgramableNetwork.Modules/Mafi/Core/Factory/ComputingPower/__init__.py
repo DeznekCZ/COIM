@@ -43,11 +43,13 @@ class ProductionPerProto:
         pass
 
 class ConsumptionLastTick:
+    Empty = None
 
     def __init__(self):
         pass
 
 class ProductionLastTick:
+    Empty = None
 
     def __init__(self):
         pass

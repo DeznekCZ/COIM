@@ -13,6 +13,8 @@ class IShaft:
         self.IsDestroyed = False
         self.ConnectedEntities = None
 class Shaft:
+    STOP_OUTPUT_BELOW = None
+    START_OUTPUT_ABOVE = None
 
     def __init__(self):
         self.IsDefaultNoCapacityShaft = False
@@ -38,6 +40,7 @@ class IShaftManager:
     def __init__(self):
         self.MechPowerProto = None
 class ShaftManager:
+    MAX_SHAFT_THROUGHPUT = None
 
     def __init__(self):
         self.ProvidedProducts = None

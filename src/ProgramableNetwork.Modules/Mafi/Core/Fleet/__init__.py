@@ -123,6 +123,11 @@ class DestructibleFleetPartProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class DestructibleFleetPart:
 
@@ -148,8 +153,14 @@ class FleetBridgePartProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass
@@ -166,8 +177,16 @@ class FleetEnginePartProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FleetEntity:
+    RepairCostForValue = None
+    RepairCostForValueDestroyedPart = None
+    DistancePerStepInBattle = None
 
     def __init__(self):
         self.Name = None
@@ -234,6 +253,11 @@ class FleetEntityPartProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -241,6 +265,7 @@ class ID:
         pass
 
 class FleetEntityGfx:
+    Empty = None
 
     def __init__(self):
         pass
@@ -261,13 +286,25 @@ class FleetEntitySlotProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class SlotType:
+    None = None
+    Weapons = None
+    Engines = None
+    HullUpgrades = None
+    Radars = None
+    FuelTankUpgrades = None
 
     def __init__(self):
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass
@@ -289,8 +326,14 @@ class FleetFuelTankPartProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FleetEntityHullProto:
+    RepairDurationPerProduct = None
 
     def __init__(self):
         self.Id = None
@@ -302,8 +345,14 @@ class FleetEntityHullProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass
@@ -337,6 +386,11 @@ class UpgradeHullProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FleetWeaponProto:
 
@@ -351,6 +405,11 @@ class FleetWeaponProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 

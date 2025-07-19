@@ -27,13 +27,12 @@ namespace ProgramableNetwork.Data.Computer
         {
             base.Initialize(layoutEntity);
             m_controller = layoutEntity;
-            List<IColorizer> colorizers = [];
-            generateColorizers(colorizers);
-            m_colorizers = colorizers.ToImmutableArray();
+            m_colorizers = generateColorizers();
         }
 
-        private void generateColorizers(List<IColorizer> colorizers)
+        private ImmutableArray<IColorizer> generateColorizers()
         {
+            List<IColorizer> colorizers = [];
             foreach (Transform colorable in transform)
             {
                 string transformName = colorable.name;
@@ -44,7 +43,7 @@ namespace ProgramableNetwork.Data.Computer
                 }
                 try
                 {
-                    string colorPart = transformName.Split('[')[1].TrimEnd(']');
+                    string colorPart = transformName.Split('[')[1][..^1];
                     string[] integerStrings = colorPart.Split(',');
 
                     List<MeshRenderer> renderers = [];
@@ -66,11 +65,10 @@ namespace ProgramableNetwork.Data.Computer
                     else
                     {
                         colorizers.Add(new PartialColorizer(renderers.ToImmutableArray(),
-                            int.Parse(integerStrings[0]),
-                            int.Parse(integerStrings[1]),
-                            int.Parse(integerStrings[2])));
+                            int.TryParse(integerStrings[0], out int v0) ? v0 : 0,
+                            int.TryParse(integerStrings[1], out int v1) ? v1 : 0,
+                            int.TryParse(integerStrings[2], out int v2) ? v2 : 0));
                     }
-                    return;
                 }
                 catch (Exception e)
                 {
@@ -78,6 +76,7 @@ namespace ProgramableNetwork.Data.Computer
                     Log.Exception(e);
                 }
             }
+            return colorizers.ToImmutableArray();
         }
 
         private void applyColor()
@@ -102,23 +101,19 @@ namespace ProgramableNetwork.Data.Computer
             void Colorize(ColorRgba color);
         }
 
-        private class Colorizer : IColorizer
+        private class Colorizer(ImmutableArray<MeshRenderer> renderers) : IColorizer
         {
-            private readonly ImmutableArray<MeshRenderer> m_renderers;
-
-            public Colorizer(ImmutableArray<MeshRenderer> renderers)
-            {
-                m_renderers = renderers;
-            }
+            private readonly ImmutableArray<MeshRenderer> m_renderers = renderers;
 
             public virtual void Colorize(ColorRgba color)
             {
+                UnityEngine.Color unityColor = color.SetA(255).ToColor();
                 foreach (MeshRenderer render in m_renderers)
                 {
                     try
                     {
                         MaterialPropertyBlock materialPropertyBlock = new();
-                        materialPropertyBlock.SetColor("_Color", color.SetA(255).ToColor());
+                        materialPropertyBlock.SetColor("_Color", unityColor);
                         render.SetPropertyBlock(materialPropertyBlock);
                     }
                     catch (Exception e)
@@ -146,12 +141,10 @@ namespace ProgramableNetwork.Data.Computer
 
             public override void Colorize(ColorRgba color)
             {
-                color = color
-                    .SetR((byte)(int)(color.R * (m_r / 255f)).Min(255).Max(0))
-                    .SetG((byte)(int)(color.G * (m_g / 255f)).Min(255).Max(0))
-                    .SetB((byte)(int)(color.B * (m_b / 255f)).Min(255).Max(0));
-
-                Colorize(color);
+                base.Colorize(color
+                        .SetR((byte)(int)(color.R * (m_r / 255f)).Clamp(0, 255))
+                        .SetG((byte)(int)(color.G * (m_g / 255f)).Clamp(0, 255))
+                        .SetB((byte)(int)(color.B * (m_b / 255f)).Clamp(0, 255)));
             }
         }
     }

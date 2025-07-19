@@ -17,6 +17,8 @@ class ConstantNoise2D:
         from Mafi import Fix32
         self.Period = Fix32()
 class ExpBendNoise2D:
+    MAX_VALUE = None
+    LATEST_VERSION = None
 
     def __init__(self):
         from Mafi import Fix32
@@ -291,6 +293,8 @@ class INoise3D:
         self.Amplitude = float(0)
         self.Period = float(0)
 class LineTransitionFn:
+    Linear = None
+    Sine = None
 
     def __init__(self):
         pass

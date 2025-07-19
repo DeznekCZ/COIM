@@ -25,6 +25,14 @@ class LogEntry:
         pass
 
 class LogType:
+    Exception = None
+    Error = None
+    Assert = None
+    Warning = None
+    Info = None
+    GameProgress = None
+    Debug = None
+    All = None
 
     def __init__(self):
         pass

@@ -118,6 +118,14 @@ class WorldMapMine:
         self.NextTier = Option()
         self.Icon = str(0)
 class State:
+    None = None
+    Broken = None
+    Paused = None
+    NotEnoughWorkers = None
+    NotEnoughUnity = None
+    ResourceDepleted = None
+    FullStorage = None
+    Working = None
 
     def __init__(self):
         pass
@@ -222,6 +230,11 @@ class WorldMapCargoShipWreckProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class IWorldMapEntity:
 
@@ -270,8 +283,14 @@ class WorldMapEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)
@@ -287,6 +306,11 @@ class WorldMapLocationGfxProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class WorldMapMineProto:
 
@@ -302,6 +326,11 @@ class WorldMapMineProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class WorldMapVillageProto:
 
@@ -317,6 +346,11 @@ class WorldMapVillageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ProductToLend:
 

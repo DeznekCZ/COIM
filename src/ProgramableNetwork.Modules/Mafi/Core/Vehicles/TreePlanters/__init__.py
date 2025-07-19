@@ -1,4 +1,5 @@
 class TreePlanter:
+    MAX_SERVICE_DISTANCE = None
 
     def __init__(self):
         self.ProductProto = None
@@ -114,6 +115,9 @@ class TreePlanterJobProvider:
         pass
 
 class TreePlanterState:
+    Idle = None
+    PlantingTree = None
+    ReturningToIdle = None
 
     def __init__(self):
         pass
@@ -136,6 +140,11 @@ class TreePlanterProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Timings:
 
@@ -143,6 +152,7 @@ class Timings:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)

@@ -29,6 +29,31 @@ class Asteroid:
         self.IsDropped = False
         self.DroppedAt = None
 class AsteroidsManager:
+    DISCOVERED_ASTEROIDS_CAPACITY_BASE = None
+    DISCOVERED_ASTEROIDS_CAPACITY_PER_STATION_LEVEL = None
+    ASTEROID_DROP_STABILIZATION_DURATION = None
+    SPACE_PROBE_PARTS_PER_ASTEROID = None
+    BOOSTERS_PER_ROCKET = None
+    TOTAL_TRAVEL_TIME_TO_ORBIT = None
+    TOTAL_DISCOVERY_TIME = None
+    PURE_ASTEROID_PROBABILITY = None
+    PURE_ASTEROID_QUANTITY_MULT = None
+    TWO_PURE_MATERIALS_ASTEROID_PROBABILITY = None
+    TWO_PURE_MATERIALS_ASTEROID_QUANTITY_MULT = None
+    TWO_PURE_MATERIALS_ASTEROID_MAX_RATIO = None
+    FILLER_AND_MATERIAL_ASTEROID_PROBABILITY = None
+    FILLER_AND_MATERIAL_ASTEROID_QUANTITY_MULT = None
+    MATERIAL_TO_FILLER_ASTEROID_QUANTITY_MAX_RATIO = None
+    FILLER_ONLY_ASTEROID_QUANTITY_MULT = None
+    ASTEROID_VOLUME_MIN = None
+    ASTEROID_VOLUME_MAX = None
+    ASTEROID_VOLUME_MEAN_MIN = None
+    ASTEROID_VOLUME_MEAN_MAX = None
+    ASTEROID_VOLUME_STD_MIN = None
+    ASTEROID_VOLUME_STD_MAX = None
+    ASTEROID_VOLUME_STD_MAX_DEVIATION = None
+    ASTEROID_SIZE_PROGRESSION_PER_FIND = None
+    ASTEROID_SIZE_PROGRESSION_PER_DROP = None
 
     def __init__(self):
         from Mafi import Option
@@ -132,6 +157,7 @@ class LaunchRocketCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class OrbitManager:
+    MAX_ORBIT_CARGO_LIMIT = None
 
     def __init__(self):
         from Mafi import Option
@@ -255,6 +281,7 @@ class SetRocketAutoLaunchCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class SpaceStation:
+    CRITICALLY_LOW_MAINTENANCE = None
 
     def __init__(self):
         self.OperatesAt = None
@@ -286,6 +313,12 @@ class SpaceStation:
         self.OngoingUpgradeCost = None
         self.UpgradePartsDelivered = None
 class State:
+    Working = None
+    NoCrewSupplies = None
+    NoMaintenanceParts = None
+    MaintenanceCriticallyLow = None
+    CrewLow = None
+    NoResearchSupplies = None
 
     def __init__(self):
         pass
@@ -315,6 +348,12 @@ class ToggleSpaceStationCrewEnabledCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class IAsteroidFriend:
+
+    def __init__(self):
+        pass
+
+class AsteroidTerrainGenerator:
+    ASTEROID_INFLATE_RADIUS_PERC = None
 
     def __init__(self):
         pass
@@ -359,6 +398,11 @@ class RocketProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
 
@@ -366,6 +410,19 @@ class Gfx:
         pass
 
 class SpaceStationProto:
+    CREW_ROTATION_DURATION = None
+    CREW_ROTATION_REQUEST_TIME = None
+    DEGRADES_AT = None
+    MAINTENANCE_PARTS_BUFFER_RESERVE = None
+    MAINTENANCE_LEVEL_LASTS_FOR = None
+    CREW_SUPPLIES_BUFFER_RESERVE = None
+    RESEARCH_SUPPLIES_BUFFER_RESERVE = None
+    RESEARCH_POINTS_BUFFER_CAPACITY = None
+    MIN_MAINTENANCE_PARTS_BUFFER_CAP = None
+    ADVANCED_PARTS_TIER_FROM = None
+    RESEARCH_TIER_FROM = None
+    CREW_REQUIRED_FROM = None
+    ASTEROIDS_SUPPORT_FROM = None
 
     def __init__(self):
         self.Id = None
@@ -376,6 +433,11 @@ class SpaceStationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class StationTierData:
 
@@ -395,4 +457,9 @@ class TransportedRocketBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

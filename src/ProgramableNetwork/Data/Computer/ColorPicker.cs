@@ -43,6 +43,7 @@ namespace ProgramableNetwork.Ui
                 .Do(color => m_colorPreviewIcon.Color(color));
 
             m_panel.Header.Add(m_apply = new ButtonIcon(UserInterface.General.Save_svg));
+            // TODO command
             m_apply.OnClick(() => m_controllerSelector().SetColor(m_previewColor));
 
             m_sliderR = new Slider();

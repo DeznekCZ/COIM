@@ -1,4 +1,7 @@
 class TreeHarvester:
+    MAX_SERVICE_DISTANCE = None
+    NUM_SECTIONS_AT_MAX_TREE_SIZE = None
+    MIN_SECTIONS_PER_CUT = None
 
     def __init__(self):
         self.AllVehicles = None
@@ -118,6 +121,19 @@ class TreeHarvesterJobProvider:
         pass
 
 class TreeHarvesterState:
+    Idle = None
+    PositioningArm = None
+    CuttingTree = None
+    LayingTreeDown = None
+    BranchTrimming = None
+    RaisingTreeUp = None
+    TreeIsUp = None
+    PositioningForUnload = None
+    UnloadingTree = None
+    ReturningFromUnloadWithCargo = None
+    ReturningFromUnloadToIdle = None
+    FoldingArm = None
+    CuttingSection = None
 
     def __init__(self):
         pass
@@ -140,6 +156,11 @@ class TreeHarvesterProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Timings:
 
@@ -147,6 +168,7 @@ class Timings:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.IconPath = str(0)

@@ -25,6 +25,7 @@ class NuclearWasteStorage:
         self.ExportPriority = int(0)
         self.AreOnlyAssignedVehiclesAllowed = False
         self.AllVehicles = None
+        self.AreParticlesEnabled = False
         self.AreAlertsAvailable = False
         self.AlertWhenAboveEnabled = False
         self.AlertWhenAbove = None
@@ -44,6 +45,7 @@ class NuclearWasteStorage:
         self.IsNotFull = False
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         from Mafi import Option
         self.CustomTitle = Option()
         self.GeneralPriority = int(0)

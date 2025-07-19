@@ -10,8 +10,16 @@ class GoalProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class TutorialUnlockMode:
+    DoNotUnlock = None
+    UnlockSilently = None
+    UnlockAndNotify = None
 
     def __init__(self):
         pass
@@ -51,6 +59,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToConstructStaticEntity:
 
@@ -60,6 +73,11 @@ class GoalToConstructStaticEntity:
         self.IsCompleted = False
         self.IsNotAvailable = False
 class Proto:
+    TITLE_BUILD = None
+    TITLE_BUILD_ANOTHER = None
+    TITLE_BUILD_AND_CONNECT = None
+    TITLE_RESEARCH_AND_BUILD = None
+    TITLE_RESEARCH_AND_UPGRADE = None
 
     def __init__(self):
         self.Implementation = None
@@ -71,6 +89,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToConstructNumberOfStaticEntities:
 
@@ -91,6 +114,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToResearchNode:
 
@@ -111,6 +139,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToSetupMining:
 
@@ -131,6 +164,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToSetupDumping:
 
@@ -140,6 +178,7 @@ class GoalToSetupDumping:
         self.IsCompleted = False
         self.IsNotAvailable = False
 class Proto:
+    TITLE_DESIGNATE_DUMPING = None
 
     def __init__(self):
         self.Implementation = None
@@ -151,6 +190,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToReachRefugees:
 
@@ -160,6 +204,7 @@ class GoalToReachRefugees:
         self.IsCompleted = False
         self.IsNotAvailable = False
 class Proto:
+    Title = None
 
     def __init__(self):
         self.Implementation = None
@@ -171,6 +216,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToActivateRecipe:
 
@@ -191,6 +241,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToExploreWithShip:
 
@@ -211,6 +266,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToDiscoverWorldMine:
 
@@ -231,6 +291,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToRepairShip:
 
@@ -251,6 +316,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToRefuelShip:
 
@@ -271,6 +341,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToManShip:
 
@@ -291,6 +366,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToBuildHousing:
 
@@ -311,6 +391,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToBuildStorage:
 
@@ -320,6 +405,7 @@ class GoalToBuildStorage:
         self.IsCompleted = False
         self.IsNotAvailable = False
 class Proto:
+    TITLE_BUILD_STORAGE = None
 
     def __init__(self):
         self.Implementation = None
@@ -331,6 +417,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToStockpileProducts:
 
@@ -340,6 +431,7 @@ class GoalToStockpileProducts:
         self.IsCompleted = False
         self.IsNotAvailable = False
 class Proto:
+    TITLE_STORE = None
 
     def __init__(self):
         self.Implementation = None
@@ -351,6 +443,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToRepairCargoShip:
 
@@ -371,6 +468,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToPauseEntity:
 
@@ -391,6 +493,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToConstructFuelStation:
 
@@ -411,6 +518,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToAssignTrucksToTreeHarvester:
 
@@ -431,6 +543,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalToActivateEdict:
 
@@ -451,6 +568,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalListProto:
 
@@ -463,6 +585,11 @@ class GoalListProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class GoalsList:
 
@@ -487,6 +614,8 @@ class GoalsListTriggerOnGoalListDone:
     def __init__(self):
         self.Version = int(0)
 class TriggerRule:
+    AllSatisfied = None
+    AnySatisfied = None
 
     def __init__(self):
         pass
@@ -528,6 +657,8 @@ class GoalsListTriggerOnGoalsOrProductLow:
     def __init__(self):
         self.Version = int(0)
 class TriggerRule:
+    AllSatisfied = None
+    AnySatisfied = None
 
     def __init__(self):
         pass

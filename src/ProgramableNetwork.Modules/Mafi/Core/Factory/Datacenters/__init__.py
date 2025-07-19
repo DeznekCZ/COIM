@@ -56,6 +56,14 @@ class DataCenter:
         self.IsIdleForMaintenance = False
         self.HasWorkersCached = False
 class State:
+    Working = None
+    NoRacks = None
+    Paused = None
+    Broken = None
+    NotEnoughWorkers = None
+    NotEnoughElectricity = None
+    NotEnoughCoolant = None
+    FullOutput = None
 
     def __init__(self):
         pass
@@ -81,8 +89,14 @@ class DataCenterProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)
@@ -92,6 +106,7 @@ class Gfx:
         self.VisualizedLayers = None
         self.Categories = None
 class RackPosition:
+    Empty = None
 
     def __init__(self):
         pass
@@ -135,8 +150,14 @@ class ServerRackProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass

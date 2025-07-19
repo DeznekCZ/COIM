@@ -1,4 +1,8 @@
 class MessageNotificationType:
+    Neutral = None
+    Success = None
+    Important = None
+    Danger = None
 
     def __init__(self):
         pass

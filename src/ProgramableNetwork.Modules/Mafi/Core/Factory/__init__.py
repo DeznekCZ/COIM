@@ -11,6 +11,7 @@ class FluidIndicatorGfxParams:
         pass
 
 class LoosePileTextureParams:
+    Default = None
 
     def __init__(self):
         pass

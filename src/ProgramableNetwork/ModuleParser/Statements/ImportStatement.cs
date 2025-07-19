@@ -167,6 +167,7 @@ namespace ProgramableNetwork.Python
             {
                 context["Template"] = typeof(Template);
                 context["Controller"] = typeof(ControllerTemplate);
+                context["ControllerTemplate"] = typeof(ControllerTemplate);
             }
 
             else if (name == "Core.ids")
@@ -205,6 +206,13 @@ namespace ProgramableNetwork.Python
                     }
 
                     string fullName = name + "." + item.value;
+
+                    //if (fullName == "Mafi.ColorRgba")
+                    //{
+                    //    context[fullName] = new ClassWrapper<ColorRgba>();
+                    //    continue;
+                    //}
+
                     context[item.value] = AppDomain
                         .CurrentDomain
                         .GetAssemblies()

@@ -158,6 +158,7 @@ class Statue:
         self.RendererData = None
         self.MaintenanceCosts = None
 class StatueOfMaintenanceManager:
+    MAINTENANCE_BONUS_BASE = None
 
     def __init__(self):
         self.GlobalMaintenanceBonus = None
@@ -318,6 +319,11 @@ class BarrierProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class CaptainOfficesData:
 
@@ -345,6 +351,11 @@ class CheatingProductsSourceSinkProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FuelStationsData:
 
@@ -388,8 +399,22 @@ class RetainingWallProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ShipyardData:
+    PerpendicularApproachAnimData = None
+    ParallelForwardApproachAnimData = None
+    ParallelBackwardApproachAnimData = None
+    AllApproachesAreas = None
+    AllApproachesAnimationPrefabs = None
+    PADDING_SIZE = None
+    PADDING_WIDTH = None
+    SHIP_PAD = None
+    NOTHING_ = None
 
     def __init__(self):
         pass
@@ -425,6 +450,11 @@ class StatueProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class TombOfCaptainsProto:
 
@@ -450,6 +480,11 @@ class TombOfCaptainsProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class TradeDockData:
 
@@ -477,6 +512,11 @@ class UniversalProductsSinkProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class UniversalProductsSourceProto:
 
@@ -499,4 +539,9 @@ class UniversalProductsSourceProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

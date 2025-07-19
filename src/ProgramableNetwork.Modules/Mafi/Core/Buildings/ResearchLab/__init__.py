@@ -77,6 +77,17 @@ class ResearchLab:
         self.PowerRequired = None
         self.ComputingRequired = None
 class State:
+    Paused = None
+    Broken = None
+    Working = None
+    Idle = None
+    MissingInput = None
+    MissingWorkers = None
+    NotEnoughUpoints = None
+    NotEnoughPower = None
+    NotEnoughComputing = None
+    ResearchTooDifficult = None
+    NotEnoughSpacePoints = None
 
     def __init__(self):
         pass
@@ -113,4 +124,9 @@ class ResearchLabProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False

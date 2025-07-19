@@ -30,6 +30,15 @@ class BalanceLogEntry:
         pass
 
 class LoansManager:
+    YEARS_AVAILABLE = None
+    YEARS_AVAILABLE_DEFAULT_INDEX = None
+    MAX_PAYMENT_DELAY = None
+    PAYMENT_FREQUENCY = None
+    PAYMENT_BUFFER_OPENS_BEFORE = None
+    SCORE_PENALTY_ON_MISSED_PAYMENT = None
+    SCORE_BONUS_ON_PAYMENT = None
+    SCORE_AUTO_RESTORE = None
+    MIN_LOAN = None
 
     def __init__(self):
         from Mafi import Fix32
@@ -65,11 +74,18 @@ class SetLoanBufferPriorityCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class LoansDifficultyParams:
+    StartingScore = None
+    MinScore = None
+    MaxScore = None
+    MaxAnnualPaymentToProductionRatio = None
 
     def __init__(self):
         pass
 
 class LoansDifficulty:
+    Easy = None
+    Medium = None
+    Hard = None
 
     def __init__(self):
         pass

@@ -11,6 +11,7 @@ class Factory:
         pass
 
 class DynamicEntityVehicleGoal:
+    GOAL_INVALID_RETRY_PF_RADIUS = None
 
     def __init__(self):
         from Mafi import Option

@@ -4,6 +4,9 @@ class CustomEntitiesSerializer:
         pass
 
 class CustomTextReader:
+    NEW_LINE = None
+    CR = None
+    DELIMITER = None
 
     def __init__(self):
         self.Level = int(0)

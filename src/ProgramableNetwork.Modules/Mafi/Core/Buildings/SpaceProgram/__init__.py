@@ -1,4 +1,5 @@
 class RocketAssemblyBuilding:
+    RocketAssemblyDepot__CannotDestroy = None
 
     def __init__(self):
         self.CanBePaused = False
@@ -107,6 +108,11 @@ class RocketAssemblyBuildingProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class RocketLaunchPad:
 
@@ -171,11 +177,22 @@ class RocketLaunchPad:
         self.WorkersNeeded = int(0)
         self.HasWorkersCached = False
 class RocketLaunchPadState:
+    WaitingForRocket = None
+    AttachingRocket = None
+    RocketAttached = None
+    LaunchCountdown = None
+    RocketLaunching = None
 
     def __init__(self):
         pass
 
 class RocketLaunchState:
+    None = None
+    WaitingForInstructions = None
+    FuelLow = None
+    WaterLow = None
+    WaitingForCargoAssignment = None
+    AutoLaunchForCargoNotSet = None
 
     def __init__(self):
         pass
@@ -201,6 +218,11 @@ class RocketLaunchPadProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
 

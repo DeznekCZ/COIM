@@ -1,4 +1,6 @@
 class CargoShip:
+    SAVER_FUEL_MULT = None
+    SAVER_TRAVEL_DURATION_MULT = None
 
     def __init__(self):
         self.CanBePaused = False
@@ -37,16 +39,34 @@ class CargoShip:
         self.HasWorkersCached = False
         self.RendererData = None
 class ForceLeaveMode:
+    None = None
+    LeftForUpgrade = None
+    LeftForDestroy = None
+    LeftForBlocked = None
+    LeftForFuelTypeChange = None
 
     def __init__(self):
         pass
 
 class ShipState:
+    ArrivingFromWorld = None
+    Docked = None
+    DepartingToWorld = None
+    AtWorldGoingForCargo = None
+    AtWorldReturningHome = None
 
     def __init__(self):
         pass
 
 class DockedStatus:
+    Ok = None
+    NoModulesBuilt = None
+    NotEnoughFuel = None
+    Paused = None
+    ShipIsBeingUnloaded = None
+    NothingToPickUp = None
+    NotEnoughToPickUp = None
+    NotEnoughWorkers = None
 
     def __init__(self):
         pass
@@ -70,6 +90,11 @@ class CargoShipProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FuelData:
 
@@ -77,6 +102,7 @@ class FuelData:
         pass
 
 class Gfx:
+    EMPTY = None
 
     def __init__(self):
         self.IconPath = str(0)

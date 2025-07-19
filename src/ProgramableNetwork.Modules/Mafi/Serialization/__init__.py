@@ -63,6 +63,12 @@ class InitAfterLoadAttribute:
     def __init__(self):
         self.TypeId = None
 class InitPriority:
+    ImmediatelyAfterSelfDeserialized = None
+    Highest = None
+    High = None
+    Normal = None
+    Low = None
+    Lowest = None
 
     def __init__(self):
         pass

@@ -9,6 +9,8 @@ class ThermalStorage:
         self.HeatCapacity = int(0)
         self.HeatStored = int(0)
         self.AreAlertsAvailable = False
+        self.AlertWhenAboveEnabled = False
+        self.AlertWhenAbove = None
         self.AlertWhenBelowEnabled = False
         self.AlertWhenBelow = None
         self.IsOutputFull = False
@@ -56,6 +58,12 @@ class ThermalStorage:
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
 class State:
+    None = None
+    Working = None
+    Broken = None
+    Paused = None
+    NotEnoughWorkers = None
+    NotEnoughPower = None
 
     def __init__(self):
         pass
@@ -95,6 +103,11 @@ class ThermalStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ProductData:
 
@@ -102,6 +115,7 @@ class ProductData:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)

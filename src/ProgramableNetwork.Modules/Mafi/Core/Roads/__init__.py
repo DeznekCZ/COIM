@@ -86,8 +86,12 @@ class IRoadGraphEntityProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 class IRoadGraphTerrainConnector:
@@ -124,6 +128,8 @@ class IRoadGraphTerrainConnector:
         self.IsDestroyed = False
         self.DefaultTitle = None
 class RoadEntity:
+    DISCRETIZATION_STEP = None
+    ROAD_LAYOUT_HEIGHT = None
 
     def __init__(self):
         self.Prototype = None
@@ -170,6 +176,11 @@ class RoadDirectionCanonical:
     def __init__(self):
         self.DirectionSigns = None
 class RoadConnectionType:
+    Invalid = None
+    OneLane = None
+    TwoLane = None
+    TerrainToRoad = None
+    RoadToTerrain = None
 
     def __init__(self):
         pass
@@ -199,6 +210,10 @@ class RoadLaneMetadata:
         pass
 
 class RoadEntityProto:
+    LANE_WIDTH_OUTER = None
+    DOUBLE_LANE_CENTER_OFFSET = None
+    LANE_WIDTH_INNER = None
+    RAMP_HEIGHT_DELTA = None
 
     def __init__(self):
         self.EntityType = None
@@ -224,6 +239,11 @@ class RoadEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class RoadLaneSpec:
 
@@ -292,8 +312,14 @@ class RoadEntityProtoBase:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)
@@ -303,6 +329,15 @@ class Gfx:
         self.VisualizedLayers = None
         self.Categories = None
 class RoadLaneType:
+    MaskTwoTileLane = None
+    MaskFourTileLane = None
+    MaskAllowAll = None
+    MaskAllowNone = None
+    TwoTilesLaneFlag = None
+    FourTilesLaneFlag = None
+    BasicLaneFlag = None
+    ElevatedLaneFlag = None
+    TerrainConnectionFlag = None
 
     def __init__(self):
         pass
@@ -374,6 +409,11 @@ class RoadEntranceEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class LaneTerrainConnectionSpec:
 
@@ -386,6 +426,8 @@ class RoadTerrainConnection:
         pass
 
 class RoadsConstants:
+    ROAD_SURFACE_HEIGHT = None
+    ROAD_TRAIN_CROSSING_EXTRA_HEIGHT = None
 
     def __init__(self):
         pass
@@ -399,6 +441,9 @@ class IRoadsManager:
         self.RoadConnectionAdded = None
         self.RoadConnectionRemoved = None
 class RoadNetworkSearchStatus:
+    InvalidStartNode = None
+    StepsRanOut = None
+    Success = None
 
     def __init__(self):
         pass

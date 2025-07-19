@@ -10,6 +10,17 @@ namespace ProgramableNetwork.Python
 {
     public class Expressions
     {
+        public static Dictionary<Type, Func<IArgumentValue[], object>> Initializers =
+        new ()
+        {
+            { typeof(ColorRgba), (args) => new ColorRgba(
+                (byte)(int)args[0].Value,
+                (byte)(int)args[1].Value,
+                (byte)(int)args[2].Value,
+                (byte)(int)(args.Length == 4 ? args[3].Value : 255)
+            ) }
+        };
+
         public static bool __bool__(object v)
         {
             return v is bool b ? b
@@ -133,7 +144,31 @@ namespace ProgramableNetwork.Python
                             : (IArgumentValue)new NamedValue(a.name, a.value))
                     ).ToArray());
             }
+            if (executable is Type type)
+            {
+                try
+                {
+                    return Expressions.__init__(type, arguments.Select(a =>
+                        a.name == null
+                            ? (IArgumentValue)new OrderedValue(a.value)
+                            : (IArgumentValue)new NamedValue(a.name, a.value)));
+                }
+                catch (Exception e)
+                {
+                    throw new NotImplementedException($"Try to call constructor of {type.Name}", e);
+                }
+            }
             throw new NotImplementedException("Invocation is not defined");
+        }
+
+        public static object __init__(Type type, IEnumerable<IArgumentValue> enumerable)
+        {
+            if (Initializers.TryGetValue(type, out var initializer))
+            {
+                return initializer([.. enumerable]);
+            }
+
+            return Activator.CreateInstance(type, [.. enumerable.Select(e => e.Value)]);
         }
 
         public static bool __eq__(object left, object right)

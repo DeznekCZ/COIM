@@ -1,4 +1,6 @@
 class CountableProductProto:
+    ProductType = None
+    Phantom = None
 
     def __init__(self):
         self.QuantityFormatter = None
@@ -21,8 +23,14 @@ class CountableProductProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PackingMode = None
@@ -31,11 +39,18 @@ class Gfx:
         self.IconPath = str(0)
         self.IconIsCustom = False
 class CountableProductStackingMode:
+    Auto = None
+    Stacked = None
+    StackedAlternating = None
+    Triangle = None
+    TriangleHorizontal = None
+    Row = None
 
     def __init__(self):
         pass
 
 class DetailLayerSpecProto:
+    MAX_DETAIL_DENSITY = None
 
     def __init__(self):
         self.Id = None
@@ -46,6 +61,11 @@ class DetailLayerSpecProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class DetailVariant:
 
@@ -53,6 +73,8 @@ class DetailVariant:
         pass
 
 class FluidProductProto:
+    ProductType = None
+    Phantom = None
 
     def __init__(self):
         self.QuantityFormatter = None
@@ -75,6 +97,11 @@ class FluidProductProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class FluidProductProtoBuilder:
 
@@ -87,11 +114,38 @@ class State:
         pass
 
 class DestroyReason:
+    Cleared = None
+    DumpedOnTerrain = None
+    General = None
+    UsedAsFuel = None
+    Wasted = None
+    QuickTrade = None
+    Export = None
+    Construction = None
+    Maintenance = None
+    Settlement = None
+    Research = None
+    Farms = None
+    Cheated = None
+    LoanPayment = None
 
     def __init__(self):
         pass
 
 class CreateReason:
+    InitialResource = None
+    Imported = None
+    MinedFromTerrain = None
+    Produced = None
+    General = None
+    Cheated = None
+    QuickTrade = None
+    Loot = None
+    Deconstruction = None
+    Settlement = None
+    Recycled = None
+    Research = None
+    Loan = None
 
     def __init__(self):
         pass
@@ -108,6 +162,8 @@ class IProductsManagerExtensions:
         pass
 
 class LooseProductProto:
+    ProductType = None
+    Phantom = None
 
     def __init__(self):
         from Mafi import Option
@@ -134,8 +190,14 @@ class LooseProductProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.DisplayInResources = False
@@ -156,6 +218,8 @@ class LooseProductsSlimIdManager:
         self.PhantomProto = None
         self.MaxIdValue = int(0)
 class MoltenProductProto:
+    ProductType = None
+    Phantom = None
 
     def __init__(self):
         self.QuantityFormatter = None
@@ -178,8 +242,14 @@ class MoltenProductProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         from Mafi import Option
@@ -226,6 +296,7 @@ class PinnedProductReorderCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class ProductProto:
+    Phantom = None
 
     def __init__(self):
         self.QuantityFormatter = None
@@ -248,6 +319,11 @@ class ProductProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -255,6 +331,7 @@ class ID:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         from Mafi import Option
@@ -278,6 +355,7 @@ class ProductQuantityProto:
         pass
 
 class ProductsManager:
+    RECYCLING_RATIO_BASE = None
 
     def __init__(self):
         self.AssetManager = None
@@ -318,11 +396,17 @@ class ProductStats:
         self.GlobalQuantity = None
         self.SourceProducts = None
 class ProductType:
+    ANY = None
+    NONE = None
 
     def __init__(self):
         pass
 
 class TerrainMaterialProto:
+    MINED_QUANTITY_PER_TILE_CUBED = None
+    PHANTOM_ID = None
+    PhantomTerrainMaterialProto = None
+    SUFFIX = None
 
     def __init__(self):
         self.MinedQuantityPerTileCubed = None
@@ -341,8 +425,14 @@ class TerrainMaterialProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass
@@ -372,6 +462,8 @@ class TerrainMaterialsSlimIdManager:
         self.PhantomProto = None
         self.MaxIdValue = int(0)
 class VirtualProductProto:
+    ProductType = None
+    Phantom = None
 
     def __init__(self):
         self.TrackSourceProducts = False
@@ -394,6 +486,11 @@ class VirtualProductProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class VirtualResourceProductProto:
 
@@ -406,8 +503,14 @@ class VirtualResourceProductProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class Gfx:
+    Empty = None
 
     def __init__(self):
         pass

@@ -23,6 +23,11 @@ class EditorButtonAttribute:
     def __init__(self):
         self.TypeId = None
 class ObjEditorIcon:
+    None = None
+    View = None
+    Delete = None
+    Edit = None
+    Clone = None
 
     def __init__(self):
         pass

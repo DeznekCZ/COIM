@@ -92,11 +92,23 @@ class Machine:
         self.WorkersNeeded = int(0)
         self.HasWorkersCached = False
 class State:
+    None = None
+    Broken = None
+    Paused = None
+    NotEnoughWorkers = None
+    NotEnoughPower = None
+    NotEnoughComputing = None
+    NotEnoughInput = None
+    InvalidPlacement = None
+    OutputFull = None
+    NoRecipes = None
+    Working = None
 
     def __init__(self):
         pass
 
 class WasteInputPortPriorityProvider:
+    Instance = None
 
     def __init__(self):
         pass
@@ -132,6 +144,7 @@ class MachineOutputBuffer:
         self.UsableCapacity = None
         self.IsDestroyed = False
 class MachineCommandsProcessor:
+    COST_TO_DISCARD_PRODUCTS = None
 
     def __init__(self):
         pass
@@ -221,6 +234,7 @@ class ClearUnusedMachineBuffersCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class MachineProto:
+    BOOST_COST = None
 
     def __init__(self):
         self.EntityType = None
@@ -250,6 +264,11 @@ class MachineProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -257,6 +276,7 @@ class ID:
         pass
 
 class Gfx:
+    Empty = None
 
     def __init__(self):
         self.PrefabPath = str(0)

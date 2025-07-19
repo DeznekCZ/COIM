@@ -24,6 +24,7 @@ class NewMapStartLocationProvider:
     def __init__(self):
         self.StartingLocation = None
 class IslandMap:
+    MAP_VERSION_LATEST = None
 
     def __init__(self):
         self.CellCoastLines = None
@@ -47,6 +48,7 @@ class TerrainPropMapData:
         pass
 
 class IslandMapConfig:
+    Default = None
 
     def __init__(self):
         pass
@@ -57,6 +59,8 @@ class IslandMapDifficultyConfig:
         self.MineableResourceSizeBonus = None
         self.CellHeightsBias = None
 class MapCell:
+    MIN_GROUND_HEIGHT = None
+    DEFAULT_OCEAN_FLOOR_HEIGHT = None
 
     def __init__(self):
         self.IslandMap = None
@@ -84,6 +88,11 @@ class MapCellEdge:
     def __init__(self):
         self.CenterPoint = None
 class MapCellState:
+    NotAvailable = None
+    PendingAvailableToUnlock = None
+    AvailableToUnlock = None
+    PendingUnlocked = None
+    Unlocked = None
 
     def __init__(self):
         pass
@@ -119,6 +128,11 @@ class MapCellSurfaceGeneratorProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
 class ID:
 
@@ -146,10 +160,12 @@ class MapManager:
         pass
 
 class ProceduralIslandMapGenerator:
+    NAME = None
 
     def __init__(self):
         self.Name = str(0)
 class ProceduralIslandMapGeneratorConfig:
+    MAX_CELLS = None
 
     def __init__(self):
         self.MapRandomSeed = str(0)
@@ -179,6 +195,8 @@ class ProceduralIslandMapGeneratorConfig:
         self.DefaultOceanCellSurfaceId = None
         self.DefaultCliffMaterialId = None
 class OceanShape:
+    HalfIsland = None
+    FullAround = None
 
     def __init__(self):
         pass
@@ -197,6 +215,7 @@ class SimpleVirtualResource:
         self.MaxRadius = None
         self.ResourceColor = None
 class SquareMapGenerator:
+    NAME = None
 
     def __init__(self):
         self.Name = str(0)
@@ -232,11 +251,22 @@ class StaticIslandMapPreviewData:
         pass
 
 class IslandMapDifficulty:
+    Easy = None
+    Medium = None
+    Hard = None
+    Insane = None
 
     def __init__(self):
         pass
 
 class TestMapGenerator:
+    OIL_DEPOSIT_CAP = None
+    OIL_DEPOSIT_POS = None
+    OIL_DEPOSIT_SIZE = None
+    GROUNDWATER_DEPOSIT_CAP = None
+    GROUNDWATER_DEPOSIT_POS = None
+    GROUNDWATER_DEPOSIT_SIZE = None
+    NAME = None
 
     def __init__(self):
         self.Name = str(0)
