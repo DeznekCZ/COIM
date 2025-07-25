@@ -39,7 +39,7 @@ namespace BucketWheelExcavator
                 id: NewIds.BucketWheelExcavator.BucketExcavator_T1,
                 strings: Proto.CreateStr(NewIds.BucketWheelExcavator.BucketExcavator_T1, "Bucket excavator", "Basic bucket excavator"),
                 layout: new EntityLayoutParser(registrator.PrototypesDb).ParseLayoutOrThrow(
-                    new EntityLayoutParams(customTokens: new CustomLayoutToken[]
+                    new EntityLayoutParams(customCollapseVerticesThreshold: 64, customTokens: new CustomLayoutToken[]
                     {
                         new CustomLayoutToken("!0]", (param, height) => {
                             return new LayoutTokenSpec(
@@ -73,7 +73,7 @@ namespace BucketWheelExcavator
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: "Assets/BucketWheelExcavator/BucketWheelExcavator_T1.prefab",
                     customIconPath: "Assets/BucketWheelExcavator/BucketWheelExcavator_T1_Icon.png",
-                    categories: registrator.PrototypesDb.Get<ToolbarCategoryProto>(IdsCore.ToolbarCategories.Terraforming).ToImmutableArray()
+                    categories: registrator.GetCategoriesProtos(IdsCore.ToolbarCategories.Terraforming)
                 ),
                 fuelTanks: fuelTanks,
                 workersNeeded: 20,

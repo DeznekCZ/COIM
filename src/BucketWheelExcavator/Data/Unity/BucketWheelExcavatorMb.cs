@@ -53,6 +53,15 @@ namespace BucketWheelExcavator.Unity
                 m_bucketTransforms.Add(item);
                 m_bucketTiles.Add(item.position.ToTile3f());
             }
+
+            for (int i = 0; i < m_bucketTransforms.Count; i++)
+            {
+                Transform transform = m_bucketTransforms[i];
+                m_bucketTiles[i] = transform.position.ToTile3f();
+                //Debug.Log("Bucket position: " + m_bucketTiles[i]);
+            }
+
+            m_excavator.Buckets = m_bucketTiles;
         }
 
         public void RenderUpdate(GameTime time)

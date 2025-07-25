@@ -68,6 +68,8 @@ namespace BucketWheelExcavator.Entity
             {
                 m_queue.Enqueue(PartialProductQuantity.None);
             }
+
+            this.Height = (-60f + 15f).ToFix32();
         }
 
         public override bool CanBePaused => true;
@@ -127,8 +129,12 @@ namespace BucketWheelExcavator.Entity
         {
             base.SerializeData(writer);
             writer.WriteString(m_protoId.Value);
-            writer.WriteInt(/* Version */1);
+            writer.WriteInt(/* Version */2);
             writer.WriteGeneric(m_maintenance);
+            writer.WriteInt(Distance.RawValue);
+            writer.WriteInt(Direction.RawValue);
+            writer.WriteInt(Height.RawValue);
+
             Queueue<PartialProductQuantity>.Serialize(m_queue, writer);
             Dict<ProductSlimId, PartialQuantity>.Serialize(m_overflow, writer);
         }
@@ -139,6 +145,14 @@ namespace BucketWheelExcavator.Entity
             m_protoId = new LayoutEntityProto.ID(reader.ReadString());
             int version = reader.ReadInt();
             m_maintenance = reader.ReadGenericAs<IEntityMaintenanceProvider>();
+
+            if (version >= 2)
+            {
+                Distance = Fix32.FromRaw(reader.ReadInt());
+                Direction = Fix32.FromRaw(reader.ReadInt());
+                Height = Fix32.FromRaw(reader.ReadInt());
+            }
+
             m_queue = Queueue<PartialProductQuantity>.Deserialize(reader);
             m_overflow = Dict<ProductSlimId, PartialQuantity>.Deserialize(reader);
 
@@ -164,6 +178,10 @@ namespace BucketWheelExcavator.Entity
                 Lyst<PartialProductQuantity> mined = new Lyst<PartialProductQuantity>();
                 foreach (Tile3f item in Buckets)
                 {
+                    HeightTilesF height = terrain.GetHeight(item.Tile2i);
+                    if (height < item.Height)
+                        continue;
+
                     TerrainMaterialThicknessSlim minedMaterial = terrain.MineMaterial(
                         new Tile2iAndIndex(item.Tile2i.AsSlim, terrain.GetTileIndex(item.Tile2i).Value),
                         ThicknessTilesF.One);
@@ -177,6 +195,13 @@ namespace BucketWheelExcavator.Entity
                 }
 
                 m_queue.Enqueue(PartialProductQuantity.None);
+
+                Direction += 0.5f.ToFix32();
+                if (Direction >= 360)
+                {
+                    Direction = 0;
+                    Height -= 0.5f.ToFix32();
+                }
             }
         }
 
