@@ -189,6 +189,7 @@ class IdsCore:
     class Technology:
         from Mafi.Core.Prototypes import Proto
         CustomRoutes = Proto.ID('TechnologyCustomRoutes')
+        LogisticsZones = Proto.ID('TechnologyLogisticsZones')
         MechPowerAutoBalance = Proto.ID('TechnologyMechPowerAutoBalance')
         CustomSurfaces = Proto.ID('TechnologyCustomSurfaces')
         Recycling = Proto.ID('TechnologyRecycling')
@@ -380,6 +381,7 @@ class IdsCore:
         TrainDestroyed = EntityNotificationProto`1.ID('TrainDestroyed')
         TrainCannotFindPathFromDepot = EntityNotificationProto.ID('TrainCannotFindPathFromDepot')
         TrainHasInvalidScheduleItemFromDepot = EntityNotificationProto.ID('TrainHasInvalidScheduleItemFromDepot')
+        StationHasNoAssignedUnloadModule = EntityNotificationProto.ID('StationHasNoAssignedUnloadModule')
         AsteroidDiscovered = GeneralNotificationProto.ID('AsteroidDiscovered')
         AsteroidArrivedInOrbit = GeneralNotificationProto.ID('AsteroidArrivedInOrbit')
         SpaceStationNoCrewSupplies = GeneralNotificationProto.ID('SpaceStationNoCrewSupplies')
@@ -451,6 +453,7 @@ class IdsCore:
         TrainSlopeDifficultyMultiplier = None
         TrainsSlowDownOnLowFuel = None
         TrainsFuelConsumptionMultiplier = None
+        TrainsCapacityMultiplier = None
         FocusPointsMultiplier = None
         RocketsCapacityMultiplier = None
         def __init__(self):
@@ -573,6 +576,7 @@ class IdsCore:
         TutorialOnVehiclesAccessibility = Proto.ID('TutorialOnVehiclesAccessibility')
         TutorialOnCargoShip = Proto.ID('TutorialOnCargoShip')
         TutorialOnAdvancedLogistics = Proto.ID('TutorialOnAdvancedLogistics')
+        TutorialOnLogisticsZones = Proto.ID('TutorialOnLogisticsZones')
         TutorialOnMaintenance = Proto.ID('TutorialOnMaintenance')
         TutorialOnPopsAndUnity = Proto.ID('TutorialOnPopsAndUnity')
         TutorialOnCoalPower = Proto.ID('TutorialOnCoalPower')
@@ -635,6 +639,7 @@ class Tr:
     Km = None
     Kph = None
     Kn = None
+    Kw = None
     Tons = None
     OptionValStandard = None
     OptionValIncreased = None
@@ -764,6 +769,7 @@ class Tr:
     Dlc__Detail = None
     UnsortedSaves__Title = None
     SaveName__Label = None
+    CannotQuit_SaveInProgress = None
     GameSaveLoad__VersionTooHigh = None
     GameSaveLoad__VersionTooLow = None
     GameInitFail = None
@@ -814,6 +820,10 @@ class Tr:
     UiSettings_LargeText = None
     CameraSettings__Title = None
     CameraSettings__Fov = None
+    CameraSettings_EdgeScrolling = None
+    CameraSettings_EdgeScrolling__Tooltip = None
+    CameraSettings_ConfineMouseCursor = None
+    CameraSettings_ConfineMouseCursor__Tooltip = None
     Scale = None
     Language = None
     RenderingSetting_Title = None
@@ -839,6 +849,7 @@ class Tr:
     TutorialReset__Tooltip = None
     EnableMods__ToggleLabel = None
     EnableMods__Tooltip = None
+    Tutorial__WatchOnine = None
     AudioEffectsVolume__Master = None
     AudioEffectsVolume__Music = None
     AudioEffectsVolume__EffectsGroup = None
@@ -884,6 +895,7 @@ class Tr:
     EntityElectricityConsumptionTooltip__NotConsuming = None
     EntityElectricityConsumptionTooltip__NotEnough = None
     EntityElectricityConsumptionTooltip__Consuming = None
+    EntityElectricityConsumptionPerUnitTooltip = None
     EntityElectricityProductionTooltip = None
     PowerGenerationPriorityTooltip = None
     EntityComputingConsumptionTooltip = None
@@ -893,6 +905,7 @@ class Tr:
     EntityComputingProductionTooltip = None
     EntityToggleNavigationOverlay = None
     EntityToggleNavigationOverlay__Tooltip = None
+    EntityToggleTrainsNavigationOverlay__Tooltip = None
     EntityRepair__Tooltip = None
     EntityRepair_QuickRepair = None
     EntityRepair__FastAccessTooltip = None
@@ -914,6 +927,11 @@ class Tr:
     AssignedTrucks__Building_Tooltip = None
     AssignedTrucksEnforce__Title = None
     AssignedTrucksEnforce__Tooltip = None
+    AssigningFromZone = None
+    ReleasingToZone = None
+    AssignOverride__part1 = None
+    AssignOverride__part2Assign = None
+    AssignOverride__part2Release = None
     NoVehiclesAssigned = None
     SupportedTrucks__Title = None
     SupportedTrucks__Tooltip = None
@@ -930,6 +948,7 @@ class Tr:
     Action__BringToView = None
     Action__Confirm = None
     Action__RightClickToRemoveTooltop = None
+    Action__ToRemoveTooltip = None
     FuelTank_Title = None
     FuelTank_ReserveTooltip = None
     ReplaceVehicle__MainTooltip = None
@@ -938,6 +957,23 @@ class Tr:
     ReplaceVehicle__NoVehicleSelected = None
     ReplaceVehicle__NoDepot = None
     SelectVehicle_Title = None
+    VehiclesReplacer__Title = None
+    VehiclesReplacer__DepotAny = None
+    VehiclesReplacerFilter__Unassigned = None
+    VehiclesReplacerFilter__All = None
+    VehiclesReplacer__ActiveTasks = None
+    VehiclesReplacer__CompletedTasks = None
+    VehiclesReplacer__NewTaskTitle = None
+    VehiclesReplacer__StartAction = None
+    VehiclesReplacerTask__Limit = None
+    VehiclesReplacerTask__ReplacedLabel = None
+    VehiclesReplacerTaskState__Completed = None
+    VehiclesReplacerTaskState__Cancelled = None
+    VehiclesReplacerTaskState__Waiting = None
+    VehiclesReplacerTaskState__InProgress = None
+    VehiclesReplacerError__NoVehiclesSelected = None
+    VehiclesReplacerError__VehiclesAreSame = None
+    VehiclesReplacerError__DepotNoSupport = None
     VehicleMinClearanceTooltip = None
     ThisVehicleCannotDriveUnderTransports = None
     EntityCannotBeReachedDesc = None
@@ -948,6 +984,7 @@ class Tr:
     PartialTrucksToggle__Tooltip = None
     ConstructionPrio__Label = None
     ConstructionPrio__Tooltip = None
+    ConstructionHighPriority_Display__Shorthand = None
     DeconstructionPrio__Label = None
     DeconstructionPrio__Tooltip = None
     NumberOfIdleVehicles = None
@@ -955,7 +992,9 @@ class Tr:
     NoDataYet = None
     Vehicles = None
     VehiclesLimit__Tooltip = None
+    Vehicles_InUse = None
     VehiclesAssignments__Title = None
+    VehiclesZonesAssignments__Title = None
     TrucksStats__Title = None
     TrucksStats__OptionGeneral = None
     TrucksStats__OptionGeneralTooltip = None
@@ -976,6 +1015,8 @@ class Tr:
     VehicleJob__Unloading = None
     VehicleJob__InQueue = None
     VehicleJob__ProcessingSurface = None
+    VehicleGoal__TerrainPosition = None
+    VehicleGoal__SurfaceModification = None
     VehicleJob__Navigating = None
     VehicleJob__NavigatingToVia = None
     RuinsRecycle__Action = None
@@ -988,6 +1029,23 @@ class Tr:
     Trees__HarvestingOptions = None
     Trees__HarvestingOptionsTooltip = None
     PerTree = None
+    SetArea__EditAction = None
+    LogisticsZoneDelete_Confirmation = None
+    LogisticsZoneName = None
+    LogisticsZone__Default = None
+    LogisticsZone__All = None
+    LogisticsZoneSelected = None
+    NoAreaSet = None
+    ConstructionsZones__Title = None
+    ConstructionsZones__Tooltip = None
+    LogisticsZoneLimitReached = None
+    LogisticsZoneConfig__Name = None
+    LogisticsZoneConfig__Color = None
+    LogisticsZones__Title = None
+    LogisticsZones__TitleShort = None
+    LogisticsZoneSelector__VehicleDepotTooltip = None
+    LogisticsZoneSelector__VehicleTooltip = None
+    LogisticsZonesFromAssignment__Tooltip = None
     Skip = None
     Collect = None
     Cancel = None
@@ -996,6 +1054,7 @@ class Tr:
     Close = None
     Continue = None
     Upgrade = None
+    ReplaceAction = None
     Pause = None
     GoBack = None
     GoNext = None
@@ -1014,6 +1073,7 @@ class Tr:
     Search = None
     NothingFoundFor = None
     NothingFound = None
+    SearchResultFor = None
     QuantityPerMonth = None
     QuantityPerMonthShort = None
     OneMonth = None
@@ -1029,7 +1089,17 @@ class Tr:
     ReserveStatus = None
     QuickBuild__Action = None
     QuickBuild__NotAllowed = None
+    QuickBuild__NotEnoughProduct = None
     QuickRemove__Action = None
+    EntityPropertyModifiers = None
+    EntityPropertyNoModifiers = None
+    EntityPropertyBase = None
+    EntityPropertyModifier_Research__Tooltip = None
+    EntityPropertyModifier_Focuses__Tooltip = None
+    EntityPropertyModifier_Edicts__Tooltip = None
+    EntityPropertyModifier_PopulationSmall__Tooltip = None
+    EntityPropertyModifier_SpaceStation__Tooltip = None
+    EntityPropertyModifier_Others__Tooltip = None
     GlobalMaintenanceDemand__Title = None
     MaxGlobalMaintenanceRequired = None
     GlobalMaintenanceStatus__Tooltip = None
@@ -1040,6 +1110,10 @@ class Tr:
     VehiclesMaintenance = None
     QuickBuild__Tooltip = None
     QuickRemove__Tooltip = None
+    QuickRemoveAfterReplace__Tooltip = None
+    QuickReplaceAction__Tooltip = None
+    RefundAfterReplace__Label = None
+    RefundAfterReplace__Tooltip = None
     ConstructionState__WaitingForRemoval = None
     ConstructionState__WaitingForDelivery = None
     ConstructionState__Paused = None
@@ -1186,12 +1260,14 @@ class Tr:
     StoredProduct__ImportSliderLabel = None
     StoredProduct__ExportSliderLabel = None
     StoredProduct__OutputToBeltSliderLabel = None
+    StoredProduct__InputFromBeltSliderLabel = None
     StoredProduct__Clear_Tooltip = None
     StoredProduct__ClearActive_Tooltip = None
     StoredProduct__KeepFull = None
     StoredProduct__KeepEmpty = None
     RetiredWaste__Tooltip = None
     RetiredWaste__NextDisposal = None
+    RetiredWaste__NoProduct = None
     OutputThisProductOnly = None
     OutputThisProductOnly__Tooltip = None
     StoredHeat__Title = None
@@ -1408,6 +1484,7 @@ class Tr:
     SettlementTitle = None
     SettlementServices = None
     Health = None
+    HousingBonus__Active = None
     Health__Tooltip = None
     SettlementServices__Tooltip = None
     NumberOfSettlements__Tooltip = None
@@ -1424,9 +1501,11 @@ class Tr:
     UnityBonusToAdjacentHousing = None
     PopulationOverview__Title = None
     PopulationOverview__OpenAction = None
+    PossibleMaxUnity__Tooltip = None
     LastMonthUnityChanges__Title = None
     LastMonthUnityChanges__Tooltip = None
     TradeTitle = None
+    TombOfCaptains_NextStage__Action = None
     FuelPerJourneySuffix = None
     PerJourneySuffix = None
     RunOnLowFuel__Action = None
@@ -1444,12 +1523,12 @@ class Tr:
     EstablishedContracts__NoneInfo = None
     EstablishedContracts__Title = None
     EstablishedContracts__Tooltip = None
+    Contracts_GroupBy = None
     Contract__Establish = None
     Contract__EstablishTitle = None
     Contract__EstablishTooltip = None
     Contract__Assign = None
     Contract__Unassign = None
-    UnityPerShip = None
     ProductionCostEstimate = None
     Contracts__Title = None
     Contracts__None = None
@@ -1499,6 +1578,9 @@ class Tr:
     ThroughputWithParam = None
     Throughput = None
     MaximumThroughput = None
+    ElectricityConsumption = None
+    ElectricityProduction = None
+    StorageCapacity = None
     TransportationSpeed = None
     TilesPerSecond = None
     PowerGenerator__AutoScalingTooltip = None
@@ -1582,7 +1664,9 @@ class Tr:
     TipOnLoad__PlacementHistory = None
     Statistics = None
     Statistics__NoData = None
+    Statistics__Now = None
     Products = None
+    Statistics_NoProductSelected = None
     Pollution = None
     Population = None
     PopGrowth = None
@@ -1618,6 +1702,7 @@ class Tr:
     StatsRange__LifetimeProduced = None
     StatsRange__LifetimeConsumed = None
     StatsCat__Vehicles = None
+    StatsCat__Trains = None
     StatsCat__CargoShips = None
     StatsCat__MainShip = None
     StatsCat__PowerProduction = None
@@ -1731,7 +1816,8 @@ class Tr:
     UnityTool = None
     CopyTool = None
     CutTool = None
-    UpgradeTool = None
+    ReplaceTool = None
+    SelectReplacement_Title = None
     PropsRemovalTool = None
     PolygonAreaTool__Confirm__Tooltip = None
     PolygonAreaTool__AddPoint__Tooltip = None
@@ -1739,6 +1825,7 @@ class Tr:
     PolygonAreaTool__MovePoint__Tooltip = None
     PolygonAreaTool__Rect = None
     PolygonAreaTool__Rect__Tooltip = None
+    PolygonAreaTool__Rect__HudLabel = None
     ApplySettingsFrom = None
     AssignedForLogistics__ExportTooltipMineTower = None
     AssignedForLogistics__ImportTooltipMineTower = None
@@ -1861,6 +1948,7 @@ class Tr:
     Hospital_MortalityReduction = None
     Hospital_MortalityReductionTooltip = None
     Hospital_InputsTooltip = None
+    Hospital_Bonuses = None
     CurrentDisease__Title = None
     CurrentDisease__Tooltip = None
     CurrentDisease__NoDisease = None
@@ -1877,6 +1965,7 @@ class Tr:
     AlertsNotifHud_NoNew = None
     AlertsNotifHud_HiddenToggleTooltip = None
     AlertsNotifHud_HiddenCount = None
+    AlertsNotifHud_Unhide__Tooltip = None
     Notification__NewRefugees = None
     Notification__LocationExplored = None
     Notification__ShipInBattle = None
@@ -1977,7 +2066,15 @@ class Tr:
     MatchesFound = None
     CopyTool__Tooltip = None
     CopyTool__NoCopyTooltip = None
+    ToolFilter__EntitiesTooltip = None
+    ToolFilter__SurfaceTooltip = None
+    ToolFilter__DecalsTooltip = None
     PlaceMultipleTooltip = None
+    HoldToPlace__part1 = None
+    HoldToPlace__part2Collision = None
+    HoldToPlace__part2Replace = None
+    ReplacingStructure_Disclaimer = None
+    MovingStructure_Disclaimer = None
     CutTool__Tooltip = None
     PauseTool__Tooltip = None
     UpgradeTool__Tooltip = None
@@ -2028,10 +2125,17 @@ class Tr:
     Blueprint_NewFromStringTooltip = None
     Blueprint_NewFromSelectionTooltip = None
     Blueprints__GetMoreOnHub = None
+    Blueprint__ItemNotAvailable = None
+    Blueprint__ItemObsolete = None
+    Placement__ItemsObsolete = None
+    Blueprint__ItemWillBeReplacedWithLowerTier = None
+    Blueprint__ItemWillBeSkipped = None
     Blueprint__PlacementErrorNothingResearched = None
     Blueprint__PlacementWarning = None
     Blueprint__PlacementWarningMissing = None
     Blueprint__PlacementWarningDowngrade = None
+    Blueprint_IncludeSurfaces__Label = None
+    Blueprint_IncludeSurfaces__Tooltip = None
     NewFolder__Tooltip = None
     Blueprint_ExportToStringTooltip = None
     UpdateDescription__Tooltip = None
@@ -2177,6 +2281,7 @@ class Tr:
     DepotCannotAcceptTrain_DepotPaused = None
     DepotCannotAcceptTrainGeneric = None
     TrainTitle = None
+    Train_Line = None
     TrainStatus_NotSpawned = None
     TrainStatus_Stopped = None
     TrainStatus_ExplicitGoal = None
@@ -2184,12 +2289,11 @@ class Tr:
     TrainStatus_PlayerDriving = None
     TrainStatus_NoLine = None
     TrainStatus_EmptyLine = None
-    Train_Line = None
+    TrainStatus_NoOtherStation = None
+    TrainStatus_NoOtherStation__Tooltip = None
     TrainStatus_NavigatingToStation = None
     TrainStatus_ServicingStation = None
     TrainStatus_SearchingForNextGoal = None
-    TrainWarning_AlignmentForkedAtStation = None
-    TrainWarning_AlignmentEndedAtStation = None
     TrainStatus_Driving = None
     TrainStatus_InvalidGoal = None
     TrainStatus_NoValidGoal = None
@@ -2209,6 +2313,15 @@ class Tr:
     TrainStatus__HintForBidirectional = None
     TrainStatus_Pathfinding = None
     TrainStatus_Unknown = None
+    TrainIssue_NoValidGoals = None
+    TrainIssue_CannotFindPath = None
+    TrainIssue_SelfIntersect = None
+    TrainIssue_NoPower = None
+    TrainWarning_AlignmentForkedAtStation = None
+    TrainWarning_AlignmentEndedAtStation = None
+    TrainDriveMode__ToGoal = None
+    TrainDriveMode__Manual = None
+    TrainDriveMode__Scrapping = None
     Train_NoTrainDepotAvailableError = None
     TrainDepartCondition_Add = None
     TrainDepartCondition_FullOfAllOption = None
@@ -2266,7 +2379,11 @@ class Tr:
     TrainProperty_Capacity = None
     TrainProperty_RunningCost = None
     TrainProperty_Length = None
+    TrainCarProperty_Power = None
+    TrainCarProperty_StartingTraction = None
+    TrainCarProperty_BrakeForce = None
     TrainDesigner_Speeds__Title = None
+    TrainDesigner_SpeedsBenchmark__Explanation = None
     TrainDesigner_MaxSpeed__Title = None
     TrainDesigner_TimeToTravel__Title = None
     TrainDesigner_Speed_Flat = None
@@ -2303,7 +2420,19 @@ class Tr:
     TrainLine_FilterAnything = None
     TrainLine_FilterNothing = None
     TrainLine_AddFiltersTooltip = None
+    TrainLine_Warning_OnlyRefuelStops = None
+    TrainLine_Warning_OnlyRefuelStops__Tooltip = None
+    TrainLine_Warning_OnlyOneStop = None
+    TrainLine_Warning_OnlyOneStop__Tooltip = None
+    TrainLine_Warning_OnlyOneStopNonFuel = None
+    TrainLine_Warning_OnlyOneStopNonFuel__Tooltip = None
+    TrainLine_Warning_DestroyedStation = None
+    TrainLine_Arrivals__Title = None
+    TrainLine_Arrivals_Empty = None
     TrainLine_SelectStationPrompt = None
+    TrainLine_SelectReplacementStationPrompt = None
+    TrainLine_RetargetStation_Button__Tooltip = None
+    TrainLine_ReplaceStationAllLines__Label = None
     TrainLine_AssignNoRootError = None
     TrainTrackTool_NoTurnTooltip = None
     TrainTrackTool_SnapTooltip = None
@@ -2341,6 +2470,7 @@ class Tr:
     ComputingNotAvailable = None
     OrbitalSupplies = None
     OrbitalSupplies__Tooltip = None
+    OrbitalSupplies_SpaceProbesInOrbit_Tooltip = None
     SpaceStation = None
     SpaceStation_EstablishNew = None
     SpaceStation_EstablishNewHint = None
@@ -2524,6 +2654,10 @@ class IoPortId:
         def __init__(self):
             pass
 
+
+class LogisticsZoneId:
+    def __init__(self):
+        self.Value = 0
 
 class MessageNotificationId:
     Invalid = None

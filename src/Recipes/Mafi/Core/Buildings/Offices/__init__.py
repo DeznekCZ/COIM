@@ -14,7 +14,6 @@ class CaptainOffice:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -89,6 +88,11 @@ class CaptainOfficeProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.EmissionIntensity = None
         self.SupportsAdvancedEdicts = False
@@ -132,7 +136,6 @@ class OfficeBuilding:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -205,6 +208,11 @@ class OfficeBuildingProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ConsumedPerRecipe = None
         self.ProducedPerRecipe = None
@@ -283,6 +291,11 @@ class OfficeFocusProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Implementation = None
         self.MaxStep = 0
@@ -320,6 +333,11 @@ class OfficeFocusWithPropertiesProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PropertiesPerStepToApply = None
         self.Implementation = None

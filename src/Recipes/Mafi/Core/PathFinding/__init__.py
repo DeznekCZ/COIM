@@ -119,6 +119,7 @@ class ExploredPfNode:
 class IVehiclePathFindingManager:
     def __init__(self):
         self.QueueLength = 0
+        self.CurrentSimTick = None
         self.PathabilityProvider = None
 
 class IVehiclePathFindingTask:
@@ -195,6 +196,11 @@ class VehiclePathFindingTask:
         self.IsBeingProcessed = False
         from Mafi import Option
         self.Goal = Option()
+        self.EnqueuedAtTick = None
+        self.StartedProcessingAtTick = None
+        self.FinishedProcessingAtTick = None
+        self.InQueueDuration = None
+        self.PathFindingDuration = None
 
 class VehiclePfResultStatus:
     Unknown = None
@@ -269,6 +275,7 @@ class VehiclePathFindingManager:
     def __init__(self):
         self.MaxStepsPerUpdate = 0
         self.QueueLength = 0
+        self.CurrentSimTick = None
         self.PathabilityProvider = None
         self.HasMoreTasksToProcess = False
         self.CompletedPfTasks = 0

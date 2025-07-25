@@ -114,7 +114,6 @@ class LayoutEntity:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -147,7 +146,6 @@ class LayoutEntity:
 
 class LayoutEntityBase:
     def __init__(self):
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -178,6 +176,11 @@ class LayoutEntityBase:
         self.IsPaused = False
         self.IsNotPaused = False
         self.RendererData = None
+
+class EntityAddRequestFactoryData:
+    def __init__(self):
+        self.Data = None
+        self.ReasonToAdd = None
 
 class LayoutEntityAddRequestFactory:
     def __init__(self):
@@ -234,8 +237,12 @@ class ILayoutEntityProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -262,6 +269,11 @@ class LayoutEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None
@@ -386,6 +398,19 @@ class OccupiedVertexRelativeExtensions:
         pass
 
 
+class ToolbarEntryData:
+    def __init__(self):
+        self.CategoryProto = None
+        self.DoesNotUnlock = False
+
+class AllSubcategoryPolicy:
+    Enabled = None
+    EnabledAndDefault = None
+    Disabled = None
+    def __init__(self):
+        self.ShowAllSubcategory = False
+        self.SelectByDefault = False
+
 class ToolbarCategoryProto:
     from Mafi.Core.Prototypes import Proto
     PHANTOM_CATEGORY_ID = Proto.ID('__PHANTOM__TOOLBAR_CAT__')
@@ -394,7 +419,6 @@ class ToolbarCategoryProto:
         self.Subcategories = None
         from Mafi import Option
         self.ParentCategory = Option()
-        self.UnlockedBy = None
         self.Id = Proto.ID()
 
         self.Strings = None
@@ -404,10 +428,16 @@ class ToolbarCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Order = 0.0
         self.ShortcutId = ""
         self.IconPath = ""
         self.IsTransportBuildAllowed = False
         self.IncludeAllSubcategory = False
+        self.SelectAllSubcategoryByDefault = False
         self.IsPhantom = False

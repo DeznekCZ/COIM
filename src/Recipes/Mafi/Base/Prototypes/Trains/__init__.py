@@ -6,6 +6,9 @@ class TrainStationFuel:
         self.CurrentPrimaryQuantity = None
         self.CapacitySecondary = None
         self.CurrentSecondaryQuantity = None
+        self.AnimationParams = None
+        self.Upgrader = None
+        self.AnimationStatesProvider = None
         self.IsWorking = False
         self.CanChangeRailTrackDirection = False
         self.CanChangeCriticality = False
@@ -31,7 +34,6 @@ class TrainStationFuel:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -79,10 +81,15 @@ class TrainStationModule:
         self.ShouldConnectToWagon = False
         self.ShouldDisconnectFromWagon = False
         self.AreParticlesEnabled = False
+        self.TransferQuantity = None
+        self.Capacity = None
         from Mafi import Option
         self.Buffer = Option()
         self.StoredProduct = Option()
         self.StoredProductQuantity = None
+        self.AnimationParams = None
+        self.AnimationStatesProvider = None
+        self.Upgrader = None
         self.CanChangeRailTrackDirection = False
         self.CanChangeCriticality = False
         self.CanAddToSuperBlock = False
@@ -106,7 +113,6 @@ class TrainStationModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -167,7 +173,6 @@ class TrainStationRoot:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -208,6 +213,10 @@ class TrainStationFuelProto:
     def __init__(self):
         self.EntityType = None
         self.CanBeElevatedOnSupports = False
+        self.AnimationParams = None
+        self.Upgrade = None
+        self.UpgradeNonGeneric = None
+        self.TierData = None
         self.TrajectoryLength = None
         self.BlocksCount = 0
         self.MaxSpeedTilesPerTick = None
@@ -232,6 +241,11 @@ class TrainStationFuelProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.TransferPeriod = None
@@ -281,6 +295,10 @@ class TrainStationModuleProto:
         self.EntityType = None
         self.CanBeElevatedOnSupports = False
         self.StorableProducts = None
+        self.AnimationParams = None
+        self.Upgrade = None
+        self.UpgradeNonGeneric = None
+        self.TierData = None
         self.TrajectoryLength = None
         self.BlocksCount = 0
         self.MaxSpeedTilesPerTick = None
@@ -305,6 +323,11 @@ class TrainStationModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.TransferPeriod = None
@@ -340,6 +363,7 @@ class TrainStationModuleProto:
             self.SignIconScale = 0.0
             self.SignInMaterialPath = ""
             self.SignOutMaterialPath = ""
+            self.AnimateLoadUnload = False
             self.ParticlesParamsForLoading = None
             self.ParticlesParamsForUnloading = None
             self.IconIsCustom = False
@@ -383,6 +407,11 @@ class TrainStationRootProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.PowerConsumption = None

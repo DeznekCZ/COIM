@@ -46,6 +46,7 @@ class AssignVehicleTypeToEntityCmd:
 
         self.EntityId = None
         self.Count = 0
+        self.ZoneId = None
 
 class BuildVehicleForeverCmd:
     def __init__(self):
@@ -255,6 +256,20 @@ class ScrapVehicleCmd:
         self.ErrorMessage = ""
         self.VehicleId = None
 
+class SetVehicleDepotTargetZone:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.VehicleDepotId = None
+        self.ZoneId = None
+
 class TogglePartialTrucksLoadCmd:
     def __init__(self):
         self.AffectsSaveState = False
@@ -309,6 +324,7 @@ class UnassignVehicleFromEntityCmd:
 
         self.EntityId = None
         self.Count = 0
+        self.ZoneToAssign = None
 
 class VehicleCheatProductCmd:
     def __init__(self):

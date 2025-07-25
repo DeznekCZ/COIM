@@ -9,6 +9,8 @@ class ThermalStorage:
         self.HeatCapacity = 0
         self.HeatStored = 0
         self.AreAlertsAvailable = False
+        self.AlertWhenAboveEnabled = False
+        self.AlertWhenAbove = None
         self.AlertWhenBelowEnabled = False
         self.AlertWhenBelow = None
         self.IsOutputFull = False
@@ -21,7 +23,6 @@ class ThermalStorage:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -104,6 +105,11 @@ class ThermalStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Capacity = None
         self.SupportedProducts = None

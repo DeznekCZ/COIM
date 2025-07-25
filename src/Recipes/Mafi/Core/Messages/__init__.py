@@ -46,6 +46,11 @@ class MessageGroupProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Order = 0
         self.IsPhantom = False
@@ -62,6 +67,11 @@ class MessageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ForceOpen = False
         self.MessageType = None
@@ -133,7 +143,7 @@ class MessageTriggerOnQuantityProduced:
 class MessageTriggerProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -142,7 +152,12 @@ class MessageTriggerProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.MessageProto = None
         self.IsPhantom = False
@@ -150,7 +165,7 @@ class MessageTriggerProto:
 class MessageTriggerOnProtoUnlockedProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -159,7 +174,12 @@ class MessageTriggerOnProtoUnlockedProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.UnlockedProto = None
         self.MessageProto = None
@@ -168,7 +188,7 @@ class MessageTriggerOnProtoUnlockedProto:
 class MessageTriggerOnQuantityProducedProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -177,7 +197,12 @@ class MessageTriggerOnQuantityProducedProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Product = None
         self.Quantity = None
@@ -187,7 +212,7 @@ class MessageTriggerOnQuantityProducedProto:
 class MessageTriggerOnEntityConstructedProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -196,7 +221,12 @@ class MessageTriggerOnEntityConstructedProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         from Mafi.Core.Entities.Static import StaticEntityProto
         self.ConstructedProtoId = StaticEntityProto.ID()
@@ -207,7 +237,7 @@ class MessageTriggerOnEntityConstructedProto:
 class MessageTriggerOnEntityConstructedOrProductRunningOutProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -216,7 +246,12 @@ class MessageTriggerOnEntityConstructedOrProductRunningOutProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         from Mafi.Core.Entities.Static import StaticEntityProto
         self.ConstructedProtoId = StaticEntityProto.ID()
@@ -228,7 +263,7 @@ class MessageTriggerOnEntityConstructedOrProductRunningOutProto:
 class MessageTriggerOnShipRepairProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -237,7 +272,12 @@ class MessageTriggerOnShipRepairProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.MessageProto = None
         self.IsPhantom = False
@@ -245,7 +285,7 @@ class MessageTriggerOnShipRepairProto:
 class MessageTriggerDelayedProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -254,7 +294,12 @@ class MessageTriggerDelayedProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.DelayDays = 0
         self.MessageProto = None
@@ -263,7 +308,7 @@ class MessageTriggerDelayedProto:
 class MessageTriggerGlobalProductLowProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -272,7 +317,12 @@ class MessageTriggerGlobalProductLowProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         from Mafi.Core.Products import ProductProto
         self.ProductId = ProductProto.ID()
@@ -284,7 +334,7 @@ class MessageTriggerGlobalProductLowProto:
 class MessageTriggerOnEventProto:
     def __init__(self):
         self.Implementation = None
-        self.IsAvailable = False
+        self.IsNotAvailable = False
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
@@ -293,7 +343,12 @@ class MessageTriggerOnEventProto:
         self.IsInitialized = False
         self.Mod = None
         self.Tags = None
-        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.DelayDays = 0
         self.GetEvent = None

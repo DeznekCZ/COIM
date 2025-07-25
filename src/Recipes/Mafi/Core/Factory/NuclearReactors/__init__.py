@@ -52,7 +52,6 @@ class NuclearReactor:
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -198,6 +197,11 @@ class NuclearReactorProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.MaxPowerLevel = 0
         self.WaterInPerPowerLevel = None

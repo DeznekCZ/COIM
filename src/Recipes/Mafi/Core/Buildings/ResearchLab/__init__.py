@@ -36,7 +36,6 @@ class ResearchLab:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -120,6 +119,11 @@ class ResearchLabProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TierIndex = 0
         self.DurationOfRecipe = None

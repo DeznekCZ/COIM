@@ -27,6 +27,8 @@ class Excavator:
         self.TruckQueue = None
         self.CanBePaused = False
         self.CustomTitle = Option()
+        self.AssignedZone = Option()
+        self.ZoneMask = None
         self.AssignedTo = Option()
         self.NeedsRefueling = False
         self.IsFuelTankEmpty = False
@@ -156,6 +158,11 @@ class ExcavatorProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Capacity = None
         self.MinMiningDistance = None

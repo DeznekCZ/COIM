@@ -69,6 +69,7 @@ class RecipeUnlock:
         self.HideInUI = False
         self.Proto = None
         self.MachineProto = None
+        self.EnsureMachineIsUnlocked = False
 
 class VehicleLimitIncreaseUnlock:
     def __init__(self):

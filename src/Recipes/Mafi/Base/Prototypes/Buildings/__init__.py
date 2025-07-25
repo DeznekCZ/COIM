@@ -2,7 +2,6 @@
 class BarrierEntity:
     def __init__(self):
         self.CanBePaused = False
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -45,7 +44,6 @@ class CheatingProductsSourceSink:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -77,7 +75,6 @@ class CheatingProductsSourceSink:
 class RetainingWallEntity:
     def __init__(self):
         self.CanBePaused = False
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -124,7 +121,6 @@ class Statue:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -178,7 +174,6 @@ class TombOfCaptains:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -216,7 +211,6 @@ class UniversalProductsSink:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -258,7 +252,6 @@ class UniversalProductsSource:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -311,6 +304,11 @@ class BarrierProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None
@@ -351,6 +349,11 @@ class CheatingProductsSourceSinkProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ProductType = None
         self.BoostCost = None
@@ -408,6 +411,11 @@ class RetainingWallProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None
@@ -467,6 +475,11 @@ class StatueProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.InputProduct = Option()
         self.DurationPerOneQuantity = None
@@ -508,6 +521,11 @@ class TombOfCaptainsProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.FuelConsumptionPerDay = None
         self.FlowersConsumptionPerDay = None
@@ -554,6 +572,11 @@ class UniversalProductsSinkProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None
@@ -589,6 +612,11 @@ class UniversalProductsSourceProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None

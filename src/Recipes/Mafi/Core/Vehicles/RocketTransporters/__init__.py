@@ -7,6 +7,8 @@ class RocketTransporter:
         self.RocketHolderExtensionPerc = None
         self.CanBePaused = False
         self.CustomTitle = Option()
+        self.AssignedZone = Option()
+        self.ZoneMask = None
         self.AssignedTo = Option()
         self.NeedsJob = False
         self.NeedsRefueling = False
@@ -119,6 +121,11 @@ class RocketTransporterProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.RocketProto = None
         self.RocketHolderExtensionDuration = None

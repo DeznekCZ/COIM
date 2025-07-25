@@ -12,6 +12,7 @@ class AddEntityToScheduleItemCmd:
         self.ErrorMessage = ""
         self.ScheduleItemId = None
         self.EntityId = None
+        self.Priority = 0
 
 class AddNewScheduleItemToTrainLineCmd:
     def __init__(self):
@@ -27,6 +28,7 @@ class AddNewScheduleItemToTrainLineCmd:
         self.TrainLineId = None
         self.EntityId = None
         self.Index = 0
+        self.Priority = 0
 
 class AddRemoveTrainScheduleItemProductFilterCmd:
     def __init__(self):
@@ -120,19 +122,23 @@ class CancelTrainBuildCmd:
         self.DepotId = None
         self.QueueIndex = 0
 
+class CarAndStationIndex:
+    def __init__(self):
+        self.TrainCarIndex = 0
+        self.TrainStationIndex = 0
+
 class CargoWagon:
     def __init__(self):
         self.Prototype = None
         self.Cargo = None
         from Mafi import Option
         self.OnlyAllowedProduct = Option()
+        self.CargoQuantity = None
         self.Capacity = None
-        self.UsableCapacity = None
         self.IsEmpty = False
         self.IsNotEmpty = False
         self.IsFull = False
         self.IsNotFull = False
-        self.AlignedStation = Option()
         self.Maintenance = None
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
@@ -164,6 +170,24 @@ class CargoWagon:
         self.IsNotPaused = False
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
+        self.SubCars = None
+
+    class SubCargoWagon:
+        def __init__(self):
+            self.Cargo = None
+            from Mafi import Option
+            self.OnlyAllowedProduct = Option()
+            self.Capacity = None
+            self.UsableCapacity = None
+            self.IsEmpty = False
+            self.IsNotEmpty = False
+            self.IsFull = False
+            self.IsNotFull = False
+            self.AlignedStation = Option()
+            self.PercentFull = None
+            self.CargoWagon = None
+            self.TrainCar = None
+            self.SubCarIndex = 0
 
 class CargoWagonLoose:
     def __init__(self):
@@ -171,13 +195,12 @@ class CargoWagonLoose:
         self.Cargo = None
         from Mafi import Option
         self.OnlyAllowedProduct = Option()
+        self.CargoQuantity = None
         self.Capacity = None
-        self.UsableCapacity = None
         self.IsEmpty = False
         self.IsNotEmpty = False
         self.IsFull = False
         self.IsNotFull = False
-        self.AlignedStation = Option()
         self.Maintenance = None
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
@@ -209,6 +232,7 @@ class CargoWagonLoose:
         self.IsNotPaused = False
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
+        self.SubCars = None
 
 class CargoWagonUnit:
     def __init__(self):
@@ -216,13 +240,12 @@ class CargoWagonUnit:
         self.Cargo = None
         from Mafi import Option
         self.OnlyAllowedProduct = Option()
+        self.CargoQuantity = None
         self.Capacity = None
-        self.UsableCapacity = None
         self.IsEmpty = False
         self.IsNotEmpty = False
         self.IsFull = False
         self.IsNotFull = False
-        self.AlignedStation = Option()
         self.Maintenance = None
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
@@ -254,6 +277,7 @@ class CargoWagonUnit:
         self.IsNotPaused = False
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
+        self.SubCars = None
 
 class CreateNewTrainLineCmd:
     def __init__(self):
@@ -350,7 +374,6 @@ class LayoutEntityWithTrainTrackBase:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -407,7 +430,6 @@ class LevelCrossing:
         self.RoadLanesCount = 0
         self.NumberOfPassedTrains = 0
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -450,7 +472,6 @@ class LevelCrossingEntrance:
         self.RoadLanesCount = 0
         self.RoadProto = None
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -535,6 +556,7 @@ class Locomotive:
         self.IsIdleForMaintenance = False
         self.WorkersNeeded = 0
         self.HasWorkersCached = False
+        self.SubCars = None
 
 class NavigateTrainToCmd:
     def __init__(self):
@@ -719,6 +741,21 @@ class ReorderTrainLineScheduleItemCmd:
         self.ScheduleItem = None
         self.NewIndex = 0
 
+class ReplaceEntityInScheduleCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.ScheduleItemId = None
+        self.OldEntityId = None
+        self.NewEntityId = None
+
 class ReverseTracksCmd:
     def __init__(self):
         self.AffectsSaveState = False
@@ -757,8 +794,8 @@ class ScrapTrainCarCmd:
         self.HasError = False
         self.ErrorMessage = ""
         self.DepotId = None
-        from Mafi.Core.Entities import EntityProto
-        self.CarProtoId = EntityProto.ID()
+        from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+        self.CarProtoId = DynamicEntityProto.ID()
 
 
 class SetDepartConditionCombineMethodCmd:
@@ -878,6 +915,21 @@ class SetTrainScheduleItemProductFilterCmd:
         self.IsRemove = False
         self.IsUnload = False
         self.Disable = False
+
+class SetTrainSchedulePriority:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.ScheduleItemId = None
+        self.Priority = 0
+        self.RootId = None
 
 class SetTrainScheduleSkipIfHighFuelCmd:
     def __init__(self):
@@ -1032,6 +1084,7 @@ class TenderWagon:
         self.IsIdleForMaintenance = False
         self.WorkersNeeded = 0
         self.HasWorkersCached = False
+        self.SubCars = None
 
 class ToggleBidirectionalCommand:
     def __init__(self):
@@ -1122,6 +1175,8 @@ class TrackPathRecord:
 class Train:
     IDLE_DURATION_FOR_WARNING = None
     IDLE_DURATION_FOR_ERROR = None
+    RESET_INCREMENTAL_RESERVATION_PERIOD = None
+    TIME_BEFORE_NO_PATH_NOTIF = None
     RECOVERY_COST_PER_CAR = None
     MAX_SPEED = None
     MAX_ROLL_DRAG_SPEED = None
@@ -1131,13 +1186,17 @@ class Train:
     NOT_APPROACHING_TIMEOUT = None
     IDLE_TIME_BEFORE_DEPART_NO_CONDITIONS = None
     IDLE_TIME_BEFORE_DEPART_WITH_CONDITIONS = None
+    PATH_RETRY_COOLDOWN = None
     def __init__(self):
         self.Name = ""
         self.DefaultTitle = None
         self.Position2f = None
         self.Position3f = None
+        self.TrainId = None
         self.TrainCarsCount = 0
+        self.TrainSubCarsCount = 0
         self.TrainCars = None
+        self.TrainSubCars = None
         self.Locomotives = None
         self.CargoWagons = None
         self.TrainCarsDataInDriveOrder = None
@@ -1147,6 +1206,7 @@ class Train:
         self.Data = None
         from Mafi import Fix64
         self.LifetimeDistanceTraveled = Fix64()
+        self.LifetimeLoadedQuantity = None
         self.ThrottlePercent = None
         self.BrakesPercent = None
         self.Speed = None
@@ -1175,6 +1235,7 @@ class Train:
         self.OccupiedBlocksCount = 0
         self.OccupiedWaypointsCount = 0
         self.ReservedBlocks = None
+        self.OverlapReservedBlocks = None
         self.ReservedBlocksCount = 0
         self.ReservedWaypointsCount = 0
         self.UnreservedBlocksCount = 0
@@ -1198,8 +1259,8 @@ class Train:
         self.CurrentScheduleItem = Option()
         self.ReservedStationGroupSlots = None
         self.DrivingMode = None
+        self.ReservationWaitTime = None
         self.NotifyingCannotScrap = False
-        self.NotifyingIdle = False
         self.CurrentStation = Option()
         self.IsBeingScrapped = False
         self.CurrentPathGoalEntities = None
@@ -1214,7 +1275,6 @@ class Train:
         self.LastFailedBlockReservation = None
         self.StateForUi = None
         self.WarningForUi = None
-        self.TrainId = None
 
     class TrainCarData:
         def __init__(self):
@@ -1252,6 +1312,12 @@ class TrainCarBase:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
+        self.SubCars = None
+
+    class TrainSubCarBase:
+        def __init__(self):
+            self.TrainCar = None
+            self.SubCarIndex = 0
 
 class TrainColor:
     def __init__(self):
@@ -1349,7 +1415,6 @@ class TrainDepot:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1407,7 +1472,6 @@ class TrainDepotExtension:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1504,11 +1568,15 @@ class TrainPathFindingTask:
         self.LastPfResult = None
         self.StartNodes = None
         self.StartNodesMetadata = None
+        self.LastPathFailedStep = None
         self.GoalNodes = None
-        from Mafi import Fix32
-        self.ForwardCostScale = Fix32()
-        self.BackwardCostScale = Fix32()
+        self.ForwardMaxSpeed = None
+        self.BackwardMaxSpeed = None
         self.MaxDistanceForOccupancyCostPenalties = None
+        self.PfInitCount = 0
+        self.PfStartCount = 0
+        self.PfPathFoundCount = 0
+        self.PfCancelledCount = 0
 
 class TrainScheduleDepartConditionBase:
     def __init__(self):
@@ -1524,6 +1592,7 @@ class TrainsManager:
     def __init__(self):
         self.Trains = None
         self.TrainsDict = None
+        self.LargestBlockWaypointCount = 0
         self.TrainPausedStateChanged = None
         self.SlopeDifficultyMultiplier = None
         self.FuelConsumptionMultiplier = None
@@ -1550,6 +1619,7 @@ class TrainStationAlignment:
         self.TrainCarOffset = 0
         self.TrainCarIndex = 0
         self.TrainStationIndex = 0
+        self.AllAlignments = None
 
 class TrainStationAlignmentPlan:
     EMPTY_PLAN = None
@@ -1594,7 +1664,6 @@ class TrainStationBase:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1701,9 +1770,11 @@ class TrainStationModuleSetProductCmd:
 
 
 class TrainStationScheduleItem:
+    DEFAULT_PRIORITY = 0
     def __init__(self):
         self.IndexInSchedule = 0
         self.StationRoots = None
+        self.StationPriorities = None
         self.SkipIfFuelHigherThan = None
         self.DisableLoad = False
         self.DisableUnload = False
@@ -1732,7 +1803,6 @@ class TrainTrack:
         self.CanBePaused = False
         self.PillarBlocksBitmap = None
         self.Pillars = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1805,7 +1875,6 @@ class TrainTrackPillar:
         self.CanBePaused = False
         self.VehicleSurfaceHeights = None
         self.PfTargetTiles = None
-        self.Value = None
         self.ConstructionCost = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -1942,12 +2011,14 @@ class CanBuildTrainTrackResult:
 class CargoWagonProto:
     def __init__(self):
         self.EntityType = None
+        self.Capacity = None
+        self.SubCarCapacity = None
         self.IconPath = ""
         self.BogiePivotsDistance = None
-        self.Costs = None
-        from Mafi.Core.Entities import EntityProto
-        self.Id = EntityProto.ID()
+        from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+        self.Id = DynamicEntityProto.ID()
 
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -1955,13 +2026,18 @@ class CargoWagonProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
-        self.Capacity = None
         self.ProductType = None
         self.CarLength = None
         self.CarWidth = None
         self.CarHeight = None
         self.BogiePivotsOffset = None
+        self.SubCarCount = 0
         self.BuildDurationPerProduct = None
         self.BuildExtraDuration = None
         self.BogiePivotToCarEnd = None
@@ -1978,17 +2054,20 @@ class CargoWagonProto:
         self.DragCoefficientInline = Fix32()
         self.AllowOnlyAfter = None
         self.Graphics = None
+        self.VehicleQuotaCost = 0
         self.IsPhantom = False
 
 class CargoWagonUnitProto:
     def __init__(self):
         self.EntityType = None
+        self.Capacity = None
+        self.SubCarCapacity = None
         self.IconPath = ""
         self.BogiePivotsDistance = None
-        self.Costs = None
-        from Mafi.Core.Entities import EntityProto
-        self.Id = EntityProto.ID()
+        from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+        self.Id = DynamicEntityProto.ID()
 
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -1996,14 +2075,19 @@ class CargoWagonUnitProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
-        self.Capacity = None
         self.ProductType = None
         self.CarLength = None
         self.CarWidth = None
         self.CarHeight = None
         self.BogiePivotsOffset = None
+        self.SubCarCount = 0
         self.BuildDurationPerProduct = None
         self.BuildExtraDuration = None
         self.BogiePivotToCarEnd = None
@@ -2019,6 +2103,7 @@ class CargoWagonUnitProto:
         self.DragCoefficientStandalone = Fix32()
         self.DragCoefficientInline = Fix32()
         self.AllowOnlyAfter = None
+        self.VehicleQuotaCost = 0
         self.IsPhantom = False
 
     class Gfx:
@@ -2027,6 +2112,7 @@ class CargoWagonUnitProto:
             self.MaxProductRenderCapacity = 0
             self.ProductRenderOffsets = None
             self.SideViewIconPath = ""
+            self.IconPath = ""
             self.ShelfName = ""
             self.PrefabPath = ""
             self.FrontBogieModelName = ""
@@ -2044,18 +2130,21 @@ class CargoWagonUnitProto:
             self.MotionSoundPath = ""
             self.BrakingSoundPath = ""
             self.StoppedSoundPath = ""
+            self.IconIsCustom = False
             self.Color = None
             self.RendererIndex = 0
 
 class CargoWagonLooseProto:
     def __init__(self):
         self.EntityType = None
+        self.Capacity = None
+        self.SubCarCapacity = None
         self.IconPath = ""
         self.BogiePivotsDistance = None
-        self.Costs = None
-        from Mafi.Core.Entities import EntityProto
-        self.Id = EntityProto.ID()
+        from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+        self.Id = DynamicEntityProto.ID()
 
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -2063,14 +2152,19 @@ class CargoWagonLooseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
-        self.Capacity = None
         self.ProductType = None
         self.CarLength = None
         self.CarWidth = None
         self.CarHeight = None
         self.BogiePivotsOffset = None
+        self.SubCarCount = 0
         self.BuildDurationPerProduct = None
         self.BuildExtraDuration = None
         self.BogiePivotToCarEnd = None
@@ -2086,11 +2180,13 @@ class CargoWagonLooseProto:
         self.DragCoefficientStandalone = Fix32()
         self.DragCoefficientInline = Fix32()
         self.AllowOnlyAfter = None
+        self.VehicleQuotaCost = 0
         self.IsPhantom = False
 
     class Gfx:
         def __init__(self):
             self.SideViewIconPath = ""
+            self.IconPath = ""
             self.PileObjectPath = ""
             self.AnimationStateName = ""
             self.PileTextureParams = None
@@ -2110,6 +2206,7 @@ class CargoWagonLooseProto:
             self.MotionSoundPath = ""
             self.BrakingSoundPath = ""
             self.StoppedSoundPath = ""
+            self.IconIsCustom = False
             self.Color = None
             self.RendererIndex = 0
 
@@ -2148,8 +2245,12 @@ class IEntityWithTrainTrackBaseProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -2205,6 +2306,11 @@ class EntityWithTrainTrackBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.BoostCost = None
@@ -2280,7 +2386,6 @@ class IEntityWithTrainTrack:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2293,13 +2398,13 @@ class IEntityWithTrainTrack:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2325,7 +2430,6 @@ class INotifyTrainApproachingEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2338,13 +2442,13 @@ class INotifyTrainApproachingEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2375,7 +2479,6 @@ class IEntityWithTrainTrackFriend:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2388,13 +2491,13 @@ class IEntityWithTrainTrackFriend:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2436,7 +2539,6 @@ class ITrainDepot:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2449,13 +2551,13 @@ class ITrainDepot:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -2487,8 +2589,12 @@ class ITrainStationProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -2576,6 +2682,11 @@ class LevelCrossingProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.CloseTrainArrivalDistance = None
         self.CloseTrainArrivalDuration = None
@@ -2641,6 +2752,11 @@ class LevelCrossingEntranceProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TerrainConnections = None
         self.BoostCost = None
@@ -2685,10 +2801,10 @@ class LocomotiveProto:
         self.LocomotiveFuelTankProto = Option()
         self.IconPath = ""
         self.BogiePivotsDistance = None
-        self.Costs = None
-        from Mafi.Core.Entities import EntityProto
-        self.Id = EntityProto.ID()
+        from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+        self.Id = DynamicEntityProto.ID()
 
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -2696,6 +2812,11 @@ class LocomotiveProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.EnginePowerKw = None
         from Mafi import Fix32
@@ -2705,6 +2826,7 @@ class LocomotiveProto:
         self.CarWidth = None
         self.CarHeight = None
         self.BogiePivotsOffset = None
+        self.SubCarCount = 0
         self.BuildDurationPerProduct = None
         self.BuildExtraDuration = None
         self.BogiePivotToCarEnd = None
@@ -2719,12 +2841,14 @@ class LocomotiveProto:
         self.DragCoefficientStandalone = Fix32()
         self.DragCoefficientInline = Fix32()
         self.AllowOnlyAfter = None
+        self.VehicleQuotaCost = 0
         self.IsPhantom = False
 
     class Gfx:
         Empty = None
         def __init__(self):
             self.SideViewIconPath = ""
+            self.IconPath = ""
             from Mafi import Option
             self.ExhaustParticlesSpec = Option()
             self.EngineIdleSoundPath = ""
@@ -2746,6 +2870,7 @@ class LocomotiveProto:
             self.MotionSoundPath = ""
             self.BrakingSoundPath = ""
             self.StoppedSoundPath = ""
+            self.IconIsCustom = False
             self.Color = None
             self.RendererIndex = 0
 
@@ -2762,13 +2887,18 @@ class LocomotiveFuelTankProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PrimaryProductAmount = None
         self.SecondaryProductAmount = None
         from Mafi import Option
         self.SecondaryProduct = Option()
         self.Product = None
-        self.WasteProduct = None
+        self.WasteProduct = Option()
         self.PollutionPercent = None
         self.Capacity = None
         self.Duration = None
@@ -2787,10 +2917,10 @@ class TenderWagonProto:
         self.LocomotiveFuelTankProto = Option()
         self.IconPath = ""
         self.BogiePivotsDistance = None
-        self.Costs = None
-        from Mafi.Core.Entities import EntityProto
-        self.Id = EntityProto.ID()
+        from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+        self.Id = DynamicEntityProto.ID()
 
+        self.Costs = None
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -2798,15 +2928,21 @@ class TenderWagonProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
+        self.Graphics = None
         self.EnginePowerKw = None
         from Mafi import Fix32
         self.StartingTractiveEffort = Fix32()
-        self.Graphics = None
         self.CarLength = None
         self.CarWidth = None
         self.CarHeight = None
         self.BogiePivotsOffset = None
+        self.SubCarCount = 0
         self.BuildDurationPerProduct = None
         self.BuildExtraDuration = None
         self.BogiePivotToCarEnd = None
@@ -2821,11 +2957,45 @@ class TenderWagonProto:
         self.DragCoefficientStandalone = Fix32()
         self.DragCoefficientInline = Fix32()
         self.AllowOnlyAfter = None
+        self.VehicleQuotaCost = 0
         self.IsPhantom = False
+
+    class Gfx:
+        def __init__(self):
+            self.SideViewIconPath = ""
+            self.IconPath = ""
+            self.PileObjectPath = ""
+            self.AnimationStateName = ""
+            self.PileTextureParams = None
+            from Mafi import Option
+            self.ExhaustParticlesSpec = Option()
+            self.EngineIdleSoundPath = ""
+            self.EngineMovingSoundPath = ""
+            self.LeaveStationSoundPath = ""
+            self.AlterPitchWithThrottle = False
+            self.AlterPitchWithSpeed = False
+            self.PrefabPath = ""
+            self.FrontBogieModelName = ""
+            self.RearBogieModelName = ""
+            self.FrontCouplerName = ""
+            self.RearCouplerName = ""
+            self.WheelModelPrefix = ""
+            self.WheelRadiusMeters = 0.0
+            self.WheelCircumferenceMeters = 0.0
+            self.UseAnimationForWheelMovement = False
+            self.DefaultColor = None
+            self.SideViewIconIsCustom = False
+            self.MotionSoundPath = ""
+            self.BrakingSoundPath = ""
+            self.StoppedSoundPath = ""
+            self.IconIsCustom = False
+            self.Color = None
+            self.RendererIndex = 0
 
 class ITrain:
     def __init__(self):
         self.Name = ""
+        self.TrainId = None
 
 class TrainDrivingMode:
     None = None
@@ -2854,6 +3024,7 @@ class TrainStateForUi:
     WaitingForBidirectionalSuperBlock = None
     ArrivalConditionsNotMet = None
     SelfIntersect = None
+    AtOnlyStationOnLine = None
     def __init__(self):
         self.value__ = 0
 
@@ -2861,6 +3032,7 @@ class ITrainFriend:
     def __init__(self):
         self.IsSpawned = False
         self.Name = ""
+        self.TrainId = None
         self.TrainCarsColorOverride = None
         from Mafi import Option
         self.TrainLine = Option()
@@ -2875,11 +3047,11 @@ class TrainCarBaseProto:
     def __init__(self):
         self.IconPath = ""
         self.BogiePivotsDistance = None
+        from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+        self.Id = DynamicEntityProto.ID()
+
         self.EntityType = None
         self.Costs = None
-        from Mafi.Core.Entities import EntityProto
-        self.Id = EntityProto.ID()
-
         self.Strings = None
         self.IsNotPhantom = False
         self.IsInitialized = False
@@ -2887,11 +3059,17 @@ class TrainCarBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.CarLength = None
         self.CarWidth = None
         self.CarHeight = None
         self.BogiePivotsOffset = None
+        self.SubCarCount = 0
         self.BuildDurationPerProduct = None
         self.BuildExtraDuration = None
         self.BogiePivotToCarEnd = None
@@ -2908,6 +3086,7 @@ class TrainCarBaseProto:
         self.DragCoefficientInline = Fix32()
         self.AllowOnlyAfter = None
         self.Graphics = None
+        self.VehicleQuotaCost = 0
         self.IsPhantom = False
 
     class Gfx:
@@ -2915,6 +3094,7 @@ class TrainCarBaseProto:
         WHEEL_DEFAULT_MODEL_PREFIX = ""
         def __init__(self):
             self.SideViewIconPath = ""
+            self.IconPath = ""
             self.PrefabPath = ""
             self.FrontBogieModelName = ""
             self.RearBogieModelName = ""
@@ -2931,6 +3111,7 @@ class TrainCarBaseProto:
             self.MotionSoundPath = ""
             self.BrakingSoundPath = ""
             self.StoppedSoundPath = ""
+            self.IconIsCustom = False
             self.Color = None
             self.RendererIndex = 0
 
@@ -2949,7 +3130,6 @@ class ITrainDepotExtensionParent:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2962,13 +3142,13 @@ class ITrainDepotExtensionParent:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class ITrainDepotExtensionParentProto:
     def __init__(self):
@@ -2985,8 +3165,12 @@ class ITrainDepotExtensionParentProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -3014,6 +3198,11 @@ class TrainDepotExtensionProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.MaxStoredOfEachCarType = 0
         self.TrainLengthLimit = None
@@ -3060,6 +3249,11 @@ class TrainDepotProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.MaxStoredOfEachCarType = 0
@@ -3089,6 +3283,7 @@ class ITrainLineMember:
         self.TrainLine = Option()
         self.CurrentScheduleItem = Option()
         self.Name = ""
+        self.TrainId = None
 
 class ITrainLineMemberFriend:
     def __init__(self):
@@ -3097,6 +3292,17 @@ class ITrainLineMemberFriend:
         self.TrainLine = Option()
         self.CurrentScheduleItem = Option()
         self.Name = ""
+        self.TrainId = None
+
+class TrainLineWarning:
+    None = None
+    NoStops = None
+    DestroyedStations = None
+    OnlyOneStop = None
+    OnlyFuelStops = None
+    OnlyOneStopNotRefuel = None
+    def __init__(self):
+        self.value__ = 0
 
 class ITrainPathFindingTask:
     def __init__(self):
@@ -3111,9 +3317,8 @@ class ITrainPathFindingTask:
 
 class ITrainPfTaskManaged:
     def __init__(self):
-        from Mafi import Fix32
-        self.ForwardCostScale = Fix32()
-        self.BackwardCostScale = Fix32()
+        self.ForwardMaxSpeed = None
+        self.BackwardMaxSpeed = None
         self.MaxDistanceForOccupancyCostPenalties = None
         self.Train = None
         self.IsEnqueuedOrBeingProcessed = False
@@ -3148,6 +3353,7 @@ class ITrainScheduleItem:
         self.IndexInSchedule = 0
         self.StationRoots = None
         self.DepartConditions = None
+        self.StationPriorities = None
         self.LoadOnlyProducts = None
         self.UnloadOnlyProducts = None
         self.DisableLoad = False
@@ -3209,10 +3415,13 @@ class TrainsPathFinderConfig:
         self.MaxDistanceForOccupancyCostPenalties = None
         from Mafi import Fix32
         self.PositiveGradeCostMult = Fix32()
-        self.NegativeGradeCostPerHeight = Fix32()
         self.GradeFactorExponent = Fix32()
         self.GradeCostHeuristic = Fix32()
+        self.ModuleCostPerTile = Fix32()
         self.BlockedCostPerTile = Fix32()
+        self.BlockedCostPerTileMovingFastMultiplier = Fix32()
+        self.CriticalCostPerTile = Fix32()
+        self.SpeedCostPerTilePerTickLost = Fix32()
 
 class TrainStaticData:
     TIME_TO_TRAVEL_TILES = None
@@ -3232,6 +3441,7 @@ class TrainStaticData:
         self.ForcesAtSpeeds = None
         self.DataVersion = 0
         self.TrainCars = None
+        self.TrainSubCarsCount = 0
         self.Locomotives = None
         self.CargoWagons = None
         self.TotalLength = None
@@ -3305,7 +3515,6 @@ class ITrainStationBase:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -3318,13 +3527,13 @@ class ITrainStationBase:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -3353,7 +3562,6 @@ class ITrainStationRoot:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -3366,13 +3574,13 @@ class ITrainStationRoot:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -3406,7 +3614,6 @@ class ITrainStationModule:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         self.ConstructionProgress = Option()
@@ -3418,13 +3625,13 @@ class ITrainStationModule:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -3458,7 +3665,6 @@ class ITrainStationModuleFriend:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         self.ConstructionProgress = Option()
@@ -3470,13 +3676,13 @@ class ITrainStationModuleFriend:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -3503,7 +3709,6 @@ class ITrainStationFuel:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -3516,13 +3721,13 @@ class ITrainStationFuel:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
         self.TrackProto = None
         self.IsTrackConstructed = False
         self.TrackEntityId = None
@@ -3562,6 +3767,11 @@ class TrainStationBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.PowerConsumption = None
@@ -3605,6 +3815,11 @@ class TrainStationModuleBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.ProductType = None
@@ -3649,6 +3864,11 @@ class TrainStationRootBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.PowerConsumption = None
@@ -3824,6 +4044,11 @@ class TrainTrackPillarProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
         self.ConstructionDurationPerProduct = None
@@ -3878,6 +4103,11 @@ class TrainTrackProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TrackGraphics = None
         self.IsElevated = False

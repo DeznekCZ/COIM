@@ -8,11 +8,13 @@ class RocketAssemblyBuilding:
         from Mafi import Option
         self.AttachedRocketBase = Option()
         self.Prototype = None
+        self.ZoneMask = None
         self.SpawnPosition = None
         self.DespawnPosition = None
         self.SpawnDirection = None
         self.SpawnDrivePosition = None
         self.DespawnDrivePosition = None
+        self.TargetLogisticsZone = Option()
         self.Upgrader = None
         self.PowerRequired = None
         self.ElectricityConsumer = Option()
@@ -42,7 +44,6 @@ class RocketAssemblyBuilding:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -100,6 +101,11 @@ class RocketAssemblyBuildingProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.RoofOpenDuration = None
         self.RocketRaiseDuration = None
@@ -152,7 +158,6 @@ class RocketLaunchPad:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -225,6 +230,11 @@ class RocketLaunchPadProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.RocketTransporterNavGoalDeltaX = None
         self.RocketTransporterArriveDeltaY = None

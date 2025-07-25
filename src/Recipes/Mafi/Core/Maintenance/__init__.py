@@ -20,6 +20,8 @@ class EntityMaintenanceProvider:
         self.IsDestroyed = False
         self.Priority = 0
         self.RepairCost = None
+        from Mafi import Fix64
+        self.UnpaidMaintenance = Fix64()
         self.Entity = None
 
 class IEntityMaintenanceProvidersFactory:
@@ -40,7 +42,6 @@ class IMaintainedEntity:
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
         self.IsCargoAffectedByGeneralPriority = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -48,6 +49,7 @@ class IMaintainedEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IMaintenanceConfig:
     def __init__(self):
@@ -124,7 +126,6 @@ class MaintenanceDepot:
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -190,6 +191,11 @@ class MaintenanceDepotProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.MaintenanceBufferExtraCapacity = None
         self.ConsumedPowerPerTick = None
@@ -243,6 +249,7 @@ class IMaintenanceBufferReadonly:
         self.ConsumedTotalStats = None
         self.MonthlyCapacityStats = None
         self.MonthlyQuantityStats = None
+        self.ConsumedUnreportedPartial = None
 
 class MaintenanceProtoParam:
     def __init__(self):

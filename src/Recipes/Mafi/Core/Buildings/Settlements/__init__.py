@@ -29,7 +29,6 @@ class Hospital:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -97,6 +96,11 @@ class HospitalProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PowerRequired = None
         self.BuffersCount = 0
@@ -128,8 +132,12 @@ class ISettlementModuleProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -148,15 +156,18 @@ class ISettlementModuleForNeedProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
 class ISettlementServiceModule:
     def __init__(self):
         self.ProvidedNeed = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -164,6 +175,7 @@ class ISettlementServiceModule:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class ISettlementSquareModule:
     def __init__(self):
@@ -176,7 +188,6 @@ class ISettlementSquareModule:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         self.ConstructionProgress = Option()
@@ -188,13 +199,13 @@ class ISettlementSquareModule:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class ISettlementSquareModuleProto:
     def __init__(self):
@@ -210,8 +221,12 @@ class ISettlementSquareModuleProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -282,6 +297,7 @@ class PopNeed:
         self.ShouldBeShown = False
         self.Proto = None
         self.UnityAfterLastUpdate = None
+        self.MaxAfterLastUpdate = None
         self.PossibleMaxAfterLastUpdate = None
         self.WasNotFullySatisfiedLastDay = False
         self.PercentSatisfiedLastMonth = None
@@ -298,6 +314,7 @@ class DailyUpointsRecord:
         self.PercentSatisfied = None
         self.Unity = None
         self.PossibleMax = None
+        self.Max = None
 
 class SettlementDecorationModule:
     def __init__(self):
@@ -309,7 +326,6 @@ class SettlementDecorationModule:
         self.AreParticlesEnabled = False
         self.CoreSize = None
         self.Position = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -363,6 +379,11 @@ class SettlementDecorationModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.UpointsBonusToNearbyHousing = None
         self.BonusRange = 0
@@ -398,7 +419,6 @@ class SettlementFoodModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -465,6 +485,11 @@ class SettlementFoodModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BuffersCount = 0
         self.CapacityPerBuffer = None
@@ -503,7 +528,6 @@ class SettlementHousingModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -557,6 +581,11 @@ class SettlementHousingModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.UnityIncreases = None
         self.NeedsIncreases = None
@@ -626,7 +655,6 @@ class SettlementIspModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -693,6 +721,11 @@ class SettlementIspModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.EmissionIntensity = None
         self.BoostCost = None
@@ -733,6 +766,11 @@ class SettlementModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.InputProduct = None
         from Mafi import Option
@@ -793,7 +831,6 @@ class SettlementServiceModule:
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -888,7 +925,6 @@ class SettlementTransformer:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -944,6 +980,11 @@ class SettlementTransformerProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None
@@ -976,12 +1017,12 @@ class SettlementWasteModule:
         self.LogisticsInputControl = None
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1043,11 +1084,17 @@ class SettlementWasteModuleProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ProductAccepted = None
         self.Capacity = None
         self.TransferLimit = None
         self.TransferLimitDuration = None
+        self.ThroughputPerTick = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None

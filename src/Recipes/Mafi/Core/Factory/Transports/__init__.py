@@ -1,81 +1,4 @@
 
-class BuildTransportCmd:
-    def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.ProtoId = StaticEntityProto.ID()
-
-        self.PivotPositions = None
-        self.PillarHints = None
-        self.StartDirection = None
-        self.EndDirection = None
-        self.DisablePortSnapping = False
-        self.IsFree = False
-        self.AllowDirectConnection = False
-
-class ReverseTransportCmd:
-    def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
-
-class ClearTransportCmd:
-    def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
-
-class QuickClearTransportCmd:
-    def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
-
-class DeconstructTransportSegmentCmd:
-    def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
-        self.StartPosition = None
-        self.EndPosition = None
-        self.QuickRemove = False
-
 class CanBuildTransportResult:
     def __init__(self):
         self.RequestPivots = None
@@ -189,7 +112,6 @@ class Stacker:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -246,6 +168,11 @@ class StackerProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.MinDumpOffset = None
         self.DefaultDumpOffset = None
@@ -297,7 +224,6 @@ class Transport:
         self.LastInsertedProduct = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Value = None
         self.ConstructionCost = None
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
@@ -382,6 +308,83 @@ class TransportConfigExtensions:
         pass
 
 
+class BuildTransportCmd:
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = ""
+        from Mafi.Core.Entities.Static import StaticEntityProto
+        self.ProtoId = StaticEntityProto.ID()
+
+        self.PivotPositions = None
+        self.PillarHints = None
+        self.StartDirection = None
+        self.EndDirection = None
+        self.DisablePortSnapping = False
+        self.IsFree = False
+        self.AllowDirectConnection = False
+
+class ReverseTransportCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.TransportId = None
+
+class ClearTransportCmd:
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.TransportId = None
+
+class QuickClearTransportCmd:
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.TransportId = None
+
+class DeconstructTransportSegmentCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.TransportId = None
+        self.StartPosition = None
+        self.EndPosition = None
+        self.QuickRemove = False
+
 class TransportCrossSection:
     Empty = None
     def __init__(self):
@@ -462,7 +465,6 @@ class TransportPillar:
         self.CanBePaused = False
         self.VehicleSurfaceHeights = None
         self.PfTargetTiles = None
-        self.Value = None
         self.ConstructionCost = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -522,6 +524,11 @@ class TransportPillarProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
         self.ConstructionDurationPerProduct = None
@@ -570,6 +577,11 @@ class TransportProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.SurfaceRelativeHeight = None
         self.MaxQuantityPerTransportedProduct = None
@@ -606,10 +618,9 @@ class TransportProto:
             self.IconPath = ""
             self.Categories = None
             self.IconIsCustom = False
-            self.CrossSection = None
             self.UsePerProductColoring = False
             self.RenderProducts = False
-            self.SamplesPerCurvedSegment = 0
+            self.CrossSectionLods = None
             self.MaterialPath = ""
             self.TransportUvLength = None
             self.RenderTransportedProducts = False
@@ -632,6 +643,12 @@ class TransportProto:
             def __init__(self):
                 self.InstancedRendererIndex = None
 
+        class TransportCrossSectionLod:
+            def __init__(self):
+                self.PixelsPerMeter = 0.0
+                self.CrossSection = None
+                self.SamplesPerCurvedSegment = 0
+
         class FlowIndicatorSpec:
             from Mafi import Fix32
             BIAS_TOWARD_ENDS = Fix32()
@@ -641,6 +658,8 @@ class TransportProto:
                 self.GlassPrefabPath = ""
                 self.SkipTransportLength = None
                 self.PlacementGap = None
+                self.LengthScale = 0.0
+                self.CrossSectionScale = 0.0
                 self.Parameters = None
 
 class TransportsBuilder:
@@ -754,13 +773,7 @@ class SubTransport:
 
 class TransportUpgrader:
     def __init__(self):
-        self.UpgradeExists = False
-        from Mafi import Option
-        self.NextTier = Option()
-        self.PriceToUpgrade = None
-        self.ConstructionCostToUpgrade = None
-        self.UpgradeTitle = None
-        self.Icon = ""
+        self.CurrentProto = None
 
 class ITransportUpgraderFactory:
     def __init__(self):

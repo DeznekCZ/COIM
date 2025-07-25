@@ -42,7 +42,7 @@ class ConstructionProgress:
         self.IsPaused = False
         self.TerrainDisruptionDisabled = False
         self.Owner = None
-        self.AllowFreeRebuild = False
+        self.WasFullyConstructed = False
         self.DurationPerProduct = None
 
 class QuickDeliverCostHelper:
@@ -124,7 +124,7 @@ class EntityConstructionProgress:
         self.IsPaused = False
         self.TerrainDisruptionDisabled = False
         self.Owner = None
-        self.AllowFreeRebuild = False
+        self.WasFullyConstructed = False
         self.DurationPerProduct = None
 
 class FreeConstructionManager:
@@ -216,6 +216,11 @@ class ConstructionState:
     def __init__(self):
         self.value__ = 0
 
+class IEntityWithCustomTerrainInteraction:
+    def __init__(self):
+        pass
+
+
 class IEntityWithMultipleProductsToAssign:
     def __init__(self):
         self.BuffersPerSlot = None
@@ -227,7 +232,6 @@ class IEntityWithMultipleProductsToAssign:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -240,13 +244,37 @@ class IEntityWithMultipleProductsToAssign:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
+
+class IEntityWithQuickRemove:
+    def __init__(self):
+        self.Id = None
+        self.Prototype = None
+        self.Context = None
+        self.IsEnabled = False
+        self.IsPaused = False
+        self.CanBePaused = False
+        self.IsDestroyed = False
+        self.DefaultTitle = None
+
+class QuickRemoveFromEntityCmd:
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.EntityId = None
 
 class ILayoutEntity:
     def __init__(self):
@@ -257,7 +285,6 @@ class ILayoutEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -270,13 +297,13 @@ class ILayoutEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IProductBufferReadOnly:
     def __init__(self):
@@ -310,7 +337,6 @@ class IStaticEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -323,13 +349,13 @@ class IStaticEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IStaticEntityExtensions:
     def __init__(self):
@@ -356,7 +382,6 @@ class IEntityAssignedAsOutput:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -369,13 +394,13 @@ class IEntityAssignedAsOutput:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityAssignedAsInput:
     def __init__(self):
@@ -388,7 +413,6 @@ class IEntityAssignedAsInput:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -401,13 +425,13 @@ class IEntityAssignedAsInput:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IStaticEntityWithQueue:
     def __init__(self):
@@ -498,7 +522,6 @@ class IStaticEntityWithReservedOcean:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -511,13 +534,13 @@ class IStaticEntityWithReservedOcean:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IProtoWithReservedOcean:
     def __init__(self):
@@ -536,8 +559,12 @@ class IProtoWithReservedOcean:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -564,7 +591,6 @@ class StaticEntity:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
-        self.Value = None
         self.ConstructionCost = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -619,8 +645,12 @@ class IStaticEntityProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -638,6 +668,11 @@ class StaticEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ConstructionDurationPerProduct = None
         self.CollapseRubbleScale = None
@@ -663,16 +698,7 @@ class UniqueEntityValidator:
     def __init__(self):
         self.Priority = None
 
-class AllowProductDiscountInUpgrade:
-    def __init__(self):
-        self.AllowedProtoType = None
-
 class UpgradeHelper:
-    def __init__(self):
-        pass
-
-
-class UpgradeCostResolver:
     def __init__(self):
         pass
 
@@ -686,6 +712,19 @@ class UpgradesManager:
     def __init__(self):
         pass
 
+
+class ReplacementRefund:
+    def __init__(self):
+        self.ToRefundAfterDone = None
+        self.QuickRemoveRefund = False
+        self.Entity = None
+        self.Buffers = None
+
+class OngoingReplacementData:
+    def __init__(self):
+        self.State = None
+        self.NewProto = None
+        self.NewTransform = None
 
 class VirtualBuffersMap:
     Empty = None

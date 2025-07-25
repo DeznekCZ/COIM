@@ -76,6 +76,19 @@ class BatchRemoveSurfaceDecalCmd:
         self.ErrorMessage = ""
         self.Data = None
 
+class BatchRemoveSurfacePlacingDesignationsCmd:
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.Data = None
+
 class DesignationData:
     def __init__(self):
         self.PlusXTileCoord = None
@@ -91,6 +104,22 @@ class DesignationData:
         self.PlusYTargetHeight = None
         self.PlusXyTargetHeight = None
         self.CenterTargetHeight = None
+
+class PasteSurfaceDesignationsCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        from Mafi.Core.Prototypes import Proto
+        self.ProtoId = Proto.ID()
+
+        self.Data = None
 
 class RemoveDesignationsCmd:
     def __init__(self):
@@ -169,6 +198,7 @@ class SurfaceDesignation:
         self.UnassignedTilesBitmap = None
         self.SurfaceTypeMap = None
         self.IsReadyToBeFulfilled = False
+        self.LogisticsZoneMask = None
         self.Prototype = None
         self.Manager = None
         self.SurfaceProtoSlimId = None
@@ -229,6 +259,7 @@ class TerrainDesignation:
 
         from Mafi import Option
         self.Manager = Option()
+        self.LogisticsZoneMask = None
         self.OriginTileCoord = None
         self.PlusXTileCoord = None
         self.PlusYTileCoord = None
@@ -327,6 +358,7 @@ class IDesignation:
         self.OriginTileCoord = None
         self.CenterTileCoord = None
         self.UnreachableVehiclesCount = None
+        self.LogisticsZoneMask = None
 
 class DesignationType:
     Flat = None
@@ -336,6 +368,11 @@ class DesignationType:
         self.value__ = 0
 
 class DesignationDataFactory:
+    def __init__(self):
+        pass
+
+
+class DesignationZonesUpdater:
     def __init__(self):
         pass
 
@@ -354,8 +391,12 @@ class ITerrainDesignationBlockingEntityNoEdgeProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -403,6 +444,11 @@ class SurfaceDesignationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.IsPlacing = False
         self.IsPhantom = False
@@ -419,6 +465,11 @@ class TerrainDesignationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PreferInitialBelowTerrain = False
         self.IsFulfilledFn = None

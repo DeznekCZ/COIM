@@ -3,6 +3,7 @@ class OreSortingPlant:
     MAX_PRODUCTS = 0
     def __init__(self):
         self.OutputPortsCount = 0
+        self.ZoneMask = None
         self.Prototype = None
         self.AnimationParams = None
         self.AnimationStatesProvider = None
@@ -38,7 +39,6 @@ class OreSortingPlant:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -131,6 +131,11 @@ class OreSortingPlantProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.InputBufferCapacity = None
         self.OutputBuffersCapacity = None

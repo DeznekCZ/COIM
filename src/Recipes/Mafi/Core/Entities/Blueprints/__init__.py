@@ -5,6 +5,7 @@ class IBlueprint:
         self.SaveVersion = 0
         self.Items = None
         self.Surfaces = None
+        self.Decals = None
         from Mafi import Option
         self.ProtosThatFailedToLoad = Option()
         self.AllMajorProtos = None

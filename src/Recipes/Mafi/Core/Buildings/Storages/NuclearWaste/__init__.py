@@ -10,7 +10,9 @@ class NuclearWasteStorage:
         self.Upgrader = None
         self.ImportUntilPercent = None
         self.ExportFromPercent = None
+        self.ZoneMask = None
         self.TransportFromPercent = None
+        self.TransportUntilPercent = None
         self.CleaningInProgress = False
         self.UsableCapacity = None
         self.AssignedInputs = None
@@ -23,6 +25,7 @@ class NuclearWasteStorage:
         self.ExportPriority = 0
         self.AreOnlyAssignedVehiclesAllowed = False
         self.AllVehicles = None
+        self.AreParticlesEnabled = False
         self.AreAlertsAvailable = False
         self.AlertWhenAboveEnabled = False
         self.AlertWhenAbove = None
@@ -40,11 +43,11 @@ class NuclearWasteStorage:
         self.IsNotFull = False
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None

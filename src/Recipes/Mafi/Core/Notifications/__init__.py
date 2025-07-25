@@ -45,6 +45,11 @@ class EntityNotificationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ExtraMessageForInspector = None
         self.Tutorial = None
@@ -57,6 +62,7 @@ class EntityNotificationProto:
         self.EntityIconSpec = None
         self.SuppressEntityIconOnSuppress = False
         self.TimeToLive = None
+        self.NoAudio = False
         self.IsPhantom = False
 
     class ID:
@@ -76,6 +82,11 @@ class GeneralNotificationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.HideInNotificationPanel = False
         self.HideInInspector = False
@@ -86,6 +97,7 @@ class GeneralNotificationProto:
         self.EntityIconSpec = None
         self.SuppressEntityIconOnSuppress = False
         self.TimeToLive = None
+        self.NoAudio = False
         self.IsPhantom = False
 
     class ID:
@@ -105,6 +117,11 @@ class NotificationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.HideInNotificationPanel = False
         self.HideInInspector = False
@@ -115,6 +132,7 @@ class NotificationProto:
         self.EntityIconSpec = None
         self.SuppressEntityIconOnSuppress = False
         self.TimeToLive = None
+        self.NoAudio = False
         self.IsPhantom = False
 
     class ID:

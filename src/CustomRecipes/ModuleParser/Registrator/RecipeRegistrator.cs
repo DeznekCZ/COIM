@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using UnityEngine;
 
 namespace CustomRecipes.ModuleParser.Registrator
@@ -390,7 +391,7 @@ namespace CustomRecipes.ModuleParser.Registrator
                         typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
                                                  .SetValue(research, research.Units
                                                                              .AsEnumerable()
-                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false),
+                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false, true),
                                                                                                              new ProtoWithIconUnlock(machine, false) })
                                                                              .Distinct(i =>
                                                                              {
@@ -504,7 +505,7 @@ namespace CustomRecipes.ModuleParser.Registrator
                         typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
                                                  .SetValue(research, research.Units
                                                                              .AsEnumerable()
-                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false),
+                                                                             .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false, true),
                                                                                                              new ProtoWithIconUnlock(machine, false) })
                                                                              .Distinct(i =>
                                                                              {
@@ -617,10 +618,11 @@ namespace CustomRecipes.ModuleParser.Registrator
                     typeof(ResearchNodeProto).GetField("Units", BindingFlags.Public | BindingFlags.Instance)
                                              .SetValue(research, research.Units
                                                                          .AsEnumerable()
-                                                                         .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false),
+                                                                         .Concat(new IUnlockNodeUnit[] { new RecipeUnlock(recipe, machine, false, true),
                                                                                                          new ProtoWithIconUnlock(machine, false) })
                                                                          .Distinct(i =>
                                                                          {
+                                                                             Thread.Sleep(1);
                                                                              if (i is ProtoWithIconUnlock protoUnlock)
                                                                                  return protoUnlock.Proto.Id.Value;
                                                                              else

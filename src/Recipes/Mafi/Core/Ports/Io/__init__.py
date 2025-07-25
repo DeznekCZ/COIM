@@ -41,6 +41,7 @@ class IoPortData:
         self.PortIndex = None
         from Mafi import Option
         self.ConnectedTo = Option()
+        self.ConnectedPortToken = None
 
 class IoPortToken:
     Invalid = None
@@ -60,6 +61,11 @@ class IoPortShapeProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.LayoutChar = None
         self.AllowedProductType = None

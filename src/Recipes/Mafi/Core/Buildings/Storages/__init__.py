@@ -70,6 +70,11 @@ class NuclearWasteStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.EmissionIntensity = None
         self.RetiredWasteCapacity = None
@@ -77,6 +82,7 @@ class NuclearWasteStorageProto:
         self.Capacity = None
         self.TransferLimit = None
         self.TransferLimitDuration = None
+        self.ThroughputPerTick = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
@@ -98,7 +104,9 @@ class Storage:
         self.Upgrader = None
         self.ImportUntilPercent = None
         self.ExportFromPercent = None
+        self.ZoneMask = None
         self.TransportFromPercent = None
+        self.TransportUntilPercent = None
         self.CleaningInProgress = False
         self.UsableCapacity = None
         self.AssignedInputs = None
@@ -111,6 +119,7 @@ class Storage:
         self.ExportPriority = 0
         self.AreOnlyAssignedVehiclesAllowed = False
         self.AllVehicles = None
+        self.AreParticlesEnabled = False
         self.AreAlertsAvailable = False
         self.AlertWhenAboveEnabled = False
         self.AlertWhenAbove = None
@@ -129,11 +138,11 @@ class Storage:
         self.IsNotFull = False
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -172,7 +181,6 @@ class IEntityWithAlertAbove:
         self.AlertWhenAboveEnabled = False
         self.AlertWhenAbove = None
         self.AreAlertsAvailable = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -180,13 +188,13 @@ class IEntityWithAlertAbove:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithAlertBelow:
     def __init__(self):
         self.AlertWhenBelowEnabled = False
         self.AlertWhenBelow = None
         self.AreAlertsAvailable = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -194,11 +202,11 @@ class IEntityWithAlertBelow:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithStorageAlert:
     def __init__(self):
         self.AreAlertsAvailable = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -206,6 +214,7 @@ class IEntityWithStorageAlert:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class StorageAlertSetEnabledCmd:
     def __init__(self):
@@ -253,12 +262,12 @@ class StorageBase:
         self.LogisticsOutputControl = None
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
+        self.LastProductStoreStep = None
         self.CustomTitle = Option()
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -310,10 +319,16 @@ class StorageBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Capacity = None
         self.TransferLimit = None
         self.TransferLimitDuration = None
+        self.ThroughputPerTick = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
@@ -437,11 +452,17 @@ class FluidStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PowerConsumedForProductsExchange = None
         self.Capacity = None
         self.TransferLimit = None
         self.TransferLimitDuration = None
+        self.ThroughputPerTick = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
@@ -506,11 +527,17 @@ class LooseStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PowerConsumedForProductsExchange = None
         self.Capacity = None
         self.TransferLimit = None
         self.TransferLimitDuration = None
+        self.ThroughputPerTick = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
@@ -535,6 +562,7 @@ class LooseStorageProto:
             self.SmoothPileObjectPath = ""
             self.RoughPileObjectPath = ""
             self.PileTextureParams = None
+            self.ParticleParams = None
             self.IconIsCustom = False
             self.UseInstancedRendering = False
             self.UseSemiInstancedRendering = False
@@ -575,11 +603,17 @@ class UnitStorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PowerConsumedForProductsExchange = None
         self.Capacity = None
         self.TransferLimit = None
         self.TransferLimitDuration = None
+        self.ThroughputPerTick = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
@@ -661,11 +695,17 @@ class StorageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PowerConsumedForProductsExchange = None
         self.Capacity = None
         self.TransferLimit = None
         self.TransferLimitDuration = None
+        self.ThroughputPerTick = None
         self.BoostCost = None
         self.InputPorts = None
         self.OutputPorts = None
@@ -730,4 +770,5 @@ class StorageSetSliderStepCmd:
         self.StorageId = None
         self.ImportStep = 0
         self.ExportStep = 0
-        self.TransportStep = 0
+        self.TransportFrom = 0
+        self.TransportUntil = 0

@@ -4,6 +4,16 @@ class HudStateManager:
         pass
 
 
+class LastSelectedTierTracker:
+    def __init__(self):
+        pass
+
+
+    class TiersData:
+        def __init__(self):
+            self.LastSelected = None
+            self.UpgradeChain = None
+
 class NewProtosTracker:
     def __init__(self):
         pass

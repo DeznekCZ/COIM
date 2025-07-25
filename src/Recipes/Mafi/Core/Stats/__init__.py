@@ -60,6 +60,7 @@ class FuelStatsCollector:
             self.TotalConsumedInCargoShips = None
             self.TotalConsumedInBattleship = None
             self.TotalConsumedInPowerGenerators = None
+            self.TotalConsumedInTrains = None
 
 class IntAvgStats:
     def __init__(self):
@@ -170,6 +171,7 @@ class FuelUsedBy:
     CargoShip = None
     BattleShip = None
     PowerGenerator = None
+    Train = None
     def __init__(self):
         self.value__ = 0
 

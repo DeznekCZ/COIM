@@ -18,6 +18,7 @@ class AddLaunchPadCargoBufferCmd:
 class Asteroid:
     def __init__(self):
         self.Radius = None
+        self.TrueRadius = None
         self.TotalVolumeTiles3 = 0
         self.TotalQuantity = None
         self.MineableProducts = None
@@ -173,6 +174,7 @@ class LaunchRocketCmd:
         self.LaunchPadId = None
 
 class OrbitManager:
+    MAX_ORBIT_CARGO_LIMIT = None
     def __init__(self):
         from Mafi import Option
         self.SpaceStation = Option()
@@ -383,12 +385,17 @@ class IAsteroidFriend:
         pass
 
 
+class AsteroidTerrainGenerator:
+    ASTEROID_INFLATE_RADIUS_PERC = None
+    def __init__(self):
+        pass
+
+
 class IRocketOwner:
     def __init__(self):
         from Mafi import Option
         self.AttachedRocketBase = Option()
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -396,6 +403,7 @@ class IRocketOwner:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IRocketOwnerExtensions:
     def __init__(self):
@@ -424,6 +432,11 @@ class RocketProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.CargoCapacityBase = None
         self.CrewCapacityBase = 0
@@ -469,6 +482,11 @@ class SpaceStationProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.CrewSuppliesProto = None
         self.BasicSpaceParts = None
@@ -516,6 +534,11 @@ class TransportedRocketBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.DurationToBuild = None
         self.Graphics = None

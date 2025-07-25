@@ -38,6 +38,49 @@ class SetPlanningModeEnabledCmd:
         self.ErrorMessage = ""
         self.IsEnabled = False
 
+class UpgradeEntityCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.EntityId = None
+
+class ReplaceEntityCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.EntityId = None
+        from Mafi.Core.Prototypes import Proto
+        self.NewProtoId = Proto.ID()
+
+        self.NewTransform = None
+
+class QuickRemoveEntityRefundCmd:
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.EntityId = None
+
 class SetConstructionPausedCmd:
     def __init__(self):
         self.AffectsSaveState = False
@@ -111,19 +154,6 @@ class SetEntityEnabledCmd:
         self.ErrorMessage = ""
         self.EntityId = None
         self.IsEnabled = False
-
-class UpgradeEntityCmd:
-    def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityId = None
 
 class DefaultEntityFactory:
     def __init__(self):
@@ -268,12 +298,14 @@ class ConfigSerializationContext:
 class EntityContext:
     def __init__(self):
         self.ConstructionManager = None
+        self.UpgradesManager = None
         self.EntitiesManager = None
         self.AssetTransactionManager = None
         self.NotificationsManager = None
         self.PropertiesDb = None
         self.IoPortsManager = None
         self.ProductsManager = None
+        self.FuelStatsCollector = None
         self.WorkersManager = None
         self.UpointsManager = None
         self.Calendar = None
@@ -287,6 +319,7 @@ class EntityContext:
         self.OccupancyManager = None
         self.AirPollutionManager = None
         self.SimLoopEvents = None
+        self.LogisticsZonesManager = None
 
 class EntityLogisticsMode:
     Auto = None
@@ -303,8 +336,12 @@ class IEntityProto:
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -322,6 +359,11 @@ class EntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
@@ -347,7 +389,6 @@ class IAssignableToFuelStation:
 
 class IEntity:
     def __init__(self):
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -355,11 +396,11 @@ class IEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IRenderedEntity:
     def __init__(self):
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -367,10 +408,10 @@ class IRenderedEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithAdditionRequest:
     def __init__(self):
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -378,6 +419,7 @@ class IEntityWithAdditionRequest:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithPosition:
     def __init__(self):
@@ -387,7 +429,6 @@ class IEntityWithPosition:
 class IAreaSelectableEntity:
     def __init__(self):
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -395,6 +436,7 @@ class IAreaSelectableEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IAreaSelectableStaticEntity:
     def __init__(self):
@@ -404,7 +446,6 @@ class IAreaSelectableStaticEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -417,19 +458,18 @@ class IAreaSelectableStaticEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IAnimatedEntity:
     def __init__(self):
         self.AnimationParams = None
         self.AnimationStatesProvider = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -437,6 +477,7 @@ class IAnimatedEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class AnimationStatesProvider:
     def __init__(self):
@@ -458,7 +499,7 @@ class IEntityAssignedWithVehicles:
     def __init__(self):
         self.Position2f = None
         self.AllVehicles = None
-        self.DefaultTitle = None
+        self.ZoneMask = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -466,13 +507,14 @@ class IEntityAssignedWithVehicles:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityEnforcingAssignedVehicles:
     def __init__(self):
         self.AreOnlyAssignedVehiclesAllowed = False
         self.Position2f = None
         self.AllVehicles = None
-        self.DefaultTitle = None
+        self.ZoneMask = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -480,6 +522,7 @@ class IEntityEnforcingAssignedVehicles:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class AssignedVehiclesExtensions:
     def __init__(self):
@@ -535,7 +578,6 @@ class EntityNameExtensions:
 class IEntityWithEmission:
     def __init__(self):
         self.EmissionIntensity = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -543,6 +585,7 @@ class IEntityWithEmission:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithLogisticsControl:
     def __init__(self):
@@ -550,7 +593,6 @@ class IEntityWithLogisticsControl:
         self.CanDisableLogisticsOutput = False
         self.LogisticsInputMode = None
         self.LogisticsOutputMode = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -558,6 +600,7 @@ class IEntityWithLogisticsControl:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithSimpleLogisticsControl:
     def __init__(self):
@@ -565,7 +608,6 @@ class IEntityWithSimpleLogisticsControl:
         self.LogisticsOutputControl = None
         self.IsLogisticsInputDisabled = False
         self.IsLogisticsOutputDisabled = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -573,6 +615,7 @@ class IEntityWithSimpleLogisticsControl:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class LogisticsControl:
     Enabled = None
@@ -584,7 +627,6 @@ class LogisticsControl:
 class IEntityWithMaxServiceRadius:
     def __init__(self):
         self.MaxServiceRadius = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -592,6 +634,7 @@ class IEntityWithMaxServiceRadius:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithOutputToTerrain:
     def __init__(self):
@@ -603,7 +646,6 @@ class IEntityWithOutputToTerrain:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -616,18 +658,17 @@ class IEntityWithOutputToTerrain:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithParticles:
     def __init__(self):
         self.AreParticlesEnabled = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -635,10 +676,10 @@ class IEntityWithParticles:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithSimUpdate:
     def __init__(self):
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -646,6 +687,7 @@ class IEntityWithSimUpdate:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IEntityWithSound:
     def __init__(self):
@@ -681,20 +723,12 @@ class IObjectWithTitle:
 class IUpgradableEntity:
     def __init__(self):
         self.Upgrader = None
-        self.DefaultTitle = None
-        self.Id = None
         self.Prototype = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
         self.CenterTile = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -707,28 +741,17 @@ class IUpgradableEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-
-class IEntityWithUpgrader:
-    def __init__(self):
-        self.Upgrader = None
-        self.DefaultTitle = None
         self.Id = None
-        self.Prototype = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IUpgrader:
     def __init__(self):
-        self.PriceToUpgrade = None
-        self.ConstructionCostToUpgrade = None
-        self.UpgradeExists = False
-        self.UpgradeTitle = None
-        from Mafi import Option
-        self.NextTier = Option()
-        self.Icon = ""
+        self.CurrentProto = None
 
 class ParticlesParams:
     def __init__(self):
@@ -744,3 +767,5 @@ class TileSurfaceCopyPasteData:
     def __init__(self):
         self.SurfaceData = None
         self.Position = None
+        self.Width = None
+        self.Height = None

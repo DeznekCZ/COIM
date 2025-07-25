@@ -6,7 +6,6 @@ class MiniZipper:
         self.TotalQuantityInBuffers = None
         self.MaxBufferSize = None
         self.OutputPortsConnected = 0
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -63,6 +62,11 @@ class MiniZipperProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None
@@ -98,7 +102,6 @@ class Zipper:
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -207,6 +210,11 @@ class ZipperProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PortsShape = None
         self.BoostCost = None

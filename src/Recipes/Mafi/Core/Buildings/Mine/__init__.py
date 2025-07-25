@@ -2,6 +2,7 @@
 class MineTower:
     def __init__(self):
         self.CanBePaused = False
+        self.ZoneMask = None
         self.HasInputStorageOrTowerAssigned = False
         self.HasOutputStorageOrTowerAssigned = False
         self.AssignedInputs = None
@@ -27,7 +28,6 @@ class MineTower:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -164,6 +164,11 @@ class MineTowerProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Area = None
         self.BoostCost = None

@@ -18,6 +18,10 @@ class WorldMapCargoShipWreck:
         self.IsOwnedByPlayer = False
         self.CanBePaused = False
         self.CostToRepair = None
+        self.PriceToUpgrade = None
+        self.UpgradeTitle = None
+        self.UpgradeExists = False
+        self.UpgradeIcon = ""
         self.OnConstructionDone = None
         self.OnAllConstructionProductsAvailable = None
         self.IsBeingRepaired = False
@@ -37,13 +41,6 @@ class WorldMapCargoShipWreck:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
-        self.Upgrader = None
-        self.PriceToUpgrade = None
-        self.ConstructionCostToUpgrade = None
-        self.UpgradeExists = False
-        self.UpgradeTitle = None
-        self.NextTier = Option()
-        self.Icon = ""
 
 class WorldMapEntity:
     def __init__(self):
@@ -90,7 +87,6 @@ class WorldMapMine:
         self.UpgradeTitle = None
         self.UpgradeExists = False
         self.UpgradeIcon = ""
-        self.Upgrader = None
         self.GeneralPriority = 0
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
@@ -114,9 +110,6 @@ class WorldMapMine:
         self.HasWorkersCached = False
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
-        self.ConstructionCostToUpgrade = None
-        self.NextTier = Option()
-        self.Icon = ""
 
     class State:
         None = None
@@ -168,7 +161,6 @@ class WorldMapVillage:
         self.UpgradeTitle = None
         self.UpgradeExists = False
         self.UpgradeIcon = ""
-        self.Upgrader = None
         self.IsOwnedByPlayer = False
         self.OnConstructionDone = None
         self.OnAllConstructionProductsAvailable = None
@@ -189,9 +181,6 @@ class WorldMapVillage:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
-        self.ConstructionCostToUpgrade = None
-        self.NextTier = Option()
-        self.Icon = ""
         self.QuickTrades = None
 
 class DefaultWorldMapEntityFactory:
@@ -207,7 +196,6 @@ class IUpgradableWorldEntity:
         self.UpgradeIcon = ""
         self.IsOwnedByPlayer = False
         self.Location = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -215,6 +203,7 @@ class IUpgradableWorldEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class WorldMapCargoShipWreckProto:
     def __init__(self):
@@ -231,6 +220,11 @@ class WorldMapCargoShipWreckProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.CostToRepair = None
         self.Graphics = None
@@ -240,7 +234,6 @@ class IWorldMapEntity:
     def __init__(self):
         self.IsOwnedByPlayer = False
         self.Location = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -248,6 +241,7 @@ class IWorldMapEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IWorldMapRepairableEntity:
     def __init__(self):
@@ -260,7 +254,6 @@ class IWorldMapRepairableEntity:
         self.OnAllConstructionProductsAvailable = None
         self.IsOwnedByPlayer = False
         self.Location = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -268,6 +261,7 @@ class IWorldMapRepairableEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class WorldMapEntityProto:
     def __init__(self):
@@ -284,6 +278,11 @@ class WorldMapEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
@@ -308,6 +307,11 @@ class WorldMapLocationGfxProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.IconPath = ""
         self.Size = None
@@ -328,6 +332,11 @@ class WorldMapMineProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ProducedProductPerStep = None
         self.ProductionDuration = None
@@ -356,6 +365,11 @@ class WorldMapVillageProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.UpointsPerPopToAdopt = None
         self.CostPerLevel = None

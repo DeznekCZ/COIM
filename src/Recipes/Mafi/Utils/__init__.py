@@ -47,6 +47,19 @@ class FastStringComparer:
         pass
 
 
+class InlineValueAttribute:
+    def __init__(self):
+        self.TypeId = None
+        self.ValueName = ""
+
+class DoNotInlineValueAttribute:
+    def __init__(self):
+        self.TypeId = None
+
+class InlineValueDespiteDifferentTypesAttribute:
+    def __init__(self):
+        self.TypeId = None
+
 class IntToStringCache:
     def __init__(self):
         pass

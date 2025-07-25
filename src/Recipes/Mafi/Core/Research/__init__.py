@@ -15,6 +15,11 @@ class ResearchNodeProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Units = None
         self.UnlockingConditions = None
@@ -136,7 +141,6 @@ class ResearchNode:
         self.Parents = None
         self.AnyParentCanUnlock = False
         self.Units = None
-        self.IsLockedByParents = False
         self.IsLocked = False
         from Mafi import Option
         self.LabRequired = Option()
@@ -193,6 +197,11 @@ class TechnologyProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False

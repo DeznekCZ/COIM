@@ -261,6 +261,7 @@ class TileSurfaceData:
         self.RampRotation = None
         self.IsRamp = False
         self.IsAutoPlaced = False
+        self.CanBePlaced = False
         self.DecalSlimId = None
         self.DecalRotation = None
         self.IsDecalFlipped = False
@@ -337,6 +338,11 @@ class TerrainTileSurfaceProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.MaintenanceScale = None
         self.EdgeCompatibleWith = None

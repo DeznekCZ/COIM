@@ -193,6 +193,10 @@ class ReadOnlyArrayAssertionExtensions:
         pass
 
 
+class CopyrightAttribute:
+    def __init__(self):
+        self.TypeId = None
+
 class IResolver:
     def __init__(self):
         pass
@@ -452,11 +456,11 @@ class Fix64:
     Eight = Fix64()
     Epsilon = Fix64()
     EpsilonNear = Fix64()
+    EpsilonFix32NearOneSqr = Fix64()
     MinValue = Fix64()
     MaxValue = Fix64()
     MinIntValue = Fix64()
     MaxIntValue = Fix64()
-    EpsilonFix32NearOneSqr = Fix64()
     Tau = Fix64()
     TauOver4 = Fix64()
     Sqrt2 = Fix64()
@@ -601,10 +605,6 @@ class Make:
 
 
 class AngleDegrees1f:
-    Zero = None
-    MinValue = None
-    MaxValue = None
-    Epsilon = None
     HalfDegree = None
     OneDegree = None
     Deg22Point5 = None
@@ -615,6 +615,10 @@ class AngleDegrees1f:
     Deg270 = None
     Deg360 = None
     Deg720 = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
+    Epsilon = None
     def __init__(self):
         from Mafi import Fix32
         self.Radians = Fix32()
@@ -1785,6 +1789,33 @@ class SaveVersion:
     BRANCH_MAP = None
     CURRENT_SAVE_VERSION = 0
     MIN_COMPATIBLE_SAVE_VERSION = 0
+    V240_LAST_TRANSPORT_TIER = 0
+    V239_REPLACE = 0
+    V238_TRAIN_STATION_PRIORITY = 0
+    V237_T2_TRAINS = 0
+    V236_TRANSPORT_OPT = 0
+    V235_SURFACE_HOLES = 0
+    V234_THERMAL_STORAGE_NOTIF = 0
+    V233_TRAIN_RESERVATION_REVAMP = 0
+    V232_BETTER_UNLOCKED_PROTOS = 0
+    V231_UNITY_MAX = 0
+    V230_TRAIN_CRITICAL_SECTION_PUSH = 0
+    V229_STORAGES_TRANSPORT_UNTIL = 0
+    V228_CONFIG_ON_RECOVERY = 0
+    V227_TENDER_PROTO = 0
+    V226_REMOVED_TRAIN_IDLE_NOTIF = 0
+    V225_INSTANCED_STATIONS = 0
+    V224_TRAIN_CAP_MULT = 0
+    V223_TRAIN_FUEL_FIX = 0
+    V222_TINY_MAINTENANCE_CONSUMPTION_FIX = 0
+    V221_TRAIN_PATHFINDING_PRIORITY = 0
+    V220_TRAIN_CARGO_STATS = 0
+    V219_TRAIN_STATION_UNASSIGNED_MODULES = 0
+    V218_RESTORE_TRAIN_TUTORIALS = 0
+    V217_TRAIN_PATHFINDING = 0
+    V216_TRAIN_PATH_FROM_DEPOT = 0
+    V215_TRAIN_KEEP_ALL_ALIGNMENT = 0
+    V214_LOGISTICS_ZONES = 0
     V213_TRAIN_SELF_INTERSECT = 0
     V212_WAGON_PRODUCT_FILTER = 0
     V211_TRAIN_LAST_FAILED_RESERVATION = 0
@@ -2205,14 +2236,14 @@ class RecipeProtoBuilderExtensions:
 
 
 class BattleTriggerPriority:
-    Zero = None
-    MinValue = None
-    MaxValue = None
     Highest = None
     Fleet = None
     Building = None
     Lowest = None
     NotSupported = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
     def __init__(self):
         self.Abs = None
         self.Sign = 0
@@ -2388,15 +2419,15 @@ class ComputingExtensions:
 
 
 class Duration:
-    Zero = None
-    MinValue = None
-    MaxValue = None
     OneTick = None
     OneSecond = None
     OneMinute = None
     OneDay = None
     OneMonth = None
     OneYear = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
     TICKS_PER_YEAR = 0
     def __init__(self):
         from Mafi import Fix64
@@ -2454,12 +2485,12 @@ class Fix64CoreExtensions:
 
 
 class Frequency:
-    Zero = None
-    MinValue = None
-    MaxValue = None
     None = None
     EveryTick = None
     EverySecond = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
     def __init__(self):
         self.SecondsFloored = 0
         self.Abs = None
@@ -2474,10 +2505,10 @@ class Frequency:
         self.Ticks = 0
 
 class GameDate:
+    Inception = None
     Zero = None
     MinValue = None
     MaxValue = None
-    Inception = None
     FIRST_YEAR_NUMBER = 0
     def __init__(self):
         self.Day = 0
@@ -2532,13 +2563,13 @@ class Chunk8Assertions:
 
 
 class HeightTilesF:
+    One = None
+    Half = None
+    Quarter = None
     Zero = None
     MinValue = None
     MaxValue = None
     Epsilon = None
-    One = None
-    Half = None
-    Quarter = None
     def __init__(self):
         self.Abs = None
         self.Sign = 0
@@ -2559,10 +2590,10 @@ class HeightTilesF:
         self.Value = Fix32()
 
 class HeightTilesI:
+    One = None
     Zero = None
     MinValue = None
     MaxValue = None
-    One = None
     def __init__(self):
         self.Abs = None
         self.Sign = 0
@@ -2583,10 +2614,10 @@ class HeightTilesISlim:
         self.Value = None
 
 class MechPower:
+    OneKw = None
     Zero = None
     MinValue = None
     MaxValue = None
-    OneKw = None
     def __init__(self):
         self.Abs = None
         self.Sign = 0
@@ -2603,11 +2634,11 @@ class MechPower:
         self.Value = 0
 
 class PartialQuantity:
+    One = None
     Zero = None
     MinValue = None
     MaxValue = None
     Epsilon = None
-    One = None
     def __init__(self):
         self.Abs = None
         self.Sign = 0
@@ -2660,13 +2691,14 @@ class Quantity:
         self.Squared = 0
         self.AsLarge = None
         self.AsPartial = None
+        self.Times2Fast = None
         self.Value = 0
 
 class QuantityLarge:
+    One = None
     Zero = None
     MinValue = None
     MaxValue = None
-    One = None
     def __init__(self):
         self.Abs = None
         self.Sign = 0
@@ -2708,15 +2740,15 @@ class RelGameDate:
         self.Value = 0
 
 class RelTile1f:
-    Zero = None
-    Two = None
-    MinValue = None
-    MaxValue = None
-    Epsilon = None
     One = None
+    Two = None
     Half = None
     Third = None
     Quarter = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
+    Epsilon = None
     def __init__(self):
         self.Abs = None
         self.Sign = 0
@@ -3420,6 +3452,7 @@ class Upoints:
     MinValue = None
     MaxValue = None
     Epsilon = None
+    One = None
     def __init__(self):
         self.Abs = None
         self.Sign = 0

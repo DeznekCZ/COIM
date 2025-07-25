@@ -68,3 +68,12 @@ class RepeatableAnimationParams:
         self.CustomSpeed = None
         self.DelayedStartAt = None
         self.AnimationStateName = ""
+
+class SimpleAnimationState:
+    def __init__(self):
+        self.AnimationStateName = ""
+
+class SimpleAnimationParams:
+    def __init__(self):
+        self.TotalDuration = None
+        self.AnimationStateName = ""

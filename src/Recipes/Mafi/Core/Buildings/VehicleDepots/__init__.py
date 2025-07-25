@@ -3,14 +3,16 @@ class VehicleDepot:
     def __init__(self):
         self.CanBePaused = False
         self.Prototype = None
+        self.ZoneMask = None
         self.SpawnPosition = None
         self.DespawnPosition = None
         self.SpawnDirection = None
         self.SpawnDrivePosition = None
         self.DespawnDrivePosition = None
+        from Mafi import Option
+        self.TargetLogisticsZone = Option()
         self.Upgrader = None
         self.PowerRequired = None
-        from Mafi import Option
         self.ElectricityConsumer = Option()
         self.ComputingRequired = None
         self.ComputingConsumer = Option()
@@ -38,7 +40,6 @@ class VehicleDepot:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -72,14 +73,16 @@ class VehicleDepot:
 class VehicleDepotBase:
     def __init__(self):
         self.Prototype = None
+        self.ZoneMask = None
         self.SpawnPosition = None
         self.DespawnPosition = None
         self.SpawnDirection = None
         self.SpawnDrivePosition = None
         self.DespawnDrivePosition = None
+        from Mafi import Option
+        self.TargetLogisticsZone = Option()
         self.Upgrader = None
         self.PowerRequired = None
-        from Mafi import Option
         self.ElectricityConsumer = Option()
         self.ComputingRequired = None
         self.ComputingConsumer = Option()
@@ -107,7 +110,6 @@ class VehicleDepotBase:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -184,6 +186,11 @@ class VehicleDepotBaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ConsumedPowerPerTick = None
         self.ConsumedComputingPerTick = None
@@ -257,6 +264,11 @@ class VehicleDepotProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ConsumedPowerPerTick = None
         self.ConsumedComputingPerTick = None

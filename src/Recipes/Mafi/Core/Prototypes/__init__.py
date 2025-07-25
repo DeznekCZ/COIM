@@ -5,13 +5,17 @@ class CoreProtoTags:
         pass
 
 
+class CombineUnderProtoParam:
+    def __init__(self):
+        self.AllowedProtoType = None
+        self.Proto = None
+
 class EntityCosts:
     None = None
     def __init__(self):
         self.Price = None
         self.Workers = 0
         self.DefaultPriority = 0
-        self.IsQuickBuildDisabled = False
         self.Maintenance = None
 
 class EntityCostsTpl:
@@ -77,6 +81,11 @@ class Proto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.IsPhantom = False
 
@@ -111,8 +120,12 @@ class IProtoWithIconAndName:
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -123,8 +136,12 @@ class IProtoWithIcon:
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -134,8 +151,12 @@ class IProtoWithPropertiesUpdate:
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -147,8 +168,12 @@ class IProtoWithTiers:
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -161,8 +186,12 @@ class IProtoWithUpgrade:
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -171,6 +200,10 @@ class IUpgradeData:
         from Mafi import Option
         self.NextTierNonGeneric = Option()
         self.PreviousTierNonGeneric = Option()
+        self.SkipFromReplaceFlow = False
+        self.CannotDowngrade = False
+        self.CannotSkipUpgrade = False
+        self.CannotMove = False
 
 class ITierData:
     def __init__(self):
@@ -197,8 +230,12 @@ class IProto:
         from Mafi.Core.Prototypes import Proto
         self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -233,6 +270,11 @@ class InvalidProtoException:
         self.HelpLink = ""
         self.Source = ""
         self.HResult = 0
+
+class ProtoExtensions:
+    def __init__(self):
+        pass
+
 
 class ProtosDb:
     def __init__(self):

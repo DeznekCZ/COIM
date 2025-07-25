@@ -54,6 +54,19 @@ class AssetTransactionManagerExtensions:
         pass
 
 
+class MutableAssetValue:
+    def __init__(self):
+        self.ProductsInternal = None
+        self.IsNotEmpty = False
+        self.IsEmpty = False
+
+class ReplacementCost:
+    Empty = None
+    def __init__(self):
+        self.IsEmpty = False
+        self.Cost = None
+        self.Refund = None
+
 class SourceProductsAnalyzer:
     def __init__(self):
         pass

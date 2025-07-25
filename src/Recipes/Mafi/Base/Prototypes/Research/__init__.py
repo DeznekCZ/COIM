@@ -47,6 +47,7 @@ class ResearchCosts:
     WheatCrop = 0
     Edicts2 = 0
     VehicleCapIncrease2 = 0
+    LogisticsZones = 0
     CargoDepot = 0
     PipeTransportsT2 = 0
     CrudeOilDistillation = 0

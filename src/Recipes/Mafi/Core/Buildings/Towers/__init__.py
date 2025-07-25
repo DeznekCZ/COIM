@@ -4,7 +4,6 @@ class IAreaManagingTower:
         self.ManagedDesignations = None
         self.Area = None
         self.AssignedFuelStations = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -12,3 +11,4 @@ class IAreaManagingTower:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None

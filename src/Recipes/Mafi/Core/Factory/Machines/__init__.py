@@ -3,7 +3,6 @@ class IEntityWithBoost:
     def __init__(self):
         self.IsBoostRequested = False
         self.BoostCost = None
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -11,6 +10,7 @@ class IEntityWithBoost:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class Machine:
     def __init__(self):
@@ -54,7 +54,6 @@ class Machine:
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -284,6 +283,11 @@ class MachineProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.ConsumedPowerPerTick = None
         self.BuffersMultiplier = None

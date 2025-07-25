@@ -21,6 +21,8 @@ class TreePlanter:
         self.CabinDirectionRelative = None
         self.CanBePaused = False
         self.CustomTitle = Option()
+        self.AssignedZone = Option()
+        self.ZoneMask = None
         self.AssignedTo = Option()
         self.NeedsJob = False
         self.NeedsRefueling = False
@@ -136,6 +138,11 @@ class TreePlanterProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.PlantingTimings = None
         self.CargoPickupDuration = None

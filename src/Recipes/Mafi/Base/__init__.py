@@ -322,6 +322,7 @@ class Assets:
                 ResearchEfficiency_svg = ""
                 SettlementConsumptionDecrease_svg = ""
                 SolarBoost_svg = ""
+                TrainCapacity_svg = ""
                 TrucksCapacity_svg = ""
                 UnityIncreased_svg = ""
                 WaterSaver_svg = ""
@@ -338,6 +339,7 @@ class Assets:
                 DeconstructionIncrease_svg = ""
                 DumpingFilter_svg = ""
                 HydrogenCargoShipTechnology_png = ""
+                LogisticsZones_svg = ""
                 NuclearEnergy_svg = ""
                 Recycling_svg = ""
                 def __init__(self):
@@ -1368,36 +1370,30 @@ class Assets:
             class T2:
                 SettlementT2_1_prefab = ""
                 SettlementT2_2_prefab = ""
-                SettT2_Blue_mat = ""
-                SettT2_Gray_mat = ""
-                SettT2_Red_mat = ""
-                SettT2_Roof_NoRand_mat = ""
-                SettT2_Yellow_mat = ""
                 def __init__(self):
                     pass
+
+
+                class data:
+                    SettT2_mat = ""
+                    def __init__(self):
+                        pass
 
 
             class T3:
                 SettlementT3_1_prefab = ""
                 SettlementT3_2_prefab = ""
-                SettT3_BlackBricks_mat = ""
-                SettT3_BluePlaster_mat = ""
-                SettT3_GrayPlaster_mat = ""
-                SettT3_LightGrayPlaster_mat = ""
-                SettT3_RedBricks_mat = ""
-                SettT3_RedPlaster_mat = ""
-                SettT3_style1_placeholder_mat = ""
-                SettT3_style2_placeholder_mat = ""
-                SettT3_YellowPlaster_mat = ""
                 def __init__(self):
                     pass
 
 
             class T4:
-                SettlementT4_1_prefab = ""
-                SettlementT4_2_prefab = ""
-                SettlementT4_3_prefab = ""
-                SettlementT4_4_prefab = ""
+                SettlementT4_1a_prefab = ""
+                SettlementT4_1b_prefab = ""
+                SettlementT4_2a_prefab = ""
+                SettlementT4_2b_prefab = ""
+                SettlementT4_4a_prefab = ""
+                SettlementT4_4b_prefab = ""
                 def __init__(self):
                     pass
 
@@ -1470,6 +1466,7 @@ class Assets:
             TerrainInstanced_mat = ""
             TerrainTriplanarInstanced_mat = ""
             TileSurfaceCube_prefab = ""
+            TileSurfacePreviewInstanced_mat = ""
             def __init__(self):
                 pass
 
@@ -2156,13 +2153,19 @@ class Assets:
             DerailerInstanced_mat = ""
             LevelCrossingLarge_prefab = ""
             LevelCrossingLargeConnector_prefab = ""
+            LevelCrossingLargeConnectorOld_prefab = ""
             LevelCrossingLargeEntrance_prefab = ""
+            LevelCrossingLargeEntranceOld_prefab = ""
+            LevelCrossingLargeOld_prefab = ""
             LevelCrossingSmall_prefab = ""
             LevelCrossingSmallConnector_prefab = ""
+            LevelCrossingSmallConnectorOld_prefab = ""
             LevelCrossingSmallEntrance_prefab = ""
+            LevelCrossingSmallEntranceOld_prefab = ""
+            LevelCrossingSmallOld_prefab = ""
             Locomotive_T1_steam_tender_prefab = ""
-            Locomotive_T2_prefab = ""
             LocoT1Diesel_prefab = ""
+            LocoT1Hydrogen_prefab = ""
             LocoT1Steam_prefab = ""
             LocoT1Steam_tender_prefab = ""
             RailTracksElevatedMaterial_mat = ""
@@ -2185,10 +2188,6 @@ class Assets:
             WagonT1Loose_prefab = ""
             WagonT1_molten_prefab = ""
             WagonT1Unit_prefab = ""
-            WagonT2_loose_prefab = ""
-            WagonT2_tank_prefab = ""
-            WagonT2_unit_prefab = ""
-            WagonT2_unit_open_prefab = ""
             def __init__(self):
                 pass
 
@@ -2214,6 +2213,18 @@ class Assets:
 
                 class Audio:
                     Idle_prefab = ""
+                    LeaveStation_prefab = ""
+                    Moving_prefab = ""
+                    def __init__(self):
+                        pass
+
+
+            class LocoT1Hydrogen:
+                def __init__(self):
+                    pass
+
+
+                class Audio:
                     LeaveStation_prefab = ""
                     Moving_prefab = ""
                     def __init__(self):
@@ -2248,7 +2259,8 @@ class Assets:
                 StationBase_prefab = ""
                 StationEmpty_prefab = ""
                 StationFluidT1_prefab = ""
-                StationFuelLiquid_prefab = ""
+                StationFuelDiesel_prefab = ""
+                StationFuelHydrogen_prefab = ""
                 StationFuelSteam_prefab = ""
                 StationLooseT1_prefab = ""
                 StationUnitT1_prefab = ""
@@ -2786,6 +2798,17 @@ class Assets:
                     pass
 
 
+            class LogisticsZones:
+                AssignedRoutes_jpg = ""
+                ConstructionZone_jpg = ""
+                Intro_jpg = ""
+                TruckZone_jpg = ""
+                VehicleDepotZone_jpg = ""
+                ZonesOverlap_jpg = ""
+                def __init__(self):
+                    pass
+
+
             class Maintenance:
                 Intro_jpg = ""
                 MaintenanceRepair_jpg = ""
@@ -2900,6 +2923,59 @@ class Assets:
                 Drag_jpg = ""
                 def __init__(self):
                     pass
+
+
+            class Trains:
+                def __init__(self):
+                    pass
+
+
+                class ExclusiveZones:
+                    BufferWithExclusiveZones_png = ""
+                    ExclusiveZone_png = ""
+                    RemoveExclusiveZoneExample_png = ""
+                    def __init__(self):
+                        pass
+
+
+                class ExtendingBiDirNetwork:
+                    AddedStation_png = ""
+                    AddingMoreTrains_png = ""
+                    Siding_png = ""
+                    SidingWithTrains_png = ""
+                    def __init__(self):
+                        pass
+
+
+                class FirstTrainLine:
+                    ExtraSpace_png = ""
+                    FinalSetup_png = ""
+                    LoadingUnloadingStations_png = ""
+                    LongLine_png = ""
+                    TrainDepot_png = ""
+                    TrainDesigner_png = ""
+                    TrainLinesManager_png = ""
+                    UnloadingStation_png = ""
+                    def __init__(self):
+                        pass
+
+
+                class NoStoppingZones:
+                    BlockedRoundabout_png = ""
+                    CommonSection_png = ""
+                    CriticalSection_png = ""
+                    MergeNotCritical_png = ""
+                    TrainsBlockedOnSiding_png = ""
+                    def __init__(self):
+                        pass
+
+
+                class TrainStationGroups:
+                    CargoDistributionSchedule_png = ""
+                    TrainStationGroupSchedule_png = ""
+                    TwoLaneStation_png = ""
+                    def __init__(self):
+                        pass
 
 
             class Transports:
@@ -3656,6 +3732,7 @@ class Ids:
         CropYieldInc = Proto.ID('Focus_CropYieldInc')
         RecyclingInc = Proto.ID('Focus_RecyclingInc')
         TrucksCapacityInc = Proto.ID('Focus_TrucksCapacityInc')
+        TrainsCapacityInc = Proto.ID('Focus_TrainsCapacityInc')
         ContractsProfitInc = Proto.ID('Focus_ContractsProfitInc')
         FoodConsumptionDec = Proto.ID('Focus_FoodConsumptionDec')
         SettlementConsumptionDec = Proto.ID('Focus_SettlementConsumptionDec')
@@ -3787,6 +3864,11 @@ class Ids:
         TutorialOnStoragesAndTransports = Proto.ID('TutorialOnStoragesAndTransports')
         TutorialOnTrucks = Proto.ID('TutorialOnTrucks')
         TutorialOnShipRepair = Proto.ID('TutorialOnShipRepair')
+        TutorialOnFirstTrainLine = Proto.ID('TutorialOnFirstTrainLine')
+        TutorialOnExtendingBiDirNetwork = Proto.ID('TutorialOnExtendingBiDirNetwork')
+        TutorialOnNoStoppingZones = Proto.ID('TutorialOnNoStoppingZones')
+        TutorialOnExclusiveZones = Proto.ID('TutorialOnExclusiveZones')
+        TutorialOnTrainStationGroups = Proto.ID('TutorialOnTrainStationGroups')
         WarningNoWorkersNoBeacon = Proto.ID('WarningNoWorkersNoBeacon')
         WarningLowMaintenanceNoDepot = Proto.ID('WarningLowMaintenanceNoDepot')
         WarningLowDiesel = Proto.ID('WarningLowDiesel')
@@ -3805,6 +3887,7 @@ class Ids:
         Logistics = Proto.ID('MessageGroupLogistics')
         World = Proto.ID('MessageGroupWorld')
         Warnings = Proto.ID('MessageGroupWarnings')
+        Trains = Proto.ID('MessageGroupTrains')
         def __init__(self):
             pass
 
@@ -4021,13 +4104,9 @@ class Ids:
         ConcreteSlab = ProductProto.ID('Product_ConcreteSlab')
         Bricks = ProductProto.ID('Product_Bricks')
         ConstructionParts = ProductProto.ID('Product_ConstructionParts')
-        ConstructionPartsInUpgrade = None
         ConstructionParts2 = ProductProto.ID('Product_ConstructionParts2')
-        ConstructionParts2InUpgrade = None
         ConstructionParts3 = ProductProto.ID('Product_ConstructionParts3')
-        ConstructionParts3InUpgrade = None
         ConstructionParts4 = ProductProto.ID('Product_ConstructionParts4')
-        ConstructionParts4InUpgrade = None
         MechanicalParts = ProductProto.ID('Product_MechanicalParts')
         VehicleParts = ProductProto.ID('Product_VehicleParts')
         VehicleParts2 = ProductProto.ID('Product_VehicleParts2')
@@ -4507,6 +4586,7 @@ class Ids:
         CornDigestion = RecipeProto.ID('CornDigestion')
         SoybeanDigestion = RecipeProto.ID('SoybeanDigestion')
         MeatTrimmingsDigestion = RecipeProto.ID('MeatTrimmingsDigestion')
+        EggsDigestion = RecipeProto.ID('EggsDigestion')
         AnimalFeedCompost = RecipeProto.ID('AnimalFeedCompost')
         AnimalFeedCompostT2 = RecipeProto.ID('AnimalFeedCompostT2')
         BiomassCompost = RecipeProto.ID('BiomassCompost')
@@ -4782,6 +4862,7 @@ class Ids:
         IspModule = ResearchNodeProto.ID('ResearchIspModule')
         Electronics4 = ResearchNodeProto.ID('ResearchElectronics4')
         Housing4 = ResearchNodeProto.ID('ResearchHousing4')
+        LogisticsZones = ResearchNodeProto.ID('ResearchLogisticsZones')
         FocusIncreaseInc = ResearchNodeProto.ID('ResearchFocusIncreaseInc')
         HousingCapInc = ResearchNodeProto.ID('ResearchHousingCapInc')
         UnityCapInc = ResearchNodeProto.ID('ResearchUnityCapInc')
@@ -5013,13 +5094,14 @@ class Ids:
 
 
     class Trains:
-        from Mafi.Core.Entities import EntityProto
-        LocomotiveT1Diesel = EntityProto.ID('LocomotiveT1Diesel')
-        LocomotiveT1Steam = EntityProto.ID('LocomotiveT1Steam')
-        LocomotiveT1Tender = EntityProto.ID('LocomotiveT1Tender')
-        WagonT1Unit = EntityProto.ID('WagonT1Unit')
-        WagonT1Loose = EntityProto.ID('WagonT1Loose')
-        WagonT1Fluid = EntityProto.ID('WagonT1fluid')
+        from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+        LocomotiveT1Diesel = DynamicEntityProto.ID('LocomotiveT1Diesel')
+        LocomotiveT1Steam = DynamicEntityProto.ID('LocomotiveT1Steam')
+        LocomotiveT1Tender = DynamicEntityProto.ID('LocomotiveT1Tender')
+        LocomotiveT1Hydrogen = DynamicEntityProto.ID('LocomotiveT1Hydrogen')
+        WagonT1Unit = DynamicEntityProto.ID('WagonT1Unit')
+        WagonT1Loose = DynamicEntityProto.ID('WagonT1Loose')
+        WagonT1Fluid = DynamicEntityProto.ID('WagonT1fluid')
         def __init__(self):
             pass
 
@@ -5035,12 +5117,19 @@ class Ids:
         TrainStationEmpty = StaticEntityProto.ID('TrainStationEmpty')
         TrainStationFuelDiesel = StaticEntityProto.ID('TrainStationFuelDiesel')
         TrainStationFuelSteam = StaticEntityProto.ID('TrainStationFuelSteam')
+        TrainStationFuelHydrogen = StaticEntityProto.ID('TrainStationFuelHydrogen')
         TrainLevelCrossingSmall = StaticEntityProto.ID('TrainLevelCrossingSmall')
+        TrainLevelCrossingSmallV2 = StaticEntityProto.ID('TrainLevelCrossingSmallV2')
         TrainLevelCrossingSmallEntrance = StaticEntityProto.ID('TrainLevelCrossingSmallEntrance')
+        TrainLevelCrossingSmallEntranceV2 = StaticEntityProto.ID('TrainLevelCrossingSmallEntranceV2')
         TrainLevelCrossingSmallConnector = StaticEntityProto.ID('TrainLevelCrossingSmallConnector')
+        TrainLevelCrossingSmallConnectorV2 = StaticEntityProto.ID('TrainLevelCrossingSmallConnectorV2')
         TrainLevelCrossingLarge = StaticEntityProto.ID('TrainLevelCrossingLarge')
+        TrainLevelCrossingLargeV2 = StaticEntityProto.ID('TrainLevelCrossingLargeV2')
         TrainLevelCrossingLargeEntrance = StaticEntityProto.ID('TrainLevelCrossingLargeEntrance')
+        TrainLevelCrossingLargeEntranceV2 = StaticEntityProto.ID('TrainLevelCrossingLargeEntranceV2')
         TrainLevelCrossingLargeConnector = StaticEntityProto.ID('TrainLevelCrossingLargeConnector')
+        TrainLevelCrossingLargeConnectorV2 = StaticEntityProto.ID('TrainLevelCrossingLargeConnectorV2')
         def __init__(self):
             pass
 
@@ -5334,6 +5423,7 @@ class Costs:
         TrainStationFluid = None
         TrainStationFuelSteam = None
         TrainStationFuelDiesel = None
+        TrainStationFuelHydrogen = None
         TrainStationEmpty = None
         RocketAssemblyDepot = None
         RocketLaunchPad = None
@@ -5480,6 +5570,7 @@ class Costs:
         LocomotiveT1Diesel = None
         LocomotiveT1Steam = None
         LocomotiveT1SteamTender = None
+        LocomotiveT1Hydrogen = None
         WagonT1Unit = None
         WagonT1Loose = None
         WagonT1Fluid = None

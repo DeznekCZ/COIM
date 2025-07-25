@@ -15,7 +15,6 @@ class IRoadGraphEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -28,13 +27,13 @@ class IRoadGraphEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class ICloseableRoadGraphEntity:
     def __init__(self):
@@ -49,7 +48,6 @@ class ICloseableRoadGraphEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -62,13 +60,13 @@ class ICloseableRoadGraphEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class IRoadGraphEntityProto:
     def __init__(self):
@@ -88,8 +86,12 @@ class IRoadGraphEntityProto:
         self.EntityType = None
         self.Costs = None
         self.Strings = None
+        self.IsLocked = False
+        self.IsUnlocked = False
         self.IsAvailable = False
         self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
 
@@ -105,7 +107,6 @@ class IRoadGraphTerrainConnector:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -118,13 +119,13 @@ class IRoadGraphTerrainConnector:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-        self.DefaultTitle = None
         self.Id = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class RoadEntity:
     DISCRETIZATION_STEP = None
@@ -135,7 +136,6 @@ class RoadEntity:
         self.RoadLanesCount = 0
         self.RoadProto = None
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -250,6 +250,11 @@ class RoadEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None
@@ -276,7 +281,6 @@ class RoadEntityBase:
         self.RoadLanesCount = 0
         self.RoadProto = None
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -334,6 +338,11 @@ class RoadEntityProtoBase:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.BoostCost = None
         self.InputPorts = None
@@ -393,7 +402,6 @@ class RoadEntranceEntity:
         self.RoadLanesCount = 0
         self.RoadProto = None
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -450,6 +458,11 @@ class RoadEntranceEntityProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.TerrainConnections = None
         self.BoostCost = None

@@ -12,6 +12,11 @@ class BirthRateCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
@@ -35,6 +40,11 @@ class DiseaseProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.HealthPenalty = None
         self.MonthlyMortalityRate = None
@@ -55,6 +65,11 @@ class FoodProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Product = None
         self.FoodCategory = None
@@ -72,6 +87,11 @@ class FoodCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.HasHealthBenefit = False
         self.IsPhantom = False
@@ -89,6 +109,11 @@ class HealthPointsCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
@@ -105,7 +130,6 @@ class IEntityWithWorkers:
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
         self.IsCargoAffectedByGeneralPriority = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -113,6 +137,7 @@ class IEntityWithWorkers:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class EntityWithWorkersExtensions:
     def __init__(self):
@@ -140,6 +165,11 @@ class PopNeedProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Unity = None
         self.HealthGiven = None
@@ -223,7 +253,6 @@ class IUnityConsumingEntity:
         self.GeneralPriority = 0
         self.IsGeneralPriorityVisible = False
         self.IsCargoAffectedByGeneralPriority = False
-        self.DefaultTitle = None
         self.Id = None
         self.Prototype = None
         self.Context = None
@@ -231,6 +260,7 @@ class IUnityConsumingEntity:
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
+        self.DefaultTitle = None
 
 class UnityConsumer:
     def __init__(self):
@@ -266,6 +296,11 @@ class UpointsCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.HideCount = False
         self.StatsCategory = None
@@ -301,6 +336,7 @@ class UpointsStats:
         def __init__(self):
             self.Exchanged = None
             self.Max = None
+            self.PossibleMax = None
             self.Title = None
             self.Category = None
 
@@ -320,6 +356,11 @@ class UpointsStatsCategoryProto:
         self.Tags = None
         self.IsNotAvailable = False
         self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
         self.IsObsolete = False
         self.Graphics = None
         self.IsPhantom = False
