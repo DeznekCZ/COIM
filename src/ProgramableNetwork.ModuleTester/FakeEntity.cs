@@ -46,8 +46,6 @@ namespace ProgramableNetwork.ModuleTester
 
         public bool HasWorkersCached { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
 
-        public override AssetValue Value => throw new System.NotImplementedException();
-
         public override AssetValue ConstructionCost => throw new System.NotImplementedException();
 
         public override ImmutableArray<OccupiedTileRelative> OccupiedTiles => throw new System.NotImplementedException();

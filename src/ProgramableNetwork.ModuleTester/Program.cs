@@ -87,7 +87,30 @@ namespace ProgramableNetwork.ModuleTester
             new ControllerTemplates().RegisterData(registrator);
 
             EntityManager manager = new EntityManager();
-            EntityContext entityContext = new EntityContext(null, manager, null, new TestFactory(), null, null, null, null, null, null, null, new TestFactory(), new TestFactory(), new TestFactory(), protosDb, null, null, null, null, null, null, null);
+            EntityContext entityContext = new EntityContext(
+                constructionManager: null,
+                upgradesManager: null, 
+                entitiesManager: manager,
+                assetTransactionManager: null,
+                notificationsManager: new TestFactory(),
+                propertiesDb: null,
+                ioPortsManager: null,
+                productsManager: null,
+                fuelStatsCollector: null,
+                workersManager: null,
+                upointsManager: null,
+                calendar: null,
+                computingConsumerFactory: new TestFactory(),
+                electricityConsumerFactory: new TestFactory(),
+                unityConsumerFactory: new TestFactory(),
+                protosDb: protosDb,
+                unlockedProtosDb: null,
+                portIdFactory: null,
+                terrainManager: null,
+                occupancyManager: null,
+                airPollutionManager: null,
+                simLoopEvents: null,
+                logisticsZonesManager: null);
 
             foreach (var item in registrator.PrototypesDb.All<ControllerProto>())
             {

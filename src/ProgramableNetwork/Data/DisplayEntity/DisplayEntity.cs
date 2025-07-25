@@ -31,7 +31,7 @@ namespace ProgramableNetwork.Data.DisplayEntity
 {
     [GenerateSerializer(false, null, 0)]
     public class DisplayEntity : LayoutEntity, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
-        IElectricityConsumingEntity, IMaintainedEntity, IEntityWithUpgrader, IUpgradableEntity
+        IElectricityConsumingEntity, IMaintainedEntity, IUpgradableEntity
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate (object obj, BlobWriter writer)
         {
@@ -289,6 +289,12 @@ namespace ProgramableNetwork.Data.DisplayEntity
                 Prototype = Prototype.Upgrade.NextTier.Value;
                 DisplayManager = Prototype.DisplayManagerFactory(this);
             }
+        }
+
+        public bool TryReplaceSelf(IProtoWithUpgrade newProto, bool dryRun, out LocStrFormatted errorMessage)
+        {
+            errorMessage = LocStrFormatted.Empty;
+            return newProto is DisplayEntityProto dip && (Prototype.Upgrade.NextTier.ValueOrNull == dip || Prototype.Upgrade.PreviousTier.ValueOrNull == dip);
         }
 
         public IUpgrader Upgrader

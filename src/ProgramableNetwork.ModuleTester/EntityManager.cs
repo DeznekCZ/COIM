@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using Mafi.Collections;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Collections.ReadonlyCollections;
 using Mafi.Core;
@@ -6,6 +7,7 @@ using Mafi.Core.Economy;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Validators;
+using Mafi.Core.Prototypes;
 using System;
 using System.Collections.Generic;
 
@@ -39,6 +41,11 @@ namespace ProgramableNetwork.ModuleTester
 
         public IIndexable<IEntity> Entities => throw new NotImplementedException();
 
+        public EntityValidationResult CanAdd(IEntityAddRequest addRequest, bool forceRunAllValidators = false, Lyst<IEntityPreAddValidator> preAddValidators = null)
+        {
+            throw new NotImplementedException();
+        }
+
         public EntityValidationResult CanRemoveEntity(IEntity entity, EntityRemoveReason reasonToRemove)
         {
             throw new NotImplementedException();
@@ -55,6 +62,11 @@ namespace ProgramableNetwork.ModuleTester
         }
 
         public void RemoveAndDestroyEntityNoChecks(IEntity entity, EntityRemoveReason reasonToRemove)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void TryReplaceEntity(IUpgradableEntity entity, IProtoWithUpgrade newProto, TileTransform? newTransform)
         {
             throw new NotImplementedException();
         }
