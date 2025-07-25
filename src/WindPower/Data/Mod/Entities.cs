@@ -38,7 +38,7 @@ namespace WindPower
                                         heightToExcl: 9,
                                         minTerrainHeight: -10,
                                         maxTerrainHeight: height - 1,
-                                        constraint: LayoutTileConstraint.NoRubbleAfterCollapse | LayoutTileConstraint.DisableTerrainPhysics
+                                        constraint: LayoutTileConstraint.NoRubbleAfterCollapse
                                     );
                                 })
                             ]
