@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -30,47 +31,35 @@ namespace MultiplayerContracts
             this.Entries = entries;
         }
 
-        [DataContract()]
         public class PQDes
         {
-            [DataMember] public string Product;
-            [DataMember] public int Quantity;
+            public string Product;
+            public int Quantity;
         }
 
-        [DataContract()]
         public class CPDes
         {
-            [DataMember] public PQDes Supply;
-            [DataMember] public PQDes Demand;
+            public PQDes Supply;
+            public PQDes Demand;
         }
 
-        [DataContract()]
         public class ICPDes
         {
-            [DataMember] public long Id;
-            [DataMember] public CPDes Params;
+            public long Id;
+            public CPDes Params;
         }
 
-        [DataContract()]
         public class CLDes
         {
-            [DataMember] public List<long> Owned;
-            [DataMember] public List<long> Claimable;
-            [DataMember] public List<long> Available;
-            [DataMember] public List<ICPDes> Entries;
+            public List<long> Owned;
+            public List<long> Claimable;
+            public List<long> Available;
+            public List<ICPDes> Entries;
         }
 
         public static ContractLists ParseJSON(string jsonString, ProtosDb protosDb)
         {
-            MemoryStream memoryStream = new MemoryStream();
-            StreamWriter writer = new StreamWriter(memoryStream);
-            writer.Write(jsonString);
-            writer.Flush();
-            memoryStream.Position = 0;
-
-            DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(CLDes));
-
-            CLDes d = (CLDes)serializer.ReadObject(memoryStream);
+            CLDes d = JsonConvert.DeserializeObject<CLDes>(jsonString);
             ContractLists cl = new ContractLists();
             cl.Owned.AddRange(d.Owned);
             cl.Claimable.AddRange(d.Claimable);

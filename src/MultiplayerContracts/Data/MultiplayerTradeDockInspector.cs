@@ -70,7 +70,7 @@ namespace MultiplayerContracts.Data
                         if (m_isNotResponding)
                         {
                             Status.As("Market does not responding".AsLoc(), DisplayState.Danger);
-                            return new Mafi.Core.Utils.BoolWithReason(false, "Market does not responding".AsLoc());
+                            return new Mafi.Core.Utils.BoolWithReason(true, "Market does not responding".AsLoc());
                         }
 
                         Status.As(Tr.EntityStatus__Working, DisplayState.Positive);
@@ -92,6 +92,7 @@ namespace MultiplayerContracts.Data
             // observe offers
             this.Observe(() => m_list.Available)
                 .Do(list => {
+                    Log.Debug("Offers changed");
                     m_marketList.Clear();
 
                     Grid takeList = new Grid(2, 5.px(), 5.px());
@@ -108,6 +109,7 @@ namespace MultiplayerContracts.Data
             this.Observe(() => m_list.Claimable)
                 .Observe(() => m_list.Owned)
                 .Do((claimable, waiting) => {
+                    Log.Debug("Claimable/Revocable changed");
                     m_offerList.Clear();
 
                     // Add creator
@@ -177,6 +179,9 @@ namespace MultiplayerContracts.Data
                     if (newKey.IsFaulted || newKey.IsCanceled)
                     {
                         m_isRefeshing = false;
+                        m_isNotResponding = true;
+                        Log.Error("Registration failed");
+                        Log.Error(newKey.Exception?.Message ?? newKey.Result);
                         return;
                     }
 
@@ -187,10 +192,13 @@ namespace MultiplayerContracts.Data
                                     Entity.Authorization)
                         .ContinueWith(list =>
                         {
-                            if (list.IsFaulted || list.IsCanceled)
+                            if (list.IsFaulted || list.IsCanceled || list.Result is null)
                             {
                                 m_list = new ContractLists();
                                 m_isRefeshing = false;
+                                m_isNotResponding = true;
+                                Log.Error("Getting list failed");
+                                Log.Error(list.Exception?.Message ?? "");
                                 return;
                             }
 
@@ -202,6 +210,7 @@ namespace MultiplayerContracts.Data
                             m_newClaims = false;
 
                             m_isRefeshing = false;
+                            m_isNotResponding = false;
                         });
                 });
         }

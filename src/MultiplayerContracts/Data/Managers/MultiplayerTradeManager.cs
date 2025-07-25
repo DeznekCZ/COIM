@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -77,7 +78,7 @@ namespace MultiplayerContracts
                     else if (t.Result.Item1 != HttpStatusCode.OK)
                     {
                         Log.Error($"Request failed: {t.Result.Item1}");
-                        return new ContractLists();
+                        return null;
                     }
                     else {
                         return ContractLists.ParseJSON(t.Result.Item2, m_protosDb);
@@ -163,39 +164,39 @@ namespace MultiplayerContracts
             });
         }
 
-        private static Task<(HttpStatusCode, string)> Get(string request, string authorization = null, int timeout = 3000)
+        private static async Task<(HttpStatusCode, string)> Get(string request, string authorization = null, int timeout = 3000)
         {
-            return Task.Run(() =>
+            HttpClient httpClient = new HttpClient();
+            HttpRequestMessage webRequest = null;
+            HttpResponseMessage webResponse = null;
+            try
             {
-                try
-                {
-                    Log.Debug(request + " init");
-                    HttpWebRequest webRequest = WebRequest.CreateHttp(request);
+                Log.Info(request + " init");
+                webRequest = new HttpRequestMessage(HttpMethod.Get, request);
+                if (authorization != null)
+                    webRequest.Headers.TryAddWithoutValidation("Authorization", authorization);
 
-                    webRequest.Method = "GET";
-                    webRequest.Timeout = timeout;
-                    webRequest.ReadWriteTimeout = timeout;
-                    if (authorization != null)
-                        webRequest.Headers.Add("Authorization", authorization);
+                Log.Info(request + " created");
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.CancelAfter(timeout);
+                webResponse = await httpClient.SendAsync(webRequest, cts.Token);
 
-                    Log.Debug(request + " created");
-                    HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse();
-                    Log.Debug(request + " recived");
-                    using (var stream = webResponse.GetResponseStream())
-                    {
-                        byte[] newBytes = new byte[webResponse.ContentLength];
-                        int len = stream.Read(newBytes, 0, newBytes.Length);
+                Log.Info(request + " recived");
+                string text = await webResponse.Content.ReadAsStringAsync();
 
-                        Log.Debug(request + " read");
-                        return (webResponse.StatusCode, Encoding.UTF8.GetString(newBytes, 0, len));
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.Exception(e);
-                    return (HttpStatusCode.RequestTimeout, "");
-                }
-            });
+                Log.Info(request + " read");
+                return (webResponse.StatusCode, text);
+            }
+            catch (TaskCanceledException e)
+            {
+                return (HttpStatusCode.RequestTimeout, "");
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Failed with {(webResponse?.StatusCode.ToString() ?? "Not responded")}");
+                Log.Exception(e);
+                return (HttpStatusCode.InternalServerError, "");
+            }
         }
 
         public static Task<bool> TakeContract(string address, string authorization, long contractId)
