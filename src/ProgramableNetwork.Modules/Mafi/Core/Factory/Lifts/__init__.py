@@ -18,7 +18,6 @@ class Lift:
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None

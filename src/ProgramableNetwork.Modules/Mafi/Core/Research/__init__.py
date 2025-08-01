@@ -109,16 +109,14 @@ class ResearchNodeState:
 class ResearchNode:
 
     def __init__(self):
-        from Mafi import Fix32
-        self.RemainingSteps = Fix32()
-        self.ScienceCost = int(0)
+        self.RemainingSteps = None
+        self.ScienceCost = None
+        self.BaseScienceCost = None
         self.ScienceCostLocStr = None
         self.Proto = None
-        from Mafi import Fix32
-        self.StepsDone = Fix32()
+        self.StepsDone = None
         self.State = None
         self.IsLockedByCondition = False
-        self.LockedByConditions = None
         self.Children = None
         self.Parents = None
         self.AnyParentCanUnlock = False

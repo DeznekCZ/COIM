@@ -5,7 +5,6 @@ class PortShapesData:
 
 class TransportsData:
     CIRCLE_SHARPNESS = None
-    SEGMENTS_COUNT = None
     PILLAR_RANGE = None
     MAX_LIFT_HEIGHT_DELTA = None
 

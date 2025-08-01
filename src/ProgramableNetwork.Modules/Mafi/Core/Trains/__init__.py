@@ -106,14 +106,12 @@ class CargoWagon:
         self.Cargo = None
         from Mafi import Option
         self.OnlyAllowedProduct = Option()
+        self.CargoQuantity = None
         self.Capacity = None
-        self.UsableCapacity = None
         self.IsEmpty = False
         self.IsNotEmpty = False
         self.IsFull = False
         self.IsNotFull = False
-        from Mafi import Option
-        self.AlignedStation = Option()
         self.Maintenance = None
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
@@ -149,10 +147,9 @@ class CargoWagon:
         self.IsNotPaused = False
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
-class CargoWagonLoose:
+class SubCargoWagon:
 
     def __init__(self):
-        self.Prototype = None
         self.Cargo = None
         from Mafi import Option
         self.OnlyAllowedProduct = Option()
@@ -164,6 +161,20 @@ class CargoWagonLoose:
         self.IsNotFull = False
         from Mafi import Option
         self.AlignedStation = Option()
+        self.PercentFull = None
+class CargoWagonLoose:
+
+    def __init__(self):
+        self.Prototype = None
+        self.Cargo = None
+        from Mafi import Option
+        self.OnlyAllowedProduct = Option()
+        self.CargoQuantity = None
+        self.Capacity = None
+        self.IsEmpty = False
+        self.IsNotEmpty = False
+        self.IsFull = False
+        self.IsNotFull = False
         self.Maintenance = None
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
@@ -206,14 +217,12 @@ class CargoWagonUnit:
         self.Cargo = None
         from Mafi import Option
         self.OnlyAllowedProduct = Option()
+        self.CargoQuantity = None
         self.Capacity = None
-        self.UsableCapacity = None
         self.IsEmpty = False
         self.IsNotEmpty = False
         self.IsFull = False
         self.IsNotFull = False
-        from Mafi import Option
-        self.AlignedStation = Option()
         self.Maintenance = None
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
@@ -334,7 +343,6 @@ class LayoutEntityWithTrainTrackBase:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -392,7 +400,6 @@ class LevelCrossing:
         self.RoadLanesCount = int(0)
         self.NumberOfPassedTrains = int(0)
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -435,7 +442,6 @@ class LevelCrossingEntrance:
         self.RoadLanesCount = int(0)
         self.RoadProto = None
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -825,6 +831,18 @@ class SetTrainScheduleItemProductFilterCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class SetTrainSchedulePriority:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class SetTrainScheduleSkipIfHighFuelCmd:
 
     def __init__(self):
@@ -1066,7 +1084,9 @@ class Train:
         self.Position3f = None
         self.TrainId = None
         self.TrainCarsCount = int(0)
+        self.TrainSubCarsCount = int(0)
         self.TrainCars = None
+        self.TrainSubCars = None
         self.Locomotives = None
         self.CargoWagons = None
         self.TrainCarsDataInDriveOrder = None
@@ -1197,6 +1217,11 @@ class TrainCarBase:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
+class TrainSubCarBase:
+
+    def __init__(self):
+        pass
+
 class TrainColor:
 
     def __init__(self):
@@ -1287,7 +1312,6 @@ class TrainDepot:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1344,7 +1368,6 @@ class TrainDepotExtension:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1523,7 +1546,6 @@ class TrainStationBase:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1621,10 +1643,12 @@ class TrainStationModuleSetProductCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class TrainStationScheduleItem:
+    DEFAULT_PRIORITY = None
 
     def __init__(self):
         self.IndexInSchedule = int(0)
         self.StationRoots = None
+        self.StationPriorities = None
         self.SkipIfFuelHigherThan = None
         self.DisableLoad = False
         self.DisableUnload = False
@@ -1653,7 +1677,6 @@ class TrainTrack:
         self.CanBePaused = False
         self.PillarBlocksBitmap = None
         self.Pillars = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -1715,7 +1738,6 @@ class TrainTrackPillar:
         self.CanBePaused = False
         self.VehicleSurfaceHeights = None
         self.PfTargetTiles = None
-        self.Value = None
         self.ConstructionCost = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -1833,6 +1855,7 @@ class CargoWagonProto:
     def __init__(self):
         self.EntityType = None
         self.Capacity = None
+        self.SubCarCapacity = None
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
         self.Id = None
@@ -1855,6 +1878,7 @@ class CargoWagonUnitProto:
     def __init__(self):
         self.EntityType = None
         self.Capacity = None
+        self.SubCarCapacity = None
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
         self.Id = None
@@ -1885,6 +1909,7 @@ class CargoWagonLooseProto:
     def __init__(self):
         self.EntityType = None
         self.Capacity = None
+        self.SubCarCapacity = None
         self.IconPath = str(0)
         self.BogiePivotsDistance = None
         self.Id = None
@@ -2040,7 +2065,6 @@ class IEntityWithTrainTrack:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2085,7 +2109,6 @@ class INotifyTrainApproachingEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2135,7 +2158,6 @@ class IEntityWithTrainTrackFriend:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2197,7 +2219,6 @@ class ITrainDepot:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2571,7 +2592,6 @@ class ITrainDepotExtensionParent:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2760,6 +2780,7 @@ class ITrainScheduleItem:
         self.IndexInSchedule = int(0)
         self.StationRoots = None
         self.DepartConditions = None
+        self.StationPriorities = None
         self.LoadOnlyProducts = None
         self.UnloadOnlyProducts = None
         self.DisableLoad = False
@@ -2877,7 +2898,6 @@ class ITrainStationBase:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2926,7 +2946,6 @@ class ITrainStationRoot:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -2980,7 +2999,6 @@ class ITrainStationModule:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -3034,7 +3052,6 @@ class ITrainStationModuleFriend:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -3081,7 +3098,6 @@ class ITrainStationFuel:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option

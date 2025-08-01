@@ -453,11 +453,12 @@ class Fix64:
     Eight = None
     Epsilon = None
     EpsilonNear = None
+    EpsilonNearFix32 = None
+    EpsilonFix32NearOneSqr = None
     MinValue = None
     MaxValue = None
     MinIntValue = None
     MaxIntValue = None
-    EpsilonFix32NearOneSqr = None
     Tau = None
     TauOver4 = None
     Sqrt2 = None
@@ -596,10 +597,6 @@ class Make:
         pass
 
 class AngleDegrees1f:
-    Zero = None
-    MinValue = None
-    MaxValue = None
-    Epsilon = None
     HalfDegree = None
     OneDegree = None
     Deg22Point5 = None
@@ -610,6 +607,10 @@ class AngleDegrees1f:
     Deg270 = None
     Deg360 = None
     Deg720 = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
+    Epsilon = None
 
     def __init__(self):
         from Mafi import Fix32
@@ -718,13 +719,13 @@ class ColorRgba:
     from Mafi import ColorRgba
     Empty = ColorRgba(0, 0, 0, 0)
 
-    def __init__(self):
-        self.R = None
-        self.G = None
-        self.B = None
-        self.A = None
-        self.IsEmpty = False
-        self.IsNotEmpty = False
+    def __init__(self, r, g, b, a = 255):
+        self.R = r
+        self.G = g
+        self.B = b
+        self.A = a
+        self.Rgba = int(str(r,16) + str(g,16) + str(b,16) + str(a,16), 16)
+
 class ColorRgbaExtensions:
 
     def __init__(self):
@@ -1781,6 +1782,17 @@ class SaveVersion:
     BRANCH_MAP = None
     CURRENT_SAVE_VERSION = None
     MIN_COMPATIBLE_SAVE_VERSION = None
+    V245_MORE_MIXED_PRODUCTS = None
+    V244_FIX_SCIENCE_COST = None
+    V243_REPLACE3 = None
+    V242_MORE_MAX_PRODUCTS = None
+    V241_REPLACE2 = None
+    V240_LAST_TRANSPORT_TIER = None
+    V239_REPLACE = None
+    V238_TRAIN_STATION_PRIORITY = None
+    V237_T2_TRAINS = None
+    V236_TRANSPORT_OPT = None
+    V235_SURFACE_HOLES = None
     V234_THERMAL_STORAGE_NOTIF = None
     V233_TRAIN_RESERVATION_REVAMP = None
     V232_BETTER_UNLOCKED_PROTOS = None
@@ -2196,14 +2208,14 @@ class RecipeProtoBuilderExtensions:
         pass
 
 class BattleTriggerPriority:
-    Zero = None
-    MinValue = None
-    MaxValue = None
     Highest = None
     Fleet = None
     Building = None
     Lowest = None
     NotSupported = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.Abs = None
@@ -2367,15 +2379,15 @@ class ComputingExtensions:
         pass
 
 class Duration:
-    Zero = None
-    MinValue = None
-    MaxValue = None
     OneTick = None
     OneSecond = None
     OneMinute = None
     OneDay = None
     OneMonth = None
     OneYear = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
     TICKS_PER_YEAR = None
 
     def __init__(self):
@@ -2436,12 +2448,12 @@ class Fix64CoreExtensions:
         pass
 
 class Frequency:
-    Zero = None
-    MinValue = None
-    MaxValue = None
     None = None
     EveryTick = None
     EverySecond = None
+    Zero = None
+    MinValue = None
+    MaxValue = None
 
     def __init__(self):
         self.SecondsFloored = int(0)
@@ -2455,10 +2467,10 @@ class Frequency:
         self.IsNotNegative = False
         self.Squared = None
 class GameDate:
+    Inception = None
     Zero = None
     MinValue = None
     MaxValue = None
-    Inception = None
     FIRST_YEAR_NUMBER = None
 
     def __init__(self):
@@ -2539,10 +2551,10 @@ class HeightTilesF:
         self.TilesHeightRounded = None
         self.MissingThicknessToTile = None
 class HeightTilesI:
+    One = None
     Zero = None
     MinValue = None
     MaxValue = None
-    One = None
 
     def __init__(self):
         self.Abs = None
@@ -2561,10 +2573,10 @@ class HeightTilesISlim:
     def __init__(self):
         self.AsHeightTilesI = None
 class MechPower:
+    OneKw = None
     Zero = None
     MinValue = None
     MaxValue = None
-    OneKw = None
 
     def __init__(self):
         self.Abs = None
@@ -2580,11 +2592,11 @@ class MechPower:
         from Mafi import Fix32
         self.ToMwSeconds = Fix32()
 class PartialQuantity:
+    One = None
     Zero = None
     MinValue = None
     MaxValue = None
     Epsilon = None
-    One = None
 
     def __init__(self):
         self.Abs = None
@@ -2637,10 +2649,10 @@ class Quantity:
         self.AsPartial = None
         self.Times2Fast = None
 class QuantityLarge:
+    One = None
     Zero = None
     MinValue = None
     MaxValue = None
-    One = None
 
     def __init__(self):
         self.Abs = None
@@ -2681,11 +2693,11 @@ class RelGameDate:
         self.Years = int(0)
 class RelTile1f:
     Zero = None
-    Two = None
     MinValue = None
     MaxValue = None
     Epsilon = None
     One = None
+    Two = None
     Half = None
     Third = None
     Quarter = None
@@ -3357,10 +3369,10 @@ class TileInChunk2iSlimAssertions:
 
 class Upoints:
     Zero = None
-    One = None
     MinValue = None
     MaxValue = None
     Epsilon = None
+    One = None
 
     def __init__(self):
         self.Abs = None

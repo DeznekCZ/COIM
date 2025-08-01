@@ -23,7 +23,6 @@ class DataCenter:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None

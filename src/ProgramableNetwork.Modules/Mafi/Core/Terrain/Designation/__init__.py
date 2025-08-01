@@ -58,6 +58,18 @@ class BatchRemoveSurfaceDecalCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class BatchRemoveSurfacePlacingDesignationsCmd:
+
+    def __init__(self):
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.AffectsSaveState = False
+        self.IsVerificationCmd = False
+        self.Result = None
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class DesignationData:
 
     def __init__(self):
@@ -68,6 +80,18 @@ class DesignationData:
         self.WithinChunkRelCoord = None
         self.WithinChunkRelIndex = int(0)
         self.ChunkCoord = None
+class PasteSurfaceDesignationsCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class RemoveDesignationsCmd:
 
     def __init__(self):

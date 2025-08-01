@@ -6,6 +6,8 @@ class ElectricityGeneratorFromMechPower:
         self.CanBePaused = False
         self.ElectricityGenerator = None
         self.Maintenance = None
+        self.UpgradableProto = None
+        self.Prototype = None
         self.MaxGenerationCapacity = None
         self.UsedMechPowerThisTick = None
         self.GeneratedElectricityThisTick = None
@@ -18,9 +20,7 @@ class ElectricityGeneratorFromMechPower:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
-        self.Prototype = None
         self.Transform = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -59,6 +59,8 @@ class ElectricityGeneratorFromProduct:
         self.Maintenance = None
         self.AreParticlesEnabled = False
         self.MaxGenerationCapacity = None
+        self.UpgradableProto = None
+        self.Prototype = None
         self.CanBePaused = False
         self.IsCargoAffectedByGeneralPriority = False
         self.CurrentProductLeft = None
@@ -78,9 +80,7 @@ class ElectricityGeneratorFromProduct:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
-        self.Prototype = None
         self.Transform = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -115,6 +115,7 @@ class ElectricityGeneratorFromProduct:
 class FlyWheelEntity:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         self.SoundParams = None
@@ -127,7 +128,6 @@ class FlyWheelEntity:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -159,9 +159,9 @@ class FlyWheelEntity:
 class MechPowerGeneratorFromProduct:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.Maintenance = None
         self.AnimationParams = None
         self.AnimationStatesProvider = None
@@ -181,7 +181,6 @@ class MechPowerGeneratorFromProduct:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -244,6 +243,7 @@ class ElectricityGeneratorFromMechPowerProto:
 
     def __init__(self):
         self.EntityType = None
+        self.Upgrade = None
         self.TierData = None
         self.OutputElectricity = None
         self.AnimationParams = None
@@ -293,6 +293,7 @@ class ElectricityGeneratorFromProductProto:
     def __init__(self):
         self.EntityType = None
         self.OutputElectricity = None
+        self.Upgrade = None
         self.TierData = None
         self.Duration = None
         self.AnimationParams = None
@@ -336,6 +337,8 @@ class FlyWheelEntityProto:
 
     def __init__(self):
         self.EntityType = None
+        self.Upgrade = None
+        self.TierData = None
         self.AnimationParams = None
         self.Layout = None
         self.Ports = None
@@ -380,7 +383,6 @@ class MechPowerGeneratorFromProductProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.AnimationParams = None
         self.Recipe = None

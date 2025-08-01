@@ -92,6 +92,7 @@ namespace ProgramableNetwork.ModuleTester
                 upgradesManager: null, 
                 entitiesManager: manager,
                 assetTransactionManager: null,
+                virtualBuffersMap: null,
                 notificationsManager: new TestFactory(),
                 propertiesDb: null,
                 ioPortsManager: null,
@@ -110,7 +111,8 @@ namespace ProgramableNetwork.ModuleTester
                 occupancyManager: null,
                 airPollutionManager: null,
                 simLoopEvents: null,
-                logisticsZonesManager: null);
+                logisticsZonesManager: null,
+                layoutEntityAddRequestFactory: null);
 
             foreach (var item in registrator.PrototypesDb.All<ControllerProto>())
             {

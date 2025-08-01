@@ -84,7 +84,6 @@ class Stacker:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -160,9 +159,9 @@ class Transport:
 
     def __init__(self):
         self.LastInsertedProduct = None
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Value = None
         self.ConstructionCost = None
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
@@ -189,7 +188,6 @@ class Transport:
         self.IsMoving = False
         self.IsFullyConnected = False
         self.TransportManager = None
-        self.Upgrader = None
         self.Maintenance = None
         self.MaintenanceCosts = None
         self.DoNotAdjustTerrainDuringConstruction = False
@@ -318,6 +316,8 @@ class TransportedProductMutable:
 
     def __init__(self):
         self.Quantity = None
+        self.QuantityValue = int(0)
+        self.IsImmediatelyBehindNextProduct = False
 class TransportHelper:
 
     def __init__(self):
@@ -379,7 +379,6 @@ class TransportPillar:
         self.CanBePaused = False
         self.VehicleSurfaceHeights = None
         self.PfTargetTiles = None
-        self.Value = None
         self.ConstructionCost = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -460,7 +459,6 @@ class TransportProto:
         self.EntityType = None
         self.BaseMaintenanceCost = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.IconPath = str(0)
         self.CanGoUpDown = False
@@ -487,6 +485,11 @@ class Gfx:
         self.IconPath = str(0)
         self.Categories = None
 class TransportInstancedRenderingData:
+
+    def __init__(self):
+        pass
+
+class TransportCrossSectionLod:
 
     def __init__(self):
         pass
@@ -594,17 +597,12 @@ class SubTransport:
 class TransportUpgrader:
 
     def __init__(self):
-        self.UpgradeExists = False
-        from Mafi import Option
-        self.NextTier = Option()
-        self.PriceToUpgrade = None
-        self.ConstructionCostToUpgrade = None
-        self.UpgradeTitle = None
-        self.Icon = str(0)
+        self.CurrentProto = None
 class ITransportUpgraderFactory:
 
     def __init__(self):
-        self.EntityIdFactory = None
+        pass
+
 class TransportUpgraderFactory:
 
     def __init__(self):

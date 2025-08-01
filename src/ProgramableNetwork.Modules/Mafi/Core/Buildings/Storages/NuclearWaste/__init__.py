@@ -6,8 +6,8 @@ class NuclearWasteStorage:
         from Mafi import Option
         self.OutputBuffer = Option()
         self.DoNotSendRetiredWasteToOutputPort = False
+        self.UpgradableProto = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.ImportUntilPercent = None
         self.ExportFromPercent = None
         self.ZoneMask = None
@@ -51,7 +51,6 @@ class NuclearWasteStorage:
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None

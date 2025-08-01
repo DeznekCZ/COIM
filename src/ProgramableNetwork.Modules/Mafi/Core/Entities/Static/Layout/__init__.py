@@ -69,7 +69,6 @@ class LayoutEntity:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -103,7 +102,6 @@ class LayoutEntity:
 class LayoutEntityBase:
 
     def __init__(self):
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -134,6 +132,11 @@ class LayoutEntityBase:
         self.IsPaused = False
         self.IsNotPaused = False
         self.RendererData = None
+class EntityAddRequestFactoryData:
+
+    def __init__(self):
+        pass
+
 class LayoutEntityAddRequestFactory:
 
     def __init__(self):

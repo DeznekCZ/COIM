@@ -1,12 +1,12 @@
 class FuelStation:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         self.ZoneMask = None
         self.FuelProto = None
         self.StoredFuel = None
-        self.Upgrader = None
         self.AllowTrucksToRefuel = False
         self.AllVehicles = None
         self.CanRefuelOthers = False
@@ -32,7 +32,6 @@ class FuelStation:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -66,7 +65,6 @@ class FuelStationProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.Layout = None
         self.Ports = None

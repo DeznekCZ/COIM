@@ -1,6 +1,7 @@
 class ResearchLab:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         self.CurrentState = None
@@ -17,7 +18,6 @@ class ResearchLab:
         self.MaxMonthlyUnityConsumed = None
         self.MonthlyUnityConsumed = None
         self.UpointsCategoryId = None
-        self.Upgrader = None
         self.NotEnoughPower = False
         from Mafi import Option
         self.UnityConsumer = Option()
@@ -41,7 +41,6 @@ class ResearchLab:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -97,7 +96,6 @@ class ResearchLabProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ElectricityConsumed = None
         self.ComputingConsumed = None

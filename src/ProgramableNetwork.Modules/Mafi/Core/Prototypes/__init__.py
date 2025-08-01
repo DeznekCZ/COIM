@@ -164,7 +164,7 @@ class IProtoWithTiers:
 class IProtoWithUpgrade:
 
     def __init__(self):
-        self.UpgradeNonGeneric = None
+        self.Upgrade = None
         self.TierData = None
         self.IconPath = str(0)
         self.Strings = None
@@ -177,13 +177,6 @@ class IProtoWithUpgrade:
         self.IsLockedOrUnavailable = False
         self.IsInitialized = False
         self.Mod = None
-class IUpgradeData:
-
-    def __init__(self):
-        from Mafi import Option
-        self.NextTierNonGeneric = Option()
-        from Mafi import Option
-        self.PreviousTierNonGeneric = Option()
 class ITierData:
 
     def __init__(self):
@@ -197,6 +190,17 @@ class UpgradeExtensions:
     def __init__(self):
         pass
 
+class UpgradeData:
+
+    def __init__(self):
+        from Mafi import Option
+        self.NextTier = Option()
+        from Mafi import Option
+        self.PreviousTier = Option()
+        self.SkipFromReplaceFlow = False
+        self.CannotDowngrade = False
+        self.CannotSkipUpgrade = False
+        self.CannotMove = False
 class TierData:
 
     def __init__(self):

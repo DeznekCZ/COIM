@@ -2,7 +2,6 @@ class BarrierEntity:
 
     def __init__(self):
         self.CanBePaused = False
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -46,7 +45,6 @@ class CheatingProductsSourceSink:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -79,7 +77,6 @@ class RetainingWallEntity:
 
     def __init__(self):
         self.CanBePaused = False
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -113,8 +110,8 @@ class Statue:
 
     def __init__(self):
         self.CanBePaused = False
+        self.UpgradableProto = None
         self.Prototype = None
-        self.Upgrader = None
         self.Maintenance = None
         self.IsIdleForMaintenance = False
         self.IsActive = False
@@ -127,7 +124,6 @@ class Statue:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -165,9 +161,9 @@ class StatueOfMaintenanceManager:
 class TombOfCaptains:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.MaintenanceCosts = None
         self.Maintenance = None
         self.IsIdleForMaintenance = False
@@ -184,7 +180,6 @@ class TombOfCaptains:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -223,7 +218,6 @@ class UniversalProductsSink:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -267,7 +261,6 @@ class UniversalProductsSource:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -431,7 +424,6 @@ class StatueProto:
         self.Manager = Option()
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.Layout = None
         self.Ports = None
@@ -461,7 +453,6 @@ class TombOfCaptainsProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.Layout = None
         self.Ports = None

@@ -14,9 +14,9 @@ class IEntityWithBoost:
 class Machine:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.SoundParams = None
         self.EmissionIntensity = None
         self.MaxMonthlyUnityConsumed = None
@@ -56,7 +56,6 @@ class Machine:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -242,7 +241,6 @@ class MachineProto:
         self.ComputingConsumed = None
         self.Recipes = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False

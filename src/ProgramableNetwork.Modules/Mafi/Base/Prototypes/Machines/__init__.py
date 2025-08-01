@@ -2,9 +2,9 @@ class OceanLiquidDump:
 
     def __init__(self):
         self.ReservedOceanAreaState = None
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.SoundParams = None
         self.EmissionIntensity = None
         self.MaxMonthlyUnityConsumed = None
@@ -44,7 +44,6 @@ class OceanLiquidDump:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -83,9 +82,9 @@ class OceanWaterPump:
 
     def __init__(self):
         self.ReservedOceanAreaState = None
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.SoundParams = None
         self.EmissionIntensity = None
         self.MaxMonthlyUnityConsumed = None
@@ -125,7 +124,6 @@ class OceanWaterPump:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -168,10 +166,9 @@ class SolarElectricityGenerator:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.MaxOutputElectricity = None
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -213,7 +210,6 @@ class SolarElectricityGeneratorProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ElectricityProduced = None
         self.Layout = None
@@ -255,7 +251,6 @@ class OceanLiquidDumpProto:
         self.ComputingConsumed = None
         self.Recipes = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
@@ -294,7 +289,6 @@ class OceanWaterPumpProto:
         self.ComputingConsumed = None
         self.Recipes = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False

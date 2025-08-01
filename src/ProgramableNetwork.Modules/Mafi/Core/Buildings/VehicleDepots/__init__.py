@@ -2,6 +2,7 @@ class VehicleDepot:
 
     def __init__(self):
         self.CanBePaused = False
+        self.UpgradableProto = None
         self.Prototype = None
         self.ZoneMask = None
         self.SpawnPosition = None
@@ -11,7 +12,6 @@ class VehicleDepot:
         self.DespawnDrivePosition = None
         from Mafi import Option
         self.TargetLogisticsZone = Option()
-        self.Upgrader = None
         self.PowerRequired = None
         from Mafi import Option
         self.ElectricityConsumer = Option()
@@ -46,7 +46,6 @@ class VehicleDepot:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -80,6 +79,7 @@ class VehicleDepot:
 class VehicleDepotBase:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.ZoneMask = None
         self.SpawnPosition = None
@@ -89,7 +89,6 @@ class VehicleDepotBase:
         self.DespawnDrivePosition = None
         from Mafi import Option
         self.TargetLogisticsZone = Option()
-        self.Upgrader = None
         self.PowerRequired = None
         from Mafi import Option
         self.ElectricityConsumer = Option()
@@ -124,7 +123,6 @@ class VehicleDepotBase:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -179,7 +177,6 @@ class VehicleDepotBaseProto:
 
     def __init__(self):
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ElectricityConsumed = None
         self.BuildableEntities = None
@@ -222,7 +219,6 @@ class VehicleDepotProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ElectricityConsumed = None
         self.BuildableEntities = None

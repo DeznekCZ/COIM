@@ -10,6 +10,10 @@ class RenamedInVersionAttribute:
 
     def __init__(self):
         self.TypeId = None
+class ChangedTypeInVersionAttribute:
+
+    def __init__(self):
+        self.TypeId = None
 class GenerateSerializer:
 
     def __init__(self):

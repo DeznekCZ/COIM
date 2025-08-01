@@ -217,6 +217,7 @@ class TileSurfaceData:
         self.RampRotation = None
         self.IsRamp = False
         self.IsAutoPlaced = False
+        self.CanBePlaced = False
         self.DecalSlimId = None
         self.DecalRotation = None
         self.IsDecalFlipped = False

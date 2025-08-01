@@ -340,6 +340,7 @@ class Gfx:
         self.IconIsCustom = False
 class ProductSlimId:
     PhantomId = None
+    MAX_PRODUCT_ID = None
 
     def __init__(self):
         self.IsPhantom = False

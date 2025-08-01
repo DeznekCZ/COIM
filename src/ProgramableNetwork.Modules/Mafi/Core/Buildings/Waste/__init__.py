@@ -1,6 +1,7 @@
 class WasteSortingPlant:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.AnimationParams = None
         self.AnimationStatesProvider = None
@@ -10,7 +11,6 @@ class WasteSortingPlant:
         self.IsIdleForMaintenance = False
         self.CanBePaused = False
         self.CurrentState = None
-        self.Upgrader = None
         self.InputBuffers = None
         self.OutputBuffers = None
         self.CanDisableLogisticsInput = False
@@ -23,7 +23,6 @@ class WasteSortingPlant:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -74,7 +73,6 @@ class WasteSortingPlantProto:
         self.EntityType = None
         self.Duration = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ElectricityConsumed = None
         self.AnimationParams = None

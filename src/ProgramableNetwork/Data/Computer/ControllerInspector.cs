@@ -120,7 +120,7 @@ namespace ProgramableNetwork.Ui
                 .OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Open(context.UiRoot))
                 .OnMouseEnterLeave(AddPreviewHighlightAll, ClearPreviewHighlight);
 
-            m_colorButton = new ButtonIcon(UserInterface.General.Circle_svg);
+            m_colorButton = new ButtonIcon(UserInterface.Cursors.Paint32_png);
             m_colorButton.Observe(() => Entity.Color)
                        .Do(color => m_colorButton.Icon.Color(color));
 

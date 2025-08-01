@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ProgramableNetwork.Data.DisplayEntity
 {
-    public class DisplayEntityProto : LayoutEntityProto, ILayoutEntityProto, IProtoWithPropertiesUpdate, ILayoutEntityProtoWithElevation, IProtoWithTiers, IProtoWithUpgrade<DisplayEntityProto>
+    public class DisplayEntityProto : LayoutEntityProto, ILayoutEntityProto, IProtoWithPropertiesUpdate, ILayoutEntityProtoWithElevation, IProtoWithTiers, IProtoWithUpgrade
     {
         public override Type EntityType { get; } = typeof(DisplayEntity);
         public Electricity WorkingPower { get; }
@@ -19,8 +19,7 @@ namespace ProgramableNetwork.Data.DisplayEntity
         public bool CanBeElevated { get; }
         public bool CanPillarsPassThrough { get; }
         public ITierData TierData => Upgrade.TierData;
-        public IUpgradeData UpgradeNonGeneric => Upgrade;
-        public UpgradeData<DisplayEntityProto> Upgrade { get; }
+        public UpgradeData Upgrade { get; }
 
         public DisplayEntityProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics, Func<DisplayEntity, IDisplayEntityManager> manager,
             int tierNumber,
@@ -39,7 +38,7 @@ namespace ProgramableNetwork.Data.DisplayEntity
             this.DisplayManagerFactory = manager;
             this.CanBeElevated = canBeElevated;
             this.CanPillarsPassThrough = canPillarsPassTrough;
-            this.Upgrade = new UpgradeData<DisplayEntityProto>(this);
+            this.Upgrade = new UpgradeData(this);
             this.Upgrade.TierData.TierNumberForUi = tierNumber;
         }
     }

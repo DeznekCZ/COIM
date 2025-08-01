@@ -15,9 +15,9 @@ class NuclearReactor:
         self.MaxPowerLevel = int(0)
         self.MaxPowerLevelPercent = None
         self.MeltdownAtHeat = int(0)
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.LogisticsInputControl = None
         self.LogisticsOutputControl = None
         self.IsLogisticsInputDisabled = False
@@ -55,7 +55,6 @@ class NuclearReactor:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -170,7 +169,6 @@ class NuclearReactorProto:
         self.EntityType = None
         self.ComputingConsumed = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.Recipes = None
         self.Layout = None

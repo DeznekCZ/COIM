@@ -38,10 +38,11 @@ class FileType:
         pass
 
 class SaveFileInfo:
+    AUTOSAVE_SUFFIX = None
+    AUTOSAVE_WHEN_PAUSED_SUFFIX = None
 
     def __init__(self):
-        pass
-
+        self.IsAutoSave = False
 class SaveFileGroup:
 
     def __init__(self):
@@ -273,6 +274,7 @@ class TerrainTileSurfaces:
 
 class Notifications:
     UpgradeInProgress = None
+    DowngradeInProgress = None
     ConstructionPrioritized = None
     Homeless = None
     LowFoodSupply = None
@@ -614,6 +616,7 @@ class Tr:
     Km = None
     Kph = None
     Kn = None
+    Kw = None
     Tons = None
     OptionValStandard = None
     OptionValIncreased = None
@@ -796,6 +799,8 @@ class Tr:
     CameraSettings__Fov = None
     CameraSettings_EdgeScrolling = None
     CameraSettings_EdgeScrolling__Tooltip = None
+    CameraSettings_ConfineMouseCursor = None
+    CameraSettings_ConfineMouseCursor__Tooltip = None
     Scale = None
     Language = None
     RenderingSetting_Title = None
@@ -1026,6 +1031,7 @@ class Tr:
     Close = None
     Continue = None
     Upgrade = None
+    ReplaceAction = None
     Pause = None
     GoBack = None
     GoNext = None
@@ -1060,6 +1066,7 @@ class Tr:
     ReserveStatus = None
     QuickBuild__Action = None
     QuickBuild__NotAllowed = None
+    QuickBuild__NotEnoughProduct = None
     QuickRemove__Action = None
     EntityPropertyModifiers = None
     EntityPropertyNoModifiers = None
@@ -1080,6 +1087,10 @@ class Tr:
     VehiclesMaintenance = None
     QuickBuild__Tooltip = None
     QuickRemove__Tooltip = None
+    QuickRemoveAfterReplace__Tooltip = None
+    QuickReplaceAction__Tooltip = None
+    RefundAfterReplace__Label = None
+    RefundAfterReplace__Tooltip = None
     ConstructionState__WaitingForRemoval = None
     ConstructionState__WaitingForDelivery = None
     ConstructionState__Paused = None
@@ -1233,6 +1244,7 @@ class Tr:
     StoredProduct__KeepEmpty = None
     RetiredWaste__Tooltip = None
     RetiredWaste__NextDisposal = None
+    RetiredWaste__NoProduct = None
     OutputThisProductOnly = None
     OutputThisProductOnly__Tooltip = None
     StoredHeat__Title = None
@@ -1781,7 +1793,8 @@ class Tr:
     UnityTool = None
     CopyTool = None
     CutTool = None
-    UpgradeTool = None
+    ReplaceTool = None
+    SelectReplacement_Title = None
     PropsRemovalTool = None
     PolygonAreaTool__Confirm__Tooltip = None
     PolygonAreaTool__AddPoint__Tooltip = None
@@ -1994,7 +2007,6 @@ class Tr:
     DecreasePriority = None
     FollowVehicleTooltip = None
     FollowTrainTooltip = None
-    ManualSaveInProgress = None
     Notifications__Mute = None
     Notifications__Unmute = None
     Notifications__NoNew = None
@@ -2030,7 +2042,16 @@ class Tr:
     MatchesFound = None
     CopyTool__Tooltip = None
     CopyTool__NoCopyTooltip = None
+    ToolFilter__EntitiesTooltip = None
+    ToolFilter__SurfaceTooltip = None
+    ToolFilter__DecalsTooltip = None
     PlaceMultipleTooltip = None
+    HoldToPlace__part1 = None
+    HoldToPlace__part2Collision = None
+    HoldToPlace__part2Replace = None
+    ReplacingStructure_Disclaimer = None
+    MovingStructure_Disclaimer = None
+    NumberOfItemsToDeconstruct = None
     CutTool__Tooltip = None
     PauseTool__Tooltip = None
     UpgradeTool__Tooltip = None
@@ -2090,6 +2111,7 @@ class Tr:
     Blueprint__PlacementWarning = None
     Blueprint__PlacementWarningMissing = None
     Blueprint__PlacementWarningDowngrade = None
+    Blueprint__DeconstructionModeTooltip = None
     NewFolder__Tooltip = None
     Blueprint_ExportToStringTooltip = None
     UpdateDescription__Tooltip = None
@@ -2333,7 +2355,11 @@ class Tr:
     TrainProperty_Capacity = None
     TrainProperty_RunningCost = None
     TrainProperty_Length = None
+    TrainCarProperty_Power = None
+    TrainCarProperty_StartingTraction = None
+    TrainCarProperty_BrakeForce = None
     TrainDesigner_Speeds__Title = None
+    TrainDesigner_SpeedsBenchmark__Explanation = None
     TrainDesigner_MaxSpeed__Title = None
     TrainDesigner_TimeToTravel__Title = None
     TrainDesigner_Speed_Flat = None

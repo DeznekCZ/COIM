@@ -2,9 +2,9 @@ class Hospital:
 
     def __init__(self):
         self.ProvidedNeed = None
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.PowerRequired = None
         self.EmissionIntensity = None
         self.AnimationParams = None
@@ -31,7 +31,6 @@ class Hospital:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -79,7 +78,6 @@ class HospitalProto:
         self.EntityType = None
         self.PopsNeed = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.AnimationParams = None
         self.Layout = None
@@ -172,7 +170,6 @@ class ISettlementSquareModule:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -283,15 +280,14 @@ class DailyUpointsRecord:
 class SettlementDecorationModule:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         from Mafi import Option
         self.Settlement = Option()
-        self.Upgrader = None
         self.AreParticlesEnabled = False
         self.CoreSize = None
         self.Position = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -325,7 +321,6 @@ class SettlementDecorationModuleProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.Layout = None
         self.Ports = None
@@ -353,12 +348,12 @@ class SettlementDecorationModuleProto:
 class SettlementFoodModule:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         self.Settlement = None
         self.CurrentState = None
         self.IsOperational = False
-        self.Upgrader = None
         self.BuffersPerSlot = None
         self.SupportedProducts = None
         self.CanDisableLogisticsInput = False
@@ -371,7 +366,6 @@ class SettlementFoodModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -419,7 +413,6 @@ class SettlementFoodModuleProto:
         self.EntityType = None
         self.StayConnectedToLogisticsByDefault = False
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.Layout = None
         self.Ports = None
@@ -452,11 +445,11 @@ class SettlementHousingEntityFactory:
 class SettlementHousingModule:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         from Mafi import Option
         self.Settlement = Option()
-        self.Upgrader = None
         self.AchievedUnityIncreaseIndexLastUpdate = int(0)
         self.Population = int(0)
         self.Capacity = int(0)
@@ -469,7 +462,6 @@ class SettlementHousingModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -503,7 +495,6 @@ class SettlementHousingModuleProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.Layout = None
         self.Ports = None
@@ -570,7 +561,6 @@ class SettlementIspModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -717,7 +707,6 @@ class SettlementServiceModule:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -808,7 +797,6 @@ class SettlementTransformer:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -896,7 +884,6 @@ class SettlementWasteModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None

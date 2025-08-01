@@ -6,7 +6,6 @@ class MiniZipper:
         self.TotalQuantityInBuffers = None
         self.MaxBufferSize = None
         self.OutputPortsConnected = int(0)
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -91,7 +90,6 @@ class Zipper:
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None

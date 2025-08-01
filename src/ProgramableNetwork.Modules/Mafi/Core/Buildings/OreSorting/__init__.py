@@ -4,6 +4,7 @@ class OreSortingPlant:
     def __init__(self):
         self.OutputPortsCount = int(0)
         self.ZoneMask = None
+        self.UpgradableProto = None
         self.Prototype = None
         self.AnimationParams = None
         self.AnimationStatesProvider = None
@@ -40,7 +41,6 @@ class OreSortingPlant:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -111,6 +111,7 @@ class OreSortingPlantProto:
         self.QuantityPerDuration = None
         self.ElectricityConsumed = None
         self.AnimationParams = None
+        self.Upgrade = None
         self.TierData = None
         self.Layout = None
         self.Ports = None

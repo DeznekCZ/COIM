@@ -36,6 +36,42 @@ class SetPlanningModeEnabledCmd:
         self.Result = False
         self.HasError = False
         self.ErrorMessage = str(0)
+class UpgradeEntityCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class ReplaceEntityCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
+class QuickRemoveEntityRefundCmd:
+
+    def __init__(self):
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = str(0)
 class SetConstructionPausedCmd:
 
     def __init__(self):
@@ -90,18 +126,6 @@ class ToggleEnabledGroupCmd:
         self.HasError = False
         self.ErrorMessage = str(0)
 class SetEntityEnabledCmd:
-
-    def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = str(0)
-class UpgradeEntityCmd:
 
     def __init__(self):
         self.AffectsSaveState = False
@@ -377,7 +401,6 @@ class IAreaSelectableStaticEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -577,7 +600,6 @@ class IEntityWithOutputToTerrain:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -655,21 +677,13 @@ class IObjectWithTitle:
 class IUpgradableEntity:
 
     def __init__(self):
-        self.Upgrader = None
-        self.Id = None
+        self.UpgradableProto = None
         self.Prototype = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
-        self.DefaultTitle = None
         self.CenterTile = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -682,28 +696,23 @@ class IUpgradableEntity:
         self.Position2f = None
         self.Position3f = None
         self.RendererData = None
-class IEntityWithUpgrader:
-
-    def __init__(self):
-        self.Upgrader = None
         self.Id = None
-        self.Prototype = None
         self.Context = None
         self.IsEnabled = False
         self.IsPaused = False
         self.CanBePaused = False
         self.IsDestroyed = False
         self.DefaultTitle = None
+class IEntityWithReplaceVerification:
+
+    def __init__(self):
+        pass
+
 class IUpgrader:
 
     def __init__(self):
-        self.PriceToUpgrade = None
-        self.ConstructionCostToUpgrade = None
-        self.UpgradeExists = False
-        self.UpgradeTitle = None
-        from Mafi import Option
-        self.NextTier = Option()
-        self.Icon = str(0)
+        pass
+
 class ParticlesParams:
 
     def __init__(self):

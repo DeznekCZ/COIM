@@ -83,8 +83,8 @@ class MaintenanceDepot:
 
     def __init__(self):
         self.Prototype = None
+        self.UpgradableProto = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.SoundParams = None
         self.EmissionIntensity = None
         self.MaxMonthlyUnityConsumed = None
@@ -124,7 +124,6 @@ class MaintenanceDepot:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -167,7 +166,6 @@ class MaintenanceDepotProto:
         self.ComputingConsumed = None
         self.Recipes = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False

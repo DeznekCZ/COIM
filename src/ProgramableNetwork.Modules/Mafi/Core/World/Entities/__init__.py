@@ -16,6 +16,10 @@ class WorldMapCargoShipWreck:
         self.IsOwnedByPlayer = False
         self.CanBePaused = False
         self.CostToRepair = None
+        self.PriceToUpgrade = None
+        self.UpgradeTitle = None
+        self.UpgradeExists = False
+        self.UpgradeIcon = str(0)
         self.OnConstructionDone = None
         self.OnAllConstructionProductsAvailable = None
         self.IsBeingRepaired = False
@@ -35,14 +39,6 @@ class WorldMapCargoShipWreck:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
-        self.Upgrader = None
-        self.PriceToUpgrade = None
-        self.ConstructionCostToUpgrade = None
-        self.UpgradeExists = False
-        self.UpgradeTitle = None
-        from Mafi import Option
-        self.NextTier = Option()
-        self.Icon = str(0)
 class WorldMapEntity:
 
     def __init__(self):
@@ -88,7 +84,6 @@ class WorldMapMine:
         self.UpgradeTitle = None
         self.UpgradeExists = False
         self.UpgradeIcon = str(0)
-        self.Upgrader = None
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
@@ -113,10 +108,6 @@ class WorldMapMine:
         self.HasWorkersCached = False
         self.MaintenanceCosts = None
         self.IsIdleForMaintenance = False
-        self.ConstructionCostToUpgrade = None
-        from Mafi import Option
-        self.NextTier = Option()
-        self.Icon = str(0)
 class State:
     None = None
     Broken = None
@@ -169,7 +160,6 @@ class WorldMapVillage:
         self.UpgradeTitle = None
         self.UpgradeExists = False
         self.UpgradeIcon = str(0)
-        self.Upgrader = None
         self.IsOwnedByPlayer = False
         self.OnConstructionDone = None
         self.OnAllConstructionProductsAvailable = None
@@ -190,10 +180,6 @@ class WorldMapVillage:
         self.IsNotEnabled = False
         self.IsPaused = False
         self.IsNotPaused = False
-        self.ConstructionCostToUpgrade = None
-        from Mafi import Option
-        self.NextTier = Option()
-        self.Icon = str(0)
 class DefaultWorldMapEntityFactory:
 
     def __init__(self):

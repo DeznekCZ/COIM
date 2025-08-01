@@ -250,9 +250,9 @@ class VehicleCargo:
     MAX_MIXED_PRODUCT_COUNT = None
 
     def __init__(self):
+        self.TotalQuantity = None
         self.IsEmpty = False
         self.IsNotEmpty = False
-        self.TotalQuantity = None
         self.FirstOrPhantom = None
         self.Count = int(0)
         self.LifetimeLoadedQuantity = None
@@ -378,7 +378,6 @@ class IZoneMaskObserver:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option

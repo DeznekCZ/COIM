@@ -1,10 +1,10 @@
 class CaptainOffice:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         self.CurrentState = None
-        self.Upgrader = None
         from Mafi import Option
         self.ElectricityConsumer = Option()
         self.IsActive = False
@@ -15,7 +15,6 @@ class CaptainOffice:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -70,7 +69,6 @@ class CaptainOfficeProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ElectricityConsumed = None
         self.Layout = None
@@ -99,13 +97,13 @@ class CaptainOfficeProto:
 class OfficeBuilding:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         self.CurrentState = None
         self.FocusPointsLastTick = int(0)
         self.FocusPointsMaxAvailable = int(0)
         self.PointsMultiplier = None
-        self.Upgrader = None
         self.Maintenance = None
         from Mafi import Option
         self.ElectricityConsumer = Option()
@@ -126,7 +124,6 @@ class OfficeBuilding:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -177,7 +174,6 @@ class OfficeBuildingProto:
 
     def __init__(self):
         self.EntityType = None
-        self.UpgradeNonGeneric = None
         self.Upgrade = None
         self.TierData = None
         self.ElectricityConsumed = None

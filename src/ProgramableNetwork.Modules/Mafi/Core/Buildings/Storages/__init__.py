@@ -45,7 +45,6 @@ class NuclearWasteStorageProto:
         self.Recipes = None
         self.StorableProducts = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ProductType = None
         self.Layout = None
@@ -76,9 +75,9 @@ class Storage:
     EXPORT_PRIO_ID = None
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.ImportUntilPercent = None
         self.ExportFromPercent = None
         self.ZoneMask = None
@@ -122,7 +121,6 @@ class Storage:
         self.GeneralPriority = int(0)
         self.IsCargoAffectedByGeneralPriority = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -244,7 +242,6 @@ class StorageBase:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -379,7 +376,6 @@ class FluidStorageProto:
         self.EntityType = None
         self.StorableProducts = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ProductType = None
         self.Layout = None
@@ -421,7 +417,6 @@ class LooseStorageProto:
         self.EntityType = None
         self.StorableProducts = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ProductType = None
         self.Layout = None
@@ -463,7 +458,6 @@ class UnitStorageProto:
         self.EntityType = None
         self.StorableProducts = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ProductType = None
         self.Layout = None
@@ -520,7 +514,6 @@ class StorageProto:
         self.EntityType = None
         self.StorableProducts = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ProductType = None
         self.Layout = None

@@ -35,6 +35,7 @@ class IEntityAddRequest:
 class IEntityWithOccupiedTilesAddRequest:
 
     def __init__(self):
+        self.Proto = None
         self.Origin = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -47,6 +48,7 @@ class ILayoutEntityAddRequest:
     def __init__(self):
         self.Transform = None
         self.Layout = None
+        self.Proto = None
         self.Origin = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None

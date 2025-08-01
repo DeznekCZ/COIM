@@ -7,6 +7,7 @@ class RocketAssemblyBuilding:
         self.RocketRaisePerc = None
         from Mafi import Option
         self.AttachedRocketBase = Option()
+        self.UpgradableProto = None
         self.Prototype = None
         self.ZoneMask = None
         self.SpawnPosition = None
@@ -16,7 +17,6 @@ class RocketAssemblyBuilding:
         self.DespawnDrivePosition = None
         from Mafi import Option
         self.TargetLogisticsZone = Option()
-        self.Upgrader = None
         self.PowerRequired = None
         from Mafi import Option
         self.ElectricityConsumer = Option()
@@ -51,7 +51,6 @@ class RocketAssemblyBuilding:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -87,7 +86,6 @@ class RocketAssemblyBuildingProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ElectricityConsumed = None
         self.BuildableEntities = None
@@ -130,6 +128,7 @@ class RocketLaunchPad:
         self.RocketTransporterAlignGoal = None
         self.RocketTransporterExitGoal = None
         self.IncomingRocketsQueueLength = int(0)
+        self.ZoneMask = None
         self.AutoLaunch = False
         self.LaunchCountdown = None
         self.MuteCountdown = False
@@ -144,7 +143,6 @@ class RocketLaunchPad:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None

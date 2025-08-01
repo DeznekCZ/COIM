@@ -2,7 +2,7 @@ class VehicleRamp:
 
     def __init__(self):
         self.CanBePaused = False
-        self.Value = None
+        self.UpgradableProto = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -36,6 +36,7 @@ class VehicleRampProto:
 
     def __init__(self):
         self.EntityType = None
+        self.Upgrade = None
         self.TierData = None
         self.Layout = None
         self.Ports = None

@@ -1369,11 +1369,12 @@ class T1:
 class T2:
     SettlementT2_1_prefab = None
     SettlementT2_2_prefab = None
-    SettT2_Blue_mat = None
-    SettT2_Gray_mat = None
-    SettT2_Red_mat = None
-    SettT2_Roof_NoRand_mat = None
-    SettT2_Yellow_mat = None
+
+    def __init__(self):
+        pass
+
+class Data:
+    SettT2_mat = None
 
     def __init__(self):
         pass
@@ -1381,24 +1382,17 @@ class T2:
 class T3:
     SettlementT3_1_prefab = None
     SettlementT3_2_prefab = None
-    SettT3_BlackBricks_mat = None
-    SettT3_BluePlaster_mat = None
-    SettT3_GrayPlaster_mat = None
-    SettT3_LightGrayPlaster_mat = None
-    SettT3_RedBricks_mat = None
-    SettT3_RedPlaster_mat = None
-    SettT3_style1_placeholder_mat = None
-    SettT3_style2_placeholder_mat = None
-    SettT3_YellowPlaster_mat = None
 
     def __init__(self):
         pass
 
 class T4:
-    SettlementT4_1_prefab = None
-    SettlementT4_2_prefab = None
-    SettlementT4_3_prefab = None
-    SettlementT4_4_prefab = None
+    SettlementT4_1a_prefab = None
+    SettlementT4_1b_prefab = None
+    SettlementT4_2a_prefab = None
+    SettlementT4_2b_prefab = None
+    SettlementT4_4a_prefab = None
+    SettlementT4_4b_prefab = None
 
     def __init__(self):
         pass
@@ -1471,6 +1465,7 @@ class Terrain:
     TerrainInstanced_mat = None
     TerrainTriplanarInstanced_mat = None
     TileSurfaceCube_prefab = None
+    TileSurfacePreviewInstanced_mat = None
 
     def __init__(self):
         pass
@@ -2168,7 +2163,6 @@ class Trains:
     LevelCrossingSmallEntranceOld_prefab = None
     LevelCrossingSmallOld_prefab = None
     Locomotive_T1_steam_tender_prefab = None
-    Locomotive_T2_prefab = None
     LocoT1Diesel_prefab = None
     LocoT1Hydrogen_prefab = None
     LocoT1Steam_prefab = None
@@ -2193,10 +2187,6 @@ class Trains:
     WagonT1Loose_prefab = None
     WagonT1_molten_prefab = None
     WagonT1Unit_prefab = None
-    WagonT2_loose_prefab = None
-    WagonT2_tank_prefab = None
-    WagonT2_unit_prefab = None
-    WagonT2_unit_open_prefab = None
 
     def __init__(self):
         pass
@@ -2229,7 +2219,6 @@ class Audio:
         pass
 
 class LocoT1Hydrogen:
-    LocoT1Hydrogen_prefab = None
 
     def __init__(self):
         pass
@@ -4088,13 +4077,9 @@ class Products:
     ConcreteSlab = None
     Bricks = None
     ConstructionParts = None
-    ConstructionPartsInUpgrade = None
     ConstructionParts2 = None
-    ConstructionParts2InUpgrade = None
     ConstructionParts3 = None
-    ConstructionParts3InUpgrade = None
     ConstructionParts4 = None
-    ConstructionParts4InUpgrade = None
     MechanicalParts = None
     VehicleParts = None
     VehicleParts2 = None

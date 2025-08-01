@@ -38,7 +38,7 @@ namespace ProgramableNetwork.Ui
 
             m_panel.Header.Gap(5);
 
-            m_panel.Header.Add(m_colorPreviewIcon = new Icon(UserInterface.General.Circle_svg));
+            m_panel.Header.Add(m_colorPreviewIcon = new Icon(UserInterface.Cursors.Paint32_png));
             this.Observe(() => m_previewColor)
                 .Do(color => m_colorPreviewIcon.Color(color));
 

@@ -24,6 +24,11 @@ namespace ProgramableNetwork.ModuleTester
             return NotificationId.Invalid;
         }
 
+        public void ClearAllNotificationsWithId(NotificationProto.ID notificationId)
+        {
+            // TODO
+        }
+
         public IComputingConsumer CreateConsumer(IComputingConsumingEntity entity)
         {
             return null;

@@ -224,7 +224,6 @@ class IEntityWithMultipleProductsToAssign:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -277,7 +276,6 @@ class ILayoutEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -330,7 +328,6 @@ class IStaticEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -371,7 +368,6 @@ class IEntityAssignedAsOutput:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -403,7 +399,6 @@ class IEntityAssignedAsInput:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -511,7 +506,6 @@ class IStaticEntityWithReservedOcean:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -577,7 +571,6 @@ class StaticEntity:
         self.CenterTile = None
         self.Position2f = None
         self.Position3f = None
-        self.Value = None
         self.ConstructionCost = None
         self.OccupiedTiles = None
         self.OccupiedVertices = None
@@ -672,16 +665,7 @@ class UniqueEntityValidator:
 
     def __init__(self):
         self.Priority = None
-class AllowProductDiscountInUpgrade:
-
-    def __init__(self):
-        self.AllowedProtoType = None
 class UpgradeHelper:
-
-    def __init__(self):
-        pass
-
-class UpgradeCostResolver:
 
     def __init__(self):
         pass
@@ -692,6 +676,16 @@ class IUpgradesManager:
         pass
 
 class UpgradesManager:
+
+    def __init__(self):
+        pass
+
+class ReplacementRefund:
+
+    def __init__(self):
+        self.ToRefundAfterDone = None
+        self.QuickRemoveRefund = False
+class OngoingReplacementData:
 
     def __init__(self):
         pass

@@ -1,12 +1,12 @@
 class CargoDepot:
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         from Mafi import Option
         self.ContractAssigned = Option()
         self.CanBePaused = False
         self.CanAcceptShip = False
-        self.Upgrader = None
         self.LogisticsInputControl = None
         self.LogisticsOutputControl = None
         self.IsLogisticsInputDisabled = False
@@ -26,7 +26,6 @@ class CargoDepot:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -86,7 +85,6 @@ class CargoDepotProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.CargoShipProto = None
         self.ReservedOceanAreasSets = None
@@ -152,7 +150,6 @@ class TradeDock:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None

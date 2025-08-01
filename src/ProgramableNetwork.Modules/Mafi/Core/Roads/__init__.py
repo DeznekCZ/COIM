@@ -15,7 +15,6 @@ class IRoadGraphEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -49,7 +48,6 @@ class ICloseableRoadGraphEntity:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -107,7 +105,6 @@ class IRoadGraphTerrainConnector:
         self.OccupiedVertices = None
         self.OccupiedVerticesCombinedConstraint = None
         self.VehicleSurfaceHeights = None
-        self.Value = None
         self.ConstructionCost = None
         self.ConstructionState = None
         from Mafi import Option
@@ -137,7 +134,6 @@ class RoadEntity:
         self.RoadLanesCount = int(0)
         self.RoadProto = None
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -256,7 +252,6 @@ class RoadEntityBase:
         self.RoadLanesCount = int(0)
         self.RoadProto = None
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Prototype = None
         self.Transform = None
@@ -354,7 +349,6 @@ class RoadEntranceEntity:
         self.RoadLanesCount = int(0)
         self.RoadProto = None
         self.HasBadConnection = False
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None

@@ -151,10 +151,8 @@ class EntityNotificatorWithProtoParam:
     def __init__(self):
         self.IsActive = False
         self.NotificationId = None
-        self.Prototype = None
 class NotificatorWithProtoParam:
 
     def __init__(self):
         self.IsActive = False
         self.NotificationId = None
-        self.Prototype = None

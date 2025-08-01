@@ -27,6 +27,7 @@ class CargoDepotModule:
     def __init__(self):
         self.LogisticsInputControl = None
         self.LogisticsOutputControl = None
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         self.Maintenance = None
@@ -34,7 +35,6 @@ class CargoDepotModule:
         from Mafi import Option
         self.ElectricityConsumer = Option()
         self.CurrentState = None
-        self.Upgrader = None
         from Mafi import Option
         self.Depot = Option()
         self.UsableCapacity = None
@@ -64,7 +64,6 @@ class CargoDepotModule:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -147,7 +146,6 @@ class CargoDepotModuleProto:
     def __init__(self):
         self.EntityType = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.HasPipeCraneAnimation = False
         self.Id = None

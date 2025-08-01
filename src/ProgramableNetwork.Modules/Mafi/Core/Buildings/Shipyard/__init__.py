@@ -15,6 +15,7 @@ class Shipyard:
     WORLD_CARGO_IMPORT_PRIO_ID = None
 
     def __init__(self):
+        self.UpgradableProto = None
         self.Prototype = None
         self.CanBePaused = False
         self.FuelBuffer = None
@@ -33,7 +34,6 @@ class Shipyard:
         self.CurrentModificationRequest = None
         from Mafi import Option
         self.DockedFleet = Option()
-        self.Upgrader = None
         self.HasHighCargoUnloadPrio = False
         self.IsFull = False
         self.TotalStoredQuantity = None
@@ -44,7 +44,6 @@ class Shipyard:
         self.IsCargoAffectedByGeneralPriority = False
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -195,7 +194,6 @@ class ShipyardProto:
 
     def __init__(self):
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.ReservedOceanAreasSets = None
         self.MinGroundHeight = None

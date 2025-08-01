@@ -10,8 +10,8 @@ class WellInjectionPump:
 
     def __init__(self):
         self.Prototype = None
+        self.UpgradableProto = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.SoundParams = None
         self.EmissionIntensity = None
         self.MaxMonthlyUnityConsumed = None
@@ -51,7 +51,6 @@ class WellInjectionPump:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -98,7 +97,6 @@ class WellInjectionPumpProto:
         self.ComputingConsumed = None
         self.Recipes = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
@@ -145,8 +143,8 @@ class WellPump:
         self.CapacityOfMine = None
         self.QuantityLeftToMine = None
         self.NotifyOnLowReserve = False
+        self.UpgradableProto = None
         self.CanBePaused = False
-        self.Upgrader = None
         self.SoundParams = None
         self.EmissionIntensity = None
         self.MaxMonthlyUnityConsumed = None
@@ -186,7 +184,6 @@ class WellPump:
         self.GeneralPriority = int(0)
         self.IsGeneralPriorityVisible = False
         self.Ports = None
-        self.Value = None
         self.ConstructionCost = None
         self.Transform = None
         self.OccupiedTiles = None
@@ -233,7 +230,6 @@ class WellPumpProto:
         self.ComputingConsumed = None
         self.Recipes = None
         self.Upgrade = None
-        self.UpgradeNonGeneric = None
         self.TierData = None
         self.IsWasteDisposal = False
         self.UseAllRecipesAtStartOrAfterUnlock = False
