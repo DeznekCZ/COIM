@@ -12,6 +12,13 @@ namespace WindPower.Entity
 {
     public class WindTurbineProto : LayoutEntityProto
     {
+        public override Type EntityType => typeof(WindTurbine);
+
+        public Electricity GeneratedPower;
+        public MechPower BrakingPower;
+        public HeightTilesF GondolaHeight;
+        public HeightTilesF BladeWidth;
+
         public WindTurbineProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics, Electricity generatedPower, MechPower brakingPower, HeightTilesF gondolaHeight, HeightTilesF bladeWidth, Duration? constructionDurationPerProduct = null, Upoints? boostCost = null, bool cannotBeBuiltByPlayer = false, bool isUnique = false, bool cannotBeReflected = false, bool autoBuildMiniZippers = false, bool doNotStartConstructionAutomatically = false, IEnumerable<Tag> tags = null)
             : base(id: id, strings: strings, layout: layout, costs: costs, graphics: graphics, constructionDurationPerProduct: constructionDurationPerProduct, boostCost: boostCost, cannotBeBuiltByPlayer: cannotBeBuiltByPlayer, isUnique: isUnique, cannotBeReflected: cannotBeReflected, autoBuildMiniZippers: autoBuildMiniZippers, doNotStartConstructionAutomatically: doNotStartConstructionAutomatically, tags: tags)
         {
@@ -21,11 +28,6 @@ namespace WindPower.Entity
             BladeWidth = bladeWidth;
         }
 
-        public override Type EntityType => typeof(WindTurbine);
-
-        public Electricity GeneratedPower { get; }
-        public MechPower BrakingPower { get; }
-        public HeightTilesF GondolaHeight { get; }
-        public HeightTilesF BladeWidth { get; }
+        // TODO Gfx class
     }
 }

@@ -37,6 +37,8 @@ namespace WindPower.Entity
         private Mafi.Core.Entities.Static.StaticEntityProto.ID m_protoId;
         private bool m_canGenerate;
         private Electricity m_power;
+        [DoNotSave]
+        private Percent m_oldSpeed;
 
         [DoNotSave(0, null)]
         public new WindTurbineProto Prototype
@@ -230,9 +232,13 @@ namespace WindPower.Entity
                 .FromKw((int)(Prototype.GeneratedPower.Value * StoredPower.ToFloat()))
                 .Clamp(Electricity.Zero, Prototype.GeneratedPower);
 
-            MaintenanceCosts = Prototype.Costs.Maintenance;
-            m_maintenance.SetDynamicExtraMultiplier(Speed);
-            m_maintenance.RefreshMaintenanceCost();
+            if (m_oldSpeed != Speed)
+            {
+                m_oldSpeed = Speed;
+                MaintenanceCosts = Prototype.Costs.Maintenance;
+                m_maintenance.SetDynamicExtraMultiplier(Speed);
+                m_maintenance.RefreshMaintenanceCost();
+            }
         }
     }
 }

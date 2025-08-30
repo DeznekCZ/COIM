@@ -65,7 +65,6 @@ namespace WindPower
                 brakingPower: 500.KwMech(),
                 gondolaHeight: new HeightTilesF(16 / 2),
                 bladeWidth: new HeightTilesF((3f / 2f).ToFix32()),
-                cannotBeReflected: true,
                 constructionDurationPerProduct: Duration.FromSec(1)
             ));
 
