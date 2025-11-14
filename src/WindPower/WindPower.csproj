@@ -10,6 +10,10 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <PropertyGroup>
+	  <COI_ROOT>C:\Program Files (x86)\Steam\steamapps\common\Captain of Industry</COI_ROOT>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
@@ -102,6 +106,10 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" />
+    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy manifest.json &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" />
   </Target>
 </Project>

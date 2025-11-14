@@ -25,12 +25,12 @@ namespace WindPower
         public ModDefinition(CoreMod coreMod, BaseMod baseMod) {
 			// You can use Log class for logging. These will be written to the log file
 			// and can be also displayed in the in-game console with command `also_log_to_console`.
-			Log.Info($"{ModName}: constructed");
+			Log.Info($"{nameof(WindPower)}: constructed");
 		}
 
 
 		public override void RegisterPrototypes(ProtoRegistrator registrator) {
-			Log.Info($"{ModName}: registering prototypes");
+			Log.Info($"{nameof(WindPower)}: registering prototypes");
 			// Register all prototypes here.
 
 			// Registers all products from this assembly. See ExampleModIds.Products.cs for examples.
