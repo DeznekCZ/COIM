@@ -8,29 +8,21 @@ namespace WindPower
 {
 	public sealed class ModDefinition : DataOnlyMod {
 
-		public static readonly string ModName = "Wind power";
-
-		// Name of this mod. It will be eventually shown to the player.
-		public override string Name => ModName;
-
-		// Version, currently unused.
-		public override int Version => 0;
-
         public bool IsBeingLoaded => throw new NotImplementedException();
 
 
         // Mod constructor that lists mod dependencies as parameters.
         // This guarantee that all listed mods will be loaded before this mod.
         // It is a good idea to depend on both `Mafi.Core.CoreMod` and `Mafi.Base.BaseMod`.
-        public ModDefinition(CoreMod coreMod, BaseMod baseMod) {
+        public ModDefinition(ModManifest manifest) : base(manifest) {
 			// You can use Log class for logging. These will be written to the log file
 			// and can be also displayed in the in-game console with command `also_log_to_console`.
-			Log.Info($"{ModName}: constructed");
+			Log.Info($"{nameof(WindPower)}: constructed");
 		}
 
 
 		public override void RegisterPrototypes(ProtoRegistrator registrator) {
-			Log.Info($"{ModName}: registering prototypes");
+			Log.Info($"{nameof(WindPower)}: registering prototypes");
 			// Register all prototypes here.
 
 			// Registers all products from this assembly. See ExampleModIds.Products.cs for examples.
