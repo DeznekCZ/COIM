@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomRecipes", "CustomRecipes.csproj", "{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomAssets", "CustomAssets.csproj", "{F9906EE7-1FB4-49EB-A31D-16DBBB7CF3C1}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Recipes", "..\Recipes\Recipes.pyproj", "{706D31AF-095D-4A5D-884B-B85A4EDF3A34}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "CustomAssets.Definitions", "..\Recipes\CustomAssets.Definitions.pyproj", "{706D31AF-095D-4A5D-884B-B85A4EDF3A34}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateIds", "..\GenerateIds\GenerateIds.csproj", "{6262AECD-D163-4E38-90E3-751FEFA61B20}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomAssets.IdGenerator", "..\GenerateIds\CustomAssets.IdGenerator.csproj", "{6262AECD-D163-4E38-90E3-751FEFA61B20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

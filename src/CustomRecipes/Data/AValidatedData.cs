@@ -2,7 +2,7 @@
 using Mafi.Core.Mods;
 using System;
 
-namespace CustomRecipes
+namespace CustomAssets
 {
     public abstract class AValidatedData : IModData
     {

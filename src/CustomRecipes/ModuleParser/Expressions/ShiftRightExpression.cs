@@ -1,4 +1,4 @@
-﻿namespace CustomRecipes.Python
+﻿namespace CustomAssets.Python
 {
     public class ShiftRightExpression : ABinaryOperatorExpression
     {

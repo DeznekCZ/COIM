@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class EqualExpression : ABinaryOperatorExpression, IComparison
     {

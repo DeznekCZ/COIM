@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     internal class EvaluateStatement : IStatement
     {
@@ -15,5 +16,9 @@ namespace CustomRecipes.Python
         {
             this.expression.GetValue(context);
         }
-    }
+
+		public Task ExecuteAsync(IDictionary<string, object> context) {
+			return this.expression.GetValueAsync(context);
+		}
+	}
 }

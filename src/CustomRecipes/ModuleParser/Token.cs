@@ -1,7 +1,7 @@
 ﻿
 using System.IO;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class Token
     {

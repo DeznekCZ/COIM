@@ -2,7 +2,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class MemberCall
     {

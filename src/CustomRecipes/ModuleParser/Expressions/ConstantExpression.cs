@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public abstract class ConstantExpression : IExpression
     {
@@ -17,7 +18,14 @@ namespace CustomRecipes.Python
         {
             throw new InvalidCastException("Can not get reference from constant");
         }
+		public Task<Reference<object>> GetReferenceAsync(IDictionary<string, object> context) {
+			throw new InvalidCastException("Can not get reference from constant");
+		}
 
-        public abstract object GetValue(IDictionary<string, object> context);
-    }
+		public abstract object GetValue(IDictionary<string, object> context);
+
+		public Task<object> GetValueAsync(IDictionary<string, object> context) {
+			return Task.FromResult(GetValue(context));
+		}
+	}
 }

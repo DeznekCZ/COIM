@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class ChildContext : IDictionary<string, object>
     {

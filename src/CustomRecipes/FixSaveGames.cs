@@ -48,7 +48,21 @@ public class FixSavedGames : IInitializer
 
     public bool IsBeingLoaded { get; }
 
-    public FixSavedGames(SettlementsManager settlementsManager, EntitiesBuilder entitiesBuilder, TerrainManager terrainManager, IEntitiesManager entitiesManager, IConstructionManager constructionManager, IProductsManager productsManager, PopsHealthManager healthManager, UpointsManager upointsManager, ProtosDb protosDb, UnlockedProtosDb unlockedProtosDb, IPropertiesDb propsDb, StatsManager statsManager, IWorldMapManager mapManager)
+    public FixSavedGames(
+        SettlementsManager settlementsManager,
+        EntitiesBuilder entitiesBuilder,
+        TerrainManager terrainManager,
+        IEntitiesManager entitiesManager,
+        IConstructionManager constructionManager,
+        IProductsManager productsManager,
+        PopsHealthManager healthManager,
+        UpointsManager upointsManager,
+        ProtosDb protosDb,
+        UnlockedProtosDb unlockedProtosDb,
+        IPropertiesDb propsDb,
+        StatsManager statsManager,
+        IWorldMapManager mapManager
+    )
     {
         m_settlementsManager = settlementsManager;
         m_terrainManager = terrainManager;
@@ -65,13 +79,13 @@ public class FixSavedGames : IInitializer
         m_mapManager = mapManager;
         IsBeingLoaded = true;
         
-        Log.Info($"[{CustomRecipes.ModDefinition.ModName}]: Save game fix on loaded game.");
+        Log.Info($"[{nameof(CustomAssets.CustomAssets)}]: Save game fix on loaded game.");
         SavedGameFixer();
     }
 
     void IInitializer.DoOnNewGameOnly(Action action)
     {
-        Log.Info($"[{CustomRecipes.ModDefinition.ModName}]: Save game fix initialized on new game, so do nothing.");
+        Log.Info($"[{nameof(CustomAssets.CustomAssets)}]: Save game fix initialized on new game, so do nothing.");
     }
 
     private void SavedGameFixer()
@@ -97,17 +111,18 @@ public class FixSavedGames : IInitializer
 
     void IInitializer.DoOnNewGameOrAfterLoad(Action action)
     {
-        Log.Info($"[{CustomRecipes.ModDefinition.ModName}]: Save game fix on loaded game.");
+        Log.Info($"[{nameof(CustomAssets.CustomAssets)}]: Save game fix on loaded game.");
         SavedGameFixer();
     }
 
     public static void ValidatePrototypeString(string s, Action<int> value)
     {
-        if (m_fixer.TryGetValue(s, out var fixer))
-            fixer.Add(value);
-        else
-            m_fixer.Add(s, new List<Action<int>> { value });
-    }
+        if (m_fixer.TryGetValue(s, out var fixer)) {
+			fixer.Add(value);
+		} else {
+			m_fixer.Add(s, [value]);
+		}
+	}
 
     public static Fix32 GetPrototypeString(string s)
     {

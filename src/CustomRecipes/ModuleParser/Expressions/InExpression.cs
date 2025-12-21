@@ -1,7 +1,7 @@
 ﻿using static UnityEngine.GraphicsBuffer;
 using System;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class InExpression : ABinaryOperatorExpression
     {

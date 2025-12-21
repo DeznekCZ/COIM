@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class FunctionStatement : IStatement
     {
@@ -27,6 +28,14 @@ namespace CustomRecipes.Python
             foreach (IStatement statement in Statements)
             {
                 statement.Execute(context);
+            }
+        }
+
+        public async Task ExecuteAsync(IDictionary<string, dynamic> context)
+        {
+            foreach (IStatement statement in Statements)
+            {
+                await statement.ExecuteAsync(context);
             }
         }
     }

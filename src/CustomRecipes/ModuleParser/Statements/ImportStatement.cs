@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading.Tasks;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class ImportStatement : IStatement
     {
@@ -40,7 +41,7 @@ namespace CustomRecipes.Python
                 }
             }
 
-            else if (name.StartsWith("CustomRecipes"))
+            else if (name.StartsWith("CustomAssets") || name.StartsWith("CustomRecipes"))
             {
                 // SKIP, all stuff is initialized
                 foreach (var item in exportedItems)
@@ -56,6 +57,11 @@ namespace CustomRecipes.Python
             {
                 throw new System.NotImplementedException(name);
             }
+        }
+
+        public Task ExecuteAsync(IDictionary<string, object> context) {
+			Execute(context);
+            return Task.CompletedTask;
         }
     }
 }

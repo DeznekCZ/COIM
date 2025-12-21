@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class FullRange : IRange
     {
@@ -17,10 +18,16 @@ namespace CustomRecipes.Python
         {
             throw new System.NotImplementedException();
         }
+		public Task<Reference<object>> GetReferenceAsync(IDictionary<string, object> context) {
+			throw new System.NotImplementedException();
+		}
 
-        public object GetValue(IDictionary<string, object> context)
+		public object GetValue(IDictionary<string, object> context)
         {
             throw new System.NotImplementedException();
         }
-    }
+		public Task<object> GetValueAsync(IDictionary<string, object> context) {
+			throw new System.NotImplementedException();
+		}
+	}
 }

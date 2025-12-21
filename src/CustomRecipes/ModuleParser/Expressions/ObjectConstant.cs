@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
-    public class ObjectConstant : IExpression
+    public class ObjectConstant : SyncExpression, IExpression
     {
         private object value;
 
@@ -12,14 +12,14 @@ namespace CustomRecipes.Python
             this.value = value;
         }
 
-        public string Path => throw new NotImplementedException();
+        public override string Path => throw new NotImplementedException();
 
-        public Reference<object> GetReference(IDictionary<string, object> context)
+        public override Reference<object> GetReference(IDictionary<string, object> context)
         {
             throw new NotImplementedException();
         }
 
-        public object GetValue(IDictionary<string, object> context)
+        public override object GetValue(IDictionary<string, object> context)
         {
             return value;
         }

@@ -1,7 +1,7 @@
 ﻿using Mafi;
 using System;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class IsExpression : ABinaryOperatorExpression
     {

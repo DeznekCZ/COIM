@@ -1,6 +1,6 @@
 ﻿using Mafi.Core.Products;
 
-namespace CustomRecipes.ModuleParser.Registrator
+namespace CustomAssets.ModuleParser.Registrator
 {
     public class PortEntry
     {

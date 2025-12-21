@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     [Serializable]
     internal class PythonParseException : Exception

@@ -1,7 +1,7 @@
 ﻿using Mafi;
 using System;
 
-namespace CustomRecipes
+namespace CustomAssets
 {
     public class Reference
     {

@@ -17,7 +17,7 @@ using Mafi.Unity;
 using System;
 using System.Reflection;
 
-namespace CustomRecipes
+namespace CustomAssets
 {
     public static class MyExtensions
     {

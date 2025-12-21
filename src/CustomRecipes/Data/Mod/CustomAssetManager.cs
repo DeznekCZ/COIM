@@ -2,7 +2,7 @@
 using Mafi.Collections;
 using Mafi.Unity;
 
-namespace CustomRecipes.Data.Mod
+namespace CustomAssets.Data.Mod
 {
     [GlobalDependency(RegistrationMode.AsSelf, false, false)]
     public class CustomAssetManager

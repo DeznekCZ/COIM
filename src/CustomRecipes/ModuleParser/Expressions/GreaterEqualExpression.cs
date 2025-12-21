@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class GreaterEqualExpression : ABinaryOperatorExpression, IComparison
     {

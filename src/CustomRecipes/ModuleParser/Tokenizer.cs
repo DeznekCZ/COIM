@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class Tokenizer
     {
@@ -43,8 +43,9 @@ namespace CustomRecipes.Python
             Stack<string> indentaion = new Stack<string>();
             for (int i = 0; i < lines.Length; i++)
             {
-                if (string.IsNullOrWhiteSpace(lines[i]))
+                if (string.IsNullOrWhiteSpace(lines[i])) {
                     continue; // skip empty lines
+                }
 
                 Match indentMatch = Tokenizer.indent.Match(lines[i]);
                 string indent = indentMatch.Groups["block"].Value;
@@ -67,8 +68,12 @@ namespace CustomRecipes.Python
                     bool found = false;
                     foreach (Group token in match.Groups)
                     {
-                        if (token.Name == "0") continue;
-                        if (token.Name == "rest") continue;
+                        if (token.Name == "0") {
+                            continue;
+                        }
+                        if (token.Name == "rest") {
+                            continue;
+                        }
                         if (token.Name == "space")
                         { // skip whitespaces
                             found = true;
@@ -90,8 +95,12 @@ namespace CustomRecipes.Python
                             {
                                 foreach (Group kwg in kw.Groups)
                                 {
-                                    if (kwg.Name == "0") continue;
-                                    if (!kwg.Success) continue;
+                                    if (kwg.Name == "0") {
+                                        continue;
+                                    }
+                                    if (!kwg.Success) {
+                                        continue;
+                                    }
 
                                     tokens.Add(new Token(fileInfo, lines[i], i + 1, token.Index + 1, token.Length, (PythonTokens)Enum.Parse(typeof(PythonTokens), kwg.Name), token.Value));
                                     end = token.Index + token.Length;
@@ -118,8 +127,9 @@ namespace CustomRecipes.Python
                         throw new PythonParseException(new Token(fileInfo, lines[i], i + 1, match.Index, match.Length, PythonTokens.undefined, match.Value), $"Missing type of token: {match.Value}");
                     }
                 }
-                if ((i + 1) < lines.Length)
+                if ((i + 1) < lines.Length) {
                     tokens.Add(new Token(fileInfo, lines[i], i, end, 1, PythonTokens.newline, "\n"));
+                }
             }
 
             while (indentaion.Count > 0)

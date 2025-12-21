@@ -1,6 +1,6 @@
 ﻿using Mafi;
 
-namespace CustomRecipes
+namespace CustomAssets
 {
     [GlobalDependency(RegistrationMode.AsSelf, false, false)]
     internal class GlobalDependencyResolver

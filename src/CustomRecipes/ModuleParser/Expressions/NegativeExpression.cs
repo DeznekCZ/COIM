@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class NegativeExpression : AUnaryOperatorExpression
     {

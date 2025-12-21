@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class VariableExpression : IExpression
     {
@@ -20,10 +21,16 @@ namespace CustomRecipes.Python
                     () => context[this.value]
                 );
         }
+		public Task<Reference<object>> GetReferenceAsync(IDictionary<string, object> context) {
+			return Task.FromResult(GetReference(context));
+		}
 
-        public object GetValue(IDictionary<string, object> context)
+		public object GetValue(IDictionary<string, object> context)
         {
             return context.TryGetValue(this.value, out object value) ? value : null;
         }
-    }
+		public Task<object> GetValueAsync(IDictionary<string, object> context) {
+			return Task.FromResult(GetValue(context));
+		}
+	}
 }

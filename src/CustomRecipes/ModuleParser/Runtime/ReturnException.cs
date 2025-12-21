@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     [Serializable]
     public class ReturnException : Exception

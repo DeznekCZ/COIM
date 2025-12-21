@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class PropertyExpression : IExpression
     {
@@ -24,14 +25,22 @@ namespace CustomRecipes.Python
             expressionValue = this.expression.GetValue(context);
             return EvaluateReference(expressionValue);
         }
+		public async Task<Reference<object>> GetReferenceAsync(IDictionary<string, object> context) {
+			expressionValue = await this.expression.GetValueAsync(context);
+			return EvaluateReference(expressionValue);
+		}
 
-        public object GetValue(IDictionary<string, object> context)
+		public object GetValue(IDictionary<string, object> context)
         {
             expressionValue = this.expression.GetValue(context);
             return EvaluateReference(expressionValue).Value;
         }
+		public async Task<object> GetValueAsync(IDictionary<string, object> context) {
+			expressionValue = await this.expression.GetValueAsync(context);
+			return EvaluateReference(expressionValue).Value;
+		}
 
-        protected Reference<object> EvaluateReference(object value)
+		protected Reference<object> EvaluateReference(object value)
         {
             NullCheck("Can not get property of None {0}");
 
@@ -44,15 +53,18 @@ namespace CustomRecipes.Python
                 MemberInfo[] staticMembers = type
                     .GetMember(this.name, BindingFlags.Public | BindingFlags.Static);
 
-                if (staticMembers.Length > 0 && staticMembers[0] is PropertyInfo property)
-                    return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
-                if (staticMembers.Length > 0 && staticMembers[0] is FieldInfo field)
-                    return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+                if (staticMembers.Length > 0 && staticMembers[0] is PropertyInfo property) {
+					return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
+				}
+				if (staticMembers.Length > 0 && staticMembers[0] is FieldInfo field) {
+					return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+				}
 
-                if (type.GetNestedType(this.name, BindingFlags.Public) is Type subtype)
-                    return new Reference<object>((v) => { }, () => subtype);
+				if (type.GetNestedType(this.name, BindingFlags.Public) is Type subtype) {
+					return new Reference<object>((v) => { }, () => subtype);
+				}
 
-                MethodInfo[] staticMethods = type
+				MethodInfo[] staticMethods = type
                     .GetMethods(BindingFlags.Public | BindingFlags.Static)
                     .Where(m => m.Name == this.name)
                 .ToArray();
@@ -65,10 +77,11 @@ namespace CustomRecipes.Python
             else
             {
                 PropertyInfo property = value.GetType().GetProperty(name);
-                if (property != null)
-                    return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
+                if (property != null) {
+					return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
+				}
 
-                // Look for explicitly implemented interface properties
+				// Look for explicitly implemented interface properties
                 foreach (var interfaceType in value.GetType().GetInterfaces())
                 {
                     PropertyInfo interfaceProperty = interfaceType.GetProperty(name);
@@ -81,10 +94,11 @@ namespace CustomRecipes.Python
                 }
 
                 FieldInfo field = value.GetType().GetField(name);
-                if (field != null)
-                    return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+                if (field != null) {
+					return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+				}
 
-                MethodInfo[] instanceMethods = value.GetType()
+				MethodInfo[] instanceMethods = value.GetType()
                     .GetMethods(BindingFlags.Public | BindingFlags.Instance)
                     .Where(m => m.Name == this.name)
                     .ToArray();

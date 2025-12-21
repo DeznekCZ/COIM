@@ -5,15 +5,31 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using CustomAssets.Data.Mod;
+using Mafi.Collections.ImmutableCollections;
+using Mafi.Core.Game;
+using Mafi.Core.Mods;
+using Mafi.Core.Prototypes;
 
-namespace CustomRecipes.ModuleTester
+namespace CustomAssets.ModuleTester
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            ExportBinaries();
-        }
+            //ExportBinaries();
+			ProtosDb db = new ProtosDb();
+			ImmutableArray<IConfig> configs = ImmutableArray.Empty;
+			ProtoRegistrator pr = typeof(ProtoRegistrator)
+				.GetConstructor(
+					BindingFlags.Instance | BindingFlags.NonPublic,
+					null,
+					[ typeof(ProtosDb), typeof(ImmutableArray<IConfig>) ],
+					null)
+				.Invoke([ db, configs ])
+                as ProtoRegistrator;
+            new AssetRegistrator().RegisterData(pr);
+		}
 
         private static void ExportBinaries()
         {
@@ -129,14 +145,20 @@ namespace CustomRecipes.ModuleTester
                     imports.Add(propertyType.FullName);
                     stringBuilder.Append($"{indent}    from {protoNamespace} import {protoType}\n");
                 }
-                string value = ((dynamic)valueGetter()).Value;
+                string value = FieldOrProperty<string>(valueGetter(), "Value");
                 stringBuilder.Append($"{indent}    {propertyName} = {protoType}.ID('{value}')\n");
             }
             else
                 stringBuilder.Append($"{indent}    {propertyName} = None\n");
         }
+		private static T FieldOrProperty<T>(object value, string name) {
+			if (value.GetType().GetProperty(name) is PropertyInfo p)
+				return (T)p.GetValue(value);
+			else
+				return (T)value.GetType().GetField(name).GetValue(value);
+		}
 
-        private static string MayImport(HashSet<string> imports, string text)
+		private static string MayImport(HashSet<string> imports, string text)
         {
             if (imports.Contains(text))
                 return string.Empty;

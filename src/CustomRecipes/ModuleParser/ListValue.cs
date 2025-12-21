@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
-    public class ListValue : IExpression, IEnumerable<IExpression>
+    public class ListValue : SyncExpression, IExpression, IEnumerable<IExpression>
     {
         private Token listStart;
         private Token listEnd;
@@ -18,19 +18,19 @@ namespace CustomRecipes.Python
             this.listItems = listItems;
         }
 
-        public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
+        public override string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
 
         public IEnumerator<IExpression> GetEnumerator()
         {
             return listItems.GetEnumerator();
         }
 
-        public Reference<dynamic> GetReference(IDictionary<string, dynamic> context)
+        public override Reference<dynamic> GetReference(IDictionary<string, dynamic> context)
         {
             throw new System.InvalidCastException("can not be referenced");
         }
 
-        public dynamic GetValue(IDictionary<string, dynamic> context)
+        public override dynamic GetValue(IDictionary<string, dynamic> context)
         {
             return listItems.Select(i => i.GetValue(context)).ToList();
         }

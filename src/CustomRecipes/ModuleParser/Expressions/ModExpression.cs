@@ -1,5 +1,5 @@
 ﻿
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class ModExpression : ABinaryOperatorExpression
     {

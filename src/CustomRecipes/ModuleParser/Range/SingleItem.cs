@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
-    internal class SingleItem : IRange
+    internal class SingleItem : SyncExpression, IRange
     {
         private IExpression index;
 
@@ -11,16 +12,32 @@ namespace CustomRecipes.Python
             this.index = index;
         }
 
-        public string Path => $"[{ index.Path }]";
+        public override string Path => $"[{ index.Path }]";
 
-        public Reference<object> GetReference(IDictionary<string, object> context)
+        public override Reference<object> GetReference(IDictionary<string, object> context)
         {
             throw new System.NotImplementedException();
         }
 
-        public object GetValue(IDictionary<string, object> context)
+		public override object GetValue(IDictionary<string, object> context)
         {
             return index.GetValue(context);
         }
-    }
+	}
+
+	public abstract class SyncExpression : IExpression {
+		public abstract string Path { get; }
+
+		public abstract Reference<object> GetReference(IDictionary<string, object> context);
+
+		public Task<Reference<object>> GetReferenceAsync(IDictionary<string, object> context) {
+			throw new System.NotImplementedException();
+		}
+
+		public abstract object GetValue(IDictionary<string, object> context);
+
+		public Task<object> GetValueAsync(IDictionary<string, object> context) {
+			return Task.FromResult(GetValue(context));
+		}
+	}
 }

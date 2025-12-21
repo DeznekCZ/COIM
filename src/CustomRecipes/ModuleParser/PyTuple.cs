@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace CustomRecipes.Python
+namespace CustomAssets.Python
 {
     public class PyTuple : IExpression
     {
@@ -45,6 +46,14 @@ namespace CustomRecipes.Python
                 throw new NotImplementedException($"Tuple is too long: {elements.Length}");
             }
         }
+
+		public Task<Reference<object>> GetReferenceAsync(IDictionary<string, object> context) {
+			throw new System.NotImplementedException();
+		}
+
+		public Task<object> GetValueAsync(IDictionary<string, object> context) {
+			return Task.FromResult(GetValue(context));
+		}
 
         public T Get<T>(int index)
         {
