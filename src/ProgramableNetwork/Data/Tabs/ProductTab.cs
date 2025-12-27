@@ -60,7 +60,8 @@ namespace ProgramableNetwork
                 {
                     return new ButtonIconText(product.IconPath, product.Strings.Name)
                         .Tooltip(product.Strings.DescShort)
-                        .Size(height: 60.px());
+                        .Size(height: 60.px())
+                        .AsProtoPickerOptionButton();
                 },
                 onOptionSelected: (product) =>
                 {
@@ -119,5 +120,10 @@ namespace ProgramableNetwork
             m_btnPreview.Icon.Value(foundProduct.IconPath);
             m_btnClear.Visible(true);
         }
+    }
+
+    public static class ProtoPickerOptionButtonExtensions {
+        public static ProtoPickerOptionButton AsProtoPickerOptionButton(this Button button)
+            => new ProtoPickerOptionButton(button);
     }
 }

@@ -98,6 +98,7 @@ namespace ProgramableNetwork.ModuleTester
                 ioPortsManager: null,
                 productsManager: null,
                 fuelStatsCollector: null,
+                terrainPropsManager: null,
                 workersManager: null,
                 upointsManager: null,
                 calendar: null,

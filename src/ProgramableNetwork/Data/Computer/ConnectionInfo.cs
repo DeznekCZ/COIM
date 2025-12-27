@@ -15,13 +15,20 @@ using Mafi.Core.Prototypes;
 using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Component;
-using static ProgramableNetwork.NewIds;
 using Mafi.Localization;
 using static Mafi.Unity.Assets.Unity;
 
 namespace ProgramableNetwork.Ui
 {
-    [GlobalDependency(RegistrationMode.AsSelf)]
+
+    [GlobalDependency(RegistrationMode.AsEverything)]
+    public class ConnectionInfoController : WindowController<ConnectionInfo> {
+
+        public ConnectionInfoController(ControllerContext controllerContext)
+            : base(controllerContext) {
+        }
+    }
+
     public class ConnectionInfo : Window
     {
         private ScrollColumn m_scrollableStackContainer;

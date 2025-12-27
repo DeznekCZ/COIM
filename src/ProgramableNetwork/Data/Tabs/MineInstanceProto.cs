@@ -27,6 +27,7 @@ namespace ProgramableNetwork
         }
 
         public WorldMapMine Mine { get; internal set; }
+		public bool IsObsolete => false;
 
         public string IconPath { get; }
 

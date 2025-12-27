@@ -66,7 +66,17 @@ namespace ProgramableNetwork.ModuleTester
 
         public T GetNotificationProto<T>(Proto.ID id) where T : NotificationProto
         {
-            return (T)(object)new EntityNotificationProto(new NotificationProto.ID(id.Value), Proto.Str.Empty, NotificationType.Continuous, NotificationStyle.Warning, Option.None, null, false, false, "".AsLoc());
+            return (T)(object)new EntityNotificationProto(
+                id: new NotificationProto.ID(id.Value), 
+                strings: Proto.Str.Empty,
+                type: NotificationType.Continuous,
+                style: NotificationStyle.Warning,
+                iconAssetPath:Option.None,
+                entityIconSpec: null,
+                hideInNotificationPanel: false,
+                hideInInspector: false,
+                extraMessageForInspector: default,
+                alternativeMessageForInspector: default);
         }
 
         public void RemoveAllNotificationFor(IObjectWithTitle objectWithTitle, NotificationProto notificationProto)

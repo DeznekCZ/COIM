@@ -120,7 +120,9 @@ namespace ProgramableNetwork.Ui
                 m_btnPreview.Icon.Value(m_UiContext.ProtosDb.Get<T>(new Proto.ID(m_module.Field[m_fieldId, false])).ValueOrNull);
                 m_protoPicker = new ProtoPickerPopup<T>(
                     optionsProvider: GetItems,
-                    optionViewFactory: (item) => new ButtonIcon(item.IconPath).Tooltip(item.Strings.Name),
+                    optionViewFactory: (item) => new ButtonIcon(item.IconPath)
+                        .Tooltip(item.Strings.Name)
+                        .AsProtoPickerOptionButton(),
                     onOptionSelected: (product) =>
                     {
                         m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);

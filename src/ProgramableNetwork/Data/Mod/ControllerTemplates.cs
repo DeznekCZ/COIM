@@ -101,8 +101,8 @@ namespace ProgramableNetwork.Data.Mod
         private void TryLoadTexture(string assetPath)
         {
             Texture2D texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, false);
-            string basePath = typeof(ControllerTemplates).Assembly.Location;
-            byte[] image = File.ReadAllBytes(Path.Combine(basePath, "..", assetPath));
+            string basePath = Environment.GetEnvironmentVariable("APPDATA") + @"\Captain of Industry\Mods\ProgramableNetwork";
+            byte[] image = File.ReadAllBytes(Path.Combine(basePath, assetPath));
             if (!texture2D.LoadImage(image))
                 Log.Exception(new ArgumentException($"Could not load an image: {assetPath}"));
             else

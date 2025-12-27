@@ -192,14 +192,15 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy manifest.json &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="robocopy . &quot;%25COI_ROOT%25\Captain of Industry_Data\Managed\$(MSBuildProjectName)&quot; *.cs /S" ContinueOnError="true" />
-    <Exec Command="robocopy .\Assets &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Assets&quot; /S" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\AssetBundles&quot;" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\ProgramableNetwork.Modules\Custom &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules&quot;" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\ProgramableNetwork.Modules\Core &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)\Modules\Core&quot;" ContinueOnError="true" />
+    <Exec Command="robocopy .\Assets &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\Assets&quot; /S" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\AssetBundles&quot;" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\ProgramableNetwork.Modules\Custom &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\Modules&quot;" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\ProgramableNetwork.Modules\Core &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\Modules\Core&quot;" ContinueOnError="true" />
     <Exec Command="echo &quot;Done&quot;" ContinueOnError="true" />
   </Target>
 </Project>

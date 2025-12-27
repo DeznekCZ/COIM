@@ -46,7 +46,8 @@ namespace ProgramableNetwork.Ui
                                                     .Parent.As<ButtonRow>().Value
                                                 .Tooltip(item.Strings.DescShort)
                                                 .Height(Sizes.BLOCK_SIZE * 2)
-                                                .Width(Sizes.BLOCK_SIZE * 8),
+                                                .Width(Sizes.BLOCK_SIZE * 8)
+                                                .AsProtoPickerOptionButton(),
                 onOptionSelected: (product) => fieldId.Operation = product.Value,
                 button: this,
                 title: LocStrFormatted.Empty,

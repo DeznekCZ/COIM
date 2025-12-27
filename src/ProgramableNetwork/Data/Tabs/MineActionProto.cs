@@ -14,8 +14,9 @@ namespace ProgramableNetwork
     internal class MineActionProto : IProtoWithIcon
     {
         private string v;
+		public bool IsObsolete => false;
 
-        public MineActionProto(AMOperation item, AMDataBandChannel channel)
+		public MineActionProto(AMOperation item, AMDataBandChannel channel)
         {
             Id = new Proto.ID("Progrmable_Network_AM_" + item.ToString());
             Strings = new Proto.Str(LocalizationManager.GetLocalizedString0Arg(Id.Value, GetName(item, channel).Value, "", true, true));

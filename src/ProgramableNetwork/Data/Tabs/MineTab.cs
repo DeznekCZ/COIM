@@ -36,7 +36,8 @@ namespace ProgramableNetwork.Ui
                                                         .Parent.As<ButtonRow>().Value
                                                     .Tooltip(MineInstanceProto.GetStrings(fieldId.WorldMapMine, fieldId).DescShort)
                                                     .Height(Sizes.BLOCK_SIZE * 2)
-                                                    .Width(Sizes.BLOCK_SIZE * 8),
+                                                    .Width(Sizes.BLOCK_SIZE * 8)
+                                                    .AsProtoPickerOptionButton(),
                 onOptionSelected: (product) => fieldId.WorldMapMine = product.Mine,
                 button: this,
                 title: LocStrFormatted.Empty,
