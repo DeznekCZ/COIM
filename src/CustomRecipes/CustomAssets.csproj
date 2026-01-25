@@ -9,8 +9,8 @@
     <Version>0.9.15.5</Version>
     <LangVersion>latest</LangVersion>
       
-    <COI_ROOT>C:\git\Game\bin</COI_ROOT>
-    <COI_APPDATA>%25APPDATA%25\Captain of Industry - 0.8.0</COI_APPDATA>
+    <!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->
+    <COI_APPDATA>%25APPDATA%25\Captain of Industry</COI_APPDATA>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

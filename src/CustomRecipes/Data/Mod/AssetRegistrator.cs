@@ -1,14 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using CustomAssets.ModuleParser.Registrator;
+﻿using CustomAssets.ModuleParser.Registrator;
 using CustomAssets.Python;
 using CustomAssets.Utils;
 using Mafi;
@@ -27,14 +17,25 @@ using Mafi.Core.Prototypes;
 using Mafi.Core.Research;
 using Mafi.Core.UnlockingTree;
 using Mafi.Unity;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 using UnityEngine;
+using static Mafi.Core.Prototypes.EntityCostsTpl;
 
 namespace CustomAssets.Data.Mod;
 
 public class AssetRegistrator : IModData {
 
-    private static readonly string BASE_PATH =
-        $"{Environment.GetEnvironmentVariable("APPDATA")}/Captain of Industry - 0.8.0/Mods/CustomAssets";
+    private static readonly string BASE_PATH = $"{Assembly.GetAssembly(typeof(AssetRegistrator)).Location}/..";
 
 
     public void RegisterData(ProtoRegistrator registrator) {
@@ -45,6 +46,9 @@ public class AssetRegistrator : IModData {
 
 		Set<string> loaded = [];
 		Set<string> failed = [];
+
+		StringBuilder failedLog = new StringBuilder();
+
 		foreach (FileInfo enumerateFile in modules.EnumerateFiles("*.py")) {
 			try {
 				if (loaded.Contains(enumerateFile.FullName)) {
@@ -55,6 +59,10 @@ public class AssetRegistrator : IModData {
 				}
 				register(loaded, failed, registrator, enumerateFile, modules);
 			} catch (Exception e) {
+				failedLog.AppendLine(
+					$"Failed to load definition: {enumerateFile.FullName.Remove(0, modules.FullName.Length)}");
+				failedLog.AppendLine(e.Message);
+				failedLog.AppendLine(e.StackTrace);
 				Log.Error($"Failed to load definition: {enumerateFile.FullName.Remove(0, modules.FullName.Length)}");
 				Log.Exception(e);
 				failed.Add(enumerateFile.FullName);
@@ -62,16 +70,17 @@ public class AssetRegistrator : IModData {
 		}
 
 		if (failed.Count > 0) {
-			throw new CheckException("Modules was not loaded, see log (maybe is wrong order load only): " + failed.Count);
+			throw new CheckException("Modules was not loaded, see log (maybe is wrong order load only): " + failed.Count
+				+ "\n" + failedLog);
 		}
 	}
 
-	private static void register(Set<string> loaded, Set<string> failed, ProtoRegistrator registrator, FileInfo file, DirectoryInfo modules) {
+	private static void register(Set<string> loaded, Set<string> failed, ProtoRegistrator registrator, FileInfo file,
+		DirectoryInfo modules) {
 		Token[] tokens = Tokenizer.ParseFile(file.FullName);
 		Block block = Lexer.Parse(tokens);
 
 		Dictionary<string, object> context = resolvers(registrator);
-
 		context["dependencies"] = new Constructor([
 			"dependencies"
 		], (args => {
@@ -124,6 +133,7 @@ public class AssetRegistrator : IModData {
 			["ResearchNodeProto"] = typeof(ResearchNodeProto),
 			["Duration"] = typeof(Duration),
 			["Quantity"] = typeof(Quantity),
+			["Percent"] = new Constructor(["value"], args => Expressions.__int__(args[0].Value).Percent()),
 			["Proto"] = typeof(Proto),
 			["Vector3i"] = typeof(Vector3i),
 			["Vector3f"] = typeof(Vector3f),
@@ -320,7 +330,7 @@ public class AssetRegistrator : IModData {
 					if (args.GetArgument<Tex>("icon")
 						.When<string>(s => new Tex { path = s })
 						.WhenExists(out Tex path)) {
-						builder.AddIcon(path.path);
+						builder.AddIcon(Option.None, path.path);
 					}
 
 					return builder.BuildAndAdd();
@@ -358,7 +368,8 @@ public class AssetRegistrator : IModData {
 				"research",
 				"duration",
 				"ingredients",
-				"products"
+				"products",
+				"power"
 			], (args) => {
 				MachineProto machine = args.GetArgument<MachineProto>("machine")
 					.When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
@@ -425,6 +436,12 @@ public class AssetRegistrator : IModData {
 				builder.SetDuration(args.GetArgument<Duration>("duration").When<int>(Duration.FromSec)
 					.ElseDefault(Duration.FromSec(60)));
 
+				if (args.GetArgument<Percent>("power")
+					.When<int>(i => i.Percent())
+					.WhenExists(out Percent power)) {
+					builder.SetPowerMultiplier(power);
+				}
+
 				RecipeProto recipe = builder.BuildAndAdd();
 				if (args.GetArgument<ResearchNodeProto>("research")
 					.When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
@@ -436,23 +453,25 @@ public class AssetRegistrator : IModData {
 							.AsEnumerable()
 							.Concat(new IUnlockNodeUnit[] {
 								new RecipeUnlock(recipe, machine, false, true),
-								new ProtoWithIconUnlock(machine, false)
+								//new ProtoWithIconUnlock(machine, false)
 							})
-							.Distinct(i => {
-								if (i is ProtoWithIconUnlock protoUnlock) {
-									return protoUnlock.Proto.Id.Value;
-								}
-								return DateTime.Now.Ticks.ToString();
-							})
+							//.Distinct(i => {
+							//	if (i is ProtoWithIconUnlock protoUnlock) {
+							//		return protoUnlock.Proto.Id.Value;
+							//	}
+							//	return DateTime.Now.Ticks.ToString();
+							//})
 							.ToImmutableArray());
 
-					typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
+					typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField",
 							BindingFlags.NonPublic | BindingFlags.Instance)
-						.SetValue(research.Graphics, research.Graphics.IconsProtos
+						.SetValue(research.Graphics, research.Graphics.Icons
 							.AsEnumerable()
-							.Concat([machine])
+							.Concat([new KeyValuePair<Option<Proto>, string>(machine, machine.Graphics.IconPath)])
 							.Distinct()
 							.ToImmutableArray());
+
+					_ = builder.SetAsLockedOnInit();
 				}
 
 				return recipe;
@@ -468,7 +487,8 @@ public class AssetRegistrator : IModData {
 				"research",
 				"duration",
 				"ingredients",
-				"products"
+				"products",
+				"power"
 			], (args) => {
 				RecipeProto recipe = args.GetArgument<RecipeProto>("recipe")
 					.When<RecipeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(id))
@@ -520,6 +540,14 @@ public class AssetRegistrator : IModData {
 						?.SetValue(recipe, duration);
 				}
 
+				if (args.GetArgument<Percent>("power")
+					.When<int>(i => i.Percent())
+					.WhenExists(out Percent power)) {
+					typeof(RecipeProto)
+						.GetField("PowerMultiplier", BindingFlags.NonPublic | BindingFlags.Instance)
+						?.SetValue(recipe, power);
+				}
+
 				if (args.GetArgument<ResearchNodeProto>("research")
 					.When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
 					.When<string>(id
@@ -540,21 +568,21 @@ public class AssetRegistrator : IModData {
 							.AsEnumerable()
 							.Concat([
 								new RecipeUnlock(recipe, machine, false, true),
-								new ProtoWithIconUnlock(machine, false)
+								//new ProtoWithIconUnlock(machine, false)
 							])
-							.Distinct(i => {
-								if (i is ProtoWithIconUnlock protoUnlock) {
-									return protoUnlock.Proto.Id.Value;
-								}
-								return DateTime.Now.Ticks.ToString();
-							})
+							//.Distinct(i => {
+							//	if (i is ProtoWithIconUnlock protoUnlock) {
+							//		return protoUnlock.Proto.Id.Value;
+							//	}
+							//	return DateTime.Now.Ticks.ToString();
+							//})
 							.ToImmutableArray());
 
-					typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
+					typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField",
 							BindingFlags.NonPublic | BindingFlags.Instance)
-						?.SetValue(research.Graphics, research.Graphics.IconsProtos
+						?.SetValue(research.Graphics, research.Graphics.Icons
 							.AsEnumerable()
-							.Concat([machine])
+							.Concat([new KeyValuePair<Option<Proto>, string>(machine, machine.Graphics.IconPath)])
 							.ToImmutableArray());
 				}
 
@@ -644,11 +672,11 @@ public class AssetRegistrator : IModData {
 						})
 						.ToImmutableArray());
 
-				typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
+				typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField",
 						BindingFlags.NonPublic | BindingFlags.Instance)
-					.SetValue(research.Graphics, research.Graphics.IconsProtos
+					.SetValue(research.Graphics, research.Graphics.Icons
 						.AsEnumerable()
-						.Concat([machine])
+						.Concat([new KeyValuePair<Option<Proto>, string>(machine, machine.Graphics.IconPath)])
 						.ToImmutableArray());
 				return null;
 			}),
@@ -693,11 +721,11 @@ public class AssetRegistrator : IModData {
 							: DateTime.Now.Ticks.ToString())
 						.ToImmutableArray());
 
-				typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
+				typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField",
 						BindingFlags.NonPublic | BindingFlags.Instance)
-					?.SetValue(research.Graphics, research.Graphics.IconsProtos
+					?.SetValue(research.Graphics, research.Graphics.Icons
 						.AsEnumerable()
-						.Concat([machine])
+						.Concat([new KeyValuePair<Option<Proto>, string>(machine, machine.Graphics.IconPath)])
 						.ToImmutableArray());
 				return null;
 			}),

@@ -2,7 +2,7 @@
 ## ACT AS BUILD IN FUNCTIONS
 ## when is not included by block, automatically import them all
 
-from Mafi import ColorRgba, Duration, Quantity, Vector2f, Vector2i, Vector3f, Vector3i
+from Mafi import ColorRgba, Duration, Quantity, Vector2f, Vector2i, Vector3f, Vector3i, Percent
 from Mafi.Core.Factory.Recipes import RecipeProto
 from Mafi.Core.Factory.Machines import MachineProto
 from Mafi.Core.Research import ResearchCostsTpl, ResearchNodeProto
@@ -155,7 +155,8 @@ def build_recipe(
         research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
         duration: Duration | None = Duration(60),
         ingredients: list[Product] | None = [],
-        products: list[Product] | None = []
+        products: list[Product] | None = [],
+        power: Percent | int | None = None
     ) -> RecipeProto:
     """
     Parameters:
@@ -171,6 +172,7 @@ def build_recipe(
             may be redefined by Duration.FromSec(int) or by Duration.FromMin(int)
         ingredients: list - none, empty or at least one Product in case products are empty
         products: list - none, empty or at least one Product in case ingredients are empty
+        power: optional - Percent value defining power consumption modification
     """
     pass
 
@@ -180,7 +182,8 @@ def edit_recipe(
         ingredients: list[Product] | None = [],
         products: list[Product] | None = [],
         machine: MachineProto.ID | MachineProto | str = None,
-        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        power: Percent | int | None = None
     ) -> RecipeProto:
     """
     Parameters:
@@ -194,6 +197,7 @@ def edit_recipe(
             in case is not define in eather case, it will be locked in game
         ingredients: list - none, empty or at least one Product in case products are empty
         products: list - none, empty or at least one Product in case ingredients are empty
+        power: optional - Percent value defining power consumption modification
     """
     pass
 
