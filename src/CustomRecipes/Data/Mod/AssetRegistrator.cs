@@ -320,7 +320,7 @@ public class AssetRegistrator : IModData {
 					if (args.GetArgument<Tex>("icon")
 						.When<string>(s => new Tex { path = s })
 						.WhenExists(out Tex path)) {
-						builder.AddIcon(Option.None, path.path);
+						builder.AddIcon(path.path);
 					}
 
 					return builder.BuildAndAdd();
@@ -446,12 +446,12 @@ public class AssetRegistrator : IModData {
 							})
 							.ToImmutableArray());
 
-					typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField",
+					typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
 							BindingFlags.NonPublic | BindingFlags.Instance)
-						.SetValue(research.Graphics, research.Graphics.Icons
+						.SetValue(research.Graphics, research.Graphics.IconsProtos
 							.AsEnumerable()
-							.Concat(new KeyValuePair<Option<Proto>, string>[]
-								{ new KeyValuePair<Option<Proto>, string>(machine, machine.IconPath) })
+							.Concat([machine])
+							.Distinct()
 							.ToImmutableArray());
 				}
 
@@ -550,11 +550,11 @@ public class AssetRegistrator : IModData {
 							})
 							.ToImmutableArray());
 
-					typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField",
+					typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
 							BindingFlags.NonPublic | BindingFlags.Instance)
-						?.SetValue(research.Graphics, research.Graphics.Icons
+						?.SetValue(research.Graphics, research.Graphics.IconsProtos
 							.AsEnumerable()
-							.Concat([new KeyValuePair<Option<Proto>, string>(machine, machine.IconPath)])
+							.Concat([machine])
 							.ToImmutableArray());
 				}
 
@@ -644,12 +644,11 @@ public class AssetRegistrator : IModData {
 						})
 						.ToImmutableArray());
 
-				typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField",
+				typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
 						BindingFlags.NonPublic | BindingFlags.Instance)
-					.SetValue(research.Graphics, research.Graphics.Icons
+					.SetValue(research.Graphics, research.Graphics.IconsProtos
 						.AsEnumerable()
-						.Concat(new KeyValuePair<Option<Proto>, string>[]
-							{ new KeyValuePair<Option<Proto>, string>(machine, machine.IconPath) })
+						.Concat([machine])
 						.ToImmutableArray());
 				return null;
 			}),
@@ -694,11 +693,11 @@ public class AssetRegistrator : IModData {
 							: DateTime.Now.Ticks.ToString())
 						.ToImmutableArray());
 
-				typeof(ResearchNodeProto.Gfx).GetField("<Icons>k__BackingField",
+				typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
 						BindingFlags.NonPublic | BindingFlags.Instance)
-					?.SetValue(research.Graphics, research.Graphics.Icons
+					?.SetValue(research.Graphics, research.Graphics.IconsProtos
 						.AsEnumerable()
-						.Concat([new KeyValuePair<Option<Proto>, string>(machine, machine.IconPath)])
+						.Concat([machine])
 						.ToImmutableArray());
 				return null;
 			}),

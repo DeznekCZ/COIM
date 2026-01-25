@@ -8,6 +8,9 @@
     <RunPostBuildEvent>Always</RunPostBuildEvent>
     <Version>0.9.15.5</Version>
     <LangVersion>latest</LangVersion>
+      
+    <COI_ROOT>C:\git\Game\bin</COI_ROOT>
+    <COI_APPDATA>%25APPDATA%25\Captain of Industry - 0.8.0</COI_APPDATA>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -179,14 +182,14 @@
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="copy manifest.json &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="@rem copy .\bin\Debug\net471\Newtonsoft.Json.dll &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="robocopy .\AssetBundles &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\Recipes\Definitions &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\Definitions&quot; | echo" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\Recipes\Mafi &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\Definitions\Mafi&quot; /S | echo" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\Recipes\CustomAssets &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\Definitions\CustomAssets&quot; /S | echo" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\Recipes\Assets &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\Assets&quot; /S | echo" />
+    <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="@rem copy .\bin\Debug\net471\Newtonsoft.Json.dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="robocopy .\AssetBundles &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\Recipes\Definitions &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Definitions&quot; | echo" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\Recipes\Mafi &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Definitions\Mafi&quot; /S | echo" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\Recipes\CustomAssets &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Definitions\CustomAssets&quot; /S | echo" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\Recipes\Assets &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Assets&quot; /S | echo" />
   </Target>
 </Project>
