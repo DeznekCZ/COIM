@@ -181,7 +181,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="mkdir &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />

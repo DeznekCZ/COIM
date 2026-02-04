@@ -26,7 +26,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CustomAssets\__init__.py" />
+    <Compile Include="Definitions\iron_recycling_recipe.py" />
     <Compile Include="Definitions\liquified_coal.py" />
+    <Compile Include="Definitions\steam_heating.py" />
     <Compile Include="Mafi\Base\Ai\__init__.py" />
     <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\__init__.py" />
     <Compile Include="Mafi\Base\Prototypes\Buildings\__init__.py" />

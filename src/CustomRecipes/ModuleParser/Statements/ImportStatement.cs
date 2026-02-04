@@ -29,7 +29,7 @@ namespace CustomAssets.Python
                 {
                     if (item.value == "*")
                     {
-                        throw new PythonParseException(item, "Cannot use * for import of captain of insustry classes");
+                        throw new PythonParseException(item, "Cannot use * for import of captain of industry classes");
                     }
 
                     string fullName = name + "." + item.value;

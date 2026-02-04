@@ -26,7 +26,9 @@ namespace CustomAssets
             //registrator.RegisterData<Terrain>();
 
             // Use data class registration to register other protos such as machines, recipes, etc.
-            registrator.RegisterData<AssetRegistrator>();
+			AssetRegistrator.BASE_PATH = Manifest.RootDirectoryPath;
+            new AssetRegistrator().RegisterData(registrator);
+            //registrator.RegisterData<AssetRegistrator>();
 
             // Registers all research from this assembly. See ExampleResearchData.cs for examples.
             //registrator.RegisterDataWithInterface<IResearchNodesData>();
