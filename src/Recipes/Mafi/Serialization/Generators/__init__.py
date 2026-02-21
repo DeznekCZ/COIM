@@ -1,85 +1,35 @@
 
 class GeneratorContext:
     def __init__(self):
-        self.AllTypes = None
-        self.NonSerializedGlobalDeps = None
-        self.TypeSerializationSpecs = None
-        self.GlobalLog = None
+        pass
+
 
 class MembersGenerator:
-    TYPE_TO_WRITE_METHOD_NAME = None
-    TYPE_TO_READ_METHOD_NAME = None
-    SAVE_VERSION_NAMES = None
     def __init__(self):
         pass
 
 
 class MemberWrapper:
     def __init__(self):
-        self.NewInSaveVersion = None
-        from Mafi import Option
-        self.DefaultValueFromResolver = Option()
-        self.IsCtorArg = False
-        self.IsLoadedAsGlobalDep = False
-        self.IsDirectCallSerializationDisabled = False
-        self.ShouldAssignToObj = False
-        self.IsSerialized = False
-        self.NeedsStaticSaveVersion = False
-        self.Owner = None
-        self.IsField = False
-        self.Name = ""
-        self.Type = None
-        self.LoadViaReflection = False
-        self.NewInstanceOnLoad = Option()
-        self.DeprecatedInSaveVersion = None
-        self.RemovedInSaveVersion = None
-        self.CtorSortingIndex = None
-        self.NameForSorting = ""
-        self.CustomValueWhenNotLoaded = Option()
-        self.GlobalDepTypeOverride = Option()
-        self.SerializeUsingNonVariableEncoding = False
-        self.SerializeNullAsEmptyArray = False
-        self.DeserializeMethodName = Option()
+        pass
+
 
 class SerializerGenerator:
-    GENERATED_FILE_EXT = ""
-    SERIALIZE_METHOD_NAME = ""
-    DESERIALIZE_METHOD_NAME = ""
     def __init__(self):
         pass
 
 
     class GenSpecContext:
         def __init__(self):
-            self.NonSerializedGlobalDeps = None
-            self.SpecialSerializedTypes = None
-            from Mafi import Option
-            self.GenSerializerAttr = Option()
+            pass
+
 
 class SerializerGeneratorResult:
     def __init__(self):
-        self.FilePath = ""
-        self.NewContents = ""
+        pass
+
 
 class TypeSerializationSpec:
-    CTOR_ARG_PREFIX = ""
-    OBJ_NAME = ""
     def __init__(self):
-        from Mafi import Option
-        self.SerializedDueToDerivedClass = Option()
-        self.HasBaseTypeWithSomethingToSerialize = False
-        self.Type = None
-        self.ClassName = ""
-        self.FileName = ""
-        self.Namespace = ""
-        self.Usings = None
-        self.Members = None
-        self.InitCalls = None
-        self.LoadedCtorArgs = None
-        self.SortedCtorArgs = None
-        self.NonCtorArgs = None
-        self.SerializeAsSingleton = Option()
-        self.HasCustomDataSerialization = False
-        self.TypeNewInSaveVersion = None
-        self.HasSomethingToSerialize = False
-        self.NeedsStaticSaveVersion = False
+        pass
+

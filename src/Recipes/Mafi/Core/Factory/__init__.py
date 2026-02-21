@@ -1,20 +1,50 @@
 
 class IComputingManager:
     def __init__(self):
-        self.ComputingProductProto = None
-        self.ProducedLastTick = None
-        self.DemandedThisTick = None
-        self.GenerationCapacityThisTick = None
+        pass
+
 
 class FluidIndicatorGfxParams:
     def __init__(self):
-        self.SizePerTextureWidthMeters = 0.0
-        self.DetailsScale = 0.0
-        self.StillMovementScale = 0.0
+        pass
+
+
+class IEntityWithAssignedRecipes:
+    def __init__(self):
+        pass
+
 
 class LoosePileTextureParams:
-    Default = None
     def __init__(self):
-        self.Scale = 0.0
-        self.OffsetX = 0.0
-        self.OffsetY = 0.0
+        pass
+
+
+class IEntityWithProductivityCounter:
+    def __init__(self):
+        pass
+
+
+class ProductivityCounter:
+    def __init__(self):
+        pass
+
+
+class ProductivityCounterHistory:
+    def __init__(self):
+        pass
+
+
+    class Data:
+        def __init__(self):
+            pass
+
+
+class ProductivityCounterLabels:
+    def __init__(self):
+        pass
+
+
+class ProductivityLabelCategory:
+    def __init__(self):
+        pass
+

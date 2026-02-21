@@ -1,181 +1,182 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{6262AECD-D163-4E38-90E3-751FEFA61B20}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>ProgramableNetwork.ModuleTester</RootNamespace>
-    <AssemblyName>ProgramableNetwork.ModuleTester</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\mscorlib.dll</HintPath>
-    </Reference>
-    <Reference Include="netstandard">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\netstandard.dll</HintPath>
-    </Reference>
-    <Reference Include="System">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Serialization">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Runtime.Serialization.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Security">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Security.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ServiceModel.Internals">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.ServiceModel.Internals.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Transactions">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Transactions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Xml.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.Linq">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Xml.Linq.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ComponentModel.Composition">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.ComponentModel.Composition.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Configuration">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Configuration.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Core">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data.DataSetExtensions">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Data.DataSetExtensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Drawing">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Drawing.dll</HintPath>
-    </Reference>
-    <Reference Include="System.EnterpriseServices">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.EnterpriseServices.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.Compression">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.IO.Compression.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.Compression.FileSystem">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.IO.Compression.FileSystem.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Http">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Net.Http.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Numerics.dll</HintPath>
-    </Reference>
-    <Reference Include="Mafi">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.dll</HintPath>
-    </Reference>
-    <Reference Include="Mafi.Core">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Mafi.Base">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Base.dll</HintPath>
-    </Reference>
-    <Reference Include="Mafi.Unity">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Unity.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AssetBundleModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.ParticleSystemModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AnimationModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.ScreenCaptureModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ScreenCaptureModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UIModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TerrainPhysicsModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainPhysicsModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UIElementsModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIElementsModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.VideoModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AudioModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TerrainModule">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.VectorGraphics">
-      <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Unity.VectorGraphics.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CustomRecipes\CustomAssets.csproj">
-      <Project>{f9906ee7-1fb4-49eb-a31d-16dbbb7cf3c1}</Project>
-      <Name>CustomAssets</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net48</TargetFramework>
+		<Configurations>Debug;Release</Configurations>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<WarningLevel>9999</WarningLevel>
+		<LangVersion>latest</LangVersion>
+		<!-- Version, AssemblyVersion and AssemblyFileVersion is automatically generated from 'manifest.json' -->
+
+		<!-- Environment or project variable 'COI_ROOT' must be set. -->
+		<COI_ROOT>C:\git\Game\bin</COI_ROOT>
+
+		<!-- Environment or project variable 'COI_MODS' must be set. -->
+		<COI_MODS>$(APPDATA)\Captain of Industry - 0.8.0\Mods</COI_MODS>
+
+		<!-- When the name of unity project is changed, the destionation folder must be adjusted -->
+		<!--<UnityProjectName>ExampleMod.Unity</UnityProjectName>-->
+
+		<!-- Require DLC -->
+		<Supporter>true</Supporter>
+		<TrainsDlc>true</TrainsDlc>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<DefineConstants>DEBUG</DefineConstants>
+		<OutputPath>bin\Debug\</OutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<DefineConstants></DefineConstants>
+		<Optimize>true</Optimize>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<OutputPath>bin\Release\</OutputPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\CustomRecipes\CustomAssets.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--<Reference Include="mscorlib">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\mscorlib.dll</HintPath>
+		</Reference>-->
+		<Reference Include="netstandard">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\netstandard.dll</HintPath>
+		</Reference>
+		<Reference Include="System">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Runtime">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Runtime.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Runtime.Serialization">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Runtime.Serialization.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Security">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Security.dll</HintPath>
+		</Reference>
+		<Reference Include="System.ServiceModel.Internals">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.ServiceModel.Internals.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Transactions">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Transactions.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Xml">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Xml.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Xml.Linq">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Xml.Linq.dll</HintPath>
+		</Reference>
+		<Reference Include="System.ComponentModel.Composition">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.ComponentModel.Composition.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Configuration">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Configuration.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Core">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Data.DataSetExtensions">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Data.DataSetExtensions.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Data">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Data.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Drawing">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Drawing.dll</HintPath>
+		</Reference>
+		<Reference Include="System.EnterpriseServices">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.EnterpriseServices.dll</HintPath>
+		</Reference>
+		<Reference Include="System.IO.Compression">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.IO.Compression.dll</HintPath>
+		</Reference>
+		<Reference Include="System.IO.Compression.FileSystem">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.IO.Compression.FileSystem.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Net.Http">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Net.Http.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Numerics">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Numerics.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Core">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Base">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Base.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Unity">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Unity.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Supporter" Condition="'$(Supporter)' == 'true'">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Supporter.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.TrainsDlc" Condition="'$(TrainsDlc)' == 'true'">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.TrainsDlc.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.TrainsDlc" Condition="'$(TrainsDlc)' == 'true'">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.TrainsDlc.Unity.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.AssetBundleModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.InputLegacyModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.ParticleSystemModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.PhysicsModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.AnimationModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.ScreenCaptureModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ScreenCaptureModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.TextRenderingModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UIModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.TerrainPhysicsModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainPhysicsModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UIElementsModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIElementsModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.VideoModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.AudioModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.ImageConversionModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.TerrainModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UI">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UI.dll</HintPath>
+		</Reference>
+		<Reference Include="Unity.VectorGraphics">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Unity.VectorGraphics.dll</HintPath>
+		</Reference>
+	</ItemGroup>
 </Project>

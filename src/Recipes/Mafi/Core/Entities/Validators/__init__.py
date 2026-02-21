@@ -1,68 +1,55 @@
 
 class EntityValidationResult:
-    Success = None
     def __init__(self):
-        self.IsSuccess = False
-        self.IsError = False
-        self.ValidationStatus = None
-        self.ErrorMessageForPlayer = ""
-        self.ErrorMessage = ""
+        pass
+
 
 class EntityValidationResultStatus:
-    Valid = None
-    Error = None
-    FatalError = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class IEntityAdditionValidator:
     def __init__(self):
-        self.Priority = None
+        pass
+
 
 class IEntityPreAddValidator:
     def __init__(self):
-        self.Priority = None
+        pass
+
 
 class EntityValidatorPriority:
-    Low = None
-    Default = None
-    High = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class IEntityAddRequest:
     def __init__(self):
-        self.ReasonToAdd = None
+        pass
+
 
 class IEntityWithOccupiedTilesAddRequest:
     def __init__(self):
-        self.Proto = None
-        self.Origin = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        from Mafi import Option
-        self.IgnoreForCollisions = Option()
-        self.RecordTileErrorsAndMetadata = False
-        self.ReasonToAdd = None
+        pass
+
 
 class ILayoutEntityAddRequest:
     def __init__(self):
-        self.Transform = None
-        self.Layout = None
-        self.Proto = None
-        self.Origin = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        from Mafi import Option
-        self.IgnoreForCollisions = Option()
-        self.RecordTileErrorsAndMetadata = False
-        self.ReasonToAdd = None
+        pass
+
 
 class IAddRequestMetadata:
     def __init__(self):
         pass
 
 
+class ValidationSuppressFlag:
+    def __init__(self):
+        pass
+
+
 class IEntityRemovalValidator:
     def __init__(self):
-        self.Priority = None
+        pass
+

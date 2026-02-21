@@ -1,10 +1,8 @@
 
 class LocStrFormatted:
-    Empty = None
     def __init__(self):
-        self.IsEmptyOrNull = False
-        self.IsNotEmpty = False
-        self.Value = ""
+        pass
+
 
 class IntegerSiSuffixFormatter:
     def __init__(self):
@@ -12,70 +10,54 @@ class IntegerSiSuffixFormatter:
 
 
 class LocalizationManager:
-    CurrentLangInfo = None
-    CurrentCultureInfo = None
-    TranslationWarnings = None
-    TranslationErrors = None
-    LanguagesAvailable = None
-    EN_US_CULTURE_INFO_ID = ""
-    TODO_HIDE = ""
-    HIDE_HIDE = ""
     def __init__(self):
         pass
 
 
     class LocData:
         def __init__(self):
-            self.TranslatedStrings = None
+            pass
+
 
     class LangInfo:
         def __init__(self):
-            self.CultureInfoId = ""
-            self.LanguageTitle = ""
-            self.FileName = ""
-            self.PercentTranslated = None
-            self.PluralFormsCount = 0
-            self.PluralIndexFunction = None
-            self.UsesSymbols = False
+            pass
+
 
 class Loc:
-    NAME_SUFFIX = ""
-    DESC_SUFFIX = ""
     def __init__(self):
         pass
 
 
 class LocStr:
-    Empty = None
     def __init__(self):
-        self.AsFormatted = None
-        self.Id = ""
-        self.TranslatedString = ""
+        pass
+
 
 class LocStr1:
-    Empty = None
     def __init__(self):
-        self.Id = ""
+        pass
+
 
 class LocStr2:
-    Empty = None
     def __init__(self):
-        self.Id = ""
+        pass
+
 
 class LocStr3:
-    Empty = None
     def __init__(self):
-        self.Id = ""
+        pass
+
 
 class LocStr4:
-    Empty = None
     def __init__(self):
-        self.Id = ""
+        pass
+
 
 class LocStr1Plural:
-    Empty = None
     def __init__(self):
-        self.Id = ""
+        pass
+
 
 class LocStrExtensions:
     def __init__(self):

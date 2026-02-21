@@ -1,22 +1,20 @@
 
 class ProductResource:
     def __init__(self):
-        self.Product = None
-        self.Height = None
-        self.Depth = None
+        pass
+
 
 class ProductVirtualResource:
     def __init__(self):
-        self.Product = None
-        self.VirtualThickness = None
+        pass
+
 
 class TerrainResourcesProvider:
     def __init__(self):
-        self.LooseTerrainProducts = None
-        self.VirtualResourceProducts = None
+        pass
+
 
 class TerrainTileResources:
     def __init__(self):
-        self.Tile = None
-        self.Products = None
-        self.VirtualResources = None
+        pass
+

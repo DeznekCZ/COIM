@@ -1,25 +1,20 @@
 
 class CoreProtoTags:
-    MechanicalShaft = None
     def __init__(self):
         pass
 
 
 class CombineUnderProtoParam:
     def __init__(self):
-        self.AllowedProtoType = None
-        self.Proto = None
+        pass
+
 
 class EntityCosts:
-    None = None
     def __init__(self):
-        self.Price = None
-        self.Workers = 0
-        self.DefaultPriority = 0
-        self.Maintenance = None
+        pass
+
 
 class EntityCostsTpl:
-    Build = None
     def __init__(self):
         pass
 
@@ -31,213 +26,143 @@ class EntityCostsTpl:
 
     class MaintenanceCostsTpl:
         def __init__(self):
-            self.Product = None
-            self.Quantity = None
-            self.ExtraBufferDuration = None
-            self.InitialMaintenanceBoost = None
+            pass
+
 
 class IProtoWithPowerConsumption:
     def __init__(self):
-        self.ElectricityConsumed = None
+        pass
+
 
 class IProtoWithPowerProduction:
     def __init__(self):
-        self.ElectricityProduced = None
+        pass
+
 
 class IProtoWithUnityConsumption:
     def __init__(self):
-        self.UnityMonthlyCost = None
+        pass
+
 
 class IProtoWithComputingConsumption:
     def __init__(self):
-        self.ComputingConsumed = None
+        pass
+
 
 class IProtoWithRecipes:
     def __init__(self):
-        self.Recipes = None
+        pass
+
 
 class IProtoWithUiRecipe:
     def __init__(self):
-        self.Recipe = None
+        pass
+
 
 class IProtoWithUiRecipes:
     def __init__(self):
-        self.Recipes = None
+        pass
+
 
 class IProtoWithAnimation:
     def __init__(self):
-        self.AnimationParams = None
+        pass
+
 
 class Proto:
-    AllPhantoms = None
     def __init__(self):
-        from Mafi.Core.Prototypes import Proto
-        self.Id = Proto.ID()
+        pass
 
-        self.Strings = None
-        self.IsNotPhantom = False
-        self.IsInitialized = False
-        self.Mod = None
-        self.Tags = None
-        self.IsNotAvailable = False
-        self.IsAvailable = False
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsLockedButAvailable = False
-        self.IsObsolete = False
-        self.IsPhantom = False
 
     class ID:
         def __init__(self):
-            self.Value = ""
+            pass
+
 
     class Str:
-        Empty = None
         def __init__(self):
-            self.Name = None
-            self.DescShort = None
+            pass
+
 
     class Gfx:
-        EMPTY_PATH = ""
-        GENERATED_ICON_PATH_PREFIX = ""
-        GENERATED_ANIMATION_PATH_PREFIX = ""
         def __init__(self):
             pass
 
 
 class IProtoBuilder:
     def __init__(self):
-        self.Registrator = None
-        self.ProtosDb = None
+        pass
+
 
 class IProtoWithIconAndName:
     def __init__(self):
-        self.QuantityFormatter = None
-        self.IconPath = ""
-        self.Strings = None
-        from Mafi.Core.Prototypes import Proto
-        self.Id = Proto.ID()
+        pass
 
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsAvailable = False
-        self.IsNotAvailable = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsInitialized = False
-        self.Mod = None
 
 class IProtoWithIcon:
     def __init__(self):
-        self.IconPath = ""
-        self.Strings = None
-        from Mafi.Core.Prototypes import Proto
-        self.Id = Proto.ID()
+        pass
 
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsAvailable = False
-        self.IsNotAvailable = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsInitialized = False
-        self.Mod = None
+
+class IProtoWithParticleColor:
+    def __init__(self):
+        pass
+
+
+class IProtoWithPreviewIcons:
+    def __init__(self):
+        pass
+
 
 class IProtoWithPropertiesUpdate:
     def __init__(self):
-        self.Strings = None
-        from Mafi.Core.Prototypes import Proto
-        self.Id = Proto.ID()
+        pass
 
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsAvailable = False
-        self.IsNotAvailable = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsInitialized = False
-        self.Mod = None
 
 class IProtoWithTiers:
     def __init__(self):
-        self.TierData = None
-        self.IconPath = ""
-        self.Strings = None
-        from Mafi.Core.Prototypes import Proto
-        self.Id = Proto.ID()
+        pass
 
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsAvailable = False
-        self.IsNotAvailable = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsInitialized = False
-        self.Mod = None
 
 class IProtoWithUpgrade:
     def __init__(self):
-        self.UpgradeNonGeneric = None
-        self.TierData = None
-        self.IconPath = ""
-        self.Strings = None
-        from Mafi.Core.Prototypes import Proto
-        self.Id = Proto.ID()
+        pass
 
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsAvailable = False
-        self.IsNotAvailable = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsInitialized = False
-        self.Mod = None
 
-class IUpgradeData:
+class IProtoWithUpgradeAndCustomUi:
     def __init__(self):
-        from Mafi import Option
-        self.NextTierNonGeneric = Option()
-        self.PreviousTierNonGeneric = Option()
-        self.SkipFromReplaceFlow = False
-        self.CannotDowngrade = False
-        self.CannotSkipUpgrade = False
-        self.CannotMove = False
+        pass
+
 
 class ITierData:
     def __init__(self):
-        from Mafi import Option
-        self.NextTierIndirect = Option()
-        self.PreviousTierIndirect = Option()
-        self.TierNumberForUi = 0
+        pass
+
 
 class UpgradeExtensions:
     def __init__(self):
         pass
 
 
+class UpgradeData:
+    def __init__(self):
+        pass
+
+
 class TierData:
     def __init__(self):
-        from Mafi import Option
-        self.NextTierIndirect = Option()
-        self.PreviousTierIndirect = Option()
-        self.TierNumberForUi = 0
+        pass
+
 
 class IProto:
     def __init__(self):
-        self.Strings = None
-        from Mafi.Core.Prototypes import Proto
-        self.Id = Proto.ID()
+        pass
 
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsAvailable = False
-        self.IsNotAvailable = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsInitialized = False
-        self.Mod = None
+
+class InvalidProto:
+    def __init__(self):
+        pass
+
 
 class ProtoChecks:
     def __init__(self):
@@ -249,27 +174,25 @@ class INotInitializedProto:
         pass
 
 
+class IProtoWithAssets:
+    def __init__(self):
+        pass
+
+
+class IProtoWithValidationSuppressFlag:
+    def __init__(self):
+        pass
+
+
 class ProtoInitException:
     def __init__(self):
-        self.Message = ""
-        self.Data = None
-        self.InnerException = None
-        self.TargetSite = None
-        self.StackTrace = ""
-        self.HelpLink = ""
-        self.Source = ""
-        self.HResult = 0
+        pass
+
 
 class InvalidProtoException:
     def __init__(self):
-        self.Message = ""
-        self.Data = None
-        self.InnerException = None
-        self.TargetSite = None
-        self.StackTrace = ""
-        self.HelpLink = ""
-        self.Source = ""
-        self.HResult = 0
+        pass
+
 
 class ProtoExtensions:
     def __init__(self):
@@ -278,8 +201,8 @@ class ProtoExtensions:
 
 class ProtosDb:
     def __init__(self):
-        self.ProtosLockedOnInit = None
-        self.PropertyIdsToTrack = None
+        pass
+
 
 class ProtosSerializerFactory:
     def __init__(self):
@@ -293,17 +216,20 @@ class NoProtoAllowedSerializerFactory:
 
 class Tag:
     def __init__(self):
-        self.TargetType = None
-        self.Id = ""
+        pass
+
 
 class IProtoParam:
     def __init__(self):
-        self.AllowedProtoType = None
+        pass
+
 
 class UnlockedProtosDb:
     def __init__(self):
-        self.OnUnlockedSetChanged = None
+        pass
+
 
 class IUnlockedProtosConfig:
     def __init__(self):
-        self.ShouldUnlockAllProtosOnInit = False
+        pass
+

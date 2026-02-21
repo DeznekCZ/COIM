@@ -6,8 +6,15 @@ class InlinedOpEqBenchmark:
 
     class NonInlinedOps:
         def __init__(self):
-            self.Value = 0
+            pass
+
 
     class InlinedOps:
         def __init__(self):
-            self.Value = 0
+            pass
+
+
+class StaticGetterVsFieldBenchmark:
+    def __init__(self):
+        pass
+

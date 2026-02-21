@@ -1,246 +1,148 @@
 
 class Chunk64Area:
     def __init__(self):
-        self.TotalChunksCount = 0
-        self.TotalTilesCount = 0
-        self.Area2i = None
-        self.Origin = None
-        self.Size = None
+        pass
+
 
 class CoastLinesData:
     def __init__(self):
-        self.CoastLines = None
+        pass
+
 
 class CustomTerrainPostProcessorV2:
     def __init__(self):
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
-        self.ParallelizationStrategy = None
-        self.SortingPriority = 0
-        self.PassCount = 0
-        self.LastGenerationTime = None
+        pass
+
 
 class EncodedImageAndMatrix:
     def __init__(self):
-        self.ImageData = None
-        self.CameraPose = None
-        self.ViewProjectionMatrix = None
-        self.FogDensity = 0.0
+        pass
+
 
 class FlatTerrainGenerator:
     def __init__(self):
-        self.Height = None
-        self.TerrainWidth = 0
-        self.TerrainHeight = 0
-        self.Bedrock = None
-        self.DoNotCreateOcean = False
+        pass
+
 
 class MapEdgeType:
     def __init__(self):
-        self.GroundTowardsMinusX = False
-        self.GroundTowardsMinusY = False
-        self.GroundTowardsPlusX = False
-        self.GroundTowardsPlusY = False
+        pass
+
 
 class MapOffLimitsSize:
-    Minimal = None
-    Default = None
     def __init__(self):
-        self.MinusX = None
-        self.MinusY = None
-        self.PlusX = None
-        self.PlusY = None
+        pass
+
 
 class MapOtherResourceStats:
     def __init__(self):
-        from Mafi.Core.Products import ProductProto
-        self.ProductProtoId = ProductProto.ID()
+        pass
 
-        self.Quantity = None
 
 class MapProductStats:
     def __init__(self):
-        from Mafi.Core.Products import ProductProto
-        self.ProductProtoId = ProductProto.ID()
+        pass
 
-        self.DisplayName = ""
-        self.Quantity = None
 
 class MapResourceLocation:
     def __init__(self):
-        from Mafi.Core.Products import ProductProto
-        self.ProductProtoId = ProductProto.ID()
+        pass
 
-        self.Position = None
 
 class MapTerrainResourceStats:
     def __init__(self):
-        from Mafi.Core.Prototypes import Proto
-        self.MaterialProtoId = Proto.ID()
+        pass
 
-        self.VolumeTilesCubed = 0
 
 class StartingLocationConfig:
     def __init__(self):
-        self.StartingLocationIndex = 0
-        self.SetStartingLocationIndex = 0
+        pass
+
 
 class StartingLocationPreview:
     def __init__(self):
-        self.Position = None
-        self.ShoreDirection = None
-        from Mafi import Option
-        self.Description = Option()
-        self.Difficulty = None
-        self.StartingLocationArea = None
-        self.ExtraStartingResources = None
+        pass
+
 
 class TerrainGenerationContext:
     def __init__(self):
-        self.Area = None
-        self.ExtraData = None
-        self.TerrainSize = None
-        self.InitialMapCreationSaveVersion = 0
-        self.DataOrigin = None
-        self.ChunkArea = None
-        self.Data = None
-        self.BedrockMaterial = None
-        self.AllMaterials = None
+        pass
+
 
 class TerrainGenerator:
-    REPORT_PROGRESS_STEPS = 0
     def __init__(self):
-        self.TerrainWidth = 0
-        self.TerrainHeight = 0
-        self.Bedrock = None
-        self.DoNotCreateOcean = False
-        self.TerrainChunkCoords = None
+        pass
+
 
 class TerrainGeneratorConfig:
     def __init__(self):
-        self.TerrainChunkGeneratorType = None
+        pass
+
 
 class TextConfigurableNoise2dFactory:
     def __init__(self):
-        self.Configuration = ""
-        self.RebuildUi = False
-        self.Parameters = None
+        pass
+
 
 class WorldRegionMap:
-    MAX_MAP_FILE_NAME_LENGTH = 0
     def __init__(self):
-        self.Size = None
-        self.BedrockMaterial = None
-        self.MapEdgeType = None
-        self.OffLimitsSize = None
-        self.TerrainFeatureGenerators = None
-        self.TerrainPostProcessors = None
-        self.VirtualResourcesGenerators = None
-        self.StartingLocations = None
-        self.BaseConfig = None
-        self.TerrainFeatureGeneratorsList = None
-        self.TerrainPostProcessorsList = None
-        self.VirtualTerrainResourceGeneratorList = None
-        self.StartingLocationsList = None
+        pass
+
 
 class WorldRegionMapAdditionalData:
-    MAX_DEPTH_FOR_EASY_RESOURCES = None
     def __init__(self):
-        self.NonOceanTilesCount = 0
-        self.FlatNonOceanTilesCount = 0
-        self.StartingLocations = None
-        self.EasyToReachTerrainResourcesStats = None
-        self.TotalTerrainResourcesStats = None
-        self.EasyToReachProductStats = None
-        self.TotalProductStats = None
-        self.EasyToReachOtherResourcesStats = None
-        self.TotalOtherResourcesStats = None
-        self.ResourceLocations = None
-        self.TilesAtOrAboveElevationDataSorted = None
-        self.ThumbnailLargeData = None
-        self.PreviewImagesData = None
-        self.VersionHistory = None
+        pass
+
 
 class WorldRegionMapBaseConfig:
     def __init__(self):
-        self.MapEdgeType = None
-        self.OffLimitsSize = None
+        pass
+
 
 class WorldRegionMapPlayerConfig:
     def __init__(self):
-        self.SetStartingLocationIndex = 0
+        pass
+
 
 class WorldRegionMapPreviewData:
-    MAX_NAME_LENGTH = 0
-    MAX_DESCRIPTION_LENGTH = 0
-    MAX_AUTHOR_LENGTH = 0
     def __init__(self):
-        self.Name = ""
-        from Mafi import Option
-        self.NameTranslationId = Option()
-        self.Description = ""
-        self.DescriptionTranslationId = Option()
-        self.MapVersion = 0
-        self.CreatedInSaveVersion = 0
-        self.CreatedInGameVersion = ""
-        self.AuthorName = ""
-        self.IsPublished = False
-        self.CreatedDateTimeUtc = None
-        self.LastEditedDateTimeUtc = None
-        self.Difficulty = None
-        self.MapSize = None
-        self.ThumbnailImageData = None
-        self.RequiredMods = None
-        self.IsProtected = False
-        self.FilePath = Option()
+        pass
+
 
 class WorldRegionMapVersionEntry:
     def __init__(self):
-        self.Version = 0
-        self.Description = ""
-        self.DateTimeUtc = None
+        pass
+
 
 class ConfigurableNoise2dParamSpec:
     def __init__(self):
-        self.Name = ""
-        self.Type = None
-        from Mafi import Option
-        self.Description = Option()
+        pass
+
 
 class ConfigurableNoise2dFactorySpec:
     def __init__(self):
-        self.Parameters = None
-        self.StatementsBlocks = None
+        pass
+
 
     class Block:
         def __init__(self):
-            self.Name = ""
-            self.Statements = None
+            pass
+
 
 class ConfigurableNoise2dParser:
     def __init__(self):
-        self.InitialStatements = None
-        self.TransformStatements = None
-        self.ParameterTypeLookup = None
+        pass
+
 
     class InitialStatementData:
         def __init__(self):
-            self.Name = ""
-            from Mafi import Option
-            self.Description = Option()
-            self.Parameters = None
-            self.FactoryFn = None
+            pass
+
 
     class TransformStatementData:
         def __init__(self):
-            self.Name = ""
-            from Mafi import Option
-            self.Description = Option()
-            self.Parameters = None
-            self.FactoryFn = None
+            pass
+
 
 class FlatTerrainChunkGenerator:
     def __init__(self):
@@ -249,42 +151,33 @@ class FlatTerrainChunkGenerator:
 
 class ICellEdgeResourceGeneratorFactory:
     def __init__(self):
-        self.Name = ""
-        self.Priority = 0
-        self.GenerateNearStartLocation = False
-        self.AllowOnStartingCell = False
+        pass
+
 
 class ICellResourceGeneratorFactory:
     def __init__(self):
-        self.Name = ""
-        self.Priority = 0
-        self.GenerateNearStartLocation = False
-        self.AllowOnStartingCell = False
+        pass
+
 
 class ICellSurfaceGenerator:
     def __init__(self):
-        self.Proto = None
+        pass
+
 
 class ICellVirtualResourceFactory:
     def __init__(self):
-        self.Name = ""
-        self.Priority = 0
-        self.GenerateNearStartLocation = False
-        self.AllowOnStartingCell = False
+        pass
+
 
 class IGlobalResourceGeneratorFactory:
     def __init__(self):
-        self.Name = ""
-        self.Priority = 0
-        self.GenerateNearStartLocation = False
-        self.AllowOnStartingCell = False
+        pass
+
 
 class IResourceGeneratorFactory:
     def __init__(self):
-        self.Name = ""
-        self.Priority = 0
-        self.GenerateNearStartLocation = False
-        self.AllowOnStartingCell = False
+        pass
+
 
 class ITerrainChunkGenerator:
     def __init__(self):
@@ -298,31 +191,23 @@ class ITerrainPostProcessor:
 
 class ChunkTerrainData:
     def __init__(self):
-        self.ChunkCoord = None
-        self.Data = None
+        pass
+
 
 class TileTerrainData:
     def __init__(self):
-        self.SurfaceHeight = None
-        self.Products = None
-        self.TreeData = None
-        self.TerrainPropData = None
+        pass
+
 
 class ITerrainResource:
     def __init__(self):
-        self.Name = ""
-        self.Position = None
-        self.MaxRadius = None
-        self.Priority = 0
-        self.ResourceColor = None
+        pass
+
 
 class ITerrainResourceGenerator:
     def __init__(self):
-        self.Name = ""
-        self.Position = None
-        self.MaxRadius = None
-        self.Priority = 0
-        self.ResourceColor = None
+        pass
+
 
 class ITerrainResourceChunkGenerator:
     def __init__(self):
@@ -330,24 +215,14 @@ class ITerrainResourceChunkGenerator:
 
 
 class TerrainGeneratorBasePriority:
-    CellEdges = None
-    Resources = None
-    Trees = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class IVirtualTerrainResource:
     def __init__(self):
-        self.Product = None
-        self.ConfiguredCapacity = None
-        self.Capacity = None
-        self.Quantity = None
-        self.EmergencyQuantity = None
-        self.Name = ""
-        self.Position = None
-        self.MaxRadius = None
-        self.Priority = 0
-        self.ResourceColor = None
+        pass
+
 
 class IVirtualTerrainResourceFriend:
     def __init__(self):
@@ -361,108 +236,53 @@ class IVirtualTerrainResourceExtensions:
 
 class IWorldRegionMap:
     def __init__(self):
-        self.Size = None
-        self.BedrockMaterial = None
-        self.MapEdgeType = None
-        self.OffLimitsSize = None
-        self.TerrainFeatureGenerators = None
-        self.TerrainPostProcessors = None
-        self.VirtualResourcesGenerators = None
-        self.StartingLocations = None
+        pass
+
 
 class IVirtualTerrainResourceGenerator:
     def __init__(self):
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class IWorldRegionMapPreviewData:
     def __init__(self):
-        from Mafi import Option
-        self.NameTranslationId = Option()
-        self.Description = ""
-        self.DescriptionTranslationId = Option()
-        self.CreatedInGameVersion = ""
-        self.AuthorName = ""
-        self.IsPublished = False
-        self.CreatedDateTimeUtc = None
-        self.LastEditedDateTimeUtc = None
-        self.Difficulty = None
-        self.MapSize = None
-        self.ThumbnailImageData = None
-        self.RequiredMods = None
-        self.IsProtected = False
-        self.FilePath = Option()
-        self.Name = ""
-        self.MapVersion = 0
+        pass
+
 
 class IWorldRegionMapAdditionalData:
     def __init__(self):
-        self.NonOceanTilesCount = 0
-        self.FlatNonOceanTilesCount = 0
-        self.StartingLocations = None
-        self.EasyToReachTerrainResourcesStats = None
-        self.TotalTerrainResourcesStats = None
-        self.EasyToReachProductStats = None
-        self.TotalProductStats = None
-        self.EasyToReachOtherResourcesStats = None
-        self.TotalOtherResourcesStats = None
-        self.ResourceLocations = None
-        self.TilesAtOrAboveElevationDataSorted = None
-        self.ThumbnailLargeData = None
-        self.PreviewImagesData = None
+        pass
+
 
 class StartingLocationDifficulty:
-    Easy = None
-    Medium = None
-    Hard = None
-    Insane = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class IMapCacheManager:
     def __init__(self):
-        from Mafi import Option
-        self.LoadedMapCacheData = Option()
-        self.LoadResult = None
-        self.SaveResult = None
+        pass
+
 
 class MapCacheSaveResult:
-    Unknown = None
-    Success = None
-    InvalidChecksum = None
-    FailedToWrite = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class MapCacheLoadResult:
-    Unknown = None
-    Success = None
-    Disabled = None
-    NoFile = None
-    InvalidChecksum = None
-    InvalidVersion = None
-    FailedToRead = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class NoMapCacheManager:
     def __init__(self):
-        from Mafi import Option
-        self.LoadedMapCacheData = Option()
-        self.SaveResult = None
-        self.LoadResult = None
+        pass
+
 
 class MapCacheManager:
-    HEADER_MAP_CACHE_ASCII = None
-    HEADER_MAP_CACHE = None
     def __init__(self):
-        from Mafi import Option
-        self.LoadedMapCacheData = Option()
-        self.SaveResult = None
-        self.LoadResult = None
+        pass
+
 
 class MapCellTerrainChunkGenerator:
     def __init__(self):
@@ -471,14 +291,8 @@ class MapCellTerrainChunkGenerator:
 
 class TerrainGenerationBuffer:
     def __init__(self):
-        self.IsEmpty = False
-        self.BaseSurfaceHeight = None
-        self.SurfaceHeight = None
-        self.LowestMaterialBottomHeight = None
-        from Mafi import Option
-        self.TopMaterial = Option()
-        self.TreeData = None
-        self.TerrainPropData = None
+        pass
+
 
 class ITerrainGenerationExtraData:
     def __init__(self):
@@ -492,23 +306,18 @@ class ITerrainExtraDataRegistrator:
 
 class ITerrainGenerator:
     def __init__(self):
-        self.TerrainWidth = 0
-        self.TerrainHeight = 0
-        self.Bedrock = None
-        self.DoNotCreateOcean = False
+        pass
+
 
 class GeneratedTerrainData:
     def __init__(self):
-        self.Chunks = None
+        pass
+
 
 class TerrainGeneratorChunkData:
-    SIZE = 0
     def __init__(self):
-        self.Chunk = None
-        self.Area = None
-        self.Heights = None
-        self.MaterialLayers = None
-        self.Surfaces = None
+        pass
+
 
 class ITerrainGeneratorV2:
     def __init__(self):
@@ -517,135 +326,68 @@ class ITerrainGeneratorV2:
 
 class ITerrainFeatureBase:
     def __init__(self):
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class ITerrainFeatureGenerator:
     def __init__(self):
-        self.SortingPriority = 0
-        self.LastGenerationTime = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class TerrainFeaturePriorityBase:
-    First = None
-    TerrainResources = None
-    TerrainSurfaces = None
-    PostProcessors = None
-    Last = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class TerrainPostProcessorPriorityBase:
-    First = None
-    Erosion = None
-    RestrictPlacement = None
-    GrassOnRocks = None
-    Trees = None
-    ReplaceMaterials = None
-    MixedSurfaces = None
-    Flowers = None
-    Props = None
-    Last = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class TerrainFeatureResourceInfo:
     def __init__(self):
-        self.Position = None
-        self.ProductProto = None
+        pass
+
 
 class ITerrainFeatureWithOceanCoast:
     def __init__(self):
-        self.SortingPriority = 0
-        self.LastGenerationTime = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class IEditableTerrainFeatureWithDisplayedRadius:
     def __init__(self):
-        self.Radius = None
-        self.Is2D = False
-        self.CanRotate = False
-        self.Config = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class IEditableTerrainFeature:
     def __init__(self):
-        self.Is2D = False
-        self.CanRotate = False
-        self.Config = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class HandleData:
     def __init__(self):
-        self.Position = None
-        self.Color = None
-        self.IconColor = None
-        from Mafi import Option
-        self.IconAssetPath = Option()
-        self.Height = None
+        pass
+
 
 class ITerrainFeatureWithPreview:
     def __init__(self):
-        self.Is2D = False
-        self.CanRotate = False
-        self.Config = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class IPostProcessorWithPreview:
     def __init__(self):
-        self.Is2D = False
-        self.CanRotate = False
-        self.Config = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class ITerrainFeatureWithSimUpdate:
     def __init__(self):
-        self.Is2D = False
-        self.CanRotate = False
-        self.Config = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class ITerrainFeatureWithSyncUpdate:
     def __init__(self):
-        self.Is2D = False
-        self.CanRotate = False
-        self.Config = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class ITerrainFeatureConfig:
     def __init__(self):
@@ -659,7 +401,8 @@ class ITerrainFeatureConfigWithInit:
 
 class ITerrainFeaturePreview:
     def __init__(self):
-        self.Chunk = None
+        pass
+
 
 class IEditableTerrainFeaturePreview:
     def __init__(self):
@@ -668,24 +411,13 @@ class IEditableTerrainFeaturePreview:
 
 class ITerrainPostProcessorV2:
     def __init__(self):
-        self.ParallelizationStrategy = None
-        self.SortingPriority = 0
-        self.PassCount = 0
-        self.LastGenerationTime = None
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class IStartingLocationV2:
     def __init__(self):
-        self.Order = 0
-        self.Name = ""
-        self.Id = 0
-        self.IsDisabled = False
-        self.IsUnique = False
-        self.IsImportable = False
+        pass
+
 
 class ICustomTerrainPostProcessor:
     def __init__(self):
@@ -693,24 +425,19 @@ class ICustomTerrainPostProcessor:
 
 
 class TerrainGeneratorV2:
-    MAP_HEIGHT_CAP = 0
     def __init__(self):
         pass
 
 
 class TerrainGeneratorV2Config:
     def __init__(self):
-        self.MaxDegreeOfParallelism = None
+        pass
+
 
 class MaxDegreeOfParallelism:
-    ProcessorsCount = None
-    OneThread = None
-    TwoThreads = None
-    FourThreads = None
-    EightThreads = None
-    SixteenThreads = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class MaxDegreeOfParallelismExtensions:
     def __init__(self):
@@ -718,11 +445,9 @@ class MaxDegreeOfParallelismExtensions:
 
 
 class TerrainPostProcessorParallelizationStrategy:
-    AnalyzeAllThenApply = None
-    AnalyzeInterleaveAndApply = None
-    CustomSchedule = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class VirtualResourceData:
     def __init__(self):
@@ -736,9 +461,8 @@ class IWorldRegionMapFactory:
 
 class WorldRegionMapFactoryConfig:
     def __init__(self):
-        self.FactoryType = None
-        from Mafi import Option
-        self.Config = Option()
+        pass
+
 
 class StaticWorldRegionMapFactory:
     def __init__(self):
@@ -747,8 +471,8 @@ class StaticWorldRegionMapFactory:
 
     class Config:
         def __init__(self):
-            self.Map = None
-            self.PreviewData = None
+            pass
+
 
 class FileWorldRegionMapFactory:
     def __init__(self):
@@ -757,4 +481,5 @@ class FileWorldRegionMapFactory:
 
     class Config:
         def __init__(self):
-            self.MapFilePath = ""
+            pass
+

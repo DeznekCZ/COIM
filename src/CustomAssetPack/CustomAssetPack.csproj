@@ -1,0 +1,361 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net48</TargetFramework>
+		<Configurations>Debug;Release;Debug_Pack</Configurations>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<WarningLevel>9999</WarningLevel>
+		<LangVersion>latest</LangVersion>
+		<!-- Version, AssemblyVersion and AssemblyFileVersion is automatically generated from 'manifest.json' -->
+
+		<!-- Environment or project variable 'COI_ROOT' must be set. -->
+		<COI_ROOT>C:\git\Game\bin</COI_ROOT>
+
+		<!-- Environment or project variable 'COI_MODS' must be set. -->
+		<COI_MODS>$(APPDATA)\Captain of Industry - 0.8.0\Mods</COI_MODS>
+
+		<!-- When the name of unity project is changed, the destionation folder must be adjusted -->
+		<!--<UnityProjectName>ExampleMod.Unity</UnityProjectName>-->
+
+		<!-- Require DLC -->
+		<Supporter>false</Supporter>
+		<TrainsDlc>false</TrainsDlc>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' ">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<DefineConstants>DEBUG</DefineConstants>
+		<OutputPath>bin\Debug\</OutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<DefineConstants></DefineConstants>
+		<Optimize>true</Optimize>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<OutputPath>bin\Release\</OutputPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\CustomRecipes\CustomAssets.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<UpToDateCheckInput Include="manifest.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</UpToDateCheckInput>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="mscorlib">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\mscorlib.dll</HintPath>
+		</Reference>
+		<Reference Include="netstandard">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\netstandard.dll</HintPath>
+		</Reference>
+		<Reference Include="System">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Runtime">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Runtime.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Runtime.Serialization">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Runtime.Serialization.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Security">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Security.dll</HintPath>
+		</Reference>
+		<Reference Include="System.ServiceModel.Internals">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.ServiceModel.Internals.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Transactions">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Transactions.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Xml">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Xml.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Xml.Linq">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Xml.Linq.dll</HintPath>
+		</Reference>
+		<Reference Include="System.ComponentModel.Composition">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.ComponentModel.Composition.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Configuration">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Configuration.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Core">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Data.DataSetExtensions">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Data.DataSetExtensions.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Data">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Data.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Drawing">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Drawing.dll</HintPath>
+		</Reference>
+		<Reference Include="System.EnterpriseServices">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.EnterpriseServices.dll</HintPath>
+		</Reference>
+		<Reference Include="System.IO.Compression">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.IO.Compression.dll</HintPath>
+		</Reference>
+		<Reference Include="System.IO.Compression.FileSystem">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.IO.Compression.FileSystem.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Net.Http">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Net.Http.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Numerics">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Numerics.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Core">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Base">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Base.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Unity">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Unity.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Supporter" Condition="'$(Supporter)' == 'true'">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Supporter.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.TrainsDlc" Condition="'$(TrainsDlc)' == 'true'">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.TrainsDlc.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.TrainsDlc" Condition="'$(TrainsDlc)' == 'true'">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.TrainsDlc.Unity.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.AssetBundleModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.InputLegacyModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.ParticleSystemModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.PhysicsModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.AnimationModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.ScreenCaptureModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ScreenCaptureModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.TextRenderingModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UIModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.TerrainPhysicsModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainPhysicsModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UIElementsModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIElementsModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.VideoModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.AudioModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.ImageConversionModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.TerrainModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UI">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UI.dll</HintPath>
+		</Reference>
+		<Reference Include="Unity.VectorGraphics">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Unity.VectorGraphics.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<!-- Version generator -->
+	<UsingTask TaskName="ProcessManifest" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.Core">
+
+		<ParameterGroup>
+			<Manifest ParameterType="System.String" Required="true" />
+			<DefaultTitle ParameterType="System.String" Required="true" />
+			<NormalizedVersion Output="true" ParameterType="System.String" />
+			<AuthorName Output="true" ParameterType="System.String" />
+			<DisplayTitle Output="true" ParameterType="System.String" />
+			<ModId Output="true" ParameterType="System.String" />
+			<Error Output="true" ParameterType="System.String" />
+			<Warning Output="true" ParameterType="System.String" />
+		</ParameterGroup>
+
+		<Task>
+			<Reference Include="System.Text.Json" />
+			<Reference Include="System.Memory" />
+			<Using Namespace="System.IO" />
+			<Using Namespace="System.Text.Json" />
+			<Using Namespace="System.Text.RegularExpressions" />
+
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+					JsonDocument doc = null;
+					try {
+						var json = File.ReadAllText(Manifest);
+						doc = JsonDocument.Parse(json);
+					}
+					catch (Exception ex)
+					{
+						Error = "Failed to read version from manifest.json: " + ex.Message;
+						NormalizedVersion = "0.0.0";
+						AuthorName = "Unknown";
+						return false;
+					}
+					try {
+						var raw = doc.RootElement.GetProperty("version").GetString();
+						
+						// Match: major.minor.patch + optional letter
+						var match = Regex.Match(raw, @"^(\d+)\.(\d+)(\.(\d+)([a-z]?))?$");
+						if (!match.Success)
+						{
+							throw new Exception("Invalid version format: " + raw);
+						}
+						
+						var major = match.Groups[1].Value;
+						var minor = match.Groups[2].Value;
+						var patch = match.Groups[4].Success ? match.Groups[4].Value : "0";
+						var suffix = match.Groups[5].Value;
+						
+						// Convert letter to number (a=1, b=2, … z=26)
+						int revision = 0;
+						if (!string.IsNullOrEmpty(suffix))
+						{
+						  revision = char.ToLower(suffix[0]) - 'a' + 1;
+						}
+						
+						NormalizedVersion = string.Join(".", major, minor, patch, revision);
+					}
+					catch (Exception ex)
+					{
+						Warning = "Failed to read version from manifest.json: " + ex.Message;
+						NormalizedVersion = "0.0.0";
+					}
+					try {
+						JsonElement authors;
+						if (doc.RootElement.TryGetProperty("authors", out authors)
+							&& authors.ValueKind == JsonValueKind.Array) {
+							AuthorName = string.Join(", ", authors.EnumerateArray().Select(s => s.GetString()));
+						} else {
+							AuthorName = "Unknown";
+						}
+					}
+					catch (Exception ex)
+					{
+						Warning = "Failed to read author from manifest.json: " + ex.Message;
+						AuthorName = "Unknown";
+					}
+					try {
+						JsonElement displayName;
+						if (doc.RootElement.TryGetProperty("display_name", out displayName)) {
+							DisplayTitle = displayName.GetString();
+						} else {
+							DisplayTitle = DefaultTitle;
+						}
+					}
+					catch (Exception ex)
+					{
+						Warning = "Failed to read display_name from manifest.json: " + ex.Message;
+						// keep default product name
+					}
+					try {
+						JsonElement modId;
+						if (doc.RootElement.TryGetProperty("id", out modId)) {
+							ModId = modId.GetString();
+						} else {
+							ModId = DefaultTitle;
+						}
+					}
+					catch (Exception ex)
+					{
+						Warning = "Failed to read id from manifest.json: " + ex.Message;
+						// keep default product name
+					}
+				]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<Target Name="ReadJsonVersion" BeforeTargets="GetAssemblyVersion" Condition=" '$(ModPack)' != '' ">
+		<Error Condition="'$(COI_ROOT)' == ''" Text="Environment or project variable 'COI_ROOT' is not set." />
+		<Error Condition="'$(COI_MODS)' == ''" Text="Environment or project variable 'COI_MODS' is not set." />
+
+		<Message Text="Receiving information for $(ModPack) to mods folder..." Importance="high" />
+		<ProcessManifest Manifest="Packs\$(ModPack)\manifest.json" DefaultTitle="$(TargetName)" ContinueOnError="true">
+			<Output TaskParameter="NormalizedVersion" PropertyName="VersionNormalized" />
+			<Output TaskParameter="AuthorName" PropertyName="AuthorName" />
+			<Output TaskParameter="DisplayTitle" PropertyName="DisplayTitle" />
+			<Output TaskParameter="ModId" PropertyName="ModId" />
+			<Output TaskParameter="Error" PropertyName="Error" />
+			<Output TaskParameter="Warning" PropertyName="Warning" />
+		</ProcessManifest>
+
+		<Error Condition="'$(Error)' != ''" Text="$(Error)" />
+		<Warning Condition="'$(Warning)' != ''" Text="$(Warning)" />
+
+		<Message Text="Found $(ModId) for $(ModPack)" Importance="high" />
+		<PropertyGroup>
+			<Version>$(VersionNormalized)</Version>
+			<FileVersion>$(VersionNormalized)</FileVersion>
+			<AssemblyVersion>$(VersionNormalized)</AssemblyVersion>
+			<AssemblyTitle>$(DisplayTitle)</AssemblyTitle>
+			<Product>$(DisplayTitle)</Product>
+			<Company>$(AuthorName)</Company>
+			<Copyright>$(AuthorName)</Copyright>
+		</PropertyGroup>
+	</Target>
+
+	<ProjectExtensions>
+		<VisualStudio>
+			<UserProperties packs_4coalliquefaction_4manifest_1json__JsonSchema="..\..\manifest.schema.json" packs_4ironrecycling_4manifest_1json__JsonSchema="..\..\manifest.schema.json" packs_4steamheating_4manifest_1json__JsonSchema="..\..\manifest.schema.json" />
+		</VisualStudio>
+	</ProjectExtensions>
+
+	<ItemGroup Condition=" '$(ProjectDir)' != '*Undefined*' ">
+		<AssetBundles Include="$(ProjectDir)\Packs\$(ModPack)\AssetBundles\**\*" Exclude="**\AssetBundles;**\AssetBundles.manifest" />
+		<Assets Include="$(ProjectDir)\Packs\$(ModPack)\Assets\**\*" />
+		<Definitions Include="$(ProjectDir)\Packs\$(ModPack)\Definitions\**\*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ModFolders Include="Packs\**\manifest.json" />
+	</ItemGroup>
+
+	<Target Name="BuildAll" AfterTargets="PostBuildEvent" Condition="'$(ModPack)' == ''">
+		<Message Text="Building all packs..." Importance="high" />
+		<MSBuild Projects="$(MSBuildProjectFile)"
+		         Targets="Build"
+		         Properties="ModPack=%(ModFolders.RecursiveDir);Configuration=Debug;Platform=AnyCPU"/>
+	</Target>
+
+	<!-- Coppies data to mod release folder. For skipping the part, comment out the full target element -->
+	<Target Name="DeployToModsFolder" AfterTargets="PostBuildEvent" Condition="'$(ModPack)' != ''">
+		<Message Text="Deploying $(DisplayTitle) to mods folder..." Importance="high" />
+		<Copy SourceFiles="$(ProjectDir)\Packs\$(ModPack)\manifest.json" DestinationFolder="$(COI_MODS)\$(ModId)\" />
+		<Copy SourceFiles="$(ProjectDir)\Packs\$(ModPack)\config.json" DestinationFolder="$(COI_MODS)\$(ModId)" ContinueOnError="true" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(COI_MODS)\$(ModId)\" />
+		<Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(COI_MODS)\$(ModId)\" Condition="'$(Configuration)' == 'Debug'" />
+		<Copy SourceFiles="@(AssetBundles)" DestinationFolder="$(COI_MODS)\$(ModId)\AssetBundles" />
+		<Copy SourceFiles="@(Assets)" DestinationFolder="$(COI_MODS)\$(ModId)\Assets\%(RecursiveDir)" />
+		<Copy SourceFiles="@(Definitions)" DestinationFolder="$(COI_MODS)\$(ModId)\Definitions\%(RecursiveDir)" />
+	</Target>
+</Project>

@@ -1,97 +1,90 @@
 
 class AssignVehicleToEntityAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class BuildStaticEntityAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class PlacementSpec:
     def __init__(self):
-        self.SecondRow = False
-        self.CustomSpacing = None
-        self.AltLane = False
-        self.Rotation = None
-        from Mafi import Option
-        self.RelativeTo = Option()
-        self.RelativeToDirection = None
-        self.RelativeOffset = None
-        self.CustomPosition = None
+        pass
+
 
 class BuildStorageAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class ScheduleCommandAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class ScheduleVehicleConstructionAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class SetAiPlayerStageAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class SetEntityEnabledAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class SetRecipeAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class SetupFarmScheduleAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class SetupTerrainDesignationsAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class StartResearchAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class ToggleLogisticsAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class UpgradeStaticEntityAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class WaitForEnoughUnityAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class WaitForNewGlobalProductsAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class WaitForNewVehiclesAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+
 
 class WaitForStaticEntitiesBuiltAction:
     def __init__(self):
-        self.ActionCoreType = None
-        self.Description = ""
+        pass
+

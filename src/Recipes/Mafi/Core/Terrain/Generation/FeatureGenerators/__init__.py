@@ -1,7 +1,8 @@
 
 class StaticNoise2dFactory:
     def __init__(self):
-        self.Noise = None
+        pass
+
 
 class INoise2dFactory:
     def __init__(self):

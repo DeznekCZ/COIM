@@ -1,197 +1,173 @@
 
 class DoNotSaveAttribute:
     def __init__(self):
-        self.TypeId = None
-        self.RemovedInSaveVersion = None
-        from Mafi import Option
-        self.ResolveAfterLoad = Option()
+        pass
+
 
 class DoNotSaveCreateNewOnLoadAttribute:
     def __init__(self):
-        self.TypeId = None
-        self.CreateNewInstanceCode = ""
-        self.RemovedInSaveVersion = None
+        pass
+
 
 class RenamedInVersionAttribute:
     def __init__(self):
-        self.TypeId = None
-        self.RenamedInSaveVersion = None
-        self.OldName = ""
+        pass
+
+
+class ChangedTypeInVersionAttribute:
+    def __init__(self):
+        pass
+
 
 class GenerateSerializer:
     def __init__(self):
-        self.TypeId = None
-        self.CustomClassDataSerialization = False
-        from Mafi import Option
-        self.SerializeAsSingleton = Option()
-        self.NewInVersion = None
+        pass
+
 
 class ManuallyWrittenSerializationAttribute:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class DisableDirectCallSerializationAttribute:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class SkipDuringDeterminismValidation:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class SerializeAsGlobalDepAttribute:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class DeserializeUsingMethodAttribute:
     def __init__(self):
-        self.TypeId = None
-        self.DeserializeMethodName = ""
+        pass
+
 
 class IgnoreMissingSerializer:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class LoadCtorAttribute:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class NewInSaveVersionAttribute:
     def __init__(self):
-        self.TypeId = None
-        self.Version = 0
-        from Mafi import Option
-        self.CustomSortingName = Option()
-        self.CustomValueWhenNotLoaded = Option()
-        self.DefaultValueFromResolver = Option()
-        self.GlobalDepTypeOverride = Option()
+        pass
+
 
 class MemberRemovedInSaveVersionAttribute:
     def __init__(self):
-        self.TypeId = None
-        self.RemovedInVersion = 0
-        self.Name = ""
-        self.Type = None
-        self.WasNewInVersion = None
-        self.WasSerializedUsingNonVariableEncoding = False
-        self.CtorSortingIndex = None
+        pass
+
 
 class OnlyForSaveCompatibilityAttribute:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class SerializeUsingNonVariableEncodingAttribute:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class InitAfterLoadAttribute:
     def __init__(self):
-        self.TypeId = None
-        self.Priority = None
+        pass
+
 
 class InitPriority:
-    ImmediatelyAfterSelfDeserialized = None
-    Highest = None
-    High = None
-    Normal = None
-    Low = None
-    Lowest = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class SerializeNullAsEmptyArrayAttribute:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class BoolSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class ByteSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class SByteSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class CharSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class ShortSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class UShortSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class IntSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class UIntSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class LongSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class ULongSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class FloatSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class DoubleSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class StringSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class TypeSerializer:
-    Instance = None
     def __init__(self):
-        self.SerializeAction = None
-        self.DeserializeFunction = None
+        pass
+
 
 class BlobReader:
     def __init__(self):
-        self.InputStream = None
-        self.DelayedDeserializationsCount = 0
-        self.ReadObjectsCount = 0
-        self.LoadedSaveVersion = 0
+        pass
+
 
 class BlobReaderExtensions:
     def __init__(self):
@@ -200,17 +176,13 @@ class BlobReaderExtensions:
 
 class BlobSubReader:
     def __init__(self):
-        self.IsDone = False
-        self.IsNotDone = False
-        self.InputStream = None
-        self.DelayedDeserializationsCount = 0
-        self.ReadObjectsCount = 0
-        self.SubStream = None
-        self.LoadedSaveVersion = 0
+        pass
+
 
 class BlobWriter:
     def __init__(self):
-        self.DelayedSerializationsCount = 0
+        pass
+
 
 class ISpecialSerializerFactory:
     def __init__(self):
@@ -222,30 +194,20 @@ class ISpecialSerializerFactoryCustom:
         pass
 
 
+class BufferedReadStream:
+    def __init__(self):
+        pass
+
+
 class CorruptedSaveException:
     def __init__(self):
-        self.Message = ""
-        self.Data = None
-        self.InnerException = None
-        self.TargetSite = None
-        self.StackTrace = ""
-        self.HelpLink = ""
-        self.Source = ""
-        self.HResult = 0
-        self.MessageForPlayer = None
-        self.DoNotOfferBugReport = False
+        pass
+
 
 class IncompatibleSaveVersionException:
     def __init__(self):
-        self.Message = ""
-        self.Data = None
-        self.InnerException = None
-        self.TargetSite = None
-        self.StackTrace = ""
-        self.HelpLink = ""
-        self.Source = ""
-        self.HResult = 0
-        self.SaveFileVersion = 0
+        pass
+
 
 class Crc32:
     def __init__(self):
@@ -254,15 +216,8 @@ class Crc32:
 
 class Crc32WriteStream:
     def __init__(self):
-        self.CanRead = False
-        self.CanSeek = False
-        self.CanWrite = False
-        self.Length = 0
-        self.Position = 0
-        self.Crc32 = None
-        self.CanTimeout = False
-        self.ReadTimeout = 0
-        self.WriteTimeout = 0
+        pass
+
 
 class CSharpGen:
     def __init__(self):
@@ -271,34 +226,23 @@ class CSharpGen:
 
 class ParameterData:
     def __init__(self):
-        self.ParentType = None
-        self.ParameterInfo = None
+        pass
+
 
 class CSharpGenCtorAttribute:
     def __init__(self):
-        self.TypeId = None
+        pass
+
 
 class GameLoadException:
     def __init__(self):
-        self.Message = ""
-        self.Data = None
-        self.InnerException = None
-        self.TargetSite = None
-        self.StackTrace = ""
-        self.HelpLink = ""
-        self.Source = ""
-        self.HResult = 0
+        pass
+
 
 class GameSaveException:
     def __init__(self):
-        self.Message = ""
-        self.Data = None
-        self.InnerException = None
-        self.TargetSite = None
-        self.StackTrace = ""
-        self.HelpLink = ""
-        self.Source = ""
-        self.HResult = 0
+        pass
+
 
 class GenericSerializersFactory:
     def __init__(self):
@@ -315,6 +259,26 @@ class JsonParser:
         pass
 
 
+class JsonParserException:
+    def __init__(self):
+        pass
+
+
+class JsonExtensions:
+    def __init__(self):
+        pass
+
+
+    class <G>$1D2253204DC2647119462CC52DCEE465:
+        def __init__(self):
+            pass
+
+
+        class <M>$721036184BA5F408A91A60F5B4D7F42B:
+            def __init__(self):
+                pass
+
+
 class JsonWriter:
     def __init__(self):
         pass
@@ -327,20 +291,13 @@ class LoadEventsCollector:
 
 class MemoryBlobWriter:
     def __init__(self):
-        self.Length = 0
-        self.BaseStream = None
-        self.DelayedSerializationsCount = 0
+        pass
+
 
 class PrintingStream:
     def __init__(self):
-        self.CanRead = False
-        self.CanSeek = False
-        self.CanWrite = False
-        self.Length = 0
-        self.Position = 0
-        self.CanTimeout = False
-        self.ReadTimeout = 0
-        self.WriteTimeout = 0
+        pass
+
 
 class ReflectionUtils:
     def __init__(self):
@@ -349,6 +306,5 @@ class ReflectionUtils:
 
 class UniqueId:
     def __init__(self):
-        self.IsObjectId = False
-        self.IsTypeId = False
-        self.Id = 0
+        pass
+

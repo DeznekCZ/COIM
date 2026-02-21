@@ -1,10 +1,8 @@
 
 class AnnularVehicleGoal:
     def __init__(self):
-        self.GoalPosition = None
-        self.Distance = None
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
 
     class Factory:
         def __init__(self):
@@ -12,33 +10,49 @@ class AnnularVehicleGoal:
 
 
 class DynamicEntityVehicleGoal:
-    GOAL_INVALID_RETRY_PF_RADIUS = None
     def __init__(self):
-        from Mafi import Option
-        self.GoalVehicle = Option()
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
 
     class Factory:
         def __init__(self):
-            self.m_vehicleSurfaceProvider = None
+            pass
+
+
+class EdgeOfMapShipGoal:
+    def __init__(self):
+        pass
+
+
+    class Factory:
+        def __init__(self):
+            pass
+
 
 class IVehicleGoal:
     def __init__(self):
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
 
 class IVehicleGoalFull:
     def __init__(self):
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
+
+class MultiTilePositionVehicleGoal:
+    def __init__(self):
+        pass
+
+
+    class Factory:
+        def __init__(self):
+            pass
+
 
 class PlantingVehicleGoal:
     def __init__(self):
-        self.GoalPosition = None
-        self.Distance = None
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
 
     class Factory:
         def __init__(self):
@@ -47,11 +61,8 @@ class PlantingVehicleGoal:
 
 class StaticEntityVehicleGoal:
     def __init__(self):
-        from Mafi import Option
-        self.GoalStaticEntity = Option()
-        self.UseCustomTarget = False
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
 
     class Factory:
         def __init__(self):
@@ -60,13 +71,18 @@ class StaticEntityVehicleGoal:
 
 class TerrainDesignationVehicleGoal:
     def __init__(self):
-        from Mafi import Option
-        self.ActualGoalDesignation = Option()
-        self.FoundGoalPosition = None
-        self.PrimaryGoalDesignation = None
-        self.ToleranceRadius = None
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
+
+    class Factory:
+        def __init__(self):
+            pass
+
+
+class TilePositionAndDirectionVehicleGoal:
+    def __init__(self):
+        pass
+
 
     class Factory:
         def __init__(self):
@@ -75,10 +91,8 @@ class TerrainDesignationVehicleGoal:
 
 class TilePositionVehicleGoal:
     def __init__(self):
-        self.GoalTile = None
-        self.ToleranceRadius = None
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
 
     class Factory:
         def __init__(self):
@@ -87,12 +101,8 @@ class TilePositionVehicleGoal:
 
 class TreeVehicleGoal:
     def __init__(self):
-        self.GoalTreeId = None
-        self.TreeDistance = None
-        self.GoalPosition = None
-        self.Distance = None
-        self.GoalName = None
-        self.IsInitialized = False
+        pass
+
 
     class Factory:
         def __init__(self):
@@ -101,8 +111,8 @@ class TreeVehicleGoal:
 
 class VehicleGoalBase:
     def __init__(self):
-        self.IsInitialized = False
-        self.GoalName = None
+        pass
+
 
 class VehicleGoalsFactory:
     def __init__(self):

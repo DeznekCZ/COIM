@@ -1,0 +1,16 @@
+﻿{
+  "id": "CustomAssets_SteamHeating",
+  "display_name": "Steam heating [CAL]",
+  "version": "0.0.1",
+  "description_short": "Adds recipse for heating of steam.",
+  "description_long": "This mod introduces new recipes for electic boiler to heat up any state of steam.",
+  "authors": [ "DeznekCZ" ],
+  "mod_dependencies": [
+    "CustomAssets>=0.1.7"
+  ],
+  "can_add_to_saved_game": true,
+  "can_remove_from_saved_game": true,
+  "non_locking_dll_load": true,
+  "min_game_version": "0.8.0",
+  "primary_dlls": [ "CustomAssetPack.dll" ]
+}

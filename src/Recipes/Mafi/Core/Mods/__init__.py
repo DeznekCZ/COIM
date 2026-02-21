@@ -1,11 +1,8 @@
 
 class IMod:
     def __init__(self):
-        self.Name = ""
-        self.Version = 0
-        self.IsUiOnly = False
-        from Mafi import Option
-        self.ModConfig = Option()
+        pass
+
 
 class IModConfig:
     def __init__(self):
@@ -14,19 +11,13 @@ class IModConfig:
 
 class DataOnlyMod:
     def __init__(self):
-        self.Name = ""
-        self.Version = 0
-        self.IsUiOnly = False
-        from Mafi import Option
-        self.ModConfig = Option()
+        pass
+
 
 class IModWithMaps:
     def __init__(self):
-        self.Name = ""
-        self.Version = 0
-        self.IsUiOnly = False
-        from Mafi import Option
-        self.ModConfig = Option()
+        pass
+
 
 class IModData:
     def __init__(self):
@@ -35,33 +26,58 @@ class IModData:
 
 class RegistrationContext:
     def __init__(self):
-        self.PrototypesDb = None
+        pass
 
-class ModsLoader:
-    ASSET_BUNDLES_DIR_NAME = ""
-    DLCS_DIR_NAME = ""
+
+class ModJsonConfig:
     def __init__(self):
         pass
 
 
-class ModGroup:
-    Core = None
-    Dlc = None
-    ThirdParty = None
+class ModJsonConfigParam:
     def __init__(self):
-        self.value__ = 0
+        pass
 
-class ModData:
+
+class ModManifest:
     def __init__(self):
-        self.IsFullyLoaded = False
-        self.FailedToLoad = False
-        self.Group = None
-        self.Name = ""
-        self.ModType = None
-        from Mafi import Option
-        self.AssetsPath = Option()
-        self.Version = None
-        self.Exception = Option()
+        pass
+
+
+class ModDependency:
+    def __init__(self):
+        pass
+
+
+class ModsLoader:
+    def __init__(self):
+        pass
+
+
+class AvailableModData:
+    def __init__(self):
+        pass
+
+
+class LoadedModData:
+    def __init__(self):
+        pass
+
+
+class InstantiatedModData:
+    def __init__(self):
+        pass
+
+
+class PublishedDlcRecord:
+    def __init__(self):
+        pass
+
+
+class InvalidModData:
+    def __init__(self):
+        pass
+
 
 class ModsExtensions:
     def __init__(self):
@@ -70,48 +86,15 @@ class ModsExtensions:
 
 class ProtoRegistrator:
     def __init__(self):
-        self.RegisteredDataClasses = None
-        self.DisableAllProtoCosts = False
-        self.DisableVehicleFuelConsumption = False
-        self.PrototypesDb = None
-        self.LayoutParser = None
-        self.BeaconProtoBuilder = None
-        self.HouseProtoBuilder = None
-        self.DataCenterProtoBuilder = None
-        self.FluidProductProtoBuilder = None
-        self.MachineProtoBuilder = None
-        self.MineTowerProtoBuilder = None
-        self.MoltenProductProtoBuilder = None
-        self.NotificationProtoBuilder = None
-        self.RecipeProtoBuilder = None
-        self.ResearchNodeProtoBuilder = None
-        self.FleetEntityHullProtoBuilder = None
-        self.SettlementModuleProtoBuilder = None
-        self.RuinsProtoBuilder = None
-        self.StorageProtoBuilder = None
-        self.CargoDepotModuleProtoBuilder = None
-        self.CargoDepotProtoBuilder = None
-        self.RainwaterHarvesterProtoBuilder = None
-        self.VehicleDepotProtoBuilder = None
-        self.FuelTankProtoBuilder = None
-        self.FuelStationProtoBuilder = None
-        self.CargoShipProtoBuilder = None
-        self.WellPumpProtoBuilder = None
-        self.TruckProtoBuilder = None
-        self.ExcavatorProtoBuilder = None
+        pass
+
 
 class DataRegistrationException:
     def __init__(self):
-        self.Message = ""
-        self.Data = None
-        self.InnerException = None
-        self.TargetSite = None
-        self.StackTrace = ""
-        self.HelpLink = ""
-        self.Source = ""
-        self.HResult = 0
+        pass
+
 
 class ProtoRegistratorConfigDevOnly:
     def __init__(self):
-        self.DisableAllProtoCosts = False
-        self.DisableVehicleFuelConsumption = False
+        pass
+

@@ -6,39 +6,18 @@ class IAsyncSavable:
 
 class ASyncSaver:
     def __init__(self):
-        self.Started = False
-        self.Finished = False
-        from Mafi import Option
-        self.LastSavePath = Option()
-        self.LastSaveError = None
-        self.LastSaveException = Option()
+        pass
+
 
 class SaveWriteStatus:
-    Unknown = None
-    OldTmpDeleted = None
-    OldTmpFailToDelete = None
-    NoOldTmp = None
-    TmpFileWritten = None
-    ChecksumComputed = None
-    ChecksumVerified = None
-    OldSaveDeleted = None
-    NoOldSave = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class GameSaveInfo:
-    Empty = None
     def __init__(self):
-        self.IsEmpty = False
-        self.GameDate = None
-        self.MapName = ""
-        self.Population = 0
-        self.ResearchNodesUnlocked = 0
-        self.ResearchNodesTotal = 0
-        self.LaunchCount = 0
-        self.Notes = ""
-        self.ThumbnailImageSize = None
-        self.ThumbnailImageBytes = None
+        pass
+
 
 class IGameSaveInfoProvider:
     def __init__(self):
@@ -51,21 +30,14 @@ class SimpleGameSaveInfoProvider:
 
 
 class SaveChecksumValidationResults:
-    FailUnknown = None
-    FailException = None
-    FailChecksum = None
-    FailDataSize = None
-    FailChecksumBeforeCompression = None
-    FailDataSizeBeforeCompression = None
-    Success = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class ModInfoRaw:
     def __init__(self):
-        self.Name = ""
-        self.Version = 0
-        self.AssemblyQualifiedTypeStr = ""
+        pass
+
 
 class GzipSaveCompressor:
     def __init__(self):
@@ -79,44 +51,28 @@ class ISaveCompressor:
 
 class ISaveConfig:
     def __init__(self):
-        self.SaveCompressionType = None
-        self.AutoSaveInterval = None
-        self.MaxAutoSavesCount = None
+        pass
+
 
 class ISaveManager:
     def __init__(self):
-        self.GameName = ""
+        pass
+
 
 class MapSerializer:
-    HEADER_MAP_ASCII = None
-    HEADER_MAP = None
-    HEADER_MAP_PREVIEW_ASCII = None
-    HEADER_MAP_PREVIEW = None
-    HEADER_MAP_EXTRA_ASCII = None
-    HEADER_MAP_EXTRA = None
-    HEADER_MAP_DATA_ASCII = None
-    HEADER_MAP_DATA = None
-    MIN_COMPATIBLE_SAVE_VERSION = 0
     def __init__(self):
-        self.LastSaveStartDuration = None
-        self.LastSaveFinalizeDuration = None
-        self.LastSaveTotalDuration = None
+        pass
+
 
 class LoadFailInfo:
     def __init__(self):
-        self.FailReason = None
-        self.SaveVersion = None
-        self.MessageForPlayer = None
+        pass
+
 
     class Reason:
-        VersionTooOld = None
-        VersionTooNew = None
-        FileAccessIssue = None
-        ModsMissing = None
-        FileCorrupted = None
-        Unknown = None
         def __init__(self):
-            self.value__ = 0
+            pass
+
 
 class ModHelper:
     def __init__(self):
@@ -129,20 +85,14 @@ class PassThroughSaveCompressor:
 
 
 class SaveCompressionType:
-    NoCompression = None
-    Gzip = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class SaveHeader:
     def __init__(self):
-        self.Header = None
-        self.Version = 0
-        self.CompressionType = None
-        self.DataSize = 0
-        self.DataCrc32Checksum = None
-        self.DataSizeBeforeCompression = 0
-        self.DataCrc32ChecksumBeforeCompression = None
+        pass
+
 
 class SaveLoadFileUtils:
     def __init__(self):
@@ -150,23 +100,11 @@ class SaveLoadFileUtils:
 
 
 class SaveManager:
-    AUTOSAVE_OPTIONS_MINUTES = None
-    AUTOSAVE_OPTIONS_DEFAULT_INDEX = 0
-    AUTOSAVE_DEFAULT_INTERVAL_MINUTES = 0
-    MAX_AUTOSAVES_COUNT_OPTIONS = None
-    MAX_AUTOSAVES_COUNT_DEFAULT_INDEX = 0
-    MAX_AUTOSAVES_COUNT_DEFAULT = 0
     def __init__(self):
-        self.AutosaveMinInterval = None
-        from Mafi import Option
-        self.LastSaveFilePath = Option()
-        self.LastAutoSaveFilePath = Option()
-        self.GameName = ""
-        self.IsSavePending = False
+        pass
+
 
 class SaveResult:
     def __init__(self):
-        self.Error = None
-        from Mafi import Option
-        self.FilePath = Option()
-        self.Exception = Option()
+        pass
+

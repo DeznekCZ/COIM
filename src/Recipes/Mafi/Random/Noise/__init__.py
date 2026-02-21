@@ -1,273 +1,168 @@
 
 class AbsNoise2D:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class ConstantNoise2D:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class ExpBendNoise2D:
-    MAX_VALUE = None
-    LATEST_VERSION = 0
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.BaseNoise = None
-        from Mafi import Fix64
-        self.Amount = Fix64()
-        self.Bias = Fix64()
-        self.Version = 0
+        pass
+
 
 class ExpBendNoiseParams:
     def __init__(self):
-        self.Amount = None
-        from Mafi import Fix32
-        self.Bias = Fix32()
-        self.Version = 0
+        pass
+
 
 class LineDistanceNoise:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class Noise2dTransform:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        from Mafi import Fix64
-        self.Multiplier = Fix64()
-        self.Addend = Fix64()
-        self.FrequencyMult = Fix32()
+        pass
+
 
 class Noise2dTransformAdd:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        from Mafi import Fix64
-        self.Addend = Fix64()
+        pass
+
 
 class Noise2dTransformMax:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        from Mafi import Fix64
-        self.MinValue = Fix64()
+        pass
+
 
 class Noise2dTransformMaxNoise:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.BaseNoise = None
-        self.OtherNoise = None
+        pass
+
 
 class Noise2dTransformMin:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        from Mafi import Fix64
-        self.MaxValue = Fix64()
+        pass
+
 
 class Noise2dTransformMinNoise:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.BaseNoise = None
-        self.OtherNoise = None
+        pass
+
 
 class Noise2dTransformMult:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        from Mafi import Fix64
-        self.Multiplier = Fix64()
+        pass
+
 
 class Noise2dTransformMultAdd:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        from Mafi import Fix64
-        self.Multiplier = Fix64()
-        self.Addend = Fix64()
+        pass
+
 
 class Noise2dTransformParams:
     def __init__(self):
-        from Mafi import Fix64
-        self.Multiplier = Fix64()
-        self.Addend = Fix64()
-        from Mafi import Fix32
-        self.FrequencyMult = Fix32()
+        pass
+
 
 class NoiseTurbulence:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.BaseNoise = None
-        self.Seed = None
-        self.TurbulenceParams = None
+        pass
+
 
 class NoiseTurbulenceParams:
     def __init__(self):
-        self.OctavesCount = 0
-        self.Lacunarity = None
-        self.Persistence = None
+        pass
+
 
 class PointDistanceNoise:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class PolygonDistanceNoise:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class PolygonSignedDistanceNoise:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class RidgedNoise2D:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class SimplexNoise2D:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.Seed = None
+        pass
+
 
 class SimplexNoise2dParams:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class SimplexNoise2dSeed:
-    Invalid = None
     def __init__(self):
-        self.Vector2f = None
-        self.IsValid = False
-        from Mafi import Fix32
-        self.SeedX = Fix32()
-        self.SeedY = Fix32()
+        pass
+
 
 class SimplexNoise2dSeed64:
-    Invalid = None
     def __init__(self):
-        self.IsValid = False
-        from Mafi import Fix64
-        self.SeedX = Fix64()
-        self.SeedY = Fix64()
+        pass
+
 
 class SimplexNoise2dV2:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.Seed = None
+        pass
+
 
 class SoftCapNoise2D:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.Noise = None
-        self.Parameters = None
+        pass
+
 
 class SoftCapNoiseParams:
     def __init__(self):
-        from Mafi import Fix32
-        self.CapStart = Fix32()
-        self.CapEnd = Fix32()
+        pass
+
 
 class SteppedNoise2D:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.Parameters = None
+        pass
+
 
 class SteppedNoiseParams:
     def __init__(self):
-        from Mafi import Fix32
-        self.StepSize = Fix32()
-        self.StepSteepness = Fix32()
+        pass
+
 
 class SumOp:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class WarpCoordsNoise:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class WarpCoordsPolarNoise:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
-        self.Noise = None
-        self.Parameters = None
+        pass
+
 
 class WarpCoordsPolarParams:
     def __init__(self):
-        self.Origin = None
-        from Mafi import Fix32
-        self.DistanceFromOriginScale = Fix32()
-        self.AngleAroundOriginScale = Fix32()
-        self.SeamSmoothingSize = Fix32()
-        self.OriginDistanceAmplitudeScaling = Fix32()
+        pass
+
 
 class AbsNoise2DExtensions:
     def __init__(self):
@@ -281,10 +176,8 @@ class ExpBendNoise2DExtensions:
 
 class INoise2D:
     def __init__(self):
-        from Mafi import Fix32
-        self.MeanValue = Fix32()
-        self.Amplitude = Fix32()
-        self.Period = Fix32()
+        pass
+
 
 class INoise2DExtensions:
     def __init__(self):
@@ -293,15 +186,13 @@ class INoise2DExtensions:
 
 class INoise3D:
     def __init__(self):
-        self.MeanValue = 0.0
-        self.Amplitude = 0.0
-        self.Period = 0.0
+        pass
+
 
 class LineTransitionFn:
-    Linear = None
-    Sine = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class NoiseBinaryOpExtensions:
     def __init__(self):

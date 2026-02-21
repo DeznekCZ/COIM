@@ -11,8 +11,8 @@ class LastSelectedTierTracker:
 
     class TiersData:
         def __init__(self):
-            self.LastSelected = None
-            self.UpgradeChain = None
+            pass
+
 
 class NewProtosTracker:
     def __init__(self):
@@ -21,13 +21,20 @@ class NewProtosTracker:
 
 class UiCameraState:
     def __init__(self):
-        self.CameraPose = None
-        self.SavedPoses = None
+        pass
+
 
     class Pose:
         def __init__(self):
-            self.PivotPosition = None
-            self.PivotHeight = None
-            self.OrbitRadius = None
-            self.YawAngle = None
-            self.PitchAngle = None
+            pass
+
+
+class StateForUi:
+    def __init__(self):
+        pass
+
+
+class ToolbarGroupProto:
+    def __init__(self):
+        pass
+

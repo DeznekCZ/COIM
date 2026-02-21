@@ -1,205 +1,75 @@
 
 class AssignStaticEntityCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.FirstEntityId = None
-        self.SecondEntityId = None
+        pass
+
 
 class UnassignStaticEntityCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.FirstEntityId = None
-        self.SecondEntityId = None
+        pass
+
 
 class BatchCreateStaticEntitiesCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.ConfigData = None
-        self.BuildMiniZippers = None
-        self.IsFree = False
-        self.ApplyConfiguration = False
+        pass
+
 
 class BuildMiniZippersMode:
-    DeferToProto = None
-    Always = None
-    Never = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class CloneConfigBetweenEntitiesCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.SourceEntityId = None
-        self.TargetEntityId = None
+        pass
+
 
 class IStaticEntityBuilderCmd:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
+        pass
+
 
 class CreateStaticEntityCmd:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.ProtoId = StaticEntityProto.ID()
+        pass
 
-        self.Transform = None
-        self.IsFree = False
 
 class FinishBuildOfStaticEntityCmd:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityId = None
-        self.PayWithUnity = False
+        pass
+
 
 class SpendUpointsOnEntitiesCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityIds = None
-        self.Area = None
+        pass
+
 
 class StartDeconstructionOfStaticEntityCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityId = None
-        self.RemoveReason = None
+        pass
+
 
 class StartDeconstructionOfTransportSubSectionsCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
-        self.RemovedSubSections = None
-        self.RemoveReason = None
-        self.QuickRemoveWithUnity = False
+        pass
+
 
 class ToggleConstructionPriorityCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityId = None
+        pass
+
 
 class ToggleImportRouteEnforcementCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityToToggleId = None
+        pass
+
 
 class ToggleStaticEntityConstructionCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityId = None
+        pass
+
 
 class TryTransformEntityCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityId = None
-        self.Rotate = False
-        self.Flip = False
+        pass
+

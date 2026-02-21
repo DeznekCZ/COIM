@@ -1,144 +1,103 @@
 
 class CanBuildTransportResult:
     def __init__(self):
-        self.RequestPivots = None
-        self.RequestStartDirection = None
-        self.RequestEndDirection = None
-        from Mafi import Option
-        self.NewTrajectory = Option()
-        self.PivotsWereReversed = False
-        self.NewTransportValue = None
-        self.SupportedTiles = None
-        self.MiniZipperAtStart = None
-        self.MiniZipperAtEnd = None
-        self.MiniZipJoinResultAtStart = None
-        self.MiniZipJoinResultAtEnd = None
-        self.ChangeDirectionNearStart = None
-        self.ChangeDirectionNearEnd = None
-        self.PortAtStart = Option()
-        self.PortAtEnd = Option()
+        pass
+
 
 class CanCutOutTransportTrajResult:
     def __init__(self):
-        from Mafi import Option
-        self.StartSubTransport = Option()
-        self.CutOutSubTransport = Option()
-        self.EndSubTransport = Option()
+        pass
+
 
 class CanCutOutTransportResult:
     def __init__(self):
-        self.CutOutFrom = None
-        self.CutOutTo = None
-        self.ReplacedTransport = None
-        from Mafi import Option
-        self.StartSubTransport = Option()
-        self.CutOutSubTransport = Option()
-        self.EndSubTransport = Option()
+        pass
+
 
 class CanCutOutTransportAtResult:
     def __init__(self):
-        self.CutOutPosition = None
-        self.ReplacedTransport = None
-        from Mafi import Option
-        self.StartSubTransport = Option()
-        self.EndSubTransport = Option()
+        pass
+
 
 class CanPlaceMiniZipperAtResult:
     def __init__(self):
-        self.CutOutResult = None
-        self.ZipperProto = None
+        pass
+
 
 class MiniZipperAtResult:
     def __init__(self):
-        self.IsValid = False
-        self.ZipperProto = None
-        self.Position = None
+        pass
+
 
 class CanChangeDirectionResult:
     def __init__(self):
-        self.Transport = None
-        self.NewDirection = None
-        self.ChangeAtStart = False
+        pass
+
+
+class Grate:
+    def __init__(self):
+        pass
+
+
+    class State:
+        def __init__(self):
+            pass
+
+
+class GrateOutlet:
+    def __init__(self):
+        pass
+
+
+    class State:
+        def __init__(self):
+            pass
+
+
+class GrateOutletProto:
+    def __init__(self):
+        pass
+
+
+class GrateProto:
+    def __init__(self):
+        pass
+
+
+class IProtoWithAcceptedProductsForUi:
+    def __init__(self):
+        pass
+
+
+class IProtoWithThroughputForUi:
+    def __init__(self):
+        pass
+
 
 class ITransportPathFinder:
     def __init__(self):
-        self.CurrentStart = None
-        self.CurrentGoal = None
-        self.OriginalGoal = None
-        from Mafi import Option
-        self.CurrentTransportProto = Option()
-        self.Options = None
+        pass
+
 
 class TransportPathFinderOptions:
     def __init__(self):
-        self.PreferredHeight = None
-        self.ForcedStartDirection = None
-        self.BannedStartDirections = None
-        self.Flags = None
+        pass
+
 
 class TransportPathFinderFlags:
-    None = None
-    StartMustBeFlat = None
-    GoalMustBeFlat = None
-    InvertTieBreaking = None
-    BanTilesInFrontOfPorts = None
-    AllowOnlyStraight = None
-    BanStartRampsInX = None
-    BanStartRampsInY = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class TransportPfExploredTile:
     def __init__(self):
-        self.Position = None
-        self.ParentPosition = None
-        self.IsProcessed = False
-        self.PathLengthSteps = None
+        pass
+
 
 class Stacker:
     def __init__(self):
-        self.DumpHeightOffset = None
-        from Mafi import Option
-        self.ElectricityConsumer = Option()
-        self.Prototype = None
-        self.CanBePaused = False
-        self.PowerRequired = None
-        self.AreParticlesEnabled = False
-        self.DumpPositionXy = None
-        self.LastDumpedMaterial = Option()
-        self.IsDumpingActive = False
-        self.CustomTitle = Option()
-        self.GeneralPriority = 0
-        self.IsCargoAffectedByGeneralPriority = False
-        self.IsGeneralPriorityVisible = False
-        self.Ports = None
-        self.ConstructionCost = None
-        self.Transform = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.PfTargetTiles = None
-        self.CenterTile = None
-        self.Position2f = None
-        self.Position3f = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.ConstructionState = None
-        self.IsConstructed = False
-        self.IsNotConstructed = False
-        self.IsBeingUpgraded = False
-        self.ConstructionProgress = Option()
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.AreConstructionCubesDisabled = False
-        self.Id = None
-        self.DefaultTitle = None
-        self.Context = None
-        self.IsDestroyed = False
-        self.IsEnabled = False
-        self.IsNotEnabled = False
-        self.IsPaused = False
-        self.IsNotPaused = False
-        self.RendererData = None
+        pass
+
 
 class StackerConfigExtensions:
     def __init__(self):
@@ -147,161 +106,93 @@ class StackerConfigExtensions:
 
 class StackerProto:
     def __init__(self):
-        self.EntityType = None
-        self.ElectricityConsumed = None
-        self.Layout = None
-        self.Ports = None
-        self.CloningDisabled = False
-        self.IsUnique = False
-        self.CannotBeReflected = False
-        self.AutoBuildMiniZippers = False
-        self.Graphics = None
-        self.IconPath = ""
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
+        pass
 
-        self.Costs = None
-        self.Strings = None
-        self.IsNotPhantom = False
-        self.IsInitialized = False
-        self.Mod = None
-        self.Tags = None
-        self.IsNotAvailable = False
-        self.IsAvailable = False
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsLockedButAvailable = False
-        self.IsObsolete = False
-        self.MinDumpOffset = None
-        self.DefaultDumpOffset = None
-        self.DumpDelay = None
-        self.DumpPeriod = None
-        self.DumpHeadRelPos = None
-        self.MaxProductsInQueue = 0
-        self.BoostCost = None
-        self.InputPorts = None
-        self.OutputPorts = None
-        self.CannotBeBuiltByPlayer = False
-        self.ConstructionDurationPerProduct = None
-        self.CollapseRubbleScale = None
-        self.CustomBuriedTolerance = None
-        self.CustomSuspendedTolerance = None
-        self.VehicleGoalHeightAllowedRange = None
-        self.DoNotStartConstructionAutomatically = False
-        self.IsPhantom = False
 
     class Gfx:
         def __init__(self):
-            self.PrefabPath = ""
-            self.PrefabOrigin = None
-            self.IconPath = ""
-            self.YawForGeneratedIcon = None
-            self.VisualizedLayers = None
-            self.Categories = None
-            self.ParticlesParams = None
-            self.EmissionsParams = None
-            from Mafi import Option
-            self.MachineSoundPrefabPath = Option()
-            self.HasSign = False
-            self.IconIsCustom = False
-            self.UseInstancedRendering = False
-            self.UseSemiInstancedRendering = False
-            self.SemiInstancedRenderingExcludedObjects = None
-            self.MaxRenderedLod = 0
-            self.DisableEmptyChildrenStripping = False
-            self.InstancedRendererIndex = None
-            self.AnimatedGameObjects = None
-            self.AnimationLength = 0.0
-            self.HideBlockedPortsIcon = False
-            self.Color = None
-            self.RendererIndex = 0
+            pass
+
+
+class StackerTower:
+    def __init__(self):
+        pass
+
+
+    class StatusEnum:
+        def __init__(self):
+            pass
+
+
+    class StackerTowerBoomSetup:
+        def __init__(self):
+            pass
+
+
+class StackerTowerCommandsProcessor:
+    def __init__(self):
+        pass
+
+
+class StackerTowerSetFullAlertActiveCmd:
+    def __init__(self):
+        pass
+
+
+class StackerTowerSetDumpRadiusCmd:
+    def __init__(self):
+        pass
+
+
+class StackerTowerSetMaxSegmentsCmd:
+    def __init__(self):
+        pass
+
+
+class StackerTowerSelectProductForSlopePreviewCmd:
+    def __init__(self):
+        pass
+
+
+class IStackerTowerRailProto:
+    def __init__(self):
+        pass
+
+
+class StackerTowerProto:
+    def __init__(self):
+        pass
+
+
+    class Gfx:
+        def __init__(self):
+            pass
+
+
+class StackerTowerRail:
+    def __init__(self):
+        pass
+
+
+class StackerTowerRailProto:
+    def __init__(self):
+        pass
+
 
 class Transport:
-    MAX_TRANSPORT_WAYPOINTS = 0
     def __init__(self):
-        self.LastInsertedProduct = None
-        self.Prototype = None
-        self.CanBePaused = False
-        self.ConstructionCost = None
-        self.GeneralPriority = 0
-        self.IsCargoAffectedByGeneralPriority = False
-        self.IsGeneralPriorityVisible = False
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.PfTargetTiles = None
-        self.Trajectory = None
-        self.LastPivotIndex = 0
-        self.StartPosition = None
-        self.EndPosition = None
-        self.StartDirection = None
-        self.EndDirection = None
-        self.Ports = None
-        self.StartInputPort = None
-        self.EndOutputPort = None
-        self.TransportedProducts = None
-        self.FirstProduct = None
-        self.LastProduct = None
-        self.CanReceiveProducts = False
-        self.MovedStepsTotal = 0
-        self.IsMoving = False
-        self.IsFullyConnected = False
-        self.TransportManager = None
-        self.Upgrader = None
-        self.Maintenance = None
-        self.MaintenanceCosts = None
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.ProductsStateVersion = 0
-        self.ProductsIndexBase = 0
-        self.TransportColor = None
-        self.TransportAccentColor = None
-        self.PowerRequired = None
-        from Mafi import Option
-        self.ElectricityConsumer = Option()
-        self.IsTooLongTransportNotificationOn = False
-        self.IsTooLong = False
-        self.IsProductsRemovalInProgress = False
-        self.CenterTile = None
-        self.Position2f = None
-        self.Position3f = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.ConstructionState = None
-        self.IsConstructed = False
-        self.IsNotConstructed = False
-        self.IsBeingUpgraded = False
-        self.ConstructionProgress = Option()
-        self.AreConstructionCubesDisabled = False
-        self.Id = None
-        self.DefaultTitle = None
-        self.Context = None
-        self.IsDestroyed = False
-        self.IsEnabled = False
-        self.IsNotEnabled = False
-        self.IsPaused = False
-        self.IsNotPaused = False
-        self.RendererData = None
-        self.TransportedProductsMutable = None
-        self.IsIdleForMaintenance = False
+        pass
+
 
     class Status:
-        Idle = None
-        NotConnected = None
-        Moving = None
-        Paused = None
-        PowerLow = None
-        ProductRemoval = None
         def __init__(self):
-            self.value__ = 0
+            pass
+
 
 class TransportFlow:
-    Empty = None
     def __init__(self):
-        self.Color = None
-        self.IsFlowing = False
-        self.HasProducts = False
+        pass
+
 
 class TransportConfigExtensions:
     def __init__(self):
@@ -310,95 +201,38 @@ class TransportConfigExtensions:
 
 class BuildTransportCmd:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.ProtoId = StaticEntityProto.ID()
+        pass
 
-        self.PivotPositions = None
-        self.PillarHints = None
-        self.StartDirection = None
-        self.EndDirection = None
-        self.DisablePortSnapping = False
-        self.IsFree = False
-        self.AllowDirectConnection = False
 
 class ReverseTransportCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
+        pass
+
 
 class ClearTransportCmd:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
+        pass
+
 
 class QuickClearTransportCmd:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
+        pass
+
 
 class DeconstructTransportSegmentCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.TransportId = None
-        self.StartPosition = None
-        self.EndPosition = None
-        self.QuickRemove = False
+        pass
+
 
 class TransportCrossSection:
-    Empty = None
     def __init__(self):
-        self.StaticCrossSectionParts = None
-        self.MovingCrossSectionParts = None
+        pass
+
 
 class TransportedProductMutable:
     def __init__(self):
-        self.Quantity = None
-        self.TrajectoryIndexRelative = None
-        self.LastSeenIndexAbsoluteForUi = None
-        self.SlimId = None
-        self.IsImmediatelyBehindNextProduct = False
-        self.SeqNumber = None
+        pass
+
 
 class TransportHelper:
     def __init__(self):
@@ -407,260 +241,88 @@ class TransportHelper:
 
 class TransportSupportInfo:
     def __init__(self):
-        self.Position = None
-        self.OccupiedTileIndex = 0
-        self.PillarAttachmentType = None
-        self.AttachmentRotation = None
-        self.AttachmentFlipY = False
+        pass
+
 
 class TransportTileMetadata:
     def __init__(self):
-        self.IsStraight = False
-        self.IsStartFlat = False
-        self.IsEndFlat = False
-        self.StartDirection = None
-        self.EndDirection = None
-        self.StartType = None
-        self.EndType = None
+        pass
+
 
 class TransportStartEndType:
-    Flat = None
-    RampUp = None
-    RampDown = None
-    Vertical = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class TransportPillarAttachmentType:
-    NoAttachment = None
-    FlatToFlat_Straight = None
-    FlatToFlat_Turn = None
-    RampDownToRampUp_Turn = None
-    FlatToRampUp_Straight = None
-    FlatToRampUp_Turn = None
-    FlatToRampDown_Straight = None
-    FlatToRampDown_Turn = None
-    FlatToVertical = None
-    VerticalToVertical = None
-    FlatToVertical_Down = None
     def __init__(self):
-        self.value__ = 0
+        pass
+
 
 class TransportPathFinder:
-    XY_SIZE = 0
-    Z_SIZE = 0
     def __init__(self):
-        self.CurrentStart = None
-        self.CurrentGoal = None
-        self.OriginalGoal = None
-        from Mafi import Option
-        self.CurrentTransportProto = Option()
-        self.Options = None
-        self.CurrentPfId = 0
-        self.TotalStepsCount = 0
-        self.QueueSize = 0
+        pass
+
 
 class TransportPillar:
     def __init__(self):
-        self.CanBePaused = False
-        self.VehicleSurfaceHeights = None
-        self.PfTargetTiles = None
-        self.ConstructionCost = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.Height = None
-        self.TopTileHeight = None
-        self.AreConstructionCubesDisabled = False
-        self.Prototype = None
-        self.CenterTile = None
-        self.Position2f = None
-        self.Position3f = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.ConstructionState = None
-        self.IsConstructed = False
-        self.IsNotConstructed = False
-        self.IsBeingUpgraded = False
-        from Mafi import Option
-        self.ConstructionProgress = Option()
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.Id = None
-        self.DefaultTitle = None
-        self.Context = None
-        self.IsDestroyed = False
-        self.IsEnabled = False
-        self.IsNotEnabled = False
-        self.IsPaused = False
-        self.IsNotPaused = False
-        self.RendererData = None
+        pass
+
 
 class TransportPillarAddRequest:
-    Instance = None
     def __init__(self):
-        self.ReasonToAdd = None
+        pass
+
 
 class TransportPillarEntityValidator:
     def __init__(self):
-        self.Priority = None
+        pass
+
 
 class TransportPillarRendererData:
     def __init__(self):
-        self.IsValid = False
-        self.ChunkIndex = None
-        self.PartsIds = None
+        pass
+
 
 class TransportPillarProto:
-    MAX_PILLAR_HEIGHT = None
     def __init__(self):
-        self.EntityType = None
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
+        pass
 
-        self.Costs = None
-        self.Strings = None
-        self.IsNotPhantom = False
-        self.IsInitialized = False
-        self.Mod = None
-        self.Tags = None
-        self.IsNotAvailable = False
-        self.IsAvailable = False
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsLockedButAvailable = False
-        self.IsObsolete = False
-        self.Graphics = None
-        self.ConstructionDurationPerProduct = None
-        self.CollapseRubbleScale = None
-        self.CustomBuriedTolerance = None
-        self.CustomSuspendedTolerance = None
-        self.VehicleGoalHeightAllowedRange = None
-        self.DoNotStartConstructionAutomatically = False
-        self.IsPhantom = False
 
     class Gfx:
-        Empty = None
         def __init__(self):
-            self.CornerBeamsPrefabPath = ""
-            self.CornerBasePrefabPath = ""
-            self.SideFillPlusXPrefabPath = ""
-            self.BaseWithSideFillsPrefabPath = ""
-            self.HideBlockedPortsIcon = False
-            self.Color = None
-            self.RendererIndex = 0
+            pass
+
 
 class TransportPillarsBuilder:
     def __init__(self):
-        self.PillarProto = None
+        pass
+
 
 class TransportProto:
-    MAX_TERRAIN_PENETRATION = None
-    LENGTH_PER_COST = None
     def __init__(self):
-        self.EntityType = None
-        self.BaseMaintenanceCost = None
-        self.Upgrade = None
-        self.UpgradeNonGeneric = None
-        self.TierData = None
-        self.IconPath = ""
-        self.CanGoUpDown = False
-        self.NeedsPillars = False
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
+        pass
 
-        self.Costs = None
-        self.Strings = None
-        self.IsNotPhantom = False
-        self.IsInitialized = False
-        self.Mod = None
-        self.Tags = None
-        self.IsNotAvailable = False
-        self.IsAvailable = False
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsLockedButAvailable = False
-        self.IsObsolete = False
-        self.SurfaceRelativeHeight = None
-        self.MaxQuantityPerTransportedProduct = None
-        self.TransportedProductsSpacing = None
-        self.SpeedPerTick = None
-        self.ThroughputPerTick = None
-        self.ThroughputPer60 = None
-        self.ProductSpacingWaypoints = 0
-        self.ProductSpacing = None
-        self.ZStepLength = None
-        self.MaxPillarSupportRadius = None
-        self.NeedsPillarsAtGround = False
-        self.CanBeBuried = False
-        from Mafi import Option
-        self.TileSurfaceWhenOnGround = Option()
-        self.PortsShape = None
-        self.BaseElectricityCost = None
-        self.CornersSharpnessPercent = None
-        self.IsBuildable = False
-        self.LengthPerCost = None
-        self.AllowMixedProducts = False
-        self.Graphics = None
-        self.ConstructionDurationPerProduct = None
-        self.CollapseRubbleScale = None
-        self.CustomBuriedTolerance = None
-        self.CustomSuspendedTolerance = None
-        self.VehicleGoalHeightAllowedRange = None
-        self.DoNotStartConstructionAutomatically = False
-        self.IsPhantom = False
 
     class Gfx:
-        Empty = None
         def __init__(self):
-            self.IconPath = ""
-            self.Categories = None
-            self.IconIsCustom = False
-            self.UsePerProductColoring = False
-            self.RenderProducts = False
-            self.CrossSectionLods = None
-            self.MaterialPath = ""
-            self.TransportUvLength = None
-            self.RenderTransportedProducts = False
-            self.SoundOnBuildPrefabPath = ""
-            from Mafi import Option
-            self.FlowIndicator = Option()
-            self.VerticalConnectorPrefabPath = Option()
-            self.PillarAttachments = None
-            self.UvShiftY = 0.0
-            self.CrossSectionScale = 0.0
-            self.CrossSectionRadius = 0.0
-            self.UseInstancedRendering = False
-            self.MaxRenderedLod = 0
-            self.InstancedRenderingData = Option()
-            self.HideBlockedPortsIcon = False
-            self.Color = None
-            self.RendererIndex = 0
+            pass
+
 
         class TransportInstancedRenderingData:
             def __init__(self):
-                self.InstancedRendererIndex = None
+                pass
+
 
         class TransportCrossSectionLod:
             def __init__(self):
-                self.PixelsPerMeter = 0.0
-                self.CrossSection = None
-                self.SamplesPerCurvedSegment = 0
+                pass
+
 
         class FlowIndicatorSpec:
-            from Mafi import Fix32
-            BIAS_TOWARD_ENDS = Fix32()
             def __init__(self):
-                self.FramePrefabPath = ""
-                self.FlowPrefabPath = ""
-                self.GlassPrefabPath = ""
-                self.SkipTransportLength = None
-                self.PlacementGap = None
-                self.LengthScale = 0.0
-                self.CrossSectionScale = 0.0
-                self.Parameters = None
+                pass
+
 
 class TransportsBuilder:
     def __init__(self):
@@ -679,41 +341,18 @@ class TransportsConstructionHelper:
 
 class PillarVisualsSpec:
     def __init__(self):
-        self.Layers = None
-        self.BasePosition = None
-        self.IsConstructed = False
-        self.IsPaused = False
-        self.IsDeconstruction = False
+        pass
+
 
 class PillarLayerSpec:
-    BEAMS_MASK = None
-    FILL_PLUS_X_MASK = None
-    FILL_PLUS_Y_MASK = None
-    FILL_MINUS_X_MASK = None
-    FILL_MINUS_Y_MASK = None
-    FLIP_Y_MASK = None
-    ALL_FILLS_MASK = None
-    BEAMS_AND_ALL_FILLS_MASK = None
     def __init__(self):
-        self.HasBeams = False
-        self.HasBeamsAndAllBraces = False
-        self.HasAnyFill = False
-        self.HasFillPlusX = False
-        self.HasFillPlusY = False
-        self.HasFillMinusX = False
-        self.HasFillMinusY = False
-        self.AttachmentFlipY = False
-        from Mafi import Option
-        self.AttachedTransport = Option()
-        self.AttachmentType = None
-        self.AttachmentRotation = None
-        self.Flags = None
+        pass
+
 
 class ITransportsPredicates:
     def __init__(self):
-        self.IgnoreTransportsElevatedAndMiniZippersPredicate = None
-        self.IgnorePillarsPredicate = None
-        self.IgnoreTransportsAndPillars = None
+        pass
+
 
 class IPillarsChecker:
     def __init__(self):
@@ -722,63 +361,45 @@ class IPillarsChecker:
 
 class TransportsManager:
     def __init__(self):
-        self.Transports = None
-        self.Pillars = None
-        self.PillarProto = None
-        self.ProductsManager = None
-        self.IgnoreTransportsElevatedAndMiniZippersPredicate = None
-        self.IgnorePillarsPredicate = None
-        self.IgnoreTransportsAndPillars = None
-        self.NotificationsManager = None
+        pass
+
 
 class TransportTrajectory:
     def __init__(self):
-        self.Curve = None
-        self.PivotSegmentIndices = None
-        self.OccupiedTiles = None
-        self.OccupiedTilesMetadata = None
-        self.FlowIndicatorsPoses = None
-        self.Waypoints = None
-        self.CurveSegmentWaypointIndices = None
-        self.TrajectoryLength = None
-        self.MaxProducts = 0
-        self.Price = None
-        self.TilesSupportInfo = None
-        self.TransportProto = None
-        self.Pivots = None
-        self.StartDirection = None
-        self.EndDirection = None
+        pass
+
 
 class TransportWaypoint:
     def __init__(self):
-        self.Position = None
-        self.Rotation = None
+        pass
+
 
 class TransportWaypointRotation:
     def __init__(self):
-        self.Yaw = None
-        self.Pitch = None
+        pass
+
 
 class TransportFlowIndicatorPose:
     def __init__(self):
-        self.Position = None
-        self.Rotation = None
-        self.PercentOfSection = None
-        self.SegmentIndex = 0
+        pass
+
 
 class SubTransport:
     def __init__(self):
-        self.OriginalTransport = None
-        self.SubTrajectory = None
+        pass
+
 
 class TransportUpgrader:
     def __init__(self):
-        self.CurrentProto = None
+        pass
+
 
 class ITransportUpgraderFactory:
     def __init__(self):
-        self.EntityIdFactory = None
+        pass
+
 
 class TransportUpgraderFactory:
     def __init__(self):
-        self.EntityIdFactory = None
+        pass
+

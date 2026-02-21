@@ -1,49 +1,23 @@
 
 class ClearingChecker:
     def __init__(self):
-        self.Priority = None
+        pass
+
 
 class OccupiedColumn:
     def __init__(self):
-        self.From = 0
-        self.ToExcl = 0
-        self.Scale = 0
-        self.IdForXySorting = 0
+        pass
+
 
 class ConstructionManager:
-    EXTRA_CONSTRUCTION_DURATION = None
     def __init__(self):
-        self.DeconstructionRatio = None
-        self.EntityConstructed = None
-        self.EntityPauseStateChanged = None
-        self.OnResetConstructionAnimationState = None
-        self.EntityConstructionNearlyFinished = None
-        self.EntityStartedDeconstruction = None
-        self.EntityConstructionStateChanged = None
+        pass
+
 
 class ConstructionProgress:
     def __init__(self):
-        self.AlreadyRemovedCost = None
-        self.Buffers = None
-        self.ConstructionBuffers = None
-        self.TotalCost = None
-        self.Progress = None
-        self.IsNearlyFinished = False
-        self.CurrentSteps = 0
-        self.MaxSteps = 0
-        self.ExtraSteps = 0
-        self.AlreadyProcessedSteps = 0
-        self.AllowedSteps = 0
-        self.IsInExtraStepPhase = False
-        self.IsDone = False
-        self.WasBlockedOnProductsLastSim = False
-        self.IsDeconstruction = False
-        self.IsUpgrade = False
-        self.IsPaused = False
-        self.TerrainDisruptionDisabled = False
-        self.Owner = None
-        self.WasFullyConstructed = False
-        self.DurationPerProduct = None
+        pass
+
 
 class QuickDeliverCostHelper:
     def __init__(self):
@@ -52,18 +26,8 @@ class QuickDeliverCostHelper:
 
 class IConstructionProgress:
     def __init__(self):
-        self.Buffers = None
-        self.TotalCost = None
-        self.AlreadyRemovedCost = None
-        self.CurrentSteps = 0
-        self.MaxSteps = 0
-        self.ExtraSteps = 0
-        self.Progress = None
-        self.IsNearlyFinished = False
-        self.WasBlockedOnProductsLastSim = False
-        self.IsDeconstruction = False
-        self.IsUpgrade = False
-        self.IsPaused = False
+        pass
+
 
 class IConstructionProgressExtensions:
     def __init__(self):
@@ -76,248 +40,84 @@ class DefaultStaticEntityFactory:
 
 
 class EntityCollapseHelper:
-    RUBBLE_ONLY_AFTER_CONSTR_PERCENT = None
-    RUBBLE_PER_TILE_MIN = None
-    RUBBLE_PER_TILE_MAX = None
-    SIM_UPDATE_FREQ = 0
     def __init__(self):
-        self.HasRemainingRubble = False
-        self.RubbleMaterialProto = None
+        pass
+
 
 class IEntityConstructionProgress:
     def __init__(self):
-        self.Entity = None
-        self.IsPriority = False
-        self.Buffers = None
-        self.TotalCost = None
-        self.AlreadyRemovedCost = None
-        self.CurrentSteps = 0
-        self.MaxSteps = 0
-        self.ExtraSteps = 0
-        self.Progress = None
-        self.IsNearlyFinished = False
-        self.WasBlockedOnProductsLastSim = False
-        self.IsDeconstruction = False
-        self.IsUpgrade = False
-        self.IsPaused = False
+        pass
+
 
 class EntityConstructionProgress:
     def __init__(self):
-        self.Entity = None
-        self.IsPriority = False
-        self.AlreadyRemovedCost = None
-        self.Buffers = None
-        self.ConstructionBuffers = None
-        self.TotalCost = None
-        self.Progress = None
-        self.IsNearlyFinished = False
-        self.CurrentSteps = 0
-        self.MaxSteps = 0
-        self.ExtraSteps = 0
-        self.AlreadyProcessedSteps = 0
-        self.AllowedSteps = 0
-        self.IsInExtraStepPhase = False
-        self.IsDone = False
-        self.WasBlockedOnProductsLastSim = False
-        self.IsDeconstruction = False
-        self.IsUpgrade = False
-        self.IsPaused = False
-        self.TerrainDisruptionDisabled = False
-        self.Owner = None
-        self.WasFullyConstructed = False
-        self.DurationPerProduct = None
+        pass
+
 
 class FreeConstructionManager:
     def __init__(self):
-        self.EntityConstructionStateChanged = None
-        self.DeconstructionRatio = None
-        self.EntityConstructed = None
-        self.EntityStartedDeconstruction = None
-        self.EntityPauseStateChanged = None
+        pass
+
 
 class GlobalInputBuffer:
     def __init__(self):
-        self.IsFull = False
-        self.IsNotFull = False
-        self.IsEmpty = False
-        self.IsNotEmpty = False
-        self.Quantity = None
-        self.ProductQuantity = None
-        self.Capacity = None
-        self.Product = None
-        self.UsableCapacity = None
-        self.IsDestroyed = False
+        pass
+
 
 class GlobalLogisticsInputBuffer:
     def __init__(self):
-        self.CurrentQuantityPercent = 0
-        self.ImportUntilPercent = None
-        self.ExportFromPercent = None
-        self.CleaningMode = False
-        self.IsFull = False
-        self.IsNotFull = False
-        self.IsEmpty = False
-        self.IsNotEmpty = False
-        self.Quantity = None
-        self.ProductQuantity = None
-        self.Capacity = None
-        self.Product = None
-        self.UsableCapacity = None
-        self.IsDestroyed = False
+        pass
+
 
 class GlobalOutputBuffer:
     def __init__(self):
-        self.IsFull = False
-        self.IsNotFull = False
-        self.IsEmpty = False
-        self.IsNotEmpty = False
-        self.Quantity = None
-        self.ProductQuantity = None
-        self.Capacity = None
-        self.Product = None
-        self.UsableCapacity = None
-        self.IsDestroyed = False
+        pass
+
 
 class GlobalLogisticsOutputBuffer:
     def __init__(self):
-        self.CurrentQuantityPercent = 0
-        self.ImportUntilPercent = None
-        self.ExportFromPercent = None
-        self.CleaningMode = False
-        self.IsFull = False
-        self.IsNotFull = False
-        self.IsEmpty = False
-        self.IsNotEmpty = False
-        self.Quantity = None
-        self.ProductQuantity = None
-        self.Capacity = None
-        self.Product = None
-        self.UsableCapacity = None
-        self.IsDestroyed = False
+        pass
+
 
 class IConstructionManager:
     def __init__(self):
-        self.DeconstructionRatio = None
-        self.EntityConstructed = None
-        self.EntityStartedDeconstruction = None
-        self.EntityConstructionStateChanged = None
-        self.EntityPauseStateChanged = None
+        pass
+
 
 class ConstructionState:
-    NotInitialized = None
-    NotStarted = None
-    InConstruction = None
-    Constructed = None
-    PreparingUpgrade = None
-    BeingUpgraded = None
-    PendingDeconstruction = None
-    InDeconstruction = None
-    Deconstructed = None
-    def __init__(self):
-        self.value__ = 0
-
-class IEntityWithCustomTerrainInteraction:
     def __init__(self):
         pass
 
 
 class IEntityWithMultipleProductsToAssign:
     def __init__(self):
-        self.BuffersPerSlot = None
-        self.SupportedProducts = None
-        self.Prototype = None
-        self.Transform = None
-        self.CenterTile = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.ConstructionCost = None
-        self.ConstructionState = None
-        from Mafi import Option
-        self.ConstructionProgress = Option()
-        self.IsConstructed = False
-        self.PfTargetTiles = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.AreConstructionCubesDisabled = False
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.Position2f = None
-        self.Position3f = None
-        self.RendererData = None
-        self.Id = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
-        self.DefaultTitle = None
+        pass
+
 
 class IEntityWithQuickRemove:
     def __init__(self):
-        self.Id = None
-        self.Prototype = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
-        self.DefaultTitle = None
+        pass
+
 
 class QuickRemoveFromEntityCmd:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityId = None
+        pass
+
 
 class ILayoutEntity:
     def __init__(self):
-        self.Prototype = None
-        self.Transform = None
-        self.CenterTile = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.ConstructionCost = None
-        self.ConstructionState = None
-        from Mafi import Option
-        self.ConstructionProgress = Option()
-        self.IsConstructed = False
-        self.PfTargetTiles = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.AreConstructionCubesDisabled = False
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.Position2f = None
-        self.Position3f = None
-        self.RendererData = None
-        self.Id = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
-        self.DefaultTitle = None
+        pass
+
 
 class IProductBufferReadOnly:
     def __init__(self):
-        self.Product = None
-        self.UsableCapacity = None
-        self.Capacity = None
-        self.Quantity = None
+        pass
+
 
 class IProductBuffer:
     def __init__(self):
-        self.Product = None
-        self.UsableCapacity = None
-        self.Capacity = None
-        self.Quantity = None
+        pass
+
 
 class IProductBufferReadOnlyExtensions:
     def __init__(self):
@@ -331,31 +131,8 @@ class ProductBufferExtensions:
 
 class IStaticEntity:
     def __init__(self):
-        self.Prototype = None
-        self.CenterTile = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.ConstructionCost = None
-        self.ConstructionState = None
-        from Mafi import Option
-        self.ConstructionProgress = Option()
-        self.IsConstructed = False
-        self.PfTargetTiles = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.AreConstructionCubesDisabled = False
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.Position2f = None
-        self.Position3f = None
-        self.RendererData = None
-        self.Id = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
-        self.DefaultTitle = None
+        pass
+
 
 class IStaticEntityExtensions:
     def __init__(self):
@@ -364,74 +141,18 @@ class IStaticEntityExtensions:
 
 class ConstrCubeSpec:
     def __init__(self):
-        self.Position = None
-        self.Height = None
-        self.Volume = None
-        self.ScaleX = None
-        self.ScaleY = None
-        self.ScaleZ = None
-        self.TransitionHeightTiles = None
+        pass
+
 
 class IEntityAssignedAsOutput:
     def __init__(self):
-        self.AssignedInputs = None
-        self.Prototype = None
-        self.Transform = None
-        self.CenterTile = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.ConstructionCost = None
-        self.ConstructionState = None
-        from Mafi import Option
-        self.ConstructionProgress = Option()
-        self.IsConstructed = False
-        self.PfTargetTiles = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.AreConstructionCubesDisabled = False
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.Position2f = None
-        self.Position3f = None
-        self.RendererData = None
-        self.Id = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
-        self.DefaultTitle = None
+        pass
+
 
 class IEntityAssignedAsInput:
     def __init__(self):
-        self.AssignedOutputs = None
-        self.AllowNonAssignedOutput = False
-        self.Prototype = None
-        self.Transform = None
-        self.CenterTile = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.ConstructionCost = None
-        self.ConstructionState = None
-        from Mafi import Option
-        self.ConstructionProgress = Option()
-        self.IsConstructed = False
-        self.PfTargetTiles = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.AreConstructionCubesDisabled = False
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.Position2f = None
-        self.Position3f = None
-        self.RendererData = None
-        self.Id = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
-        self.DefaultTitle = None
+        pass
+
 
 class IStaticEntityWithQueue:
     def __init__(self):
@@ -440,7 +161,8 @@ class IStaticEntityWithQueue:
 
 class IVirtualBufferProvider:
     def __init__(self):
-        self.ProvidedProducts = None
+        pass
+
 
 class IVirtualBuffersMap:
     def __init__(self):
@@ -454,249 +176,138 @@ class OccupiedTerrainVertexManger:
 
     class TileVertexData:
         def __init__(self):
-            self.Entity = None
-            self.VertexIndex = 0
+            pass
+
 
 class OceanAreaRecoverHelper:
-    RECOVERY_COST = None
-    DEFAULT_TILES_RECOVERED = 0
     def __init__(self):
         pass
 
 
 class RecoverOceanAccessCmd:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
-        self.Result = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.EntityWithOceanAreas = None
-        self.MaxTilesToRecover = 0
+        pass
+
 
 class RecoverOceanResult:
     def __init__(self):
-        self.BlockedByTerrainCount = 0
-        self.BlockingEntityId = None
+        pass
+
 
 class ProductBuffer:
     def __init__(self):
-        self.IsFull = False
-        self.IsNotFull = False
-        self.IsEmpty = False
-        self.IsNotEmpty = False
-        self.Quantity = None
-        self.ProductQuantity = None
-        self.Capacity = None
-        self.Product = None
-        self.UsableCapacity = None
-        self.IsDestroyed = False
+        pass
+
 
 class DisableQuickBuildParam:
-    Instance = None
     def __init__(self):
-        self.AllowedProtoType = None
+        pass
+
 
 class ProtoWithReservedOceanValidator:
     def __init__(self):
-        self.Priority = None
+        pass
+
 
 class OceanAreaValidationMetadata:
     def __init__(self):
-        self.Area = None
-        self.Color = None
-        self.StripesScale = 0.0
-        self.StripesAngle = 0.0
+        pass
+
 
 class IStaticEntityWithReservedOcean:
     def __init__(self):
-        self.ReservedOceanAreaState = None
-        self.Prototype = None
-        self.Transform = None
-        self.CenterTile = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.ConstructionCost = None
-        self.ConstructionState = None
-        from Mafi import Option
-        self.ConstructionProgress = Option()
-        self.IsConstructed = False
-        self.PfTargetTiles = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.AreConstructionCubesDisabled = False
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.Position2f = None
-        self.Position3f = None
-        self.RendererData = None
-        self.Id = None
-        self.Context = None
-        self.IsEnabled = False
-        self.IsPaused = False
-        self.CanBePaused = False
-        self.IsDestroyed = False
-        self.DefaultTitle = None
+        pass
+
 
 class IProtoWithReservedOcean:
     def __init__(self):
-        self.ReservedOceanAreasSets = None
-        self.MinGroundHeight = None
-        self.MaxGroundHeight = None
-        self.Layout = None
-        self.Ports = None
-        self.CannotBeReflected = False
-        self.IsUnique = False
-        self.AutoBuildMiniZippers = False
-        self.Graphics = None
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
+        pass
 
-        self.EntityType = None
-        self.Costs = None
-        self.Strings = None
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsAvailable = False
-        self.IsNotAvailable = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsInitialized = False
-        self.Mod = None
 
 class ReservedOceanAreaState:
-    MAX_AREAS_IN_SET = 0
     def __init__(self):
-        self.AreasSetsValidity = None
-        self.HasAnyValidAreaSet = False
-        self.FirstValidAreasSetIndex = 0
-        self.AreasSetsValidityChanged = None
-        self.IsNoValidAreasNotificationActive = False
-        self.Proto = None
-        self.AreasSets = None
+        pass
+
+
+class IStaticEntityWithReservedOceanV2:
+    def __init__(self):
+        pass
+
+
+class IProtoWithReservedOceanV2:
+    def __init__(self):
+        pass
+
+
+class ReservedOceanAreaStateV2:
+    def __init__(self):
+        pass
+
+
+class IEntityWithNoCollapse:
+    def __init__(self):
+        pass
+
+
+class IEntityWithCustomTerrainInteraction:
+    def __init__(self):
+        pass
+
 
 class StaticEntitiesTerrainInteractionManager:
-    UPDATE_FREQ_TICKS = None
-    TOLERANCE = None
     def __init__(self):
-        self.Priority = None
+        pass
+
 
 class StaticEntity:
     def __init__(self):
-        self.Prototype = None
-        self.CenterTile = None
-        self.Position2f = None
-        self.Position3f = None
-        self.ConstructionCost = None
-        self.OccupiedTiles = None
-        self.OccupiedVertices = None
-        self.OccupiedVerticesCombinedConstraint = None
-        self.VehicleSurfaceHeights = None
-        self.PfTargetTiles = None
-        self.AlwaysUseCustomPfTargetTiles = False
-        self.ConstructionState = None
-        self.IsConstructed = False
-        self.IsNotConstructed = False
-        self.IsBeingUpgraded = False
-        from Mafi import Option
-        self.ConstructionProgress = Option()
-        self.DoNotAdjustTerrainDuringConstruction = False
-        self.AreConstructionCubesDisabled = False
-        self.Id = None
-        self.DefaultTitle = None
-        self.Context = None
-        self.IsDestroyed = False
-        self.CanBePaused = False
-        self.IsEnabled = False
-        self.IsNotEnabled = False
-        self.IsPaused = False
-        self.IsNotPaused = False
-        self.RendererData = None
+        pass
+
 
 class StaticEntityOceanReservationManager:
-    MAX_OCEAN_FLOOR_HEIGHT = None
-    MIN_OCEAN_DEPTH = 0
     def __init__(self):
-        self.MonitoredAreas = None
+        pass
+
 
 class IOceanAreaRecord:
     def __init__(self):
-        self.Entity = None
-        self.Area = None
-        self.SetIndex = 0
-        self.AreaIndex = 0
-        self.NonOceanTilesIndices = None
-        self.NonOceanTiles = 0
+        pass
+
+
+class StaticEntityOceanReservationManagerV2:
+    def __init__(self):
+        pass
+
 
 class StaticEntityPfTargetTiles:
-    Empty = None
     def __init__(self):
-        self.TilesCount = 0
+        pass
+
 
 class IStaticEntityProto:
     def __init__(self):
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
+        pass
 
-        self.EntityType = None
-        self.Costs = None
-        self.Strings = None
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsAvailable = False
-        self.IsNotAvailable = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsInitialized = False
-        self.Mod = None
 
 class StaticEntityProto:
     def __init__(self):
-        from Mafi.Core.Entities.Static import StaticEntityProto
-        self.Id = StaticEntityProto.ID()
+        pass
 
-        self.EntityType = None
-        self.Costs = None
-        self.Strings = None
-        self.IsNotPhantom = False
-        self.IsInitialized = False
-        self.Mod = None
-        self.Tags = None
-        self.IsNotAvailable = False
-        self.IsAvailable = False
-        self.IsLocked = False
-        self.IsUnlocked = False
-        self.IsUnlockedAndAvailable = False
-        self.IsLockedOrUnavailable = False
-        self.IsLockedButAvailable = False
-        self.IsObsolete = False
-        self.ConstructionDurationPerProduct = None
-        self.CollapseRubbleScale = None
-        self.CustomBuriedTolerance = None
-        self.CustomSuspendedTolerance = None
-        self.VehicleGoalHeightAllowedRange = None
-        self.DoNotStartConstructionAutomatically = False
-        self.Graphics = None
-        self.IsPhantom = False
 
     class ID:
         def __init__(self):
-            self.Value = ""
+            pass
+
 
     class Gfx:
-        Empty = None
         def __init__(self):
-            self.HideBlockedPortsIcon = False
-            self.Color = None
-            self.RendererIndex = 0
+            pass
+
 
 class UniqueEntityValidator:
     def __init__(self):
-        self.Priority = None
+        pass
+
 
 class UpgradeHelper:
     def __init__(self):
@@ -715,19 +326,15 @@ class UpgradesManager:
 
 class ReplacementRefund:
     def __init__(self):
-        self.ToRefundAfterDone = None
-        self.QuickRemoveRefund = False
-        self.Entity = None
-        self.Buffers = None
+        pass
+
 
 class OngoingReplacementData:
     def __init__(self):
-        self.State = None
-        self.NewProto = None
-        self.NewTransform = None
+        pass
+
 
 class VirtualBuffersMap:
-    Empty = None
     def __init__(self):
         pass
 

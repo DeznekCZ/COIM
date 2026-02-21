@@ -1,8 +1,8 @@
 
 class CargoShipQuickTradeHandler:
     def __init__(self):
-        self.MessageOnDelivery = None
-        self.DescriptionOfTrade = None
+        pass
+
 
 class StaticWorldMap:
     def __init__(self):

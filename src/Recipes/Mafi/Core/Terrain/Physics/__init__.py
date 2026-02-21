@@ -1,20 +1,20 @@
 
 class NoTerrainDisruptionSimulator:
     def __init__(self):
-        self.IsDisabled = False
-        self.IsProcessingTiles = False
+        pass
+
 
 class NoTerrainPhysicsSimulator:
     def __init__(self):
-        self.IsDisabled = False
-        self.IsProcessingTiles = False
+        pass
+
 
 class ITerrainPhysicsSimulator:
     def __init__(self):
-        self.IsDisabled = False
-        self.IsProcessingTiles = False
+        pass
+
 
 class ITerrainDisruptionSimulator:
     def __init__(self):
-        self.IsDisabled = False
-        self.IsProcessingTiles = False
+        pass
+

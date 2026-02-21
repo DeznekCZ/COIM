@@ -1,8 +1,8 @@
 
 class IInputScheduler:
     def __init__(self):
-        self.OnCommandProcessed = None
-        self.ProcessedCommandsInThisSessionAffectingSave = 0
+        pass
+
 
 class IInputCommandsProcessor:
     def __init__(self):
@@ -11,71 +11,35 @@ class IInputCommandsProcessor:
 
 class IInputCommand:
     def __init__(self):
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.ResultSet = False
-        self.AffectsSaveState = False
-        self.IsVerificationCmd = False
+        pass
+
 
 class InputCommand:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
+        pass
+
 
 class InputScheduler:
     def __init__(self):
-        self.ProcessedCommandsInThisSessionAffectingSave = 0
-        self.OnCommandProcessed = None
+        pass
+
 
 class TerraformerDepositCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        from Mafi.Core.Prototypes import Proto
-        self.MaterialId = Proto.ID()
+        pass
 
-        self.Selection = None
-        self.Height = None
 
 class TerraformerRemoveCmd:
     def __init__(self):
-        self.AffectsSaveState = False
-        self.IsProcessed = False
-        self.IsProcessedAndSynced = False
-        self.ProcessedAtStep = None
-        self.ResultSet = False
-        self.IsVerificationCmd = False
-        self.Result = False
-        self.HasError = False
-        self.ErrorMessage = ""
-        self.Selection = None
-        self.TargetHeight = None
+        pass
+
 
 class TilesRectSelection:
     def __init__(self):
-        self.Area = 0
-        self.VerticesCount = 0
-        self.Center = None
-        self.Origin = None
-        self.Size = None
+        pass
+
 
     class Enumerator:
         def __init__(self):
-            self.Current = None
+            pass
+

@@ -2,18 +2,18 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net48</TargetFramework>
-    <Configurations>Debug;Release</Configurations>
+    <Configurations>Debug;Release;Debug_Pack</Configurations>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <Version>0.9.15.5</Version>
+    <Version>0.0.0.0</Version>
     <LangVersion>latest</LangVersion>
       
     <COI_ROOT>C:\git\Game\bin</COI_ROOT>
     <COI_APPDATA>%25APPDATA%25\Captain of Industry - 0.8.0</COI_APPDATA>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
     <DefineConstants>DEBUG</DefineConstants>
@@ -180,16 +180,14 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Debug_Pack'" >
     <Exec Command="mkdir &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="@rem copy .\bin\Debug\net471\Newtonsoft.Json.dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="robocopy .\AssetBundles &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\Recipes\Definitions &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Definitions&quot; | echo" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\Recipes\Mafi &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Definitions\Mafi&quot; /S | echo" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\Recipes\CustomAssets &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Definitions\CustomAssets&quot; /S | echo" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\Recipes\Assets &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Assets&quot; /S | echo" />
+    <Exec Command="robocopy .\..\Recipes\Mafi &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\API\Mafi&quot; /S | echo" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\Recipes\CustomAssets &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\API\CustomAssets&quot; /S | echo" ContinueOnError="true" />
   </Target>
 </Project>

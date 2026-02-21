@@ -1,9 +1,9 @@
 {
 	"id": "CustomAssets",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"display_name": "Custom Assets Loader",
-	"descriptionShort": "Loads additional contend from definition in .py config files",
-	"descriptionLong": "Loads additional contend from definition in .py config files contianed in Definition directory and loads additional asset bundles",
+	"description_short": "Loads additional contend from definition in .py config files",
+	"description_long": "Loads additional contend from definition in .py config files contianed in Definition directory and loads additional asset bundles",
 	"authors": [ "DeznekCZ" ],
 	"min_game_version": "0.8.0",
 	"max_verified_game_version": "0.8.0",

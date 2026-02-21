@@ -5,12 +5,9 @@ class AssetTransactionManager:
 
 
 class AssetValue:
-    Empty = None
     def __init__(self):
-        self.IsEmpty = False
-        self.IsNotEmpty = False
-        self.Item = None
-        self.Products = None
+        pass
+
 
 class AssetValueBuilder:
     def __init__(self):
@@ -33,18 +30,11 @@ class IOverflowProductsStorage:
 
 
 class GlobalOutputPriority:
-    SHIPYARD = 0
-    INCREASED = 0
-    DEFAULT = 0
-    LOW = 0
     def __init__(self):
         pass
 
 
 class GlobalInputPriority:
-    INCREASED = 0
-    DEFAULT = 0
-    LOW = 0
     def __init__(self):
         pass
 
@@ -56,16 +46,13 @@ class AssetTransactionManagerExtensions:
 
 class MutableAssetValue:
     def __init__(self):
-        self.ProductsInternal = None
-        self.IsNotEmpty = False
-        self.IsEmpty = False
+        pass
+
 
 class ReplacementCost:
-    Empty = None
     def __init__(self):
-        self.IsEmpty = False
-        self.Cost = None
-        self.Refund = None
+        pass
+
 
 class SourceProductsAnalyzer:
     def __init__(self):

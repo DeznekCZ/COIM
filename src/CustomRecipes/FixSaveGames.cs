@@ -79,13 +79,13 @@ public class FixSavedGames : IInitializer
         m_mapManager = mapManager;
         IsBeingLoaded = true;
         
-        Log.Info($"[{nameof(CustomAssets.CustomAssets)}]: Save game fix on loaded game.");
+        Log.Info($"[{nameof(CustomAssets.CustomAssetsMod)}]: Save game fix on loaded game.");
         SavedGameFixer();
     }
 
     void IInitializer.DoOnNewGameOnly(Action action)
     {
-        Log.Info($"[{nameof(CustomAssets.CustomAssets)}]: Save game fix initialized on new game, so do nothing.");
+        Log.Info($"[{nameof(CustomAssets.CustomAssetsMod)}]: Save game fix initialized on new game, so do nothing.");
     }
 
     private void SavedGameFixer()
@@ -111,7 +111,7 @@ public class FixSavedGames : IInitializer
 
     void IInitializer.DoOnNewGameOrAfterLoad(Action action)
     {
-        Log.Info($"[{nameof(CustomAssets.CustomAssets)}]: Save game fix on loaded game.");
+        Log.Info($"[{nameof(CustomAssets.CustomAssetsMod)}]: Save game fix on loaded game.");
         SavedGameFixer();
     }
 
