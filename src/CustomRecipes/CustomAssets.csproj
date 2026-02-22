@@ -6,11 +6,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <Version>0.0.0.0</Version>
+    <Version>0.1.7</Version> <!-- Update the project definition to standard from Mafi project. -->
     <LangVersion>latest</LangVersion>
       
     <COI_ROOT>C:\git\Game\bin</COI_ROOT>
-    <COI_APPDATA>%25APPDATA%25\Captain of Industry - 0.8.0</COI_APPDATA>
+    <COI_APPDATA>$(APPDATA)\Captain of Industry - 0.8.0</COI_APPDATA>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' ">
@@ -29,10 +29,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="AssetBundles\**" />
     <Compile Remove="Data\Instructions\**" />
     <Compile Remove="Translate\**" />
+    <EmbeddedResource Remove="AssetBundles\**" />
     <EmbeddedResource Remove="Data\Instructions\**" />
     <EmbeddedResource Remove="Translate\**" />
+    <None Remove="AssetBundles\**" />
     <None Remove="Data\Instructions\**" />
     <None Remove="Translate\**" />
   </ItemGroup>
@@ -171,23 +174,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="AssetBundles\" />
     <Folder Include="ModuleParser\Registrator\Definitions\" />
     <Folder Include="ModuleParser\Runtime\Wrappers\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Debug_Pack'" >
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Debug_Pack'">
     <Exec Command="mkdir &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="@rem copy .\bin\Debug\net471\Newtonsoft.Json.dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="robocopy .\AssetBundles &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" ContinueOnError="true" />
     <Exec Command="robocopy .\..\Recipes\Mafi &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\API\Mafi&quot; /S | echo" ContinueOnError="true" />
     <Exec Command="robocopy .\..\Recipes\CustomAssets &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\API\CustomAssets&quot; /S | echo" ContinueOnError="true" />
+    <ZipDirectory SourceDirectory="$(COI_APPDATA)\Mods\$(MSBuildProjectName)" DestinationFile="$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(Version).zip" Overwrite="true" />
   </Target>
 </Project>

@@ -5,7 +5,7 @@
 		<Configurations>Debug;Release;Debug_Pack</Configurations>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<WarningLevel>9999</WarningLevel>
-		<LangVersion>latest</LangVersion>
+		<LangVersion>7.3</LangVersion>
 		<!-- Version, AssemblyVersion and AssemblyFileVersion is automatically generated from 'manifest.json' -->
 
 		<!-- Environment or project variable 'COI_ROOT' must be set. -->
@@ -48,167 +48,36 @@
 		</UpToDateCheckInput>
 	</ItemGroup>
 
-	<ItemGroup>
-		<Reference Include="mscorlib">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\mscorlib.dll</HintPath>
-		</Reference>
-		<Reference Include="netstandard">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\netstandard.dll</HintPath>
-		</Reference>
-		<Reference Include="System">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Runtime">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Runtime.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Runtime.Serialization">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Runtime.Serialization.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Security">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Security.dll</HintPath>
-		</Reference>
-		<Reference Include="System.ServiceModel.Internals">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.ServiceModel.Internals.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Transactions">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Transactions.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Xml">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Xml.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Xml.Linq">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Xml.Linq.dll</HintPath>
-		</Reference>
-		<Reference Include="System.ComponentModel.Composition">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.ComponentModel.Composition.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Configuration">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Configuration.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Core">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Core.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Data.DataSetExtensions">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Data.DataSetExtensions.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Data">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Data.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Drawing">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Drawing.dll</HintPath>
-		</Reference>
-		<Reference Include="System.EnterpriseServices">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.EnterpriseServices.dll</HintPath>
-		</Reference>
-		<Reference Include="System.IO.Compression">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.IO.Compression.dll</HintPath>
-		</Reference>
-		<Reference Include="System.IO.Compression.FileSystem">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.IO.Compression.FileSystem.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Net.Http">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Net.Http.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Numerics">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Numerics.dll</HintPath>
-		</Reference>
-		<Reference Include="Mafi">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.dll</HintPath>
-		</Reference>
-		<Reference Include="Mafi.Core">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Core.dll</HintPath>
-		</Reference>
-		<Reference Include="Mafi.Base">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Base.dll</HintPath>
-		</Reference>
-		<Reference Include="Mafi.Unity">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Unity.dll</HintPath>
-		</Reference>
-		<Reference Include="Mafi.Supporter" Condition="'$(Supporter)' == 'true'">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Supporter.dll</HintPath>
-		</Reference>
-		<Reference Include="Mafi.TrainsDlc" Condition="'$(TrainsDlc)' == 'true'">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.TrainsDlc.dll</HintPath>
-		</Reference>
-		<Reference Include="Mafi.TrainsDlc" Condition="'$(TrainsDlc)' == 'true'">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.TrainsDlc.Unity.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AssetBundleModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.CoreModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.InputLegacyModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ParticleSystemModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.PhysicsModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AnimationModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ScreenCaptureModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ScreenCaptureModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TextRenderingModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UIModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TerrainPhysicsModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainPhysicsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UIElementsModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIElementsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.VideoModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AudioModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ImageConversionModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TerrainModule">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UI">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UI.dll</HintPath>
-		</Reference>
-		<Reference Include="Unity.VectorGraphics">
-			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Unity.VectorGraphics.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
-	<!-- Version generator -->
-	<UsingTask TaskName="ProcessManifest" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.Core">
+	<!-- Mod class code generator -->
+	<UsingTask TaskName="GenerateCodeForMod" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.Core">
 
 		<ParameterGroup>
-			<Manifest ParameterType="System.String" Required="true" />
 			<DefaultTitle ParameterType="System.String" Required="true" />
+			<Manifest ParameterType="System.String" Required="true" />
+			<COIRootDir ParameterType="System.String" Required="true" />
+			<COIModDir ParameterType="System.String" Required="true" />
+			<ProjectFile Output="true" ParameterType="System.String" />
 			<NormalizedVersion Output="true" ParameterType="System.String" />
 			<AuthorName Output="true" ParameterType="System.String" />
 			<DisplayTitle Output="true" ParameterType="System.String" />
 			<ModId Output="true" ParameterType="System.String" />
 			<Error Output="true" ParameterType="System.String" />
 			<Warning Output="true" ParameterType="System.String" />
+
 		</ParameterGroup>
 
 		<Task>
 			<Reference Include="System.Text.Json" />
 			<Reference Include="System.Memory" />
 			<Using Namespace="System.IO" />
+			<Using Namespace="System.Text" />
 			<Using Namespace="System.Text.Json" />
 			<Using Namespace="System.Text.RegularExpressions" />
 
 			<Code Type="Fragment" Language="cs">
 				<![CDATA[
+					Warning = "";
+					
 					JsonDocument doc = null;
 					try {
 						var json = File.ReadAllText(Manifest);
@@ -247,7 +116,7 @@
 					}
 					catch (Exception ex)
 					{
-						Warning = "Failed to read version from manifest.json: " + ex.Message;
+						Warning += "Failed to read version from manifest.json: " + ex.Message + "\n";
 						NormalizedVersion = "0.0.0";
 					}
 					try {
@@ -261,7 +130,7 @@
 					}
 					catch (Exception ex)
 					{
-						Warning = "Failed to read author from manifest.json: " + ex.Message;
+						Warning += "Failed to read author from manifest.json: " + ex.Message + "\n";
 						AuthorName = "Unknown";
 					}
 					try {
@@ -287,42 +156,218 @@
 					}
 					catch (Exception ex)
 					{
-						Warning = "Failed to read id from manifest.json: " + ex.Message;
+						Warning += "Failed to read id from manifest.json: " + ex.Message + "\n";
 						// keep default product name
 					}
+					
+					Directory.CreateDirectory("Generated\\" + ModId);
+				
+					// Generate a code file with mod information.
+					StringBuilder cw = new StringBuilder();
+					cw.AppendLine("using Mafi.Core.Mods;");
+					cw.AppendLine("using CustomAssets.Data.Mod;");
+					cw.AppendLine();
+					cw.AppendLine("namespace CustomAssetPack;");
+					cw.AppendLine();
+					cw.AppendLine("public class " + ModId + " : DataOnlyMod {");
+					cw.AppendLine("    public " + ModId + "(ModManifest manifest) : base(manifest) { }");
+					cw.AppendLine("    public override void RegisterPrototypes(ProtoRegistrator registrator) {");
+					cw.AppendLine("        new CustomAssetRegistrator().RegisterData(registrator);");
+					cw.AppendLine("    }");
+					cw.AppendLine("}");
+					File.WriteAllText("Generated\\" + ModId + "\\" + ModId + ".cs", cw.ToString());
+					
+					// Generate .NET project file for compilation
+					StringBuilder pw = new StringBuilder();
+					pw.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+					pw.AppendLine("  <PropertyGroup>");
+					pw.AppendLine("    <OutputType>Library</OutputType>");
+					pw.AppendLine("    <TargetFramework>net48</TargetFramework>");
+					pw.AppendLine("    <Configurations>Debug;Release</Configurations>");
+					pw.AppendLine("    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>");
+					pw.AppendLine("    <WarningLevel>9999</WarningLevel>");
+					pw.AppendLine("    <LangVersion>latest</LangVersion>");
+					pw.AppendLine("    <COI_ROOT>" + COIRootDir + "</COI_ROOT>");
+					pw.AppendLine("    <COI_MODS>" + COIModDir + "</COI_MODS>");
+					pw.AppendLine();
+					pw.AppendLine("    <Version>" + NormalizedVersion + "</Version>");
+					pw.AppendLine("    <FileVersion>" + NormalizedVersion + "</FileVersion>");
+					pw.AppendLine("    <AssemblyVersion>" + NormalizedVersion + "</AssemblyVersion>");
+					pw.AppendLine("    <AssemblyTitle>" + DisplayTitle + "</AssemblyTitle>");
+					pw.AppendLine("    <Product>" + DisplayTitle + "</Product>");
+					pw.AppendLine("    <Company>" + AuthorName + "</Company>");
+					pw.AppendLine("    <Copyright>" + AuthorName + "</Copyright>");
+					pw.AppendLine("  </PropertyGroup>");
+					pw.AppendLine();
+					pw.AppendLine("  <ItemGroup>");
+					pw.AppendLine("    <ProjectReference Include=\"..\\..\\..\\CustomRecipes\\CustomAssets.csproj\" />");
+					pw.AppendLine("  </ItemGroup>");
+					pw.AppendLine();
+					pw.AppendLine("  <ItemGroup>");
+					pw.AppendLine("    <Reference Include=\"mscorlib\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\mscorlib.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"netstandard\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\netstandard.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Runtime\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Runtime.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Runtime.Serialization\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Runtime.Serialization.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Security\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Security.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.ServiceModel.Internals\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.ServiceModel.Internals.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Transactions\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Transactions.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Xml\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Xml.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Xml.Linq\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Xml.Linq.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.ComponentModel.Composition\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.ComponentModel.Composition.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Configuration\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Configuration.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Core\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Core.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Data.DataSetExtensions\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Data.DataSetExtensions.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Data\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Data.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Drawing\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Drawing.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.EnterpriseServices\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.EnterpriseServices.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.IO.Compression\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.IO.Compression.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.IO.Compression.FileSystem\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.IO.Compression.FileSystem.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Net.Http\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Net.Http.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"System.Numerics\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\System.Numerics.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"Mafi\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\Mafi.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"Mafi.Core\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\Mafi.Core.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"Mafi.Base\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\Mafi.Base.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"Mafi.Unity\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\Mafi.Unity.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"Mafi.Supporter\" Condition=\"'$(Supporter)' == 'true'\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\Mafi.Supporter.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"Mafi.TrainsDlc\" Condition=\"'$(TrainsDlc)' == 'true'\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\Mafi.TrainsDlc.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"Mafi.TrainsDlc\" Condition=\"'$(TrainsDlc)' == 'true'\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\Mafi.TrainsDlc.Unity.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.AssetBundleModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.AssetBundleModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.CoreModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.CoreModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.InputLegacyModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.InputLegacyModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.ParticleSystemModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.ParticleSystemModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.PhysicsModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.PhysicsModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.AnimationModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.AnimationModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.ScreenCaptureModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.ScreenCaptureModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.TextRenderingModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.TextRenderingModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.UIModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.UIModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.TerrainPhysicsModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.TerrainPhysicsModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.UIElementsModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.UIElementsModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.VideoModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.VideoModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.AudioModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.AudioModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.ImageConversionModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.ImageConversionModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.TerrainModule\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.TerrainModule.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"UnityEngine.UI\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\UnityEngine.UI.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("    <Reference Include=\"Unity.VectorGraphics\">");
+					pw.AppendLine("      <HintPath>$"+"(COI_ROOT)\\Captain of Industry_Data\\Managed\\Unity.VectorGraphics.dll</HintPath>");
+					pw.AppendLine("    </Reference>");
+					pw.AppendLine("  </ItemGroup>");
+					pw.AppendLine();
+					string packName = Path.GetFileName(Path.GetDirectoryName(Manifest));
+					pw.AppendLine("  <ItemGroup>");
+					pw.AppendLine("    <AssetBundles Include=\"$"+"(ProjectDir)\\..\\..\\Packs\\" + packName + "\\AssetBundles\\**\\*\" Exclude=\"**\\AssetBundles;**\\AssetBundles.manifest\" />");
+					pw.AppendLine("    <Assets Include=\"$"+"(ProjectDir)\\..\\..\\Packs\\" + packName + "\\Assets\\**\\*\" />");
+					pw.AppendLine("    <Definitions Include=\"$"+"(ProjectDir)\\..\\..\\Packs\\" + packName + "\\Definitions\\**\\*\" />");
+					pw.AppendLine("  </ItemGroup>");
+					pw.AppendLine();
+					pw.AppendLine("  <!-- Coppies data to mod release folder. For skipping the part, comment out the full target element -->");
+					pw.AppendLine("  <Target Name=\"DeployToModsFolder\" AfterTargets=\"PostBuildEvent\" >");
+					pw.AppendLine("    <Message Text=\"Deploying " + DisplayTitle + " to mods folder...\" Importance=\"high\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"..\\..\\" + Manifest + "\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"..\\..\\" + Manifest.Replace("manifest.json", "config.json") + "\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" ContinueOnError=\"true\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"$"+"(TargetPath)\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"$"+"(TargetDir)$"+"(TargetName).pdb\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" Condition=\"'$"+"(Configuration)' == 'Debug'\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"@"+"(AssetBundles)\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\\AssetBundles\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"@"+"(Assets)\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\\Assets\\%"+"(RecursiveDir)\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"@"+"(Definitions)\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\\Definitions\\%"+"(RecursiveDir)\" />");
+					pw.AppendLine("    <ZipDirectory SourceDirectory=\"$"+"(COI_MODS)\\" + ModId + "\" DestinationFile=\"$"+"(COI_MODS)\\" + ModId + "_" + doc.RootElement.GetProperty("version").GetString() + ".zip\" Overwrite=\"true\" />");
+					pw.AppendLine("  </Target>");
+					pw.AppendLine("</Project>");
+					File.WriteAllText("Generated\\" + ModId + "\\" + ModId + ".csproj", pw.ToString());
+					
+					ProjectFile = "Generated\\" + ModId + "\\" + ModId + ".csproj";
 				]]>
 			</Code>
 		</Task>
 	</UsingTask>
-
-	<Target Name="ReadJsonVersion" BeforeTargets="GetAssemblyVersion" Condition=" '$(ModPack)' != '' ">
-		<Error Condition="'$(COI_ROOT)' == ''" Text="Environment or project variable 'COI_ROOT' is not set." />
-		<Error Condition="'$(COI_MODS)' == ''" Text="Environment or project variable 'COI_MODS' is not set." />
-
-		<Message Text="Receiving information for $(ModPack) to mods folder..." Importance="high" />
-		<ProcessManifest Manifest="Packs\$(ModPack)\manifest.json" DefaultTitle="$(TargetName)" ContinueOnError="true">
-			<Output TaskParameter="NormalizedVersion" PropertyName="VersionNormalized" />
-			<Output TaskParameter="AuthorName" PropertyName="AuthorName" />
-			<Output TaskParameter="DisplayTitle" PropertyName="DisplayTitle" />
-			<Output TaskParameter="ModId" PropertyName="ModId" />
-			<Output TaskParameter="Error" PropertyName="Error" />
-			<Output TaskParameter="Warning" PropertyName="Warning" />
-		</ProcessManifest>
-
-		<Error Condition="'$(Error)' != ''" Text="$(Error)" />
-		<Warning Condition="'$(Warning)' != ''" Text="$(Warning)" />
-
-		<Message Text="Found $(ModId) for $(ModPack)" Importance="high" />
-		<PropertyGroup>
-			<Version>$(VersionNormalized)</Version>
-			<FileVersion>$(VersionNormalized)</FileVersion>
-			<AssemblyVersion>$(VersionNormalized)</AssemblyVersion>
-			<AssemblyTitle>$(DisplayTitle)</AssemblyTitle>
-			<Product>$(DisplayTitle)</Product>
-			<Company>$(AuthorName)</Company>
-			<Copyright>$(AuthorName)</Copyright>
-		</PropertyGroup>
-	</Target>
 
 	<ProjectExtensions>
 		<VisualStudio>
@@ -342,20 +387,39 @@
 
 	<Target Name="BuildAll" AfterTargets="PostBuildEvent" Condition="'$(ModPack)' == ''">
 		<Message Text="Building all packs..." Importance="high" />
-		<MSBuild Projects="$(MSBuildProjectFile)"
-		         Targets="Build"
-		         Properties="ModPack=%(ModFolders.RecursiveDir);Configuration=Debug;Platform=AnyCPU"/>
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildPack" Properties="ModPack=%(ModFolders.RecursiveDir);Configuration=Debug;Platform=AnyCPU" />
 	</Target>
 
-	<!-- Coppies data to mod release folder. For skipping the part, comment out the full target element -->
-	<Target Name="DeployToModsFolder" AfterTargets="PostBuildEvent" Condition="'$(ModPack)' != ''">
-		<Message Text="Deploying $(DisplayTitle) to mods folder..." Importance="high" />
-		<Copy SourceFiles="$(ProjectDir)\Packs\$(ModPack)\manifest.json" DestinationFolder="$(COI_MODS)\$(ModId)\" />
-		<Copy SourceFiles="$(ProjectDir)\Packs\$(ModPack)\config.json" DestinationFolder="$(COI_MODS)\$(ModId)" ContinueOnError="true" />
-		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(COI_MODS)\$(ModId)\" />
-		<Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(COI_MODS)\$(ModId)\" Condition="'$(Configuration)' == 'Debug'" />
-		<Copy SourceFiles="@(AssetBundles)" DestinationFolder="$(COI_MODS)\$(ModId)\AssetBundles" />
-		<Copy SourceFiles="@(Assets)" DestinationFolder="$(COI_MODS)\$(ModId)\Assets\%(RecursiveDir)" />
-		<Copy SourceFiles="@(Definitions)" DestinationFolder="$(COI_MODS)\$(ModId)\Definitions\%(RecursiveDir)" />
+	<Target Name="BuildPack">
+		<Error Condition="'$(COI_ROOT)' == ''" Text="Environment or project variable 'COI_ROOT' is not set." />
+		<Error Condition="'$(COI_MODS)' == ''" Text="Environment or project variable 'COI_MODS' is not set." />
+
+		<!-- Generate a code file with mod information. -->
+		<Message Text="Generate Mod file for package $(ModPack)" Importance="high" />
+		<MakeDir Directories="Generated" />
+		<GenerateCodeForMod Manifest="Packs\$(ModPack)manifest.json" DefaultTitle="$(TargetName)" COIRootDir="$(COI_ROOT)" COIModDir="$(COI_MODS)">
+			<Output TaskParameter="ProjectFile" PropertyName="ProjectFile" />
+		</GenerateCodeForMod>
+
+		<Error Condition="'$(Error)' != ''" Text="$(Error)" />
+		<Warning Condition="'$(Warning)' != ''" Text="$(Warning)" />
+
+		<Message Text="Building package $(ModPack)..." Importance="high" />
+		<MSBuild Projects="$(ProjectFile)" Targets="Restore" />
+		<MSBuild Projects="$(ProjectFile)" Targets="Build" Properties="Configuration=Debug;Platform=AnyCPU" />
 	</Target>
+
+	<ItemGroup>
+		<Compile Remove="Generated\**" />
+		<EmbeddedResource Remove="Generated\**" />
+		<None Remove="Generated\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="Generated\.gitignore" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="System.Text.Json" Version="10.0.3" />
+	</ItemGroup>
 </Project>

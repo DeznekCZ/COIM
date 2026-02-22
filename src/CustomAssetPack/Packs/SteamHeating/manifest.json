@@ -12,5 +12,5 @@
   "can_remove_from_saved_game": true,
   "non_locking_dll_load": true,
   "min_game_version": "0.8.0",
-  "primary_dlls": [ "CustomAssetPack.dll" ]
+  "primary_dlls": [ "CustomAssets_SteamHeating.dll" ]
 }
