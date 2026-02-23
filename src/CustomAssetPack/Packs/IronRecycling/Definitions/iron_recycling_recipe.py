@@ -7,12 +7,12 @@ from CustomRecipes import add_unlock_recipe, build_recipe, build_research, Produ
 recipe = build_recipe(
     recipeId = "CustomRecipe_IronShredded",
     name = "Iron Shredded",
-    description = "Convert small amount of coal while presure is active to heavy oil",
+    description = "Shred the iron plates into scrap for re‑smelting",
     machine = Ids.Machines.Shredder,
     # research definition is optional, it may be later added by
     # add_unlock(researchId, machineId, build_recipe(Recipe_Class))
     # in case is not define in eather case, it will be locked in game
-    research = Ids.Research.IronSmeltingScrap,
+    research = Ids.Research.Compactor,
     # duration = Duration.FromSec(60),
     ingredients = [
         # allowed is any combination, port id is optional,
