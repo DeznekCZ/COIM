@@ -5,11 +5,15 @@ class CustomEntitiesSerializer:
 
 
 class CustomTextReader:
+    NEW_LINE = None
+    CR = None
+    DELIMITER = None
     def __init__(self):
-        pass
-
+        self.Level = 0
+        self.SaveVersion = 0
+        self.MissingProtoIds = None
 
 class CustomTextWriter:
     def __init__(self):
-        pass
-
+        self.Level = 0
+        self.SaveVersion = 0

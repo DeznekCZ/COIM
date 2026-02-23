@@ -1,15 +1,21 @@
 
 class HeightmapFeaturePreviewChunkData:
+    SIZE = 0
     def __init__(self):
-        pass
-
+        self.Chunk = None
+        self.Area = None
+        self.Dirty = False
+        self.Heights = None
 
 class HeightmapTopBottomPreviewChunkData:
+    SIZE = 0
     def __init__(self):
-        pass
-
+        self.Chunk = None
+        self.Area = None
+        self.Dirty = False
+        self.Heights = None
 
 class PointFeaturePreviewChunkData:
     def __init__(self):
-        pass
-
+        self.Chunk = None
+        self.Points = None

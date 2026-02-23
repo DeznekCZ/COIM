@@ -1,8 +1,13 @@
 
 class INotification:
     def __init__(self):
-        pass
-
+        self.IsSuppressed = False
+        self.IsEntityIconSuppressed = False
+        self.NotificationId = None
+        self.Proto = None
+        self.Message = None
+        from Mafi import Option
+        self.Object = Option()
 
 class INotificationsManager:
     def __init__(self):
@@ -16,63 +21,150 @@ class NotificationsManagerExtensions:
 
 class NotificationDismissCmd:
     def __init__(self):
-        pass
-
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.NotificationsIds = None
 
 class EntityNotificationProto:
     def __init__(self):
-        pass
+        from Mafi.Core.Notifications import EntityNotificationProto
+        self.Id = EntityNotificationProto.ID()
 
+        self.IsTimeLimited = False
+        self.Strings = None
+        self.IsNotPhantom = False
+        self.IsInitialized = False
+        self.Mod = None
+        self.Tags = None
+        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
+        self.IsObsolete = False
+        self.ExtraMessageForInspector = None
+        self.AlternativeMessageForInspector = None
+        self.Tutorial = None
+        self.HideInNotificationPanel = False
+        self.HideInInspector = False
+        self.Style = None
+        self.Type = None
+        from Mafi import Option
+        self.IconAssetPath = Option()
+        self.EntityIconSpec = None
+        self.SuppressEntityIconOnSuppress = False
+        self.TimeToLive = None
+        self.NoAudio = False
+        self.IsPhantom = False
 
     class ID:
         def __init__(self):
-            pass
-
+            self.Value = ""
 
 class GeneralNotificationProto:
     def __init__(self):
-        pass
+        from Mafi.Core.Notifications import GeneralNotificationProto
+        self.Id = GeneralNotificationProto.ID()
 
+        self.IsTimeLimited = False
+        self.Strings = None
+        self.IsNotPhantom = False
+        self.IsInitialized = False
+        self.Mod = None
+        self.Tags = None
+        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
+        self.IsObsolete = False
+        self.HideInNotificationPanel = False
+        self.HideInInspector = False
+        self.Style = None
+        self.Type = None
+        from Mafi import Option
+        self.IconAssetPath = Option()
+        self.EntityIconSpec = None
+        self.SuppressEntityIconOnSuppress = False
+        self.TimeToLive = None
+        self.NoAudio = False
+        self.IsPhantom = False
 
     class ID:
         def __init__(self):
-            pass
-
+            self.Value = ""
 
 class NotificationProto:
     def __init__(self):
-        pass
+        self.IsTimeLimited = False
+        from Mafi.Core.Notifications import NotificationProto
+        self.Id = NotificationProto.ID()
 
+        self.Strings = None
+        self.IsNotPhantom = False
+        self.IsInitialized = False
+        self.Mod = None
+        self.Tags = None
+        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
+        self.IsObsolete = False
+        self.HideInNotificationPanel = False
+        self.HideInInspector = False
+        self.Style = None
+        self.Type = None
+        from Mafi import Option
+        self.IconAssetPath = Option()
+        self.EntityIconSpec = None
+        self.SuppressEntityIconOnSuppress = False
+        self.TimeToLive = None
+        self.NoAudio = False
+        self.IsPhantom = False
 
     class ID:
         def __init__(self):
-            pass
-
+            self.Value = ""
 
 class NotificationStyle:
+    Success = None
+    Warning = None
+    Critical = None
     def __init__(self):
-        pass
-
+        self.value__ = 0
 
 class NotificationType:
+    Continuous = None
+    OneTimeOnly = None
     def __init__(self):
-        pass
-
+        self.value__ = 0
 
 class NotificationProtoBuilder:
     def __init__(self):
-        pass
-
+        self.ProtosDb = None
+        self.Registrator = None
 
     class StateGeneral:
         def __init__(self):
-            pass
-
+            self.Builder = None
 
     class StateEntity:
         def __init__(self):
-            pass
-
+            self.Builder = None
 
 class NotificationsManager:
     def __init__(self):
@@ -81,20 +173,25 @@ class NotificationsManager:
 
 class EntityNotificator:
     def __init__(self):
-        pass
-
+        self.IsValid = False
+        self.IsActive = False
+        self.NotificationId = None
+        self.Prototype = None
 
 class Notificator:
     def __init__(self):
-        pass
-
+        self.IsValid = False
+        self.IsActive = False
+        self.NotificationId = None
 
 class EntityNotificatorWithProtoParam:
     def __init__(self):
-        pass
-
+        self.IsActive = False
+        self.NotificationId = None
+        self.Prototype = None
 
 class NotificatorWithProtoParam:
     def __init__(self):
-        pass
-
+        self.IsActive = False
+        self.NotificationId = None
+        self.Prototype = None

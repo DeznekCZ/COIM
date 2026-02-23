@@ -5,6 +5,8 @@ class MovingAverageHelper:
 
 
 class ArrayUtils:
+    MAX_ARRAY_LENGTH = 0
+    MAX_BYTE_ARRAY_LENGTH = 0
     def __init__(self):
         pass
 
@@ -21,13 +23,13 @@ class ExceptionHelper:
 
 class ExpectedStructSizeAttribute:
     def __init__(self):
-        pass
-
+        self.TypeId = None
+        self.SizeBytes = 0
 
 class AnyValidGenericArgumentsAttribute:
     def __init__(self):
-        pass
-
+        self.TypeId = None
+        self.GenericTypeArguments = None
 
 class StructSize:
     def __init__(self):
@@ -40,24 +42,23 @@ class FarmHash:
 
 
 class FastStringComparer:
+    Instance = None
     def __init__(self):
         pass
 
 
 class InlineValueAttribute:
     def __init__(self):
-        pass
-
+        self.TypeId = None
+        self.ValueName = ""
 
 class DoNotInlineValueAttribute:
     def __init__(self):
-        pass
-
+        self.TypeId = None
 
 class InlineValueDespiteDifferentTypesAttribute:
     def __init__(self):
-        pass
-
+        self.TypeId = None
 
 class IntToStringCache:
     def __init__(self):
@@ -76,5 +77,7 @@ class WavParser:
 
     class Result:
         def __init__(self):
-            pass
-
+            self.Samples = None
+            self.SampleCount = 0
+            self.Channels = 0
+            self.SampleRate = 0

@@ -1,13 +1,13 @@
 
 class BitMap:
     def __init__(self):
-        pass
-
+        self.BackingArray = None
+        self.Capacity = 0
+        self.Size = 0
 
     class Enumerator:
         def __init__(self):
-            pass
-
+            self.Current = 0
 
 class DictExtensions:
     def __init__(self):
@@ -21,8 +21,7 @@ class IClearable:
 
 class ICollectionWithCount:
     def __init__(self):
-        pass
-
+        self.Count = 0
 
 class LystStructExtensions:
     def __init__(self):
@@ -31,8 +30,8 @@ class LystStructExtensions:
 
 class ILystNonGeneric:
     def __init__(self):
-        pass
-
+        self.Count = 0
+        self.Item = None
 
 class LystExtensions:
     def __init__(self):
@@ -51,8 +50,7 @@ class PooledArray:
 
 class BinaryQuadTree:
     def __init__(self):
-        pass
-
+        self.Size = 0
 
 class BroadPhaseQuadTree:
     def __init__(self):
@@ -76,8 +74,8 @@ class IReadOnlySetExtensions:
 
 class ReusableIdsManager:
     def __init__(self):
-        pass
-
+        self.Count = 0
+        self.HighestIssuedCount = 0
 
 class Tupple:
     def __init__(self):

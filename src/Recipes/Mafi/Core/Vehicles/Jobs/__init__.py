@@ -1,8 +1,15 @@
 
 class AttachRocketToLaunchPadJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.WaitBehindQueueTipVehicle = False
+        self.SkipNoMovementMonitoring = False
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
 
     class Factory:
         def __init__(self):
@@ -11,28 +18,55 @@ class AttachRocketToLaunchPadJob:
 
 class CargoDeliveryJob:
     def __init__(self):
-        pass
-
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.GoalName = None
+        self.CargoToDeliver = None
+        self.JobInfo = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
+        self.WaitBehindQueueTipVehicle = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.QueueingJobFactory = None
+            self.NavigateToJobFactory = None
+            self.StaticEntityGoalFactory = None
+            self.VehicleJobStatsManager = None
 
 class CargoPickUpJob:
     def __init__(self):
-        pass
-
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.GoalName = None
+        self.CargoToPickup = None
+        self.JobInfo = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
+        self.WaitBehindQueueTipVehicle = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.NavigateToJobFactory = None
+            self.QueueingJobFactory = None
+            self.AssetTransactionManager = None
 
 class ChainedNavigationJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
@@ -41,8 +75,14 @@ class ChainedNavigationJob:
 
 class CleanExcavatorJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
@@ -51,33 +91,67 @@ class CleanExcavatorJob:
 
 class DockAtDockJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.RemainingTransitionDuration = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.PathFindingManager = None
+            self.TerrainManager = None
 
 class DumpingJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.GoalName = None
+        self.PrimaryDesignation = None
+        self.ExtraDesignations = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.DumpingManager = None
+            self.PathFindingManager = None
+            self.TerrainManager = None
+            self.DesignationGoalFactory = None
+            self.TerrainDumpingManager = None
+            self.UnreachableDesignationsManager = None
+            self.VehicleJobStatsManager = None
+            self.VehicleLastOutputBufferManager = None
 
 class EmptyJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.SkipNoMovementMonitoring = False
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
 
 class GetUnstuckJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
@@ -86,43 +160,77 @@ class GetUnstuckJob:
 
 class MiningJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.TileToMine = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.MiningManager = None
+            self.PathFindingManager = None
+            self.FuelStationsManager = None
+            self.TerrainManager = None
+            self.TreesManager = None
+            self.TerrainPropsManager = None
+            self.DesignationGoalFactory = None
+            self.UnreachableDesignationsManager = None
 
 class MixedCargoDeliveryJob:
     def __init__(self):
-        pass
-
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.JobInfo = None
+        self.Truck = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
+        self.WaitBehindQueueTipVehicle = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.QueueingJobFactory = None
+            self.NavigateToJobFactory = None
+            self.StaticEntityGoalFactory = None
+            self.VehicleJobStatsManager = None
 
 class NavigateToJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.GoalName = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.PathFindingManager = None
 
 class QueueJobResultRef:
     def __init__(self):
-        pass
-
+        self.ReachedGoal = None
 
 class RecoverVehicleJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.SkipNoMovementMonitoring = False
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
 
     class Factory:
         def __init__(self):
@@ -131,8 +239,15 @@ class RecoverVehicleJob:
 
 class RefuelOtherVehicleJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.VehicleToRefuel = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
@@ -141,18 +256,35 @@ class RefuelOtherVehicleJob:
 
 class RefuelSelfJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.CargoToPickup = None
+        self.Vehicle = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
+        self.WaitBehindQueueTipVehicle = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.QueueingJobFactory = None
+            self.NavigateToJobFactory = None
+            self.FuelStatsCollector = None
+            self.StaticEntityGoalFactory = None
 
 class RocketAssemblyAttachJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.SkipNoMovementMonitoring = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
 
     class Factory:
         def __init__(self):
@@ -161,38 +293,72 @@ class RocketAssemblyAttachJob:
 
 class ScrapOrReplaceVehicleInDepotJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.SkipNoMovementMonitoring = False
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.WaitBehindQueueTipVehicle = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.VehicleQueueJobFactory = None
+            self.VehiclesManager = None
+            self.ConstructionManager = None
 
 class ShipNavigateToJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.UndockJobFactory = None
+            self.PathFindingManager = None
+            self.TerrainManager = None
+            self.TilePositionVehicleGoalFactory = None
 
 class ShipUndockJob:
+    from Mafi import Fix64
+    ARRIVE_DEPART_TIME_SCALE_PER_DEGREE_OVER_90 = Fix64()
+    ARRIVE_DEPART_TIME_ADDITION_PER_TILE = Fix64()
+    ANGULAR_INTERPOLATION_TWEAK_PER_DEGREE_OVER_90 = Fix64()
+    INTERPOLATION_POWER = Fix64()
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.TimeToFinishJob = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.PathFindingManager = None
+            self.TerrainManager = None
 
 class SpawnJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.SkipNoMovementMonitoring = False
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
 
     class Factory:
         def __init__(self):
@@ -201,18 +367,38 @@ class SpawnJob:
 
 class SurfaceModificationJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.Vehicle = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.GoalName = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.PathFindingManager = None
+            self.TerrainManager = None
+            self.DesignationGoalFactory = None
+            self.SurfaceDesignationsManager = None
+            self.UnreachableDesignationsManager = None
+            self.VehicleJobStatsManager = None
 
 class TreeHarvesterLoadTruckJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.SkipNoMovementMonitoring = False
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        from Mafi import Option
+        self.TruckBeingLoaded = Option()
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
 
     class Factory:
         def __init__(self):
@@ -221,38 +407,73 @@ class TreeHarvesterLoadTruckJob:
 
 class TreeHarvestingJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.TreeGoalFactory = None
+            self.HarvestingManager = None
+            self.PathFindingManager = None
+            self.UnreachablesManager = None
 
 class TreePlantingJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.PlantingPosition = None
+        self.PlantingProto = None
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.TreeGoalFactory = None
+            self.PathFindingManager = None
+            self.UnreachablesManager = None
 
 class VehicleJob:
     def __init__(self):
-        pass
-
+        self.Id = None
+        self.JobInfo = None
+        self.IsDestroyed = False
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
+        self.SkipNoMovementMonitoring = False
 
 class VehicleJobsSequence:
     def __init__(self):
-        pass
-
+        self.IsEmpty = False
+        self.IsNotEmpty = False
+        from Mafi import Option
+        self.CurrentJob = Option()
+        self.CurrentFuelConsumption = None
+        self.ContainsTrueJob = False
+        self.Count = 0
+        self.Item = None
 
 class WaitingJob:
     def __init__(self):
-        pass
-
+        self.JobInfo = None
+        self.IsTrueJob = False
+        self.CurrentFuelConsumption = None
+        self.SkipNoMovementMonitoring = False
+        self.Id = None
+        self.IsDestroyed = False
+        self.IsBeingCancelled = False
+        self.IsCancelled = False
 
     class Factory:
         def __init__(self):
@@ -261,38 +482,56 @@ class WaitingJob:
 
 class IJobWithPreNavigation:
     def __init__(self):
-        pass
-
+        self.GoalName = None
 
 class ICargoDeliveryJob:
     def __init__(self):
-        pass
-
+        self.CargoToDeliver = None
+        self.IsDestroyed = False
+        self.SkipNoMovementMonitoring = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.JobInfo = None
 
 class ICargoPickUpJob:
     def __init__(self):
-        pass
-
+        self.CargoToPickup = None
+        self.IsDestroyed = False
+        self.SkipNoMovementMonitoring = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.JobInfo = None
 
 class IQueueTipJob:
     def __init__(self):
-        pass
-
+        self.WaitBehindQueueTipVehicle = False
+        self.IsDestroyed = False
+        self.SkipNoMovementMonitoring = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.JobInfo = None
 
 class IVehicleJobReadOnly:
     def __init__(self):
-        pass
-
+        self.Id = None
+        self.JobInfo = None
 
 class IVehicleJob:
     def __init__(self):
-        pass
-
+        self.IsDestroyed = False
+        self.SkipNoMovementMonitoring = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.JobInfo = None
 
 class IVehicleJobWithOwner:
     def __init__(self):
-        pass
-
+        self.Vehicle = None
+        self.IsDestroyed = False
+        self.SkipNoMovementMonitoring = False
+        self.CurrentFuelConsumption = None
+        self.Id = None
+        self.JobInfo = None
 
 class IVehicleJobObserver:
     def __init__(self):
@@ -300,9 +539,11 @@ class IVehicleJobObserver:
 
 
 class JobResult:
+    Empty = None
     def __init__(self):
-        pass
-
+        from Mafi import Option
+        self.NextJob = Option()
+        self.Cargo = None
 
 class ParkAndWaitJobFactory:
     def __init__(self):
@@ -321,5 +562,6 @@ class ReturnHomeJob:
 
 class VehicleQueueJobFactory:
     def __init__(self):
-        pass
-
+        self.PathFindingManager = None
+        self.StaticEntityGoalFactory = None
+        self.DynamicEntityGoalFactory = None

@@ -43,7 +43,7 @@ namespace CustomAssets.ModuleTester
 			IEnumerable<Type> allTypes = mafiTypes.Concat(mafiCoreTypes).Concat(mafiBaseTypes);
 			ILookup<string, Type> lookup = allTypes.ToLookup(t => t.Namespace);
 
-			DirectoryInfo targetDirectory = new DirectoryInfo(@"..\..\..\Recipes");
+			DirectoryInfo targetDirectory = new DirectoryInfo(@"..\..\..\..\Recipes");
 
 			foreach (IGrouping<string, Type> item in lookup)
 			{

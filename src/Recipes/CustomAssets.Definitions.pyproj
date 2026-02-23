@@ -183,8 +183,6 @@
     <Compile Include="Mafi\__init__.py" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Assets\Products\" />
-    <Folder Include="Assets\Products\Icons\" />
     <Folder Include="CustomAssets\" />
     <Folder Include="Mafi\" />
     <Folder Include="Mafi\Base\" />
@@ -341,11 +339,6 @@
     <Folder Include="Mafi\Streams\" />
     <Folder Include="Mafi\Utils\" />
     <Folder Include="Mafi\Vornoi\" />
-    <Folder Include="ModuleIds\" />
-    <Folder Include="Assets\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Assets\Products\Icons\CoalVapor.png" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

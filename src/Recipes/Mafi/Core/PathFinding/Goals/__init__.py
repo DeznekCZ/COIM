@@ -1,8 +1,10 @@
 
 class AnnularVehicleGoal:
     def __init__(self):
-        pass
-
+        self.GoalPosition = None
+        self.Distance = None
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -10,19 +12,21 @@ class AnnularVehicleGoal:
 
 
 class DynamicEntityVehicleGoal:
+    GOAL_INVALID_RETRY_PF_RADIUS = None
     def __init__(self):
-        pass
-
+        from Mafi import Option
+        self.GoalVehicle = Option()
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
-            pass
-
+            self.m_vehicleSurfaceProvider = None
 
 class EdgeOfMapShipGoal:
     def __init__(self):
-        pass
-
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -31,18 +35,18 @@ class EdgeOfMapShipGoal:
 
 class IVehicleGoal:
     def __init__(self):
-        pass
-
+        self.GoalName = None
+        self.IsInitialized = False
 
 class IVehicleGoalFull:
     def __init__(self):
-        pass
-
+        self.GoalName = None
+        self.IsInitialized = False
 
 class MultiTilePositionVehicleGoal:
     def __init__(self):
-        pass
-
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -51,8 +55,10 @@ class MultiTilePositionVehicleGoal:
 
 class PlantingVehicleGoal:
     def __init__(self):
-        pass
-
+        self.GoalPosition = None
+        self.Distance = None
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -61,8 +67,11 @@ class PlantingVehicleGoal:
 
 class StaticEntityVehicleGoal:
     def __init__(self):
-        pass
-
+        from Mafi import Option
+        self.GoalStaticEntity = Option()
+        self.UseCustomTarget = False
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -71,8 +80,13 @@ class StaticEntityVehicleGoal:
 
 class TerrainDesignationVehicleGoal:
     def __init__(self):
-        pass
-
+        from Mafi import Option
+        self.ActualGoalDesignation = Option()
+        self.FoundGoalPosition = None
+        self.PrimaryGoalDesignation = None
+        self.ToleranceRadius = None
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -81,8 +95,10 @@ class TerrainDesignationVehicleGoal:
 
 class TilePositionAndDirectionVehicleGoal:
     def __init__(self):
-        pass
-
+        self.GoalTile = None
+        self.Direction = None
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -91,8 +107,10 @@ class TilePositionAndDirectionVehicleGoal:
 
 class TilePositionVehicleGoal:
     def __init__(self):
-        pass
-
+        self.GoalTile = None
+        self.ToleranceRadius = None
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -101,8 +119,12 @@ class TilePositionVehicleGoal:
 
 class TreeVehicleGoal:
     def __init__(self):
-        pass
-
+        self.GoalTreeId = None
+        self.TreeDistance = None
+        self.GoalPosition = None
+        self.Distance = None
+        self.GoalName = None
+        self.IsInitialized = False
 
     class Factory:
         def __init__(self):
@@ -111,8 +133,8 @@ class TreeVehicleGoal:
 
 class VehicleGoalBase:
     def __init__(self):
-        pass
-
+        self.IsInitialized = False
+        self.GoalName = None
 
 class VehicleGoalsFactory:
     def __init__(self):

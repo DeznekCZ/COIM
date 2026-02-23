@@ -10,9 +10,11 @@ class IUiUpdater:
 
 
 class SyncFrequency:
+    Critical = None
+    OncePerSec = None
+    MoreThanSec = None
     def __init__(self):
-        pass
-
+        self.value__ = 0
 
 class IUpdaterRegistrar:
     def __init__(self):

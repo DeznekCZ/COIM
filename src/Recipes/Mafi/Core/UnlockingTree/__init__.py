@@ -6,8 +6,7 @@ class INodeUnlocker:
 
 class IUnlockingNode:
     def __init__(self):
-        pass
-
+        self.Units = None
 
 class NodeUnlocker:
     def __init__(self):
@@ -16,55 +15,71 @@ class NodeUnlocker:
 
 class IUnitUnlocker:
     def __init__(self):
-        pass
-
+        self.UnlockedType = None
 
 class IUnlockNodeUnit:
     def __init__(self):
-        pass
-
+        self.HideInUI = False
 
 class IUnlockUnitWithTitleAndIcon:
     def __init__(self):
-        pass
-
+        self.Title = None
+        self.Description = None
+        from Mafi import Option
+        self.IconPath = Option()
+        self.HideInUI = False
 
 class ProductUnlock:
     def __init__(self):
-        pass
-
+        self.Title = None
+        self.Description = None
+        from Mafi import Option
+        self.IconPath = Option()
+        self.UnlockedProtos = None
+        self.HideInUI = False
+        self.Proto = None
 
 class IProtoUnlock:
     def __init__(self):
-        pass
-
+        self.UnlockedProtos = None
+        self.HideInUI = False
 
 class ProtoUnlock:
     def __init__(self):
-        pass
-
+        self.UnlockedProtos = None
+        self.HideInUI = False
 
 class ProtoUnitUnlocker:
     def __init__(self):
-        pass
-
+        self.UnlockedType = None
 
 class ProtoWithIconUnlock:
     def __init__(self):
-        pass
-
+        self.Title = None
+        self.Description = None
+        from Mafi import Option
+        self.IconPath = Option()
+        self.UnlockedProtos = None
+        self.HideInUI = False
+        self.Proto = None
 
 class RecipeUnlock:
     def __init__(self):
-        pass
-
+        self.UnlockedProtos = None
+        self.HideInUI = False
+        self.Proto = None
+        self.MachineProto = None
+        self.EnsureMachineIsUnlocked = False
 
 class VehicleLimitIncreaseUnlock:
     def __init__(self):
-        pass
-
+        self.Title = None
+        self.Description = None
+        from Mafi import Option
+        self.IconPath = Option()
+        self.HideInUI = False
+        self.LimitIncrease = 0
 
 class VehicleLimitIncreaseUnlocker:
     def __init__(self):
-        pass
-
+        self.UnlockedType = None

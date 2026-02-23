@@ -1,20 +1,25 @@
 
 class CoreProtoTags:
+    MechanicalShaft = None
     def __init__(self):
         pass
 
 
 class CombineUnderProtoParam:
     def __init__(self):
-        pass
-
+        self.AllowedProtoType = None
+        self.Proto = None
 
 class EntityCosts:
+    None = None
     def __init__(self):
-        pass
-
+        self.BaseConstructionCost = None
+        self.Workers = 0
+        self.DefaultPriority = 0
+        self.Maintenance = None
 
 class EntityCostsTpl:
+    Build = None
     def __init__(self):
         pass
 
@@ -26,118 +31,230 @@ class EntityCostsTpl:
 
     class MaintenanceCostsTpl:
         def __init__(self):
-            pass
-
+            self.Product = None
+            self.Quantity = None
+            self.ExtraBufferDuration = None
+            self.InitialMaintenanceBoost = None
 
 class IProtoWithPowerConsumption:
     def __init__(self):
-        pass
-
+        self.ElectricityConsumed = None
 
 class IProtoWithPowerProduction:
     def __init__(self):
-        pass
-
+        self.ElectricityProduced = None
 
 class IProtoWithUnityConsumption:
     def __init__(self):
-        pass
-
+        self.UnityMonthlyCost = None
 
 class IProtoWithComputingConsumption:
     def __init__(self):
-        pass
-
+        self.ComputingConsumed = None
 
 class IProtoWithRecipes:
     def __init__(self):
-        pass
-
+        self.Recipes = None
 
 class IProtoWithUiRecipe:
     def __init__(self):
-        pass
-
+        self.Recipe = None
 
 class IProtoWithUiRecipes:
     def __init__(self):
-        pass
-
+        self.Recipes = None
 
 class IProtoWithAnimation:
     def __init__(self):
-        pass
-
+        self.AnimationParams = None
 
 class Proto:
     def __init__(self):
-        pass
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.Strings = None
+        self.IsNotPhantom = False
+        self.IsInitialized = False
+        self.Mod = None
+        self.Tags = None
+        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
+        self.IsObsolete = False
+        self.IsPhantom = False
 
     class ID:
         def __init__(self):
-            pass
-
+            self.Value = ""
 
     class Str:
+        Empty = None
         def __init__(self):
-            pass
-
+            self.Name = None
+            self.DescShort = None
 
     class Gfx:
+        EMPTY_PATH = ""
         def __init__(self):
             pass
 
 
 class IProtoBuilder:
     def __init__(self):
-        pass
-
+        self.Registrator = None
+        self.ProtosDb = None
 
 class IProtoWithIconAndName:
     def __init__(self):
-        pass
+        self.QuantityFormatter = None
+        self.IconPath = ""
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class IProtoWithIcon:
     def __init__(self):
-        pass
+        self.IconPath = ""
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class IProtoWithParticleColor:
     def __init__(self):
-        pass
+        self.ParticleColor = None
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class IProtoWithPreviewIcons:
     def __init__(self):
-        pass
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class IProtoWithPropertiesUpdate:
     def __init__(self):
-        pass
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class IProtoWithTiers:
     def __init__(self):
-        pass
+        self.TierData = None
+        self.IconPath = ""
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class IProtoWithUpgrade:
     def __init__(self):
-        pass
+        self.Upgrade = None
+        self.TierData = None
+        self.IconPath = ""
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class IProtoWithUpgradeAndCustomUi:
     def __init__(self):
-        pass
+        self.Upgrade = None
+        self.TierData = None
+        self.IconPath = ""
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class ITierData:
     def __init__(self):
-        pass
-
+        from Mafi import Option
+        self.NextTierIndirect = Option()
+        self.PreviousTierIndirect = Option()
+        self.TierNumberForUi = 0
 
 class UpgradeExtensions:
     def __init__(self):
@@ -146,23 +263,57 @@ class UpgradeExtensions:
 
 class UpgradeData:
     def __init__(self):
-        pass
-
+        from Mafi import Option
+        self.NextTier = Option()
+        self.PreviousTier = Option()
+        self.SkipFromReplaceFlow = False
+        self.CannotDowngrade = False
+        self.CannotSkipUpgrade = False
+        self.CannotMove = False
+        self.TierData = None
 
 class TierData:
     def __init__(self):
-        pass
-
+        from Mafi import Option
+        self.NextTierIndirect = Option()
+        self.PreviousTierIndirect = Option()
+        self.TierNumberForUi = 0
 
 class IProto:
     def __init__(self):
-        pass
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class InvalidProto:
     def __init__(self):
-        pass
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.Strings = None
+        self.IsNotPhantom = False
+        self.IsInitialized = False
+        self.Mod = None
+        self.Tags = None
+        self.IsNotAvailable = False
+        self.IsAvailable = False
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsLockedButAvailable = False
+        self.IsObsolete = False
+        self.IsPhantom = False
 
 class ProtoChecks:
     def __init__(self):
@@ -176,23 +327,58 @@ class INotInitializedProto:
 
 class IProtoWithAssets:
     def __init__(self):
-        pass
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class IProtoWithValidationSuppressFlag:
     def __init__(self):
-        pass
+        self.ValidationSuppressFlag = None
+        self.Strings = None
+        from Mafi.Core.Prototypes import Proto
+        self.Id = Proto.ID()
 
+        self.IsLocked = False
+        self.IsUnlocked = False
+        self.IsAvailable = False
+        self.IsNotAvailable = False
+        self.IsUnlockedAndAvailable = False
+        self.IsLockedOrUnavailable = False
+        self.IsInitialized = False
+        self.IsObsolete = False
+        self.Mod = None
 
 class ProtoInitException:
     def __init__(self):
-        pass
-
+        self.Message = ""
+        self.Data = None
+        self.InnerException = None
+        self.TargetSite = None
+        self.StackTrace = ""
+        self.HelpLink = ""
+        self.Source = ""
+        self.HResult = 0
 
 class InvalidProtoException:
     def __init__(self):
-        pass
-
+        self.Message = ""
+        self.Data = None
+        self.InnerException = None
+        self.TargetSite = None
+        self.StackTrace = ""
+        self.HelpLink = ""
+        self.Source = ""
+        self.HResult = 0
 
 class ProtoExtensions:
     def __init__(self):
@@ -201,8 +387,10 @@ class ProtoExtensions:
 
 class ProtosDb:
     def __init__(self):
-        pass
-
+        self.ActiveMod = None
+        self.ProtosLockedOnInit = None
+        self.Phantoms = None
+        self.PropertyIdsToTrack = None
 
 class ProtosSerializerFactory:
     def __init__(self):
@@ -216,20 +404,18 @@ class NoProtoAllowedSerializerFactory:
 
 class Tag:
     def __init__(self):
-        pass
-
+        self.TargetType = None
+        self.Id = ""
 
 class IProtoParam:
     def __init__(self):
-        pass
-
+        self.AllowedProtoType = None
 
 class UnlockedProtosDb:
     def __init__(self):
-        pass
-
+        self.OnUnlockedSetChanged = None
+        self.OnProtoUnlocked = None
 
 class IUnlockedProtosConfig:
     def __init__(self):
-        pass
-
+        self.ShouldUnlockAllProtosOnInit = False

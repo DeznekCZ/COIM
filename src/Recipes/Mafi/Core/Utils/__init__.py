@@ -1,38 +1,68 @@
 
 class InstaBuildManager:
     def __init__(self):
-        pass
-
+        self.IsInstaBuildEnabled = False
 
 class RelGameDateTimer:
     def __init__(self):
-        pass
-
+        self.Remaining = None
+        self.IsFinished = False
+        self.IsNotFinished = False
 
 class ResolvedDependenciesDuringSimVerifCmd:
     def __init__(self):
-        pass
-
+        self.IsVerificationCmd = False
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.ResolvedDepTypes = None
 
 class SetInstaBuildCmd:
     def __init__(self):
-        pass
-
+        self.AffectsSaveState = False
+        self.IsProcessed = False
+        self.IsProcessedAndSynced = False
+        self.ProcessedAtStep = None
+        self.ResultSet = False
+        self.IsVerificationCmd = False
+        self.Result = False
+        self.HasError = False
+        self.ErrorMessage = ""
+        self.SetEnabled = False
 
 class TickTimer:
     def __init__(self):
-        pass
-
+        self.Ticks = None
+        self.StartedAtTicks = None
+        self.IsFinished = False
+        self.IsFinishedThisTick = False
+        self.IsNotFinished = False
+        self.PercentFinished = None
 
 class TimelapseData:
     def __init__(self):
-        pass
-
+        self.PreviousInvokeStep = None
+        from Mafi import Option
+        self.PreviousCaptureError = Option()
+        self.NextCaptureStep = None
+        self.CapturedCount = 0
+        self.Name = ""
+        self.CaptureInterval = None
+        self.Size = None
+        self.CameraPosition = None
+        self.CameraRotation = None
+        self.CameraNearFarPlanes = None
+        self.SuperSize = False
+        self.SaveAsJpg = False
 
 class TimelapseManager:
     def __init__(self):
-        pass
-
+        self.Data = None
 
 class WaitHelper:
     def __init__(self):
@@ -50,29 +80,37 @@ class AsciiGameRenderer:
 
 
 class BitmapFont5Px:
+    AVG_CHAR_WIDTH = 0
+    AVG_CHAR_HEIGHT = 0
     def __init__(self):
         pass
 
 
 class BoolWithReason:
+    Success = None
     def __init__(self):
-        pass
-
+        self.IsSuccess = False
+        self.IsError = False
+        self.Value = False
+        self.Reason = None
 
 class ChangelogUtils:
+    PATCH_NOTES_TRANSLATIONS = None
+    CHANGELOG_NAME = ""
     def __init__(self):
         pass
 
 
 class ChangelogEntry:
     def __init__(self):
-        pass
-
+        self.Version = ""
+        self.SubEntries = None
 
 class ChangelogSubEntry:
     def __init__(self):
-        pass
-
+        self.SubVersion = ""
+        self.Heading = ""
+        self.Content = ""
 
 class CoreConsoleCommands:
     def __init__(self):
@@ -86,15 +124,14 @@ class DelayedEventExtensions:
 
 class IInstaBuildManager:
     def __init__(self):
-        pass
-
+        self.IsInstaBuildEnabled = False
 
 class IInstaBuildConfig:
     def __init__(self):
-        pass
-
+        self.IsInstaBuildEnabled = False
 
 class LaunchUtils:
+    EARLY_ACCESS_LAUNCH_DATE_TIME = None
     def __init__(self):
         pass
 
