@@ -1,7 +1,7 @@
 from Mafi import Duration, Quantity, Vector2i
 from Mafi.Base import Ids
 #from Mafi.Core.Research import TechnologyProto
-from CustomRecipes import add_unlock_recipe, build_recipe, build_research, Product
+from CustomAssets import add_unlock_recipe, build_recipe, build_research, Product
 
 ## Simple testing recipe
 recipe = build_recipe(

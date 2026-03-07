@@ -9,10 +9,10 @@
 		<!-- Version, AssemblyVersion and AssemblyFileVersion is automatically generated from 'manifest.json' -->
 
 		<!-- Environment or project variable 'COI_ROOT' must be set. -->
-		<COI_ROOT>C:\git\Game\bin</COI_ROOT>
+		<!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->
 
 		<!-- Environment or project variable 'COI_MODS' must be set. -->
-		<COI_MODS>$(APPDATA)\Captain of Industry - 0.8.0\Mods</COI_MODS>
+		<COI_MODS>$(APPDATA)\Captain of Industry\Mods</COI_MODS>
 
 		<!-- When the name of unity project is changed, the destionation folder must be adjusted -->
 		<!--<UnityProjectName>ExampleMod.Unity</UnityProjectName>-->
@@ -39,7 +39,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\CustomRecipes\CustomAssets.csproj" />
+		<ProjectReference Include="..\CustomRecipes\CustomAssets.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -163,19 +163,19 @@
 					Directory.CreateDirectory("Generated\\" + ModId);
 				
 					// Generate a code file with mod information.
-					StringBuilder cw = new StringBuilder();
-					cw.AppendLine("using Mafi.Core.Mods;");
-					cw.AppendLine("using CustomAssets.Data.Mod;");
-					cw.AppendLine();
-					cw.AppendLine("namespace CustomAssetPack;");
-					cw.AppendLine();
-					cw.AppendLine("public class " + ModId + " : DataOnlyMod {");
-					cw.AppendLine("    public " + ModId + "(ModManifest manifest) : base(manifest) { }");
-					cw.AppendLine("    public override void RegisterPrototypes(ProtoRegistrator registrator) {");
-					cw.AppendLine("        new CustomAssetRegistrator().RegisterData(registrator);");
-					cw.AppendLine("    }");
-					cw.AppendLine("}");
-					File.WriteAllText("Generated\\" + ModId + "\\" + ModId + ".cs", cw.ToString());
+					//StringBuilder cw = new StringBuilder();
+					//cw.AppendLine("using Mafi.Core.Mods;");
+					//cw.AppendLine("using CustomAssets.Data.Mod;");
+					//cw.AppendLine();
+					//cw.AppendLine("namespace CustomAssetPack;");
+					//cw.AppendLine();
+					//cw.AppendLine("public class " + ModId + " : DataOnlyMod {");
+					//cw.AppendLine("    public " + ModId + "(ModManifest manifest) : base(manifest) { }");
+					//cw.AppendLine("    public override void RegisterPrototypes(ProtoRegistrator registrator) {");
+					//cw.AppendLine("        new CustomAssetRegistrator().RegisterData(registrator);");
+					//cw.AppendLine("    }");
+					//cw.AppendLine("}");
+					//File.WriteAllText("Generated\\" + ModId + "\\" + ModId + ".cs", cw.ToString());
 					
 					// Generate .NET project file for compilation
 					StringBuilder pw = new StringBuilder();
@@ -353,8 +353,8 @@
 					pw.AppendLine("    <Message Text=\"Deploying " + DisplayTitle + " to mods folder...\" Importance=\"high\" />");
 					pw.AppendLine("    <Copy SourceFiles=\"..\\..\\" + Manifest + "\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" />");
 					pw.AppendLine("    <Copy SourceFiles=\"..\\..\\" + Manifest.Replace("manifest.json", "config.json") + "\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" ContinueOnError=\"true\" />");
-					pw.AppendLine("    <Copy SourceFiles=\"$"+"(TargetPath)\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" />");
-					pw.AppendLine("    <Copy SourceFiles=\"$"+"(TargetDir)$"+"(TargetName).pdb\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" Condition=\"'$"+"(Configuration)' == 'Debug'\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"$"+"(TargetDir)\\CustomAssets.dll\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" />");
+					pw.AppendLine("    <Copy SourceFiles=\"$"+"(TargetDir)\\CustomAssets.pdb\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\" Condition=\"'$"+"(Configuration)' == 'Debug'\" />");
 					pw.AppendLine("    <Copy SourceFiles=\"@"+"(AssetBundles)\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\\AssetBundles\" />");
 					pw.AppendLine("    <Copy SourceFiles=\"@"+"(Assets)\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\\Assets\\%"+"(RecursiveDir)\" />");
 					pw.AppendLine("    <Copy SourceFiles=\"@"+"(Definitions)\" DestinationFolder=\"$"+"(COI_MODS)\\" + ModId + "\\Definitions\\%"+"(RecursiveDir)\" />");
@@ -416,10 +416,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="Generated\.gitignore" />
+		<None Include="Generated\.gitignore" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="System.Text.Json" Version="10.0.3" />
+		<PackageReference Include="System.Text.Json" Version="10.0.3" />
 	</ItemGroup>
 </Project>

@@ -1,16 +1,18 @@
 ﻿{
   "id": "CustomAssets_LiquifiedCoal",
   "display_name": "Coal Liquefaction [CAL]",
-  "version": "0.0.1",
+  "version": "0.0.1a",
   "description_short": "Adds liquified coal as a new resource.",
   "description_long": "This mod introduces liquified coal as a new resource in the game. It can be used as a fuel source or for crafting various items. The mod includes new recipes, icons, and integration with existing game mechanics.",
   "authors": [ "DeznekCZ" ],
   "mod_dependencies": [
-    "CustomAssets>=0.1.7"
+    "CustomAssets>=0.1.7a"
   ],
   "can_add_to_saved_game": true,
   "can_remove_from_saved_game": true,
   "non_locking_dll_load": true,
+  "is_generated_mode_type": true,
+  "primary_mod_class_name": "CustomAssetsPack",
   "min_game_version": "0.8.0",
-  "primary_dlls": [ "CustomAssets_LiquifiedCoal.dll" ]
+  "primary_dlls": [ "CustomAssets.dll" ]
 }

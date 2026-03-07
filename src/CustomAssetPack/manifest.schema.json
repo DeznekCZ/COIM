@@ -98,6 +98,10 @@
     "primary_mod_class_name": {
       "type": "string",
       "description": "Name of class loaded from .dlls when multiple of IMod implementations are loaded. This may happen when a dependency mod is attached."
+    },
+    "is_generated_mode_type": {
+      "type": "boolean",
+      "description": "Allow include IMod definition generically, the generic name must be specified by 'primary_mod_class_name' when multiple of IMod implementations are defined."
     }
   }
 }

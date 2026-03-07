@@ -1,6 +1,6 @@
 {
 	"id": "CustomAssets",
-	"version": "0.1.7",
+	"version": "0.1.7a",
 	"display_name": "Custom Assets Loader",
 	"description_short": "Loads additional contend from definition in .py config files",
 	"description_long": "Loads additional contend from definition in .py config files contianed in Definition directory and loads additional asset bundles",
@@ -10,6 +10,7 @@
 	"primary_dlls": [ "CustomAssets.dll" ],
 	"mod_dependencies": [],
 	"optional_mod_dependencies": [],
+	"primary_mod_class_name": "CustomAssetsMod",
 	"incompatible_mods": [],
 	"non_locking_dll_load": true,
 	"can_add_to_saved_game": true
