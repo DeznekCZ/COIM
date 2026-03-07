@@ -9,10 +9,10 @@
 		<!-- Version, AssemblyVersion and AssemblyFileVersion is automatically generated from 'manifest.json' -->
 
 		<!-- Environment or project variable 'COI_ROOT' must be set. -->
-		<COI_ROOT>C:\git\Game\bin</COI_ROOT>
+		<!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->
 
 		<!-- Environment or project variable 'COI_MODS' must be set. -->
-		<COI_MODS>$(APPDATA)\Captain of Industry - 0.8.0\Mods</COI_MODS>
+		<COI_MODS>$(APPDATA)\Captain of Industry\Mods</COI_MODS>
 
 		<!-- When the name of unity project is changed, the destionation folder must be adjusted -->
 		<!--<UnityProjectName>ExampleMod.Unity</UnityProjectName>-->
