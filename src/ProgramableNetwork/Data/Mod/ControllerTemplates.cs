@@ -59,7 +59,13 @@ namespace ProgramableNetwork.Data.Mod
             // New entities
             ControllerProto originalTier1 = registrator.PrototypesDb.Add(new ControllerProto(
                 id: NewIds.Controllers.Controller,
-                strings: Proto.CreateStr(NewIds.Controllers.Controller, "Controller", "Handles basic operations and automatization"),
+                strings: Proto.CreateStr(NewIds.Controllers.Controller, "Controller",
+					@"Handles basic operations and automatization
+
+The controller can use maintenance from T1 to T3 base on layout of the modules:
+ - T1 is used when no modules requiring teraflops are needed
+ - T2 is used when at least 1 teraflop is used
+ - T3 is used when more than 10 teraflops are used"),
                 layout: registrator.LayoutParser.ParseLayoutOrThrow(pillars, "[1]"),
                 costs: ((EntityCostsTpl)Mafi.Base.Costs.Build.CP2(4)).MapToEntityCosts(registrator),
                 allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
@@ -101,12 +107,13 @@ namespace ProgramableNetwork.Data.Mod
         private void TryLoadTexture(string assetPath)
         {
             Texture2D texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, false);
-            string basePath = Environment.GetEnvironmentVariable("APPDATA") + @"\Captain of Industry\Mods\ProgramableNetwork";
+            string basePath = ModDefinition.StaticManifest.RootDirectoryPath;
             byte[] image = File.ReadAllBytes(Path.Combine(basePath, assetPath));
-            if (!texture2D.LoadImage(image))
+            if (!texture2D.LoadImage(image)) {
                 Log.Exception(new ArgumentException($"Could not load an image: {assetPath}"));
-            else
+            } else {
                 CustomAssetManager.Alternations.Add(assetPath, texture2D);
+            }
         }
 
         public static IEnumerable<ControllerTemplate> GetControllerTemplates(ProtoRegistrator registrator, ControllerProto basedOn)
@@ -192,8 +199,9 @@ namespace ProgramableNetwork.Data.Mod
             controller.Modules.Add(module);
             controller.Rows[row][column++] = ModulePlacement.Origin(module.Id);
             int width = module.Layout.GetWidth(module);
-            for (int j = 1; j < width; j++)
+            for (int j = 1; j < width; j++) {
                 controller.Rows[row][column++] = ModulePlacement.Rest(module.Id);
+            }
 
             Thread.Sleep(1); // increment module id, because is based on time
             return module;

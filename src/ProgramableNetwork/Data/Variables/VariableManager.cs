@@ -16,8 +16,6 @@ namespace ProgramableNetwork.Data.Variables
     [GenerateSerializer(false, null, 0)]
     public class VariableManager
     {
-        private readonly KeyBindings WindowKey = KeyBindings.FromKey(KbCategory.General, ShortcutMode.Game, KeyCode.V);
-
         [DoNotSave()]
         private Dict<string, Fix32> m_variables;
         [DoNotSave()]
@@ -69,11 +67,12 @@ namespace ProgramableNetwork.Data.Variables
 
         public void SetVariable(string name, Fix32 fix32)
         {
-            if (fix32 == Fix32.Zero)
-                m_variables.TryRemove(name, out var _);
-            else
-                m_variables[name] = fix32;
-        }
+            if (fix32 == Fix32.Zero) {
+				m_variables.TryRemove(name, out var _);
+			} else {
+				m_variables[name] = fix32;
+			}
+		}
 
         public Fix32 GetVariable(string name)
         {

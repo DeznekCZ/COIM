@@ -95,9 +95,10 @@ namespace ProgramableNetwork.Ui
 
         private void ClearAllLines()
         {
-            foreach (var line in m_lines)
-                UnityEngine.Object.Destroy(line.gameObject);
-            m_lines.Clear();
+            foreach (var line in m_lines) {
+				UnityEngine.Object.Destroy(line.gameObject);
+			}
+			m_lines.Clear();
         }
 
         private void VariableWindow_OnOpenStart()

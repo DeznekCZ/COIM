@@ -54,6 +54,8 @@ namespace ProgramableNetwork
 
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
+            registrator.PrototypesDb.RegisterPhantom(ModuleProto.Phantom);
+
             Constants(registrator);
             Buttons(registrator);
             Variables(registrator);
@@ -594,7 +596,12 @@ namespace ProgramableNetwork
                         consUnit++;
                     }
 
-                    int indexCons = cons > 19.ToFix32() ? 0 : 1;
+                    var protosDb = m.Context.ProtosDb;
+					var maintT1 = protosDb.Get<ProductProto>(Mafi.Base.Ids.Products.MaintenanceT1).Value;
+					var maintT2 = protosDb.Get<ProductProto>(Mafi.Base.Ids.Products.MaintenanceT2).Value;
+					var maintT3 = protosDb.Get<ProductProto>(Mafi.Base.Ids.Products.MaintenanceT2).Value;
+
+					int indexCons = cons > 19.ToFix32() ? 0 : 1;
                     int indexProd = prod > 19.ToFix32() ? 0 : 1;
 
                     m.Display["consumption"] = $"{state}{cons.ToStringRounded(indexCons)}";
@@ -804,8 +811,8 @@ namespace ProgramableNetwork
                 .Display(m =>
                 {
                     int bits = 0;
-                    foreach (var item in SevenSegmentManager.SEGMENTS.Reverse())
-                    {
+                    for (int i = SevenSegmentManager.SEGMENTS.Length - 1; i >= 0; i--) {
+                        string item = SevenSegmentManager.SEGMENTS[i];
                         bits = (bits << 1) | (m.FieldOrInput.Bool[item] ? 1 : 0);
                     }
                     m.Display["bits"] = $"{bits:D3}";
@@ -2313,6 +2320,66 @@ namespace ProgramableNetwork
                     return ModuleStatus.Running;
                 })
                 .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_IsActive", "Connection: Status", "STAT",
+                    Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.ConnectionRead)
+                .Width(4)
+                .AddOutput("power", "Has enough power")
+                .AddOutput("workers", "Has enough workers")
+                .AddOutput("constructed", "Is build")
+                .AddOutput("pause", "Is Paused")
+                .AddDisplay("power", "Electricity", 1, image: true)
+                .AddDisplay("workers", "Workers", 1, image: true)
+                .AddDisplay("constructed", "Constructed", 1, led: true)
+                .AddDisplay("pause", "Paused", 1, image: true)
+                .AddEntityField<StaticEntity>("entity", "Connection device",
+                    "Any pausable building connectable by cable 20m from controller", 20)
+                .Action(m => {
+                    StaticEntity e = m.Field.Entity<StaticEntity>("entity");
+                    if (e is not null) {
+                        if (e is IElectricityConsumingEntity electric && electric.ElectricityConsumer.HasValue) {
+                            bool hasPower = electric.ElectricityConsumer.Value.NotEnoughPower == false;
+                            m.Output.Bool["power"] = hasPower || (e.CanBePaused && e.IsPaused);
+                            string boxC = hasPower ? "#P" : "#E";
+                            string imgC = hasPower ? "#C00DD00" : "#CDD0000";
+                            m.Display["power"] = $"{boxC}{imgC}{UserInterface.EntityIcons.Electricity_png}";
+                        } else {
+                            m.Output.Bool["power"] = true;
+                            m.Display["power"] = $"#I{UserInterface.EntityIcons.Electricity_png}";
+                        }
+                        if (e is IEntityWithWorkers workersEntity && workersEntity.WorkersNeeded > 0) {
+                            bool hasWorkers = workersEntity.HasWorkersCached;
+                            m.Output.Bool["workers"] = hasWorkers || (e.CanBePaused && e.IsPaused);
+                            string boxC = hasWorkers ? "#P" : "#E";
+                            string imgC = hasWorkers ? "#C00DD00" : "#CDD0000";
+                            m.Display["workers"] = $"{boxC}{imgC}{UserInterface.EntityIcons.Worker_png}";
+                        } else {
+                            m.Output.Bool["workers"] = false;
+                            m.Display["workers"] = $"#I{UserInterface.EntityIcons.Worker_png}";
+                        }
+                        m.Output["constructed"] = e.IsConstructed ? 1 : 0;
+                        m.Display["constructed"] = e.IsConstructed ? "1" : "";
+                        m.Output["pause"] = (e.CanBePaused && e.IsPaused) ? 1 : 0;
+                        m.Display["pause"] = (e.CanBePaused && e.IsPaused)
+                            ? $"#CFFDD00{UserInterface.Toolbar.Pause128_png}"
+                            : $"#C00FF00{UserInterface.EntityIcons.Gears_png}";
+                        return ModuleStatus.Running;
+                    } else {
+                        m.Output["power"] = 0;
+                        m.Output["workers"] = 0;
+                        m.Output["constructed"] = 1;
+                        m.Output["pause"] = 1;
+                        m.Display["power"] = $"#I{UserInterface.EntityIcons.Electricity_png}";
+                        m.Display["workers"] = $"#I{UserInterface.EntityIcons.Worker_png}";
+                        m.Display["constructed"] = "";
+                        m.Display["pause"] = $"#C00FF00{UserInterface.EntityIcons.Gears_png}";
+                        return ModuleStatus.Error;
+                    }
+                })
                 .BuildAndAdd();
         }
 

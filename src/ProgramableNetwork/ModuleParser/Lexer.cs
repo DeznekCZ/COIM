@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,10 +16,11 @@ namespace ProgramableNetwork.Python
 
         public static Block Parse(Token[] tokens)
         {
-            if (tokens == null || tokens.Length == 0)
-                return new Block();
+            if (tokens == null || tokens.Length == 0) {
+				return new Block();
+			}
 
-            Lexer lexer = new Lexer();
+			Lexer lexer = new Lexer();
             lexer.enumerator = new LinkedList<Token>(tokens);
             return lexer.ParseTree();
         }

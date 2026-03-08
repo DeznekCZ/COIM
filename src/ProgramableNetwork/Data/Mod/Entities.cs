@@ -53,8 +53,8 @@ namespace ProgramableNetwork
     {
 
 
-        protected override void RegisterDataInternal(ProtoRegistrator registrator)
-        {
+        protected override void RegisterDataInternal(ProtoRegistrator registrator) {
+
             var pillars = new EntityLayoutParams(
                 customPlacementRange: new ThicknessIRange(0, TransportPillarProto.MAX_PILLAR_HEIGHT.Value - 1),
                 customTokens: new CustomLayoutToken[]

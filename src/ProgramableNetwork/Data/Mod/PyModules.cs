@@ -10,7 +10,7 @@ namespace ProgramableNetwork.Data.Mod
     {
         public void RegisterData(ProtoRegistrator registrator)
         {
-            string path = System.Environment.GetEnvironmentVariable("APPDATA") + @"\Captain of Industry\Mods\ProgramableNetwork\Modules";
+            string path = $@"{ModDefinition.StaticManifest.RootDirectoryPath}\Modules";
             DirectoryInfo modules = new DirectoryInfo(path);
             //DirectoryInfo modules = new DirectoryInfo(typeof(PyModules).Assembly.Location + "/../Modules");
             Log.Info("Location of modules: " + modules.FullName);

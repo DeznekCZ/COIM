@@ -2,13 +2,13 @@
 using Mafi.Base;
 using Mafi.Core;
 using Mafi.Core.Mods;
-using Newtonsoft.Json;
 using ProgramableNetwork.Data.Mod;
 using System;
 
 namespace ProgramableNetwork
 {
     public sealed class ModDefinition : DataOnlyMod {
+        public static ModManifest StaticManifest { get; set; }
 
         // Mod constructor that lists mod dependencies as parameters.
         // This guarantee that all listed mods will be loaded before this mod.
@@ -17,6 +17,7 @@ namespace ProgramableNetwork
             // You can use Log class for logging. These will be written to the log file
             // and can be also displayed in the in-game console with command `also_log_to_console`.
             Log.Info($"{nameof(ProgramableNetwork)}: constructed");
+            StaticManifest = manifest;
         }
 
 

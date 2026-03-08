@@ -1207,6 +1207,7 @@ class Option:
     None = None
 
     def __init__(self):
+        self.HasValue = False
         pass
 
 class OptionExtensions:

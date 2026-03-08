@@ -4,8 +4,8 @@ using Mafi.Core.Entities;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Serialization;
-using Newtonsoft.Json;
 using System;
+using ProgramableNetwork.Utils;
 
 namespace ProgramableNetwork
 {

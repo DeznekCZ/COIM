@@ -14,7 +14,8 @@ namespace ProgramableNetwork
     {
         public static readonly ProductType ProductType = new ProductType(typeof(ProtocolProductProto));
 
-        public new static readonly ProtocolProductProto Phantom = Proto.RegisterPhantom(new ProtocolProductProto(new ID(ProductProto.PHANTOM_PRODUCT_ID.Value + "PROTOCOL__"), Str.Empty, Gfx.Empty));
+        public new static readonly ProtocolProductProto Phantom = new ProtocolProductProto(
+			new ID(ProductProto.PHANTOM_PRODUCT_ID.Value + "PROTOCOL__"), Str.Empty, Gfx.Empty);
 
         public ProtocolProductProto(ID id, Str strings, Gfx graphics)
             : base(id,

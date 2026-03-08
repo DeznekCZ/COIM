@@ -48,7 +48,7 @@ namespace ProgramableNetwork.ModuleTester
 
         public override AssetValue GetConstructionCost() => throw new System.NotImplementedException();
 
-        public override ImmutableArray<OccupiedTileRelative> OccupiedTiles => throw new System.NotImplementedException();
+		public override ImmutableArray<OccupiedTileRelative> OccupiedTiles => throw new System.NotImplementedException();
 
         public override ImmutableArray<OccupiedVertexRelative> OccupiedVertices => throw new System.NotImplementedException();
 

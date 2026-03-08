@@ -11,7 +11,7 @@ namespace ProgramableNetwork.Data.DisplayEntity
     public class DisplayEntityMb : StaticEntityMb, IEntityMbWithRenderUpdate, IEntityMbWithSyncUpdate
     {
         private new DisplayEntity Entity => (DisplayEntity)base.Entity;
-        private Transform m_cocpit;
+		private Transform m_cocpit;
         private Transform m_arm;
         private Transform m_extender;
         private Transform m_wheel;

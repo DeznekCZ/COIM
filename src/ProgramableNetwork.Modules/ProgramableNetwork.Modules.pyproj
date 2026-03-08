@@ -32,7 +32,6 @@
     <Compile Include="Core\mafi.py" />
     <Compile Include="Core\template.py" />
     <Compile Include="Custom\clock.py" />
-    <Compile Include="Custom\connection_isactive.py" />
     <Compile Include="Core\fields.py" />
     <Compile Include="Core\module.py" />
     <Compile Include="Custom\controller_template.py" />

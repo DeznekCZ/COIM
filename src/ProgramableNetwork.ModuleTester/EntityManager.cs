@@ -17,7 +17,10 @@ namespace ProgramableNetwork.ModuleTester
     {
         private Dictionary<int, object> fake = new Dictionary<int, object>();
 
-        public IEvent<IEntity> EntityAdded => throw new NotImplementedException();
+		public bool IsEntityInvalid(EntityId entityId) {
+			throw new NotImplementedException();
+		}
+		public IEvent<IEntity> EntityAdded => throw new NotImplementedException();
 
         public IEvent<IEntity, EntityAddReason> EntityAddedFull => throw new NotImplementedException();
 
@@ -28,8 +31,9 @@ namespace ProgramableNetwork.ModuleTester
         public IEvent<IStaticEntity> StaticEntityAdded => throw new NotImplementedException();
 
         public IEvent<IStaticEntity> StaticEntityRemoved => throw new NotImplementedException();
+		public IEvent<IEntity, InvalidEntityFlags> EntityNoLongerInvalid { get; }
 
-        public IEvent<IUpgradableEntity> OnUpgradeToBePerformed => throw new NotImplementedException();
+		public IEvent<IUpgradableEntity> OnUpgradeToBePerformed => throw new NotImplementedException();
 
         public IEvent<IUpgradableEntity, IEntityProto> OnUpgradeJustPerformed => throw new NotImplementedException();
 
@@ -80,8 +84,11 @@ namespace ProgramableNetwork.ModuleTester
         {
             throw new NotImplementedException();
         }
+		public bool TryGetEntityInvalidReason(IEntity entity, out EntityValidationFailData result) {
+			throw new NotImplementedException();
+		}
 
-        internal void AddEntity<T>(int v, T entity)
+		internal void AddEntity<T>(int v, T entity)
         {
             fake[v] = entity;
         }

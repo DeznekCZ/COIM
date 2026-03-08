@@ -22,10 +22,11 @@ namespace ProgramableNetwork
 
         public static ModuleProto.ID? GetAlternative(ModuleProto.ID original)
         {
-            if (Deprecations?.TryGetValue(original, out var alternative) ?? false)
-                return alternative;
-            else
-                return null;
-        }
+            if (Deprecations?.TryGetValue(original, out var alternative) ?? false) {
+				return alternative;
+			} else {
+				return null;
+			}
+		}
     }
 }

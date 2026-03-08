@@ -9,14 +9,14 @@ namespace ProgramableNetwork
 {
     public class Category
     {
-        public static List<Category> Categories(ProtosDb protos, Controller controller)
+        public static ImmutableArray<Category> Categories(ProtosDb protos, Controller controller)
         {
             return protos.All<ModuleProto>()
                 .Where(m => m.AllowedDevices.Contains(controller.Prototype.Id))
-                .SelectMany(m => m.Categories)
+                .SelectMany(m => m.Categories.AsEnumerable())
                 .Distinct()
                 .OrderBy(m => m.Name)
-                .ToList();
+                .ToImmutableArray();
         }
 
         public Category(string id, string name, params Category[] subcategories)

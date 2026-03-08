@@ -74,10 +74,7 @@ namespace ProgramableNetwork
 
         public static void RegisterPhantom(Mafi.Core.Mods.ProtoRegistrator registrator)
         {
-            if (Proto.AllPhantoms.FirstOrDefault(p => p.Id == PHANTOM_PRODUCT_ID) != null)
-                return;
-
-            Proto.RegisterPhantom(Phantom = new ControllerProto(
+            Phantom = new ControllerProto(
                 id: PHANTOM_PRODUCT_ID,
                 strings: Proto.CreateStr(PHANTOM_PRODUCT_ID, "Controller", "Handles basic operations and automatization"),
                 layout: registrator.LayoutParser.ParseLayoutOrThrow("[1]"),
@@ -88,7 +85,8 @@ namespace ProgramableNetwork
                     customIconPath: NewAssets.Computers.Icons.Controller,
                     categories: ImmutableArray<ToolbarEntryData>.Empty
                 )
-            ));
+            );
+            registrator.PrototypesDb.RegisterPhantom(Phantom);
         }
     }
 }

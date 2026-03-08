@@ -11,6 +11,8 @@ using Mafi.Core.Products;
 using Mafi.Base;
 using Mafi.Core.Entities.Static;
 using System.Linq;
+using Mafi.Collections;
+using Mafi.Collections.ImmutableCollections;
 using Mafi.Unity.UiToolkit.Component;
 using ProgramableNetwork.ModuleParser.Registrator.Definitions;
 using ProgramableNetwork.Ui;
@@ -145,7 +147,7 @@ namespace ProgramableNetwork
         public List<ModuleConnectorProto> Outputs { get; }
         public List<ModuleConnectorProto> Displays { get; }
         public Action<Module> DisplayUpdate { get; }
-        public List<Category> Categories { get; }
+        public ImmutableArray<Category> Categories { get; }
         public List<IField> Fields { get; }
         public Electricity UsedPower { get; }
         public int BaseWidth { get; }
@@ -191,7 +193,6 @@ namespace ProgramableNetwork
                     //    return ModuleStatus.Error;
                     //})
                     .Build();
-                Proto.RegisterPhantom(Phantom);
                 typeof(ModuleProto)
                     .GetField("<WidthFunction>k__BackingField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
                     .SetValue(Phantom, (Func<Module, int>)((m) =>
@@ -254,7 +255,7 @@ namespace ProgramableNetwork
                 .Max(Displays.Select(d => d.Width).Sum(d => d.ToFloat()).RoundToInt())
                 ;
             AllowedDevices = m_allowedDevices;
-            Categories = m_categories;
+            Categories = m_categories.ToImmutableArray();
             SetAvailability(false);
         }
 
