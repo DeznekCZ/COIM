@@ -17,6 +17,7 @@ using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 using Mafi.Unity.Ui;
 using RTG;
 using Mafi.Core.Entities;
+using Mafi.Unity.Ui.Library;
 
 namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 {
@@ -36,26 +37,36 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 			Label active;
 			ButtonIcon colorIcon;
 			Toggle toggle;
-			Dropdown<LightInfo> dropdown;
+			//Dropdown<LightInfo> dropdown;
+			RgbColorPicker colorPicker;
 			Slider intensity;
 			var components = new UiComponent[] {
 				active = new Label("Active".AsLoc()).TextAlign(TextAlignment.LeftMiddle)
 				.FlexGrow(0.4f),
 				toggle = new Toggle().FlexGrow(0.1f),
-				dropdown = new Dropdown<LightInfo>(
-					optionViewFactory: (option, index, isInDropdown) => new Icon(UserInterface.General.Circle_svg).Color(option.icon),
-					customButton: colorIcon = new ButtonIcon(UserInterface.General.Circle_svg)
-				)
-				.OnValueChanged((v, i) => {
-					Entity.SetProperty("colorOn.R", v.on.R);
-					Entity.SetProperty("colorOn.G", v.on.G);
-					Entity.SetProperty("colorOn.B", v.on.B);
-					Entity.SetProperty("colorOff.R", v.off.R);
-					Entity.SetProperty("colorOff.G", v.off.G);
-					Entity.SetProperty("colorOff.B", v.off.B);
-				})
-				.SetOptions(Colors().ToImmutableArray())
-				.FlexGrow(0.5f)
+				colorPicker = new RgbColorPicker()
+					.OnColorChanged((v) => {
+						Entity.SetProperty("colorOn.R", v.R);
+						Entity.SetProperty("colorOn.G", v.G);
+						Entity.SetProperty("colorOn.B", v.B);
+						Entity.SetProperty("colorOff.R", v.R.Min(100));
+						Entity.SetProperty("colorOff.G", v.G.Min(100));
+						Entity.SetProperty("colorOff.B", v.B.Min(100));
+					}),
+				//dropdown = new Dropdown<LightInfo>(
+				//	optionViewFactory: (option, index, isInDropdown) => new Icon(UserInterface.General.Circle_svg).Color(option.icon),
+				//	customButton: colorIcon = new ButtonIcon(UserInterface.General.Circle_svg)
+				//)
+				//.OnValueChanged((v, i) => {
+				//	Entity.SetProperty("colorOn.R", v.on.R);
+				//	Entity.SetProperty("colorOn.G", v.on.G);
+				//	Entity.SetProperty("colorOn.B", v.on.B);
+				//	Entity.SetProperty("colorOff.R", v.off.R);
+				//	Entity.SetProperty("colorOff.G", v.off.G);
+				//	Entity.SetProperty("colorOff.B", v.off.B);
+				//})
+				//.SetOptions(Colors().ToImmutableArray())
+				//.FlexGrow(0.5f)
 			};
 
 			m_row = panel.AddPanelRow(components);
@@ -71,34 +82,35 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 				});
 
 			m_row
-			   .Observe(() => new ColorRgba(
+				.Observe(() => new ColorRgba(
 					Entity.GetProperty("colorOn.R", ColorRgba.Red.R).IntegerPart,
 					Entity.GetProperty("colorOn.G", ColorRgba.Red.G).IntegerPart,
 					Entity.GetProperty("colorOn.B", ColorRgba.Red.B).IntegerPart
 				))
-			   .Observe(() => new ColorRgba(
-					Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(100).R).IntegerPart,
-					Entity.GetProperty("colorOff.G", ColorRgba.Red.G).IntegerPart,
-					Entity.GetProperty("colorOff.B", ColorRgba.Red.B).IntegerPart
-				))
-			   .Do((colorOn, colorOff) => {
-				   for (var i = 0; i < dropdown.OptionsCount; i++)
-				   {
-					   var option = dropdown.GetOptionAt(i);
-					   if (option.on == colorOn && option.off == colorOff)
-					   {
-						   //dropdown.SetValueIndex(i);
-						   colorIcon.Icon.Color(option.icon);
-						   return;
-					   }
-				   }
-				   //dropdown.SetValueIndex(0);
-				   //colorIcon.Icon.Color(dropdown.GetOptionAt(0).icon);
-			   });
+			 //  .Observe(() => new ColorRgba(
+				//	Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(100).R).IntegerPart,
+				//	Entity.GetProperty("colorOff.G", ColorRgba.Red.G).IntegerPart,
+				//	Entity.GetProperty("colorOff.B", ColorRgba.Red.B).IntegerPart
+				//))
+				.Do((colorOn/*, colorOff*/) => {
+					colorPicker.Value(colorOn);
+					//	for (var i = 0; i < dropdown.OptionsCount; i++)
+					//	{
+					//	   var option = dropdown.GetOptionAt(i);
+					//	   if (option.on == colorOn && option.off == colorOff)
+					//	   {
+					//		   //dropdown.SetValueIndex(i);
+					//		   colorIcon.Icon.Color(option.icon);
+					//		   return;
+					//	   }
+					//	}
+					//dropdown.SetValueIndex(0);
+					//colorIcon.Icon.Color(dropdown.GetOptionAt(0).icon);
+				});
 
 			toggle.OnValueChanged((playing) => Entity.SetActive(playing));
 
-			InitColorSelection(colorIcon, dropdown);
+			//InitColorSelection(colorIcon, dropdown);
 
 			return () => m_row.RemoveFromHierarchy();
 		}

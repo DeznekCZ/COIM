@@ -189,8 +189,6 @@ namespace ProgramableNetwork.Ui
 		}
 
 		private void drawConnectionLines(int X, int Y, Texture2D textr, long? moduleId) {
-			int colorIndex = 0;
-
 			// Set the texture to fully transparent (since by default it's filled with half transparent gray/grey pixels)
 			//byte[] buf = new byte[sizeof(Color) * X * Y];
 			//textr.SetPixelData<byte>(buf, 0, 0);
@@ -234,14 +232,13 @@ namespace ProgramableNetwork.Ui
 				}
 			}
 
+			m_colorCombinations = [];
 			foreach (Module mod in Entity.Modules)
 			{
 				foreach (KeyValuePair<string, ModuleConnector> keyValuePair in mod.InputModules)
 				{
 					ModuleConnector mc = keyValuePair.Value;
-					Color color = m_colors[colorIndex];
-					colorIndex = (colorIndex + 1) % m_colors.Count;
-
+					
 					//if (moduleId != null && (moduleId != mod.Id || moduleId != mc.ModuleId)) continue;
 
 					(int y1, int x1) srcPos; // Position of the module that has the output that's connected to the currently handled input
@@ -250,12 +247,23 @@ namespace ProgramableNetwork.Ui
 						// Get module that has the output that's connected to the currently handled input
 						Module srcMod = Entity.Modules.Find((Module m) => m.Id == mc.ModuleId);
 						// Add horizontal offset to get the actual output position
-						srcPos.Item2 += (srcMod.Layout.GetWidth(srcMod) - srcMod.Prototype.Outputs.Count) + srcMod.Prototype.Outputs.IndexOf(srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId));
+						ModuleConnectorProto outputConnectorFromSource = srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId);
+						srcPos.Item2 += (srcMod.Layout.GetWidth(srcMod) - srcMod.Prototype.Outputs.Count) + srcMod.Prototype.Outputs.IndexOf(outputConnectorFromSource);
 						(int y2, int x2) dstPos = ModulePlacementCache[mod.Id]; // Position of the module that has the currently handled input
 						// Add horizontal offset to get the actual input position
-						dstPos.Item2 += (mod.Layout.GetWidth(mod) - mod.Prototype.Inputs.Count) + mod.Prototype.Inputs.IndexOf(mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key));
-						
-						drawConnectionLine(srcPos, dstPos, color);
+						ModuleConnectorProto inputConnectionFromMod = mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key);
+						dstPos.Item2 += (mod.Layout.GetWidth(mod) - mod.Prototype.Inputs.Count) + mod.Prototype.Inputs.IndexOf(inputConnectionFromMod);
+
+						string colorKey = $"{mc.ModuleId}.{mc.OutputId}";
+						int colorIndex = 0;
+						if (m_colorCombinations.Count == 0) {
+							m_colorCombinations[colorKey] = colorIndex;
+						} else if (m_colorCombinations.TryGetValue(colorKey, out colorIndex) == false) {
+							colorIndex = m_colorCombinations.Values.Max();
+							colorIndex = (colorIndex + 1) % m_colors.Count;
+							m_colorCombinations[colorKey] = colorIndex;
+						}
+						drawConnectionLine(srcPos, dstPos, m_colors[colorIndex]);
 					}
 				}
 			}
@@ -266,6 +274,7 @@ namespace ProgramableNetwork.Ui
 		private PickNewModule m_pickTemplateModule;
 		private int m_targetRow;
 		private int m_targetColumn;
+		private Dict<string, int> m_colorCombinations = [];
 
 		private void AddFreeSlot(Row rowElement, int targetRow, int targetColumn)
 		{
@@ -307,7 +316,7 @@ namespace ProgramableNetwork.Ui
 				else
 				{
 					m_pickNewModule ??= new PickNewModule(
-						"Pick module".AsLoc(), NewModules(), button);
+						"Pick module".AsLoc(), NewModules());
 					m_targetRow = targetRow;
 					m_targetColumn = targetColumn;
 					m_pickNewModule.Open(button);
@@ -316,7 +325,7 @@ namespace ProgramableNetwork.Ui
 			button.OnRightClick(() =>
 			{
 				m_pickTemplateModule ??= new PickNewModule(
-					"Pick template".AsLoc(), NewTemplates(), button);
+					"Pick template".AsLoc(), NewTemplates());
 				m_targetRow = targetRow;
 				m_targetColumn = targetColumn;
 				m_pickTemplateModule.Open(button);

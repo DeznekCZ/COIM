@@ -576,6 +576,24 @@ namespace ProgramableNetwork
                 return this;
             }
 
+            public Builder AddHexInt32Field(string id, string name, string shortDesc = "", uint defaultValue = 0)
+            {
+                m_fields.Add(new NumberField<HexInt32>(id, name, shortDesc, new HexInt32() { Value = (int)defaultValue }));
+                return this;
+            }
+
+            public Builder AddColorField(string id, string name, string shortDesc = "", int defaultValue = 0)
+            {
+                m_fields.Add(new ColorField(id, name, shortDesc, defaultValue));
+                return this;
+            }
+
+            public Builder AddColorField(string id, string name, string shortDesc = "", ColorRgba? defaultValue = null)
+            {
+                m_fields.Add(new ColorField(id, name, shortDesc, defaultValue ?? new ColorRgba()));
+                return this;
+            }
+
             public Builder AddInt64Field(string id, string name, string shortDesc = "", long defaultValue = 0)
             {
                 m_fields.Add(new NumberField<long>(id, name, shortDesc, defaultValue));

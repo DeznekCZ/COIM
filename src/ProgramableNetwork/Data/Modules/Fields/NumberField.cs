@@ -80,6 +80,12 @@ namespace ProgramableNetwork.Ui
                         setter = () => module.Field[Id, false] = value.ToString();
                     }
                 }
+                else if (typeof(T) == typeof(HexInt32)) {
+					if (uint.TryParse(numberEditor.GetText(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint value))
+					{
+						setter = () => module.Field[Id] = Fix32.FromRaw((int)value);
+					}
+				}
                 setButton.Enabled(true);
             });
 
@@ -94,6 +100,10 @@ namespace ProgramableNetwork.Ui
             else if (Default is long)
             {
                 numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, "0"]));
+            }
+            else if (Default is HexInt32)
+            {
+                numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id].RawValue.ToString("X")));
             }
             else
             {
@@ -116,6 +126,10 @@ namespace ProgramableNetwork.Ui
             {
                 module.Field[Id, false] = l.ToString();
             }
+            else if (Default is HexInt32 h)
+            {
+                module.Field[Id] = Fix32.FromRaw(h.Value);
+            }
             else
             {
                 Log.Error($"Invalid number type: {Default.GetType()}");
@@ -127,4 +141,8 @@ namespace ProgramableNetwork.Ui
         {
         }
     }
+
+	public struct HexInt32 {
+		public int Value;
+	}
 }

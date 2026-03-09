@@ -18,6 +18,7 @@ using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System.Collections.Generic;
 using System.Linq;
+using Mafi.Core.Console;
 using UnityEngine;
 using static Mafi.Unity.Assets.Unity;
 using Display = Mafi.Unity.Ui.Library.Display;
@@ -41,6 +42,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	public ModuleConnector m_higlightedOutput;
 	public ModuleConnector m_higlightedInput;
 	public bool m_showsLinks;
+	public IGameConsole m_console;
 
 	public ControllerInspector(
 		UiContext context,
@@ -52,7 +54,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		NewInstanceOf<EntityHighlighter> entityHighlighter,
 		NewInstanceOf<EntityHighlighter> entityHighlighterSelectable,
 		LinesFactory linesFactory,
-		AssetsDb assetsDb
+		AssetsDb assetsDb,
+		IGameConsole console
 		) : base(context) {
 		m_linesFactory = linesFactory;
 		m_movingArrowsLineMaterialShared = assetsDb.GetSharedMaterial("Assets/Core/Materials/MovingArrowsLine.mat");
@@ -64,6 +67,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		EntityHighlighterSelectable = entityHighlighterSelectable.Instance;
 		ShortcutsManager = shortcutsManager;
 		m_invalidOpSound = context.AudioDb.InvalidOp();
+		m_console = console;
 
 		ProgressBar bar;
 		AddPanelRow(

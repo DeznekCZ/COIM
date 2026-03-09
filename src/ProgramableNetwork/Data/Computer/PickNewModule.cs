@@ -10,117 +10,110 @@ using System.Collections.Generic;
 using System.Linq;
 using Mafi.Collections;
 using static Mafi.Unity.Assets.Unity;
+using Mafi.Core.Syncers;
+using Mafi.Unity;
+using Mafi.Unity.Ui.Library;
 
-namespace ProgramableNetwork.Ui
-{
-	public class PickNewModule : FloatingColumn
-	{
-		private static readonly DropdownPositionPolicy POLICY = new DropdownPositionPolicy();
-		public Controller Controller { get; set; }
+namespace ProgramableNetwork.Ui;
 
-		public PickNewModule(LocStrFormatted title, IEnumerable<AModuleProtoSelector> protos, UiComponent button)
-			: base(POLICY, false, false, true)
-		{
-			Log.Info($"[PickNewModule] Generating layout");
+public class PickNewModule : FloatingColumn {
+	private static readonly DropdownPositionPolicy POLICY = new DropdownPositionPolicy();
+	private string m_searchText = "";
 
-			PanelWithHeader panel = AddAndReturn(new PanelWithHeader().Height(Px.Auto));
+	public PickNewModule(LocStrFormatted title, IEnumerable<AModuleProtoSelector> protos)
+		: base(POLICY, false, false, true) {
+		Log.Info($"[PickNewModule] Generating layout");
 
-			TextField search = new TextField();
-			search.Placeholder(Tr.Search);
-			search.MinWidth(150.px());
-			search.FlexGrow(0.5f);
-			search.FocusOnShow();
+		PanelWithHeader panel = AddAndReturn(new PanelWithHeader().Height(Px.Auto));
 
-			panel.Header.Add(
+		TextField search = new TextField();
+		search.Placeholder(Tr.Search);
+		search.MinWidth(150.px());
+		search.FlexGrow(0.5f);
+		search.FocusOnShow();
+		search.OnValueChanged((text) => m_searchText = text);
+
+		this.OnShow(() => { search.SetValue("".AsLoc()); });
+
+		ButtonIcon clear = new ButtonIcon(Assets.Unity.UserInterface.General.Trash128_png);
+		clear.OnClick(() => {
+			search.ClearValue();
+			m_searchText = "";
+		});
+
+		panel.Header.Add(
 				new Icon(UserInterface.General.Search_svg),
 				search,
+				clear,
 				new Label(title).TextAlign(TextAlignment.CenterMiddle).FlexGrow(1)
 			);
+		panel.Header.Gap(5.px());
 
-			Log.Info($"[PickNewModule] Generating hashset");
-			Dict<string, Button> searchDict = [];
-			Dict<string, Lyst<UiComponent>> categoryDict = [];
+		Log.Info($"[PickNewModule] Generating hashset");
+		List<UiComponent> buttonList = [];
+		Dict<string, ButtonText> categoryDict = [];
+		Dict<string, Category> categoryOrdering = [];
+		foreach (AModuleProtoSelector item in protos) {
+			try {
+				Button searchItem = item.CreateUi();
+				searchItem.OnClick(item.Selected);
+				buttonList.Add(searchItem);
 
-			Lyst<Category> categories = [];
-			Lyst<UiComponent> searchList = [];
-			foreach (AModuleProtoSelector item in protos)
-			{
-				try
-				{
-					Button searchItem = item.CreateUi();
-					searchDict.Add(item.SearchString, searchItem);
-					searchList.Add(searchItem);
-					searchItem.OnClick(item.Selected);
+				// Prepare all listened categories list
+				Lyst<Button> observedButtons = [];
 
-					foreach (Category category in item.Categories)
-					{
-						if (!categoryDict.TryGetValue(category.Id, out Lyst<UiComponent> list))
-						{
-							list = [];
-							categoryDict.Add(category.Id, list);
-							categories.Add(category);
-						}
-
-						Button child = item.CreateUi();
-						child.ObserveVisible(panel.Body, () => searchItem.IsVisible());
-						child.OnClick(item.Selected);
-						list.Add(child);
+				foreach (Category category in item.Categories) {
+					if (!categoryDict.TryGetValue(category.Id, out ButtonText categoryButton)) {
+						categoryButton = new ButtonText(Button.ToggleGroup, category.Name.ToDoLoc())
+							.Toggleable()
+							.Selected();
+						categoryButton.OnClick((b) => b.Selected(b.IsSelected() == false));
+						categoryDict.Add(category.Id, categoryButton);
+						categoryOrdering.Add(category.Id, category);
 					}
+					observedButtons.Add(categoryButton);
 				}
-				catch (Exception e)
-				{
-					Log.Error($"[PickNewModule] Failed to create ui for module: {item.Id}");
-					Log.Exception(e);
 
-					searchList.Add(new PanelRow() { new Label(item.Strings.Name).Class(Cls.error) });
-				}
+				this
+					.Observe(() => m_searchText)
+					.Observe(() => IIndexableExtensions.Any(observedButtons, c => c.IsSelected()))
+					.Do((searchString, categorySelected) => {
+						searchItem.Visible(categorySelected && item.SearchString
+							.Contains(searchString, StringComparison.InvariantCultureIgnoreCase));
+					});
+			} catch (Exception e) {
+				Log.Error($"[PickNewModule] Failed to create ui for module: {item.Id}");
+				Log.Exception(e);
+
+				buttonList.Add(new PanelRow() { new Label(item.Strings.Name).Class(Cls.error) });
 			}
-			//Log.Info($"[PickNewModule] Total {searchDict.Count} modules");
-
-			SideTabContainer tabs = panel.Body.AddAndReturn(new SideTabContainer())
-				.Height(600.px())
-				.Width(600.px());
-
-			Log.Info($"[PickNewModule] All");
-			Column dataColumn = new Column();
-			dataColumn.Width(Percent.Hundred);
-			dataColumn.Height(Px.Auto);
-			dataColumn.Add(searchList);
-			tabs.AddTab("All".ToDoLoc(), dataColumn);
-
-			Log.Info($"[PickNewModule] Categories");
-			foreach (Category cat in categories.OrderBy(c => c.Name)) {
-				Column catDataColumn = new Column();
-				catDataColumn.Width(Percent.Hundred);
-				catDataColumn.Height(Px.Auto);
-				catDataColumn.MinHeight(Px.Auto);
-				catDataColumn.Add(categoryDict[cat.Id]);
-				tabs.AddTab(cat.Name.ToDoLoc(), catDataColumn);
-			}
-
-			search.OnValueChanged(s =>
-			{
-				if (s.IsNullOrEmpty())
-				{
-					foreach (var item in searchDict.Values)
-					{
-						item.SetVisible(true);
-					}
-				}
-				else
-				{
-					foreach (var item in searchDict)
-					{
-						item.Value.SetVisible(item.Key.Contains(s, StringComparison.InvariantCultureIgnoreCase));
-					}
-				}
-			});
-
-			panel.Body.AddAndReturn(new UiComponent()).FlexGrow(1);
-
-			this.Height(Px.Auto);
-			this.Width(600.px());
 		}
-	}
 
+		Log.Info($"[PickNewModule] Total {buttonList.Count} modules");
+
+		Row row = panel.Body.AddAndReturn(new Row())
+			.Width(Px.Auto);
+
+		ScrollColumn categoriesSelection = row.AddAndReturn(new ScrollColumn())
+			.Width(150.px())
+			.Height(600);
+		Button allButton = categoriesSelection.AddAndReturn(new ButtonText("All".ToDoLoc()));
+		categoriesSelection.Add(new HorizontalDivider().Height(10.px()));
+		allButton.OnClick(() => {
+			foreach (ButtonText b in categoryDict.Values) {
+				b.Selected();
+			}
+		});
+		categoriesSelection.Add(categoryDict.OrderBy(i => categoryOrdering[i.Key].Name).Select(c => c.Value));
+
+		row.Add(new VerticalDivider().Width(10.px()));
+
+		ScrollBoth modulesSelection = row.AddAndReturn(new ScrollBoth())
+			.Width(440.px())
+			.Height(600);
+		modulesSelection.Add(buttonList);
+
+		this.Height(Px.Auto);
+		this.Width(600.px());
+	}
 }

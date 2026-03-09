@@ -70,15 +70,16 @@ namespace ProgramableNetwork
         public static Category ConnectionWrite { get; } = new Category(id: "connection", name: "Connection modules (write)");
         public static Category Connection { get; } = new Category(id: "connection", name: "Connection modules", ConnectionRead, ConnectionWrite);
         public static Category Arithmetic { get; } = new Category(id: "arithmetic", name: "Arithmetic modules");
+        public static Category Constants { get; } = new Category(id: "constants", name: "Constant modules", Arithmetic);
         public static Category Boolean { get; } = new Category(id: "boolean", name: "Boolean modules");
         public static Category Decision { get; } = new Category(id: "decision", name: "Decision modules");
         public static Category Control { get; } = new Category(id: "control", name: "Control modules");
         public static Category Stats { get; } = new Category(id: "stats", name: "Stats modules");
         public static Category AnteneFM { get; } = new Category(id: "antene_fm", name: "FM modules");
         public static Category AnteneAM { get; } = new Category(id: "antene_am", name: "AM modules");
-        public static Category Antene { get; } = new Category(id: "antene", name: "Antena modules");
+        public static Category Antene { get; } = new Category(id: "antene", name: "Antena modules", AnteneAM, AnteneFM);
         public static Category DevicesDisplay { get; } = new Category(id: "devices_display", name: "Display devices");
         public static Category DevicesSound { get; } = new Category(id: "devices_sound", name: "Sound devices");
-        public static Category Devices { get; } = new Category(id: "devices_av", name: "Audiovisual devices");
+        public static Category Devices { get; } = new Category(id: "devices_av", name: "Audiovisual devices", DevicesDisplay, DevicesSound);
     }
 }

@@ -445,6 +445,7 @@ namespace ProgramableNetwork
 			PartialQuantity quantity = new PartialQuantity(
 					(Modules.Select(m => m.Layout.GetWidth(m)).Sum() * slotsMaintenance + 0.01f).ToFix32());
 
+			VirtualProductProto lastMaintenanceProduct = Maintenance.Costs.Product;
 			VirtualProductProto maintenanceProduct
 				= ComputingRequired > 10.TFlops()
 				? m_productMaintenanceT3
@@ -453,7 +454,7 @@ namespace ProgramableNetwork
 				: m_productMaintenanceT1;
 			var newCosts = new MaintenanceCosts(maintenanceProduct, quantity);
 			if (newCosts.MaintenancePerMonth != MaintenanceCosts.MaintenancePerMonth
-				|| newCosts.Product != MaintenanceCosts.Product)
+				|| newCosts.Product != lastMaintenanceProduct)
 			{
 				MaintenanceCosts = newCosts;
 				Maintenance.RefreshMaintenanceCost();
