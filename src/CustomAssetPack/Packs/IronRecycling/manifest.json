@@ -1,16 +1,16 @@
 ﻿{
   "id": "CustomAssets_IronPlateRecyclation",
   "display_name": "Iron plate recycling [CAL]",
-  "version": "0.0.1a",
+  "version": "0.0.2b",
   "description_short": "Adds iron plate recyclation",
   "description_long": "This mod adds recipe with scrapping of iron plates to scrap iron for later use.\nResearch moved to shreader and compactor unlock",
   "authors": [ "ThomasTwoFace", "DeznekCZ" ],
   "mod_dependencies": [
-    "CustomAssets>=0.1.7"
+    "CustomAssets>=0.1.7b"
   ],
   "can_add_to_saved_game": true,
   "can_remove_from_saved_game": true,
   "non_locking_dll_load": true,
-  "min_game_version": "0.8.0",
+  "min_game_version": "0.8.1b",
   "primary_dlls": [ "CustomAssets_IronPlateRecyclation.dll" ]
 }

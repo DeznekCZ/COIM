@@ -3,12 +3,14 @@
 ## when is not included by block, automatically import them all
 
 from Mafi import ColorRgba, Duration, Quantity, Vector2f, Vector2i, Vector3f, Vector3i, Percent
+from Mafi.Core.Prototypes import Proto
 from Mafi.Core.Factory.Recipes import RecipeProto
 from Mafi.Core.Factory.Machines import MachineProto
 from Mafi.Core.Research import ResearchCostsTpl, ResearchNodeProto
 from Mafi.Core.Products import LooseProductProto, ProductProto
 from Mafi.Core.Entities.Static import StaticEntityProto
 from Mafi.Core.Entities.Dynamic import DynamicEntityProto
+from Mafi.Core.Entities.Static.Layout import ToolbarCategoryProto
 
 def dependencies(*dependencies: str):
     pass
@@ -243,4 +245,14 @@ def add_unlock_product(
         product: ProductProto | ProductProto.ID | str
     ):
     """ Adds product to existing research """
+    pass
+
+def add_toolbar_category(
+        categoryId: Proto.ID | str,
+        name: str,
+        icon: str,
+        parent: ToolbarCategoryProto | Proto.ID | str,
+        entities: list[StaticEntityProto | StaticEntityProto.ID | str]
+    ) -> ToolbarCategoryProto:
+    """ Adds new category to selected entities """
     pass

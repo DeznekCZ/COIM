@@ -6,11 +6,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <Version>0.1.7</Version> <!-- Update the project definition to standard from Mafi project. -->
+    <Version>0.1.8</Version> <!-- Update the project definition to standard from Mafi project. -->
     <LangVersion>latest</LangVersion>
       
-    <COI_ROOT>C:\git\Game\bin</COI_ROOT>
-    <COI_APPDATA>$(APPDATA)\Captain of Industry - 0.8.0</COI_APPDATA>
+    <!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->
+    <COI_APPDATA>$(APPDATA)\Captain of Industry</COI_APPDATA>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' ">

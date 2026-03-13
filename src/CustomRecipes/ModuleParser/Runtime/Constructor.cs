@@ -52,6 +52,11 @@ namespace CustomAssets.Python
 			public object[] Values() {
 				return [.. args.Select(a => a.Value)];
 			}
+
+			public AnyArgument<T> GetNumberArgument<T>(string order) {
+                return this.GetArgument<T>(order)
+					.When<object>(any => (T)Convert.ChangeType(any, typeof(T)));
+			}
 		}
 
 		public delegate object FunctionCall(CallArguments args);

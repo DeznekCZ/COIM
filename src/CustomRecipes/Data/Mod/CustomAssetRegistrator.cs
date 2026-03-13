@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-using CustomAssets.ModuleParser.Registrator;
+﻿using CustomAssets.ModuleParser.Registrator;
 using CustomAssets.Python;
 using CustomAssets.Utils;
 using Mafi;
@@ -24,7 +16,16 @@ using Mafi.Core.Prototypes;
 using Mafi.Core.Research;
 using Mafi.Core.UnlockingTree;
 using Mafi.Unity;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading;
 using UnityEngine;
+using static Mafi.Core.Prototypes.EntityCostsTpl;
 
 namespace CustomAssets.Data.Mod;
 
@@ -400,7 +401,8 @@ public class CustomAssetRegistrator : IModData {
 						.ToArray();
 					productsList.Select(e => (Product)e)
 						.Call(e => builder = builder.AddOutput(
-								portSelector: e.port != "*"
+								portSelector: e.port == "VIRTUAL" ? e.port
+									: e.port != "*" && e.port != "VIRTUAL"
 									? ports
 										.Where(p => p.Name == e.port)
 										.Where(p => p.Type == e.product.Type)
@@ -936,8 +938,88 @@ public class CustomAssetRegistrator : IModData {
 			}),
 
 			#endregion
+
+			#region add_toolbar_category
+
+			["add_toolbar_category"] = new Constructor([
+				"categoryId", // Proto.ID, str
+				"name", // name
+				"icon", // texture or path to texture
+				"parent", // ToolbarCategoryProto | Proto.ID | str
+				"machines", // list[StaticEntityProto | StaticEntityProto.ID | str]
+			], args => {
+				Proto.ID id = args.GetArgument<Proto.ID>("categoryId")
+					.When<string>(s => new Proto.ID(s))
+					.ElseRequiredThrow();
+
+				string name = args.GetArgument<string>("name")
+					.ElseRequiredThrow();
+
+				string icon = args.GetArgument<Tex>("icon")
+					.When<string>(s => new Tex { path = s })
+					.ElseRequiredThrow()
+					.path;
+
+				ToolbarCategoryProto parent = args.GetArgument<ToolbarCategoryProto>("parent")
+					.When<Proto.ID>(s => registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(s))
+					.ElseNull();
+
+				ToolbarCategoryProto category = registrator.PrototypesDb.Add(new ToolbarCategoryProto(
+					id,
+					order: args.GetNumberArgument<float>("order")
+						.ElseDefault(10),
+					strings: Proto.CreateStr(id, name),
+					iconPath: icon,
+					parentCategory: parent));
+
+				if (args.GetArgument<List<object>>("entities")
+					.WhenExists(out var entitiesList)) {
+					foreach (object entityAsObj in entitiesList) {
+						switch (entityAsObj) {
+						case LayoutEntityProto lep: lep.Graphics.ExtendCategories(category); break;
+						case MachineProto.ID machineID: registrator.PrototypesDb
+								.GetOrThrow<MachineProto>(machineID)
+								.Graphics.ExtendCategories(category);
+							break;
+						case StaticEntityProto.ID staticID: registrator.PrototypesDb
+								.GetOrThrow<LayoutEntityProto>(staticID)
+								.Graphics.ExtendCategories(category);
+							break;
+						case string strID: registrator.PrototypesDb
+								.GetOrThrow<LayoutEntityProto>(new Proto.ID(strID))
+								.Graphics.ExtendCategories(category);
+							break;
+						default: throw new InvalidCastException(entityAsObj.GetType().FullName
+							+ " is not castable to: LayoutEntityProto, StaticEntityProto.ID or string");
+						}
+					}
+				}
+
+				return null;
+			}),
+
+			#endregion
 		};
 		return context;
+	}
+}
+
+public static class CategoriesExtensions {
+	extension(LayoutEntityProto.Gfx graphics) {
+		public void ExtendCategories(ToolbarCategoryProto category) {
+			ImmutableArray<ToolbarEntryData> categories = graphics.Categories;
+			categories = categories.IsNotValidOrEmpty
+				? ImmutableArray.Create(new ToolbarEntryData(category))
+				: categories.Concat(ImmutableArray.Create(new ToolbarEntryData(category)));
+
+			Type graphicsType = typeof(LayoutEntityProto.Gfx);
+			FieldInfo fieldInfo = graphicsType.GetField("<Categories>k__BackingField",
+				BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+			if (fieldInfo is null) {
+				throw new NullReferenceException("Cannot find backing field for graphics");
+			}
+			fieldInfo!.SetValue(graphics, categories);
+		}
 	}
 }
 
