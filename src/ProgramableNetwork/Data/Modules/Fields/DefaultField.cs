@@ -109,10 +109,11 @@ namespace ProgramableNetwork.Ui
 				activeDisplay.ObserveState(() => !module.Field.Bool[$"field_{entityField.Id}"] ? DisplayState.Inactive : module.Field.Bool[entityField.Id] ? DisplayState.Positive : DisplayState.Danger);
 				activeDisplay.ObserveValue(() =>
 				{
-					if (module.Field.Bool[entityField.Id])
+					if (module.Field.Bool[entityField.Id]) {
 						return "1".AsLoc();
-					else
+					} else {
 						return "0".AsLoc();
+					}
 				});
 				rowBool.Add(activeDisplay);
 

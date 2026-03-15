@@ -42,11 +42,12 @@ namespace ProgramableNetwork.Data.Speaker
             this.Observe(() => Entity.IsPlaying)
                 .Do((playing) => {
                     toggle.Value(playing);
-                    if (playing)
-                        Status.AsWorking();
-                    else
-                        Status.AsIdle();
-                });
+                    if (playing) {
+						Status.AsWorking();
+					} else {
+						Status.AsIdle();
+					}
+				});
 
             this.Observe(() => Entity.Sound)
                 .Do((sound) => {

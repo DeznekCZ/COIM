@@ -17,17 +17,20 @@ namespace ProgramableNetwork
 
         public bool AreSame(IEnumerable<IDataBandChannel> collection, Lyst<IDataBandChannel> lastKnown)
         {
-            if (collection == null && lastKnown == null)
-                return true;
+            if (collection == null && lastKnown == null) {
+				return true;
+			}
 
-            if (collection == null && lastKnown.Count > 0)
-                return false;
+			if (collection == null && lastKnown.Count > 0) {
+				return false;
+			}
 
-            var listOriginal = collection?.ToList() ?? new List<IDataBandChannel>();
-            if (lastKnown.Count != listOriginal.Count)
-                return false;
+			var listOriginal = collection?.ToList() ?? new List<IDataBandChannel>();
+            if (lastKnown.Count != listOriginal.Count) {
+				return false;
+			}
 
-            var comparator = comparatorGetter.Invoke();
+			var comparator = comparatorGetter.Invoke();
 
             for (int i = 0; i < listOriginal.Count; i++)
             {

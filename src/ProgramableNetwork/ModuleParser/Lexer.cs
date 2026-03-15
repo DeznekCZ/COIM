@@ -59,18 +59,20 @@ namespace ProgramableNetwork.Python
                         break;
 
                     case PythonTokens.elif:
-                        if (!(tree.statements.Last() is IfStatement ifs1))
-                            throw new PythonParseException(token, $"elif is allowed only after if or elif statement");
+                        if (!(tree.statements.Last() is IfStatement ifs1)) {
+							throw new PythonParseException(token, $"elif is allowed only after if or elif statement");
+						}
 
-                        tree.statements.RemoveAt(tree.statements.Count - 1);
+						tree.statements.RemoveAt(tree.statements.Count - 1);
                         ParseElIf(ifs1, tree);
                         break;
 
                     case PythonTokens.elsep:
-                        if (!(tree.statements.Last() is IfStatement ifs2))
-                            throw new PythonParseException(token, $"else is allowed only after if or elif statement");
+                        if (!(tree.statements.Last() is IfStatement ifs2)) {
+							throw new PythonParseException(token, $"else is allowed only after if or elif statement");
+						}
 
-                        tree.statements.RemoveAt(tree.statements.Count - 1);
+						tree.statements.RemoveAt(tree.statements.Count - 1);
                         ParseElse(ifs2, tree);
                         break;
 
@@ -246,9 +248,11 @@ namespace ProgramableNetwork.Python
             {
                 ors.Add(bitviseor());
             }
-            if (ors.Count == 1) return ors[0];
+            if (ors.Count == 1) {
+				return ors[0];
+			}
 
-            IExpression f = ors.Last();
+			IExpression f = ors.Last();
             for (int i = ors.Count - 2; i >= 0; i--)
             {
                 f = new BitOrExpression(ors[i], f);
@@ -266,9 +270,11 @@ namespace ProgramableNetwork.Python
             {
                 ands.Add(bitviseand());
             }
-            if (ands.Count == 1) return ands[0];
+            if (ands.Count == 1) {
+				return ands[0];
+			}
 
-            IExpression f = ands.Last();
+			IExpression f = ands.Last();
             for (int i = ands.Count - 2; i >= 0; i--)
             {
                 f = new BitXorExpression(ands[i], f);
@@ -286,9 +292,11 @@ namespace ProgramableNetwork.Python
             {
                 shifts.Add(bitviseshift());
             }
-            if (shifts.Count == 1) return shifts[0];
+            if (shifts.Count == 1) {
+				return shifts[0];
+			}
 
-            IExpression f = shifts.Last();
+			IExpression f = shifts.Last();
             for (int i = shifts.Count - 2; i >= 0; i--)
             {
                 f = new BitXorExpression(shifts[i], f);
@@ -306,9 +314,11 @@ namespace ProgramableNetwork.Python
             {
                 shifts.Add((shift.type, sum()));
             }
-            if (shifts.Count == 1) return shifts[0].Item2;
+            if (shifts.Count == 1) {
+				return shifts[0].Item2;
+			}
 
-            IExpression f = shifts.Last().Item2;
+			IExpression f = shifts.Last().Item2;
             for (int i = shifts.Count - 2; i >= 0; i--)
             {
                 var shiftDrirection = shifts[i+1].Item1;
@@ -334,9 +344,11 @@ namespace ProgramableNetwork.Python
             {
                 sums.Add((shift.type, term()));
             }
-            if (sums.Count == 1) return sums[0].Item2;
+            if (sums.Count == 1) {
+				return sums[0].Item2;
+			}
 
-            IExpression f = sums.Last().Item2;
+			IExpression f = sums.Last().Item2;
             for (int i = sums.Count - 2; i >= 0; i--)
             {
                 var shiftDrirection = sums[i + 1].Item1;
@@ -362,9 +374,11 @@ namespace ProgramableNetwork.Python
             {
                 sums.Add((operToken.type, factor()));
             }
-            if (sums.Count == 1) return sums[0].Item2;
+            if (sums.Count == 1) {
+				return sums[0].Item2;
+			}
 
-            IExpression f = sums.Last().Item2;
+			IExpression f = sums.Last().Item2;
             for (int i = sums.Count - 2; i >= 0; i--)
             {
                 var oper = sums[i + 1].Item1;
@@ -493,9 +507,10 @@ namespace ProgramableNetwork.Python
 
         private Token AnyNext(params PythonTokens[] ignore)
         {
-            while (IsNextOf(ignore, out Token _))
-                continue;
-            return Dequeue();
+            while (IsNextOf(ignore, out Token _)) {
+				continue;
+			}
+			return Dequeue();
         }
 
         private List<IExpression> list()
@@ -573,18 +588,20 @@ namespace ProgramableNetwork.Python
             bool skipEnd = IsNext(PythonTokens.block, out Token _);
             bool skipStep = IsNext(PythonTokens.rlist, out Token _);
 
-            if (skipStart)
-                throw new PythonParseException(AnyNext(), "List slices are not implemeted");
+            if (skipStart) {
+				throw new PythonParseException(AnyNext(), "List slices are not implemeted");
+			}
 
-            IExpression start = ParseExpression();
+			IExpression start = ParseExpression();
             skipStart = IsNext(PythonTokens.block, out Token _);
             skipEnd = IsNext(PythonTokens.block, out Token _);
             skipStep = IsNext(PythonTokens.rlist, out Token _);
 
-            if (skipStart && !skipStep)
-                throw new PythonParseException(AnyNext(), "List slices are not implemeted");
+            if (skipStart && !skipStep) {
+				throw new PythonParseException(AnyNext(), "List slices are not implemeted");
+			}
 
-            return new SingleItem(start);
+			return new SingleItem(start);
         }
 
         private IExpression fstring(Token begin)
@@ -635,35 +652,40 @@ namespace ProgramableNetwork.Python
             Token first = RequireNext(type, ignore);
             list.Add(first);
 
-            while(IsNext(next, out Token _, ignore))
-                list.Add(RequireNext(type, ignore));
+            while(IsNext(next, out Token _, ignore)) {
+				list.Add(RequireNext(type, ignore));
+			}
 
-            return list;
+			return list;
         }
 
         private List<Token> NextList0(PythonTokens type, PythonTokens next, params PythonTokens[] ignore)
         {
             List<Token> list = new List<Token>();
 
-            if (!IsNext(type, out Token first, ignore))
-                return list;
+            if (!IsNext(type, out Token first, ignore)) {
+				return list;
+			}
 
-            list.Add(first);
+			list.Add(first);
 
-            while(IsNext(next, out Token _, ignore))
-                list.Add(RequireNext(type, ignore));
+            while(IsNext(next, out Token _, ignore)) {
+				list.Add(RequireNext(type, ignore));
+			}
 
-            return list;
+			return list;
         }
 
         private Token RequireNext(PythonTokens type, params PythonTokens[] ignore)
         {
             var token = Dequeue();
-            while (ignore.Contains(token.type))
-                token = Dequeue();
-            if (token.type != type)
-                throw new PythonParseException(token, $"Expected token '{type}', got: {token}");
-            return token;
+            while (ignore.Contains(token.type)) {
+				token = Dequeue();
+			}
+			if (token.type != type) {
+				throw new PythonParseException(token, $"Expected token '{type}', got: {token}");
+			}
+			return token;
         }
 
         private bool IsNext(PythonTokens type, out Token token, params PythonTokens[] ignore)
@@ -685,10 +707,11 @@ namespace ProgramableNetwork.Python
             if (token.type != type)
             { // revert
 
-                while (stack.Count > 0)
-                    enumerator.AddFirst(stack.Pop());
+                while (stack.Count > 0) {
+					enumerator.AddFirst(stack.Pop());
+				}
 
-                token = null;
+				token = null;
                 return false;
             }
             return true;
@@ -713,10 +736,11 @@ namespace ProgramableNetwork.Python
             if (!type.Contains(token.type))
             { // revert
 
-                while (stack.Count > 0)
-                    enumerator.AddFirst(stack.Pop());
+                while (stack.Count > 0) {
+					enumerator.AddFirst(stack.Pop());
+				}
 
-                token = null;
+				token = null;
                 return false;
             }
             return true;

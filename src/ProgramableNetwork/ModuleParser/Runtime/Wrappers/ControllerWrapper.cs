@@ -73,10 +73,11 @@ namespace ProgramableNetwork.Python
 
             int width = module.Layout.GetWidth(module);
             controller.Rows[row][column] = ModulePlacement.Origin(module.Id);
-            for (int i = 1; i < width; i++)
-                controller.Rows[row][column + i] = ModulePlacement.Rest(module.Id);
+            for (int i = 1; i < width; i++) {
+				controller.Rows[row][column + i] = ModulePlacement.Rest(module.Id);
+			}
 
-            column += width;
+			column += width;
             if (column == controller.Prototype.Columns)
             {
                 column = 0;

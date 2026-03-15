@@ -48,21 +48,25 @@ namespace ProgramableNetwork
             if (version < 3)
             {
                 var array = reader.ReadArray<int>().Select(Fix32.FromInt).ToArray();
-                if (array.Length > 0)
-                    value = array[0];
-            }
+                if (array.Length > 0) {
+					value = array[0];
+				}
+			}
             else if (version > 3)
             {
                 bool exists = reader.ReadBool();
                 value = Fix32.FromRaw(reader.ReadInt());
-                if (!exists) value = null;
-            }
+                if (!exists) {
+					value = null;
+				}
+			}
             else
             {
                 var array = reader.ReadArray<Fix32>();
-                if (array.Length > 0)
-                    value = array[0];
-            }
+                if (array.Length > 0) {
+					value = array[0];
+				}
+			}
 
             int validIterations = reader.ReadInt();
             new EntityId(version > 0 && version < 5 ? reader.ReadInt() : 0); // ignore antena
@@ -88,13 +92,14 @@ namespace ProgramableNetwork
         public void Move(int v)
         {
             int newIndex = Index + v;
-            if (newIndex < 0)
-                Index = OriginalDataBand.Prototype.Channels + newIndex;
-            else if (newIndex >= OriginalDataBand.Prototype.Channels)
-                Index = newIndex - OriginalDataBand.Prototype.Channels;
-            else
-                Index = newIndex;
-        }
+            if (newIndex < 0) {
+				Index = OriginalDataBand.Prototype.Channels + newIndex;
+			} else if (newIndex >= OriginalDataBand.Prototype.Channels) {
+				Index = newIndex - OriginalDataBand.Prototype.Channels;
+			} else {
+				Index = newIndex;
+			}
+		}
 
         public enum AMOperation
         {
@@ -117,10 +122,11 @@ namespace ProgramableNetwork
         {
             if (!(WorldMapMine is null))
             {
-                if (random == null)
-                   random = GlobalDependencyResolver.Get<RandomProvider>().GetSimRandomFor(this);
+                if (random == null) {
+					random = GlobalDependencyResolver.Get<RandomProvider>().GetSimRandomFor(this);
+				}
 
-                if (random.NextPercent() < ErrorPossibility(WorldMapMine))
+				if (random.NextPercent() < ErrorPossibility(WorldMapMine))
                 {
                     // action is not done, the transmit failed
                     return;

@@ -192,9 +192,10 @@ namespace ProgramableNetwork.Ui
             }
 
             m_btnPreview.Icon.Value(foundProduct);
-            if (foundProduct is DrivingEntityProto veh)
-                m_btnFuelPreview.Icon.Value(veh.FuelTankProto.ValueOrNull?.Product);
-            m_btnClear.Visible(true);
+            if (foundProduct is DrivingEntityProto veh) {
+				m_btnFuelPreview.Icon.Value(veh.FuelTankProto.ValueOrNull?.Product);
+			}
+			m_btnClear.Visible(true);
         }
     }
 }

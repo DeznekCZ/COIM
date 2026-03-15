@@ -34,9 +34,11 @@ namespace ProgramableNetwork.Ui
             }
 
             RowContainer row = fieldContainer.Row(this, module, out bool draw);
-            if (!draw) return;
+            if (!draw) {
+				return;
+			}
 
-            bool value = module.Field.Bool[Id];
+			bool value = module.Field.Bool[Id];
 
             Toggle toggle = new Toggle()
                 .Value(value)

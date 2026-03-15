@@ -66,16 +66,32 @@ namespace ProgramableNetwork.Python
 
         public static string __str__(object v)
         {
-            if (v is null) return "None";
-            if (v is string s) return s;
-            if (v is int i) return i.ToString();
-            if (v is float f) return f.ToString();
-            if (v is Fix32 fix) return fix.ToString();
-            if (v is byte by) return by.ToString();
-            if (v is short sh) return sh.ToString();
-            System.Reflection.MethodInfo m;
-            if ((m = v.GetType().GetMethod("__str__")) != null) return (string)m.Invoke(v, null);
-            return v.ToString(); // nouzovka
+            if (v is null) {
+				return "None";
+			}
+			if (v is string s) {
+				return s;
+			}
+			if (v is int i) {
+				return i.ToString();
+			}
+			if (v is float f) {
+				return f.ToString();
+			}
+			if (v is Fix32 fix) {
+				return fix.ToString();
+			}
+			if (v is byte by) {
+				return by.ToString();
+			}
+			if (v is short sh) {
+				return sh.ToString();
+			}
+			System.Reflection.MethodInfo m;
+            if ((m = v.GetType().GetMethod("__str__")) != null) {
+				return (string)m.Invoke(v, null);
+			}
+			return v.ToString(); // nouzovka
         }
 
         public static object __neg__(object v)
@@ -102,16 +118,18 @@ namespace ProgramableNetwork.Python
 
         public static object __or__(object v1, object v2)
         {
-            if (v1 is null && v2 is null)
-                return 0;
-            return __int__(v1) | __int__(v2);
+            if (v1 is null && v2 is null) {
+				return 0;
+			}
+			return __int__(v1) | __int__(v2);
         }
 
         public static object __xor__(object v1, object v2)
         {
-            if (v1 is null && v2 is null)
-                return 0;
-            return __int__(v1) ^ __int__(v2);
+            if (v1 is null && v2 is null) {
+				return 0;
+			}
+			return __int__(v1) ^ __int__(v2);
         }
 
         public static object __call__(object executable, List<(string name, object value)> arguments)
@@ -172,25 +190,32 @@ namespace ProgramableNetwork.Python
 
         public static bool __eq__(object left, object right)
         {
-            if (left is null && right is null)
-                return true;
-            if (left is null || right is null)
-                return false;
-            if (left.GetType() != right.GetType())
+            if (left is null && right is null) {
+				return true;
+			}
+			if (left is null || right is null) {
+				return false;
+			}
+			if (left.GetType() != right.GetType())
             {
-                if (__eq__base(left, right, out bool result))
-                    return result;
-                throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+                if (__eq__base(left, right, out bool result)) {
+					return result;
+				}
+				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
             }
-            if (left is Fix32 fix)
-                return fix == (Fix32)right;
-            if (left is int i)
-                return i == (int)right;
-            if (left is float f)
-                return f == (float)right;
-            if (left is bool b)
-                return b == (bool)right;
-            throw new NotImplementedException($"Types has no comparison yet or never (same type)");
+            if (left is Fix32 fix) {
+				return fix == (Fix32)right;
+			}
+			if (left is int i) {
+				return i == (int)right;
+			}
+			if (left is float f) {
+				return f == (float)right;
+			}
+			if (left is bool b) {
+				return b == (bool)right;
+			}
+			throw new NotImplementedException($"Types has no comparison yet or never (same type)");
         }
 
         private static bool __eq__base(object left, object right, out bool result)
@@ -231,25 +256,32 @@ namespace ProgramableNetwork.Python
 
         public static bool __ne__(object left, object right)
         {
-            if (left is null && right is null)
-                return false;
-            if (left is null || right is null)
-                return true;
-            if (left.GetType() != right.GetType())
+            if (left is null && right is null) {
+				return false;
+			}
+			if (left is null || right is null) {
+				return true;
+			}
+			if (left.GetType() != right.GetType())
             {
-                if (__ne__base(left, right, out bool result))
-                    return result;
-                throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+                if (__ne__base(left, right, out bool result)) {
+					return result;
+				}
+				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
             }
-            if (left is Fix32 fix)
-                return fix != (Fix32)right;
-            if (left is int i)
-                return i != (int)right;
-            if (left is float f)
-                return f != (float)right;
-            if (left is bool b)
-                return b != (bool)right;
-            throw new NotImplementedException($"Types has no comparison yet or never (same type)");
+            if (left is Fix32 fix) {
+				return fix != (Fix32)right;
+			}
+			if (left is int i) {
+				return i != (int)right;
+			}
+			if (left is float f) {
+				return f != (float)right;
+			}
+			if (left is bool b) {
+				return b != (bool)right;
+			}
+			throw new NotImplementedException($"Types has no comparison yet or never (same type)");
         }
 
         private static bool __ne__base(object left, object right, out bool result)
@@ -280,23 +312,29 @@ namespace ProgramableNetwork.Python
 
         public static bool __ge__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot compare null values");
-            if (left.GetType() != right.GetType())
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot compare null values");
+			}
+			if (left.GetType() != right.GetType())
             {
-                if (__ge__base(left, right, out bool result))
-                    return result;
-                throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+                if (__ge__base(left, right, out bool result)) {
+					return result;
+				}
+				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
             }
-            if (left is Fix32 fix)
-                return fix >= (Fix32)right;
-            if (left is int i)
-                return i >= (int)right;
-            if (left is float f)
-                return f >= (float)right;
-            if (left is bool b)
-                return true;
-            throw new NotImplementedException($"Types has no comparison yet or never (same type)");
+            if (left is Fix32 fix) {
+				return fix >= (Fix32)right;
+			}
+			if (left is int i) {
+				return i >= (int)right;
+			}
+			if (left is float f) {
+				return f >= (float)right;
+			}
+			if (left is bool b) {
+				return true;
+			}
+			throw new NotImplementedException($"Types has no comparison yet or never (same type)");
         }
 
         private static bool __ge__base(object left, object right, out bool result)
@@ -327,23 +365,29 @@ namespace ProgramableNetwork.Python
 
         public static bool __gt__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot compare null values");
-            if (left.GetType() != right.GetType())
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot compare null values");
+			}
+			if (left.GetType() != right.GetType())
             {
-                if (__gt__base(left, right, out bool result))
-                    return result;
-                throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+                if (__gt__base(left, right, out bool result)) {
+					return result;
+				}
+				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
             }
-            if (left is Fix32 fix)
-                return fix > (Fix32)right;
-            if (left is int i)
-                return i > (int)right;
-            if (left is float f)
-                return f > (float)right;
-            if (left is bool b)
-                return b == true && (bool)right == false;
-            throw new NotImplementedException($"Types has no comparison yet or never (same type)");
+            if (left is Fix32 fix) {
+				return fix > (Fix32)right;
+			}
+			if (left is int i) {
+				return i > (int)right;
+			}
+			if (left is float f) {
+				return f > (float)right;
+			}
+			if (left is bool b) {
+				return b == true && (bool)right == false;
+			}
+			throw new NotImplementedException($"Types has no comparison yet or never (same type)");
         }
 
         private static bool __gt__base(object left, object right, out bool result)
@@ -374,23 +418,29 @@ namespace ProgramableNetwork.Python
 
         public static bool __le__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot compare null values");
-            if (left.GetType() != right.GetType())
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot compare null values");
+			}
+			if (left.GetType() != right.GetType())
             {
-                if (__le__base(left, right, out bool result))
-                    return result;
-                throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+                if (__le__base(left, right, out bool result)) {
+					return result;
+				}
+				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
             }
-            if (left is Fix32 fix)
-                return fix <= (Fix32)right;
-            if (left is int i)
-                return i <= (int)right;
-            if (left is float f)
-                return f <= (float)right;
-            if (left is bool b)
-                return true;
-            throw new NotImplementedException($"Types has no comparison yet or never (same type)");
+            if (left is Fix32 fix) {
+				return fix <= (Fix32)right;
+			}
+			if (left is int i) {
+				return i <= (int)right;
+			}
+			if (left is float f) {
+				return f <= (float)right;
+			}
+			if (left is bool b) {
+				return true;
+			}
+			throw new NotImplementedException($"Types has no comparison yet or never (same type)");
         }
 
         private static bool __le__base(object left, object right, out bool result)
@@ -421,23 +471,29 @@ namespace ProgramableNetwork.Python
 
         public static bool __lt__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot compare null values");
-            if (left.GetType() != right.GetType())
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot compare null values");
+			}
+			if (left.GetType() != right.GetType())
             {
-                if (__lt__base(left, right, out bool result))
-                    return result;
-                throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+                if (__lt__base(left, right, out bool result)) {
+					return result;
+				}
+				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
             }
-            if (left is Fix32 fix)
-                return fix < (Fix32)right;
-            if (left is int i)
-                return i < (int)right;
-            if (left is float f)
-                return f < (float)right;
-            if (left is bool b)
-                return b == false && (bool)right == true;
-            throw new NotImplementedException($"Types has no comparison yet or never (same type)");
+            if (left is Fix32 fix) {
+				return fix < (Fix32)right;
+			}
+			if (left is int i) {
+				return i < (int)right;
+			}
+			if (left is float f) {
+				return f < (float)right;
+			}
+			if (left is bool b) {
+				return b == false && (bool)right == true;
+			}
+			throw new NotImplementedException($"Types has no comparison yet or never (same type)");
         }
 
         private static bool __lt__base(object left, object right, out bool result)
@@ -510,12 +566,16 @@ namespace ProgramableNetwork.Python
 
         public static bool __contains__(object target, object key)
         {
-            if (target is null) throw new NullReferenceException("Target is None");
-            if (target is IDictionary<string, object> dict)
-                return dict.ContainsKey(__str__(key));
-            if (target is List<object> list)
-                return list.Contains(key);
-            throw new NotImplementedException("__contains__");
+            if (target is null) {
+				throw new NullReferenceException("Target is None");
+			}
+			if (target is IDictionary<string, object> dict) {
+				return dict.ContainsKey(__str__(key));
+			}
+			if (target is List<object> list) {
+				return list.Contains(key);
+			}
+			throw new NotImplementedException("__contains__");
         }
 
         public static object __invert__(object v)
@@ -525,69 +585,90 @@ namespace ProgramableNetwork.Python
 
         public static object __mul__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot multiply null values");
-            if (left.GetType() != right.GetType())
-                throw new NotImplementedException($"Types has no multiply yet or never (different type)");
-            if (left is Fix32 fix)
-                return fix * (Fix32)right;
-            if (left is int i)
-                return i * (int)right;
-            if (left is float f)
-                return f * (float)right;
-            throw new NotImplementedException($"Types has no multiply yet or never (same type)");
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot multiply null values");
+			}
+			if (left.GetType() != right.GetType()) {
+				throw new NotImplementedException($"Types has no multiply yet or never (different type)");
+			}
+			if (left is Fix32 fix) {
+				return fix * (Fix32)right;
+			}
+			if (left is int i) {
+				return i * (int)right;
+			}
+			if (left is float f) {
+				return f * (float)right;
+			}
+			throw new NotImplementedException($"Types has no multiply yet or never (same type)");
         }
 
         public static object __div__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot divide null values");
-            if (left.GetType() != right.GetType())
-                throw new NotImplementedException($"Types has no divide yet or never (different type)");
-            if (left is Fix32 fix)
-                return fix / (Fix32)right;
-            if (left is int i)
-                return i / (int)right;
-            if (left is float f)
-                return f / (float)right;
-            throw new NotImplementedException($"Types has no divide yet or never (same type)");
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot divide null values");
+			}
+			if (left.GetType() != right.GetType()) {
+				throw new NotImplementedException($"Types has no divide yet or never (different type)");
+			}
+			if (left is Fix32 fix) {
+				return fix / (Fix32)right;
+			}
+			if (left is int i) {
+				return i / (int)right;
+			}
+			if (left is float f) {
+				return f / (float)right;
+			}
+			throw new NotImplementedException($"Types has no divide yet or never (same type)");
         }
 
         public static object __divint__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot divide null values");
-            if (left.GetType() != right.GetType())
-                throw new NotImplementedException($"Types has no multiply yet or never (different type)");
-            if (left is Fix32 fix)
-                return fix / (Fix32)right;
-            if (left is int i)
-                return i / (int)right;
-            if (left is float f)
-                return f / (float)right;
-            throw new NotImplementedException($"Types has no divide yet or never (same type)");
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot divide null values");
+			}
+			if (left.GetType() != right.GetType()) {
+				throw new NotImplementedException($"Types has no multiply yet or never (different type)");
+			}
+			if (left is Fix32 fix) {
+				return fix / (Fix32)right;
+			}
+			if (left is int i) {
+				return i / (int)right;
+			}
+			if (left is float f) {
+				return f / (float)right;
+			}
+			throw new NotImplementedException($"Types has no divide yet or never (same type)");
         }
 
         public static object __mod__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot divide null values");
-            if (left.GetType() != right.GetType())
-                throw new NotImplementedException($"Types has no divide yet or never (different type)");
-            if (left is Fix32 fix)
-                return fix % (Fix32)right;
-            if (left is int i)
-                return i % (int)right;
-            if (left is float f)
-                return f % (float)right;
-            throw new NotImplementedException($"Types has no divide yet or never (same type)");
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot divide null values");
+			}
+			if (left.GetType() != right.GetType()) {
+				throw new NotImplementedException($"Types has no divide yet or never (different type)");
+			}
+			if (left is Fix32 fix) {
+				return fix % (Fix32)right;
+			}
+			if (left is int i) {
+				return i % (int)right;
+			}
+			if (left is float f) {
+				return f % (float)right;
+			}
+			throw new NotImplementedException($"Types has no divide yet or never (same type)");
         }
 
         public static bool __not__(object v)
         {
-            if (v is bool b)
-                return !b;
-            throw new NotImplementedException("__not__");
+            if (v is bool b) {
+				return !b;
+			}
+			throw new NotImplementedException("__not__");
         }
 
         public static Fix32 __pow__(object left, object right)
@@ -600,31 +681,38 @@ namespace ProgramableNetwork.Python
 
         public static object __lshift__(object left, object right)
         {
-            if (left is null && right is null)
-                return 0;
-            return __int__(left) << __int__(right);
+            if (left is null && right is null) {
+				return 0;
+			}
+			return __int__(left) << __int__(right);
         }
 
         public static object __rshift__(object left, object right)
         {
-            if (left is null && right is null)
-                return 0;
-            return __int__(left) >> __int__(right);
+            if (left is null && right is null) {
+				return 0;
+			}
+			return __int__(left) >> __int__(right);
         }
 
         public static object __add__(object left, object right)
         {
-            if (left is null || right is null)
-                throw new NotImplementedException($"Cannot divide null values");
-            if (left.GetType() != right.GetType())
-                throw new NotImplementedException($"Types has no divide yet or never (different type)");
-            if (left is Fix32 fix)
-                return fix + (Fix32)right;
-            if (left is int i)
-                return i + (int)right;
-            if (left is float f)
-                return f + (float)right;
-            throw new NotImplementedException($"Types has no divide yet or never (same type)");
+            if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot divide null values");
+			}
+			if (left.GetType() != right.GetType()) {
+				throw new NotImplementedException($"Types has no divide yet or never (different type)");
+			}
+			if (left is Fix32 fix) {
+				return fix + (Fix32)right;
+			}
+			if (left is int i) {
+				return i + (int)right;
+			}
+			if (left is float f) {
+				return f + (float)right;
+			}
+			throw new NotImplementedException($"Types has no divide yet or never (same type)");
         }
     }
 }

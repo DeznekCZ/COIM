@@ -162,10 +162,11 @@ namespace ProgramableNetwork.Ui
         {
             if (target is IStaticEntity entity && entity.OccupiedTiles
                 .Select(t => entity.Position3f.AddX(t.RelativeX).AddY(t.RelativeY))
-                .FirstOrDefault(t => (source - t).Length <= searchDistance) != Tile3f.Zero)
-                return true;
+                .FirstOrDefault(t => (source - t).Length <= searchDistance) != Tile3f.Zero) {
+				return true;
+			}
 
-            return false;
+			return false;
         }
 
         protected override void OnDeactivated()
@@ -210,10 +211,11 @@ namespace ProgramableNetwork.Ui
                 .Observe(() => Entity?.Prototype)
                 .DoOnSync((antena, proto) =>
                 {
-                    if (m_oldEntity != null)
-                        m_oldEntity.Selected = false;
+                    if (m_oldEntity != null) {
+						m_oldEntity.Selected = false;
+					}
 
-                    if (antena == null)
+					if (antena == null)
                     {
                         m_oldEntity = null;
                         return;
@@ -236,16 +238,20 @@ namespace ProgramableNetwork.Ui
                     }
 
                     m_signalList.Clear();
-                    if (antena.DataBand == null) return;
-                    RefreshRedirections(antena.DataBand);
+                    if (antena.DataBand == null) {
+						return;
+					}
+					RefreshRedirections(antena.DataBand);
                 });
 
             m_onLoading = true;
             tabContainer.OnTabActivate(() =>
             {
-                if (tabContainer.ActiveTabIndex is null) return;
+                if (tabContainer.ActiveTabIndex is null) {
+					return;
+				}
 
-                if (!m_onLoading)
+				if (!m_onLoading)
                 {
                     Entity.DataBand = m_databands[tabContainer.ActiveTabIndex ?? 0]
                                             .Constructor(Entity, Entity.Context, m_databands[tabContainer.ActiveTabIndex ?? 0]);

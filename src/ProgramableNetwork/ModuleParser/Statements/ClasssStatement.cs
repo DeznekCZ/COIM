@@ -32,20 +32,21 @@ namespace ProgramableNetwork.Python
             IDictionary<string, object> classContext = new ChildContext(context);
             foreach (var item in block.statements)
             {
-                if (item is FunctionStatement f)
-                    classContext[f.Name] = new Method((args) =>
-                    {
-                        IDictionary<string, object> methodContext = new ChildContext(classContext);
-                        f.Arguments.AsEnumerable()
-                            .Zip(args, (a, b) => (a, b.Value))
-                            .Select(pair => methodContext[pair.a] = pair.Value)
-                            .ToList();
-                        f.Execute(methodContext);
-                        return methodContext.TryGetValue("__return__", out object r) ? r : null;
-                    }, f.Arguments.ToArray());
-                else
-                    item.Execute(classContext);
-            }
+                if (item is FunctionStatement f) {
+					classContext[f.Name] = new Method((args) =>
+					{
+						IDictionary<string, object> methodContext = new ChildContext(classContext);
+						f.Arguments.AsEnumerable()
+							.Zip(args, (a, b) => (a, b.Value))
+							.Select(pair => methodContext[pair.a] = pair.Value)
+							.ToList();
+						f.Execute(methodContext);
+						return methodContext.TryGetValue("__return__", out object r) ? r : null;
+					}, f.Arguments.ToArray());
+				} else {
+					item.Execute(classContext);
+				}
+			}
 
             Type[] types = baseClasses.Select(b => (Type)(object)b.GetValue(context)).ToArray();
             Class @class = new Class(Name, types, classContext);

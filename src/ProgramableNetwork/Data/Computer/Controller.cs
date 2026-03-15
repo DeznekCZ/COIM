@@ -21,6 +21,7 @@ using ProgramableNetwork.Data.Mod;
 using System.Reflection;
 using Mafi.Localization;
 using Mafi.Core.Factory.Transports;
+using Mafi.Core.Research;
 
 namespace ProgramableNetwork
 {
@@ -39,7 +40,8 @@ namespace ProgramableNetwork
 
 		public Option<string> CustomTitle { get; set; }
 
-		public Controller(EntityId id, ControllerProto proto, TileTransform transform, EntityContext context, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
+		public Controller(EntityId id, ControllerProto proto, TileTransform transform, EntityContext context,
+			IEntityMaintenanceProvidersFactory maintenanceProvidersFactory, ResearchManager researchManager)
 			: base(id, proto, transform, context)
 		{
 			Prototype = proto.BasedOn ?? proto;
@@ -52,6 +54,7 @@ namespace ProgramableNetwork
 			m_notificationInfoManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.InfoNotification);
 			m_notificationWarningManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.WarningNotification);
 			m_notificationErrorManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.ErrorNotification);
+			ResearchManager = researchManager;
 			Modules = new Lyst<Module>();
 			Rows = new Lyst<Lyst<ModulePlacement>>();
 			for (int i = 0; i < Prototype.Rows; i++)
@@ -173,13 +176,14 @@ namespace ProgramableNetwork
 
 		[InitAfterLoad(InitPriority.Normal)]
 		[OnlyForSaveCompatibility(null)]
-		private void initContexts(int saveVersion)
+		private void initContexts(int saveVersion, DependencyResolver resolver)
 		{
 			Log.Info($"Initialize context after load");
 
 			Prototype = Context.ProtosDb.Get<ControllerProto>(m_protoId).ValueOrThrow("Invalid controller proto: " + m_protoId);
 			m_electricConsumer = m_electricConsumer ?? Context.ElectricityConsumerFactory.CreateConsumer(this);
 			m_computingConsumer = m_computingConsumer ?? Context.ComputingConsumerFactory.CreateConsumer(this);
+			ResearchManager = resolver.Resolve<ResearchManager>();
 
 			m_notificationInfoManager = WithId(ControllerNotification.InfoNotification, m_notificationInfoManager);
 			m_notificationWarningManager = WithId(ControllerNotification.WarningNotification, m_notificationWarningManager);
@@ -496,8 +500,9 @@ namespace ProgramableNetwork
 				.Select(m => m.Prototype.UsedPower.Value)
 				.Sum();
 
-			if (Speed == 0)
+			if (Speed == 0) {
 				return total.Kw();
+			}
 
 			return (total * 1 / (1 + Speed)).Max(1).Kw();
 		}
@@ -507,11 +512,15 @@ namespace ProgramableNetwork
 			PartialQuantity sum = PartialQuantity.Zero;
 			foreach (Module module in Modules)
 			{
-				if (module.IsPaused) continue;
+				if (module.IsPaused) {
+					continue;
+				}
 				sum += module.Prototype.UsedComputing;
 			}
 
-			if (sum == PartialQuantity.Zero) return Computing.Zero;
+			if (sum == PartialQuantity.Zero) {
+				return Computing.Zero;
+			}
 			sum = (sum * 1 / (1 + Speed)).Max(PartialQuantity.One);
 			return Computing.FromQuantity(sum.IntegerPart.Max(Quantity.One));
 		}
@@ -555,19 +564,29 @@ namespace ProgramableNetwork
 			{
 				try
 				{
+					if (module.Unlocked == false) {
+						// Only skip, UI will show automatically
+						module.SetStatus(ModuleStatus.Skipped);
+						continue;
+					}
 					if (module.Prototype.UsedComputing > PartialQuantity.Zero && !computingConsumed)
 					{
 						missingComputation = missingComputation || true;
+						module.SetStatus(ModuleStatus.Skipped);
 						continue;
 					}
 
+					if (module.Status == ModuleStatus.Skipped) {
+						module.SetStatus(ModuleStatus.Init);
+					}
 					module.Execute();
 				}
 				catch (Exception e)
 				{
 					anyError = true;
-					if (module.IsDebugging)
+					if (module.IsDebugging) {
 						Log.Exception(e);
+					}
 					// ignore exception
 				}
 				anyInfo = anyInfo || module.Info;
@@ -629,6 +648,9 @@ namespace ProgramableNetwork
 		public int Clock { get => m_clock; set => m_clock = value; }
 		public LocStrFormatted State { get; private set; }
 		public ColorRgba Color { get; private set; }
+
+		[DoNotSave(resolveAfterLoad: typeof(ResearchManager))]
+		public ResearchManager ResearchManager { get; private set; }
 		public void SetColor(ColorRgba color)
 		{
 			Color = color;

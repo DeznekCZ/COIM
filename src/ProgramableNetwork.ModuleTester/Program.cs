@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Mafi.Core.Research;
 
 namespace ProgramableNetwork.ModuleTester
 {
@@ -128,7 +129,8 @@ namespace ProgramableNetwork.ModuleTester
                         item,
                         new TileTransform(),
                         entityContext,
-                        new TestFactory()
+                        new TestFactory(),
+                        new ResearchManager(null, null, null, null, null, null, null, null, null, null)
                     );
                 }
                 catch (Exception e)

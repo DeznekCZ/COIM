@@ -24,9 +24,9 @@ namespace ProgramableNetwork.Python
             string name = this.name.Path;
 
             if (name == "Core.categories") // ignore other types
-                context["DefaultCategories"] = typeof(Category);
-
-            else if (name == "Core.fields")
+			{
+				context["DefaultCategories"] = typeof(Category);
+			} else if (name == "Core.fields")
             {
                 exportedItems.Select(argument =>
                 {
@@ -174,10 +174,11 @@ namespace ProgramableNetwork.Python
             {
                 foreach (var item in exportedItems)
                 {
-                    if (item.value == "*")
-                        throw new PythonParseException(item, "Cannot use * for import of captain of insustry classes");
+                    if (item.value == "*") {
+						throw new PythonParseException(item, "Cannot use * for import of captain of insustry classes");
+					}
 
-                    context[item.value] = AssemblyBuilder
+					context[item.value] = AssemblyBuilder
                         .DefineDynamicAssembly(new AssemblyName("ProgramableNetwork"), AssemblyBuilderAccess.ReflectionOnly)
                         .DefineDynamicModule("Modules")
                         .DefineType(item.value, TypeAttributes.Public)

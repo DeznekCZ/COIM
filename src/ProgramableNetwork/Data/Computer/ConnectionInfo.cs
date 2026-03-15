@@ -130,11 +130,12 @@ namespace ProgramableNetwork.Ui
                     .OnDoubleClick(() =>
                     {
                         UiContext UiContext = GlobalDependencyResolver.Get<UiContext>();
-                        if (UiContext.InspectorsManager.TryActivateFor(controller, out var inspectorController))
-                            UiContext.InputMgr.ActivateNewController(inspectorController);
-                        else
-                            m_invalidOpSound.Play();
-                    }));
+                        if (UiContext.InspectorsManager.TryActivateFor(controller, out var inspectorController)) {
+							UiContext.InputMgr.ActivateNewController(inspectorController);
+						} else {
+							m_invalidOpSound.Play();
+						}
+					}));
                 controllerPanel.Header.Add(new UiComponent().FlexGrow(1));
                 controllerPanel.Header.Add(new Label(controller.GetTitle().AsLoc()));
                 controllerPanel.Header.Add(new UiComponent().FlexGrow(1));
@@ -160,10 +161,11 @@ namespace ProgramableNetwork.Ui
                     foreach (EntityField field in fields)
                     {
                         IEntity entity = module.Field.Entity<IEntity>(field.Id);
-                        if (entity?.HasPosition(out Tile3f _) ?? false)
-                            allEntities[entity.Id] = entity;
+                        if (entity?.HasPosition(out Tile3f _) ?? false) {
+							allEntities[entity.Id] = entity;
+						}
 
-                        m_updaters.Add(new DataUpdaterChecked<EntityId?, (Module module, EntityField field)>(
+						m_updaters.Add(new DataUpdaterChecked<EntityId?, (Module module, EntityField field)>(
                             (c) => c.module.Field.Entity<IEntity>(c.field.Id)?.Id,
                             (c, s) => Refresh(),
                             (a, b) => a == b,
@@ -183,11 +185,12 @@ namespace ProgramableNetwork.Ui
                         .OnDoubleClick(() =>
                         {
                             UiContext UiContext = GlobalDependencyResolver.Get<UiContext>();
-                            if (UiContext.InspectorsManager.TryActivateFor(entity, out var inspector))
-                                UiContext.InputMgr.ActivateNewController(inspector);
-                            else
-                                m_invalidOpSound.Play();
-                        })
+                            if (UiContext.InspectorsManager.TryActivateFor(entity, out var inspector)) {
+								UiContext.InputMgr.ActivateNewController(inspector);
+							} else {
+								m_invalidOpSound.Play();
+							}
+						})
                         .Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2);
                     entityButton.IconSize(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE * 1.5f);
                     entityButton.OnMouseEnter(

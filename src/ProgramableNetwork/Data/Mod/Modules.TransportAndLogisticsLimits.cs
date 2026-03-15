@@ -33,10 +33,11 @@ namespace ProgramableNetwork
                     }
 
                     Percent percentage = Percent.FromPercentVal((m.Input.Integer["p"] / 10) * 10);
-                    if (percentage != storage.TransportUntilPercent)
-                        storage.SetTransportUntilPercent(percentage);
+                    if (percentage != storage.TransportUntilPercent) {
+						storage.SetTransportUntilPercent(percentage);
+					}
 
-                    return ModuleStatus.Running;
+					return ModuleStatus.Running;
                 })
                 .AddDisplayFiller(1)
                 .AddDisplay("t", "Type", 1, image: true)
@@ -90,10 +91,11 @@ namespace ProgramableNetwork
                     }
 
                     Percent percentage = Percent.FromPercentVal((m.Input.Integer["p"] / 10) * 10);
-                    if (percentage != storage.TransportFromPercent)
-                        storage.SetTransportFromPercent(percentage);
+                    if (percentage != storage.TransportFromPercent) {
+						storage.SetTransportFromPercent(percentage);
+					}
 
-                    return ModuleStatus.Running;
+					return ModuleStatus.Running;
                 })
                 .AddDisplayFiller(1)
                 .AddDisplay("t", "Type", 1, image: true)
@@ -150,10 +152,11 @@ namespace ProgramableNetwork
                     }
 
                     Percent percentage = Percent.FromPercentVal((m.Input.Integer["p"] / 10) * 10);
-                    if (percentage != storage.ImportUntilPercent)
-                        storage.SetImportPercent(percentage);
+                    if (percentage != storage.ImportUntilPercent) {
+						storage.SetImportPercent(percentage);
+					}
 
-                    return ModuleStatus.Running;
+					return ModuleStatus.Running;
                 })
                 .AddDisplayFiller(1)
                 .AddDisplay("t", "Type", 1, image: true)
@@ -207,10 +210,11 @@ namespace ProgramableNetwork
                     }
 
                     Percent percentage = Percent.FromPercentVal((m.Input.Integer["p"] / 10) * 10);
-                    if (percentage != storage.ExportFromPercent)
-                        storage.SetExportPercent(percentage);
+                    if (percentage != storage.ExportFromPercent) {
+						storage.SetExportPercent(percentage);
+					}
 
-                    return ModuleStatus.Running;
+					return ModuleStatus.Running;
                 })
                 .AddDisplayFiller(1)
                 .AddDisplay("t", "Type", 1, image: true)

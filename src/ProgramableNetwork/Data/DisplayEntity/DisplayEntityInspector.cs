@@ -22,9 +22,11 @@ namespace ProgramableNetwork.Ui.DisplayEntity
                 .Do(manager =>
                 {
                     m_clear?.Invoke();
-                    if (manager is null) return;
+                    if (manager is null) {
+						return;
+					}
 
-                    m_clear = manager.Inspector.Create(this);
+					m_clear = manager.Inspector.Create(this);
                 });
         }
     }

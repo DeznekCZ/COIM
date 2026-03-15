@@ -11,11 +11,12 @@ namespace ProgramableNetwork.Python
 
         protected override object Evaluate(object left, object right)
         {
-            if (right is Range range)
-                return Expressions.__range__(left, range);
-            else
-                return Expressions.__getitem__(left, right);
-        }
+            if (right is Range range) {
+				return Expressions.__range__(left, range);
+			} else {
+				return Expressions.__getitem__(left, right);
+			}
+		}
 
         public override Reference<object> GetReference(IDictionary<string, object> context)
         {

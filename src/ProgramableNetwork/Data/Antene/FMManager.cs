@@ -36,18 +36,20 @@ namespace ProgramableNetwork.Data.Antene
             Dictionary<int, Fix32> distances = new Dictionary<int, Fix32>();
             Dictionary<int, (Fix32, FMDataBandChannel)> channels = new Dictionary<int, (Fix32, FMDataBandChannel)>();
 
-            if (logging)
-                Log.Info($"[FMManager] Get stats");
-            foreach (var pair in m_dataBands)
+            if (logging) {
+				Log.Info($"[FMManager] Get stats");
+			}
+			foreach (var pair in m_dataBands)
             {
                 (Tile3i tile, FMDataBand databand) = (pair.Key, pair.Value);
                 Antena antena = databand.Antena;
                 Fix32 distance = (tile.ToCenterVector3() - position.ToCenterVector3()).magnitude.ToFix32();
                 Fix32 targetDistance = (antena.Prototype.DistanceBoost * databand.Prototype.Distance);
 
-                if (logging)
-                    Log.Info($"[FMManager] IS in distance: {distance <= targetDistance}, spread: {targetDistance}, distance: {distance}");
-                if (distance <= targetDistance)
+                if (logging) {
+					Log.Info($"[FMManager] IS in distance: {distance <= targetDistance}, spread: {targetDistance}, distance: {distance}");
+				}
+				if (distance <= targetDistance)
                 {
                     if (channelIdx != null)
                     {
@@ -60,9 +62,10 @@ namespace ProgramableNetwork.Data.Antene
                                     1 - (distance / targetDistance) :
                                     Fix32.Zero, channel);
                         }
-                        if (logging)
-                            Log.Info($"[FMManager] IN distance [{channelIdx ?? 0}]: {distances[channelIdx ?? 0]} with strength: {channels[channelIdx ?? 0].Item1} and datalen: {channels[channelIdx ?? 0].Item2.Value.Length}");
-                        continue;
+                        if (logging) {
+							Log.Info($"[FMManager] IN distance [{channelIdx ?? 0}]: {distances[channelIdx ?? 0]} with strength: {channels[channelIdx ?? 0].Item1} and datalen: {channels[channelIdx ?? 0].Item2.Value.Length}");
+						}
+						continue;
                     }
 
                     foreach (FMDataBandChannel channel in databand.ActiveChannels)
@@ -92,9 +95,11 @@ namespace ProgramableNetwork.Data.Antene
 
         private void OnSync(GameTime time)
         {
-            if (time.IsGamePaused) return;
+            if (time.IsGamePaused) {
+				return;
+			}
 
-            foreach (var item in m_antenas)
+			foreach (var item in m_antenas)
             {
                 if (item.Value.DataBand is FMDataBand dataBand)
                 {
@@ -112,9 +117,10 @@ namespace ProgramableNetwork.Data.Antene
             if (entity is Antena antena)
             {
                 m_antenas[antena.Position3f.Tile3i] = antena;
-                if (antena.DataBand is FMDataBand dataBand)
-                    m_dataBands[antena.Position3f.Tile3i] = dataBand;
-            }
+                if (antena.DataBand is FMDataBand dataBand) {
+					m_dataBands[antena.Position3f.Tile3i] = dataBand;
+				}
+			}
         }
 
         private void OnRemoved(IEntity entity)

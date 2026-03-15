@@ -49,10 +49,11 @@ namespace ProgramableNetwork
         /// <returns></returns>
         public int GetWidth(Module module)
         {
-            if (DynamicWidth != null)
-                return DynamicWidth.Invoke(module);
-            else
-                return BaseWidth;
-        }
+            if (DynamicWidth != null) {
+				return DynamicWidth.Invoke(module);
+			} else {
+				return BaseWidth;
+			}
+		}
     }
 }

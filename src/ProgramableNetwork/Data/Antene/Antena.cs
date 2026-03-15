@@ -232,9 +232,10 @@ namespace ProgramableNetwork
             {
                 CurrentInstruction = 0;
                 PowerRequired = Electricity.Zero;
-                if (!IsPaused)
-                    Maintenance.SetCurrentMaintenanceTo(Percent.Zero);
-                return;
+                if (!IsPaused) {
+					Maintenance.SetCurrentMaintenanceTo(Percent.Zero);
+				}
+				return;
             }
 
             PowerRequired = Prototype.IddlePower + DataBand.RequiredPower;

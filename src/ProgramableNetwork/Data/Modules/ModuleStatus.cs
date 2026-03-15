@@ -1,7 +1,9 @@
-﻿namespace ProgramableNetwork
+﻿using System;
+
+namespace ProgramableNetwork
 {
     public enum ModuleStatus
     {
-        Init = 0, Running, Iddle, Error, Paused
+        Init = 0, Running, Iddle, Error, Paused, Skipped
     }
 }

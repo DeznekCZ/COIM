@@ -103,11 +103,12 @@ public class FixSavedGames : IInitializer
 
     public static void ValidatePrototypeString(string s, Action<int> value)
     {
-        if (m_fixer.TryGetValue(s, out var fixer))
-            fixer.Add(value);
-        else
-            m_fixer.Add(s, new List<Action<int>> { value });
-    }
+        if (m_fixer.TryGetValue(s, out var fixer)) {
+			fixer.Add(value);
+		} else {
+			m_fixer.Add(s, new List<Action<int>> { value });
+		}
+	}
 
     public static Fix32 GetPrototypeString(string s)
     {

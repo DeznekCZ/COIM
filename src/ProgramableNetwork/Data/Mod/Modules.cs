@@ -30,17 +30,21 @@ using Mafi.Core.Trains;
 using Mafi.Core.Vehicles;
 using Mafi.Localization;
 using Mafi.Unity.InputControl;
+using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Library;
 using ProgramableNetwork.Data.Antene;
 using ProgramableNetwork.Data.DataBand;
 using ProgramableNetwork.Data.DisplayEntity;
 using ProgramableNetwork.Data.DisplayEntity.Displays;
 using ProgramableNetwork.Data.Speaker;
 using ProgramableNetwork.Data.Variables;
+using ProgramableNetwork.Ui;
 using System;
 using System.Linq;
 using System.Reflection;
 using static Mafi.Base.Assets.Base.Buildings;
 using static Mafi.Unity.Assets.Unity;
+using static Mafi.Unity.Ui.Library.LogisticsZoneUIComponents;
 using CargoDepot = Mafi.Core.Buildings.Cargo.CargoDepot;
 using LayoutEntity = Mafi.Core.Entities.Static.Layout.LayoutEntity;
 using Transport = Mafi.Core.Factory.Transports.Transport;
@@ -98,6 +102,7 @@ namespace ProgramableNetwork
 				.ModuleBuilderStart("VariableNetwork_Read", "Network Variable (read)", "*N", Assets.Base.Products.Icons.Vegetables_svg)
 				.AddCategory(Category.Control)
 				.AddCategory(Category.Arithmetic)
+				.UnlockedBy(Ids.Research.Datacenter)
 				.UseComputation(0.1.Quantity())
 				.AddOutput("value", "Value")
 				.AddDisplay("name", "Variable name (should be longer)", 1)
@@ -134,6 +139,7 @@ namespace ProgramableNetwork
 				.AddCategory(Category.Control)
 				.AddCategory(Category.Arithmetic)
 				.UseComputation(0.1.Quantity())
+				.UnlockedBy(Ids.Research.Datacenter)
 				.AddDisplay("name", "Variable name (should be longer)", 1)
 				.AddStringField("name", "Variable name", defaultValue: "")
 				.AddInput("value", "Value")
@@ -428,7 +434,7 @@ namespace ProgramableNetwork
 					Fix32 a = m.Input["a"];
 					Fix32 b = m.FieldOrInput["b"];
 					Fix32 c = a * b;
-					m.Output["c"] = a * b;
+					m.Output["c"] = c;
 				})
 				.AddControllerDevice()
 				.BuildAndAdd();
@@ -1631,6 +1637,8 @@ namespace ProgramableNetwork
 				.AddCategory(Category.Connection)
 				.AddCategory(Category.ConnectionRead)
 				.AddCategory(Category.ConnectionWrite)
+				.UnlockedBy(Ids.Research.NuclearReactor)
+				.UnlockedBy(Ids.Research.BasicComputing)
 				.AddInput("target", "Target power level")
 				.AddOutput("heat", "Stored Heat")
 				.AddOutput("meltdown", "Is in melt down")
@@ -1961,6 +1969,7 @@ namespace ProgramableNetwork
 				.ModuleBuilderStart("Connection_Vehicle_Set", "Connection: Vehicle count (set)", "V-S", Assets.Base.Products.Icons.Vegetables_svg)
 				.AddCategory(Category.Connection)
 				.AddCategory(Category.ConnectionRead)
+				.SetDescritpion("Sets count of vehicles assigned to the building, by default it takes vehicles from all zones.")
 				.Width(4)
 				.AddInput("count", "Vehicle count")
 				.AddInput("vehicle", "Vehicle type")
@@ -1970,6 +1979,17 @@ namespace ProgramableNetwork
 					filter: (m, p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
 				.AddBooleanField("field_count", "Set count by settings", defaultValue: false)
 				.AddInt32Field("count", "Vehicle count", defaultValue: 0)
+				.AddCustomField("zone", "Vehicle zone",
+					(ControllerInspector inspector, UiComponent container, Module module, Action refresh, Reference reference) => {
+						Dropdown<LogisticsZone> zonesDropdown = new Dropdown<LogisticsZone>(
+							(LogisticsZone option, int index, bool isInDropdown) => new ZoneUi().Value(option));
+						LogisticsZone zones = reference.StringValue is {} zone
+							? module.Controller.Context.LogisticsZonesManager.GetFirstZoneForMask(ulong.Parse(zone)).Value
+							: module.Controller.Context.LogisticsZonesManager.DefaultZone;
+						zonesDropdown.SetValue(zones);
+						zonesDropdown.OnValueChanged((z, _) => reference.StringValue = z.Mask.ToString());
+						container.Add(zonesDropdown);
+					})
 				.Action(m =>
 				{
 					var logistic = m.Field.Entity<IEntityAssignedWithVehicles>("building");
@@ -1990,12 +2010,14 @@ namespace ProgramableNetwork
 					int count = m.FieldOrInput["count", Fix32.Zero].IntegerPart;
 
 					int actualCount = logistic.AllVehicles.Where(v => v.Prototype == drivingEntity).Count();
-					if (actualCount < count)
-					{
+					if (actualCount < count) {
+						ulong zones = m.Field["zone", null] is { } zone
+							? ulong.Parse(zone)
+							: m.Controller.Context.LogisticsZonesManager.DefaultZone.Mask;
 						Option<Vehicle> v = GlobalDependencyResolver.Get<IVehiclesManager>()
-							.GetFreeVehicle<Vehicle>(drivingEntity, logistic.Position2f, 0xFFFFFFFFFFFFFFFF);
+							.GetFreeVehicle<Vehicle>(drivingEntity, logistic.Position2f, zones);
 						if (v.HasValue) {
-							logistic.AssignVehicle(v.Value);
+							logistic.AssignVehicle(v.Value, doNotCancelJobs: true);
 						}
 					}
 					else if (actualCount > count)

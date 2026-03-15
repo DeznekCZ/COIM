@@ -19,14 +19,16 @@ public class AntenaMb : StaticEntityMb, IEntityMbWithRenderUpdate
     {
         base.Initialize(display);
 
-        if (!gameObject.TryFindChild("influence_fm", out var light))
-            throw new NullReferenceException("missing 'influence_fm' object");
+        if (!gameObject.TryFindChild("influence_fm", out var light)) {
+			throw new NullReferenceException("missing 'influence_fm' object");
+		}
 
-        m_render = light.GetComponent<Renderer>();
-        if (m_render is null)
-            throw new NullReferenceException("missing renderer on 'influence_fm' object");
+		m_render = light.GetComponent<Renderer>();
+        if (m_render is null) {
+			throw new NullReferenceException("missing renderer on 'influence_fm' object");
+		}
 
-        m_render = GameObject.Instantiate(m_render.gameObject, m_render.transform.position, m_render.transform.rotation).GetComponent<Renderer>();
+		m_render = GameObject.Instantiate(m_render.gameObject, m_render.transform.position, m_render.transform.rotation).GetComponent<Renderer>();
         m_render.gameObject.SetActive(false);
         m_hasRender = false;
         GameObject.Destroy(light.gameObject);

@@ -16,10 +16,11 @@ namespace ProgramableNetwork
             string dir = Environment.GetEnvironmentVariable("APPDATA") + "/Captain of Industry/Mods/ProgramableNetwork/Modules/Core";
             string ids = dir + "/ids.py";
 
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
+            if (!Directory.Exists(dir)) {
+				Directory.CreateDirectory(dir);
+			}
 
-            StringBuilder sb = new StringBuilder();
+			StringBuilder sb = new StringBuilder();
             sb.AppendLine("# generated automatically from known prototypes");
             sb.AppendLine();
             sb.AppendLine("from Core.template import Template");
@@ -45,10 +46,12 @@ namespace ProgramableNetwork
         private string Multiline(LocStrFormatted name)
         {
             string text = name.Value;
-            if (text.Contains('\n'))
-                return $"\"\"\"{text}\"\"\"";
-            else
-                return $"\"{text}\"";;
+            if (text.Contains('\n')) {
+				return $"\"\"\"{text}\"\"\"";
+			} else {
+				return $"\"{text}\"";
+			}
+			;
         }
     }
 }

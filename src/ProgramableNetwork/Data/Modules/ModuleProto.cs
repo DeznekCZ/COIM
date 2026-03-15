@@ -162,6 +162,7 @@ namespace ProgramableNetwork
 
         public string Symbol { get; }
         public List<StaticEntityProto.ID> AllowedDevices { get; }
+		public ImmutableArray<ResearchNodeProto> ResearchDependency { get; set; }
 
         public static readonly ModuleProto Phantom;
         protected static readonly ID PHANTOM_PRODUCT_ID;
@@ -212,10 +213,14 @@ namespace ProgramableNetwork
                                     width++;
                                     continue;
                                 }
-                                if (rowHit) break;
-                            }
-                            if (rowHit) break;
-                        }
+                                if (rowHit) {
+									break;
+								}
+							}
+                            if (rowHit) {
+								break;
+							}
+						}
                         m.NumberData["phantom__width"] = width;
                         return width;
                     }));
@@ -228,9 +233,15 @@ namespace ProgramableNetwork
             }
         }
 
-        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> m_init, Action<Module> m_display, bool isInputModule, bool isOutputModule, Electricity usedPower, PartialQuantity usedComputing,
-            List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
-            Action<Module, UiComponent> m_displayFunction, int baseWidth, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
+        public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx,
+			IEnumerable<Tag> tags, Func<Module, ModuleStatus> action, Func<Module, ModuleStatus> m_init,
+			Action<Module> m_display, bool isInputModule, bool isOutputModule, Electricity usedPower,
+			PartialQuantity usedComputing, List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs,
+			List<ModuleConnectorProto> m_displays, List<IField> m_fields,
+			Action<Module, UiComponent> m_displayFunction, int baseWidth, Func<Module, int> m_widthFunction,
+			string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories,
+            ImmutableArray<ResearchNodeProto> m_research
+		) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
             Symbol = m_symbol;
@@ -256,10 +267,11 @@ namespace ProgramableNetwork
                 ;
             AllowedDevices = m_allowedDevices;
             Categories = m_categories.ToImmutableArray();
+			ResearchDependency = m_research;
             SetAvailability(false);
         }
 
-        public class Builder
+		public class Builder
         {
             private readonly List<Tag> m_tags = new List<Tag>();
             private ProtoRegistrator m_registrator;
@@ -285,8 +297,9 @@ namespace ProgramableNetwork
             private bool m_customMaintenance;
             private List<Category> m_categories = new List<Category>();
             private int m_baseWidth;
+			private Lyst<ResearchNodeProto.ID> m_researchIds = [];
 
-            public Action<Module, UiComponent> m_displayFunction { get; }
+			public Action<Module, UiComponent> m_displayFunction { get; }
             public Func<Module, int> m_widthFunction { get; private set; }
 
             public Builder(ProtoRegistrator registrator, string id, string name, string description, string symbol, Gfx gfx)
@@ -325,12 +338,14 @@ namespace ProgramableNetwork
 
             public ModuleProto Build()
             {
-                if (!m_customMaintenance)
-                    UseDefaultMaintenance();
-                if (!m_customBuild)
-                    BuildDefault();
+                if (!m_customMaintenance) {
+					UseDefaultMaintenance();
+				}
+				if (!m_customBuild) {
+					BuildDefault();
+				}
 
-                return new ModuleProto(
+				return new ModuleProto(
                     m_id,
                     CreateStr(m_id, m_name, m_description),
                     m_registrator == null ? new EntityCosts() : ((EntityCostsTpl)m_costs).MapToEntityCosts(m_registrator),
@@ -352,7 +367,10 @@ namespace ProgramableNetwork
                     m_widthFunction,
                     m_symbol,
                     m_allowedDevices,
-                    m_categories
+                    m_categories,
+                    m_researchIds
+						.Select(id => m_registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+						.ToImmutableArray()
                 );
             }
 
@@ -528,6 +546,11 @@ namespace ProgramableNetwork
                 return this;
             }
 
+			public Builder UnlockedBy(ResearchNodeProto.ID researchId) {
+                m_researchIds.Add(researchId);
+                return this;
+			}
+
             /// <summary>
             /// Overrides default width calculation
             /// </summary>
@@ -702,8 +725,10 @@ namespace ProgramableNetwork
                 field.InitData(m);
             }
             m.SetStatus(Init.Invoke(m));
-            if (log) Log.Info($"Module initialized: {m.Id} ({m.Prototype.Id.Value}) with status {m.Status}");
-        }
+            if (log) {
+				Log.Info($"Module initialized: {m.Id} ({m.Prototype.Id.Value}) with status {m.Status}");
+			}
+		}
     }
 
     public static class ModuleProtoExtensions

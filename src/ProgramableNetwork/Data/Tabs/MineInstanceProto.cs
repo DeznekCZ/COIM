@@ -17,8 +17,10 @@ namespace ProgramableNetwork
 
         public static Proto.Str GetStrings(WorldMapMine mine, AMDataBandChannel dataBandChannel)
         {
-            if (mine is null) return new Proto.Str(LocalizationManager.GetLocalizedString0Arg("name_empty", "No selection", "", true, true));
-            return new Proto.Str(LocalizationManager.GetLocalizedString0Arg(
+            if (mine is null) {
+				return new Proto.Str(LocalizationManager.GetLocalizedString0Arg("name_empty", "No selection", "", true, true));
+			}
+			return new Proto.Str(LocalizationManager.GetLocalizedString0Arg(
                 "name_" + mine.CustomTitle.Value,
                 (mine.CustomTitle.HasValue ? mine.CustomTitle.Value : mine.Prototype.Strings.Name.TranslatedString) +
                 "\n(distance: " + dataBandChannel.Distance(mine).IntegerPart + " km," +

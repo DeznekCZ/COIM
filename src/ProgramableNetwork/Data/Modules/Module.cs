@@ -7,6 +7,8 @@ using Mafi.Serialization;
 using System;
 using System.Linq;
 using System.Threading;
+using Mafi.Collections.ImmutableCollections;
+using Mafi.Core.Research;
 using UnityEngine;
 
 namespace ProgramableNetwork
@@ -43,6 +45,11 @@ namespace ProgramableNetwork
 		private ModuleProto m_proto;
 		private string m_protoId;
 		private int loadedVersion;
+
+		[DoNotSave]
+		private bool m_unlocked = false;
+		[DoNotSave]
+		private ImmutableArray<ResearchNode> m_researchNodes;
 
 		public Module(ModuleProto prototype, EntityContext context, Controller entity)
 		{
@@ -85,12 +92,6 @@ namespace ProgramableNetwork
 		{
 			try
 			{
-				if (Status == ModuleStatus.Init)
-				{
-					Warning = true;
-					return;
-				}
-
 				Status = Prototype.Action(this);
 				if (Status != ModuleStatus.Error)
 				{
@@ -293,6 +294,33 @@ namespace ProgramableNetwork
 		public bool Warning {
 			get => NumberData.TryGetValue("__warning", out int value) && value > 0;
 			set => NumberData["__warning"] = value ? 1 : 0;
+		}
+
+		public bool Unlocked {
+			get {
+				if (m_unlocked) {
+					return true;
+				}
+
+				if (Prototype.ResearchDependency.IsNotValidOrEmpty) {
+					m_unlocked = true;
+					return true;
+				}
+
+				if (m_researchNodes.IsNotValidOrEmpty) {
+					m_researchNodes = Prototype.ResearchDependency
+						.Map(Controller.ResearchManager.GetResearchNode);
+				}
+
+				foreach (ResearchNode researchNode in m_researchNodes) {
+					if (researchNode.State != ResearchNodeState.Researched) {
+						return false;
+					}
+				}
+
+				m_unlocked = true;
+				return true;
+			}
 		}
 	}
 }

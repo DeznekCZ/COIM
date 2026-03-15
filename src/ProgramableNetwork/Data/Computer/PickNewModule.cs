@@ -67,6 +67,12 @@ public class PickNewModule : FloatingColumn {
 						categoryButton = new ButtonText(Button.ToggleGroup, category.Name.ToDoLoc())
 							.Toggleable()
 							.Selected();
+						categoryButton.OnDoubleClick((b) => {
+							foreach (ButtonText categoryButtonForUnselection in categoryDict.Values) {
+								categoryButtonForUnselection.Selected(false);
+							}
+							b.Selected();
+						});
 						categoryButton.OnClick((b) => b.Selected(b.IsSelected() == false));
 						categoryDict.Add(category.Id, categoryButton);
 						categoryOrdering.Add(category.Id, category);

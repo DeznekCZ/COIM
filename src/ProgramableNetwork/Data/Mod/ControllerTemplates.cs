@@ -82,7 +82,7 @@ The controller can use maintenance from T1 to T3 base on layout of the modules:
             IEnumerable<ControllerTemplate> values = GetControllerTemplates(registrator, originalTier1);
             foreach (var (id, name, description, color, modules) /* Expand */ in values)
             {
-                TryLoadTexture(NewAssets.Computers.Icons.ControllerTemplate(id));
+                TryLoadTexture(NewAssets.Computers.Icons.ControllerTemplate(id), registrator);
 
                 var protoId = NewIds.Controllers.ControllerTemplate(id);
                 var next = registrator.PrototypesDb.Add(new ControllerProto(
@@ -104,10 +104,10 @@ The controller can use maintenance from T1 to T3 base on layout of the modules:
             }
         }
 
-        private void TryLoadTexture(string assetPath)
+        private void TryLoadTexture(string assetPath, ProtoRegistrator registrator)
         {
             Texture2D texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, false);
-            string basePath = ModDefinition.StaticManifest.RootDirectoryPath;
+            string basePath = registrator.ActiveMod.Manifest.RootDirectoryPath;
             byte[] image = File.ReadAllBytes(Path.Combine(basePath, assetPath));
             if (!texture2D.LoadImage(image)) {
                 Log.Exception(new ArgumentException($"Could not load an image: {assetPath}"));

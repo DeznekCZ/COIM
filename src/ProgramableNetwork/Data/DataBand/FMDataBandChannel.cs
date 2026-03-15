@@ -34,11 +34,12 @@ namespace ProgramableNetwork
             var version = reader.ReadByte();
             int index = reader.ReadInt();
             Fix32[] value;
-            if (version < 3)
-                value = reader.ReadArray<int>().Select(Fix32.FromInt).ToArray();
-            else
-                value = reader.ReadArray<Fix32>();
-            return new FMDataBandChannel()
+            if (version < 3) {
+				value = reader.ReadArray<int>().Select(Fix32.FromInt).ToArray();
+			} else {
+				value = reader.ReadArray<Fix32>();
+			}
+			return new FMDataBandChannel()
             {
                 Index = index,
                 Value = value,
@@ -70,12 +71,13 @@ namespace ProgramableNetwork
         public void Move(int v)
         {
             int newIndex = Index + v;
-            if (newIndex < 0)
-                Index = OriginalDataBand.Prototype.Channels + newIndex;
-            else if (newIndex >= OriginalDataBand.Prototype.Channels)
-                Index = newIndex - OriginalDataBand.Prototype.Channels;
-            else
-                Index = newIndex;
-        }
+            if (newIndex < 0) {
+				Index = OriginalDataBand.Prototype.Channels + newIndex;
+			} else if (newIndex >= OriginalDataBand.Prototype.Channels) {
+				Index = newIndex - OriginalDataBand.Prototype.Channels;
+			} else {
+				Index = newIndex;
+			}
+		}
     }
 }

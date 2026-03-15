@@ -34,24 +34,39 @@ namespace ProgramableNetwork.Ui
             m_btnPreview = AddAndReturn(new DisplayWithIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png))
                 .Enabled(false)
                 .Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2)
-                .OnClick(() => { if (entity is null) return; m_inspector.CameraController.PanTo(entity.Position2f); })
+                .OnClick(() => { if (entity is null) {
+						return;
+					}
+					m_inspector.CameraController.PanTo(entity.Position2f); })
                 .Margin(0)
                 .Icon.Size(Percent.Eighty)
                      .Margin(0)
                      .Padding(0)
                 .Parent.As<DisplayWithIcon>().Value;
             m_btnPreview.OnMouseEnter(
-                (e) => { if (entity is null) return; m_inspector.EntityHighlighter.Highlight(entity, ColorRgba.LightBlue); });
+                (e) => { if (entity is null) {
+						return;
+					}
+					m_inspector.EntityHighlighter.Highlight(entity, ColorRgba.LightBlue); });
             m_btnPreview.OnMouseLeave(
-                (e) => { if (entity is null) return; m_inspector.EntityHighlighter.RemoveHighlight(entity); });
+                (e) => { if (entity is null) {
+						return;
+					}
+					m_inspector.EntityHighlighter.RemoveHighlight(entity); });
 
             m_selectionButton = AddAndReturn(new ButtonText(new Mafi.Localization.LocStrFormatted("Pick"), PickEntity))
                 .Class(Cls.btn_general)
                 .Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE * 2);
             m_selectionButton.OnMouseEnter(
-                (e) => { if (entity is null) return; m_inspector.EntityHighlighter.Highlight(entity, ColorRgba.LightBlue); });
+                (e) => { if (entity is null) {
+						return;
+					}
+					m_inspector.EntityHighlighter.Highlight(entity, ColorRgba.LightBlue); });
             m_selectionButton.OnMouseLeave(
-                (e) => { if (entity is null) return; m_inspector.EntityHighlighter.RemoveHighlight(entity); });
+                (e) => { if (entity is null) {
+						return;
+					}
+					m_inspector.EntityHighlighter.RemoveHighlight(entity); });
 
             m_inspector.EntitySelectionInput = null;
 

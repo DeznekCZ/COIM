@@ -18,11 +18,12 @@ namespace ProgramableNetwork.Python
         public object this[string key] {
             get
             {
-                if (key == "__return__")
-                    return scope.TryGetValue(key, out object value) ? value : null;
-                else
-                    return scope.TryGetValue(key, out object value) ? value : parent[key];
-            }
+                if (key == "__return__") {
+					return scope.TryGetValue(key, out object value) ? value : null;
+				} else {
+					return scope.TryGetValue(key, out object value) ? value : parent[key];
+				}
+			}
             set => scope[key] = value;
         }
 

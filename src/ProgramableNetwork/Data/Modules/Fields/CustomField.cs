@@ -39,7 +39,12 @@ namespace ProgramableNetwork.Ui
         public int Size => 1;
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            ui.Invoke(inspector, fieldContainer, module, updateDialog, new Reference((v) => module.Field[id] = v, () => module.Field[id, Fix32.Zero]));
+            ui.Invoke(inspector, fieldContainer, module, updateDialog, new Reference(
+				(v) => module.Field[id] = v,
+				() => module.Field[id, Fix32.Zero],
+				(v) => module.Field[id, false] = v,
+				() => module.Field[id, null]
+			));
         }
 
         public void InitData(Module module)

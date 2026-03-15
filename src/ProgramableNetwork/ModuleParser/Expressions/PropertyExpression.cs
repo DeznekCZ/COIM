@@ -44,12 +44,14 @@ namespace ProgramableNetwork.Python
                 MemberInfo[] staticMembers = type
                     .GetMember(this.name, BindingFlags.Public | BindingFlags.Static);
 
-                if (staticMembers[0] is PropertyInfo property)
-                    return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
-                if (staticMembers[0] is FieldInfo field)
-                    return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+                if (staticMembers[0] is PropertyInfo property) {
+					return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
+				}
+				if (staticMembers[0] is FieldInfo field) {
+					return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+				}
 
-                MethodInfo[] staticMethods = type
+				MethodInfo[] staticMethods = type
                     .GetMethods(BindingFlags.Public | BindingFlags.Static)
                     .Where(m => m.Name == this.name)
                 .ToArray();
@@ -68,18 +70,22 @@ namespace ProgramableNetwork.Python
 
                 if (instanceMembers.Length > 0)
                 {
-                    if (instanceMembers[0] is PropertyInfo property)
-                        return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
-                    if (instanceMembers[0] is FieldInfo field)
-                        return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
-                }
+                    if (instanceMembers[0] is PropertyInfo property) {
+						return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
+					}
+					if (instanceMembers[0] is FieldInfo field) {
+						return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+					}
+				}
                 else if (staticMembers.Length > 0)
                 {
-                    if (staticMembers[0] is PropertyInfo property)
-                        return new Reference<object>((v) => property.SetValue(null, v), () => property.GetValue(null));
-                    if (staticMembers[0] is FieldInfo field)
-                        return new Reference<object>((v) => field.SetValue(null, v), () => field.GetValue(null));
-                }
+                    if (staticMembers[0] is PropertyInfo property) {
+						return new Reference<object>((v) => property.SetValue(null, v), () => property.GetValue(null));
+					}
+					if (staticMembers[0] is FieldInfo field) {
+						return new Reference<object>((v) => field.SetValue(null, v), () => field.GetValue(null));
+					}
+				}
 
                 MethodInfo[] instanceMethods = value.GetType()
                     .GetMethods(BindingFlags.Public | BindingFlags.Instance)
@@ -120,10 +126,11 @@ namespace ProgramableNetwork.Python
             else
             {
                 PropertyInfo property = value.GetType().GetProperty(name);
-                if (property != null)
-                    return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
+                if (property != null) {
+					return new Reference<object>((v) => property.SetValue(value, v), () => property.GetValue(value));
+				}
 
-                // Look for explicitly implemented interface properties
+				// Look for explicitly implemented interface properties
                 foreach (var interfaceType in value.GetType().GetInterfaces())
                 {
                     PropertyInfo interfaceProperty = interfaceType.GetProperty(name);
@@ -136,10 +143,11 @@ namespace ProgramableNetwork.Python
                 }
 
                 FieldInfo field = value.GetType().GetField(name);
-                if (field != null)
-                    return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+                if (field != null) {
+					return new Reference<object>((v) => field.SetValue(value, v), () => field.GetValue(value));
+				}
 
-                MethodInfo[] instanceMethods = value.GetType()
+				MethodInfo[] instanceMethods = value.GetType()
                     .GetMethods(BindingFlags.Public | BindingFlags.Instance)
                     .Where(m => m.Name == this.name)
                     .ToArray();

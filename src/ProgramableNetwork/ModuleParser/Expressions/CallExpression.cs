@@ -34,11 +34,12 @@ namespace ProgramableNetwork.Python
             List<(string name, object value)> arguments = new List<(string name, object value)>();
             foreach (IArgument argument in this.arguments)
             {
-                if (argument is NamedArgument named)
-                    arguments.Add((named.Name, named.Expression.GetValue(context)));
-                else
-                    arguments.Add(((string name, object value))(null, argument.Expression.GetValue(context)));
-            }
+                if (argument is NamedArgument named) {
+					arguments.Add((named.Name, named.Expression.GetValue(context)));
+				} else {
+					arguments.Add(((string name, object value))(null, argument.Expression.GetValue(context)));
+				}
+			}
 
             return Expressions.__call__(executable, arguments);
         }

@@ -35,11 +35,12 @@ namespace ProgramableNetwork
                 case AMOperation.ReadUsage:
                     return Mafi.Unity.Assets.Unity.UserInterface.EntityIcons.Storage_svg;
                 case AMOperation.ReadProduct:
-                    if (channel.WorldMapMine is null)
-                        return Mafi.Unity.Assets.Unity.UserInterface.EntityIcons.Storage_svg;
-                    else
-                        return channel.WorldMapMine.Product.IconPath;
-                case AMOperation.WritePause:
+                    if (channel.WorldMapMine is null) {
+						return Mafi.Unity.Assets.Unity.UserInterface.EntityIcons.Storage_svg;
+					} else {
+						return channel.WorldMapMine.Product.IconPath;
+					}
+				case AMOperation.WritePause:
                 case AMOperation.ReadPause:
                     return Mafi.Unity.Assets.Unity.UserInterface.EntityIcons.Pause_png;
                 case AMOperation.WriteProduction:
@@ -54,14 +55,15 @@ namespace ProgramableNetwork
             switch (item)
             {
                 case AMOperation.ReadProduct:
-                    if (channel.WorldMapMine is null || !channel.WorldMapMine.CustomTitle.HasValue)
-                        return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name.AsLoc();
-                    else
-                        return channel.WorldMapMine.CustomTitle.HasValue
-                            ? channel.WorldMapMine.CustomTitle.Value.AsLoc()
-                            : channel.WorldMapMine.Prototype.Strings.Name.TranslatedString.AsLoc();
+                    if (channel.WorldMapMine is null || !channel.WorldMapMine.CustomTitle.HasValue) {
+						return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name.AsLoc();
+					} else {
+						return channel.WorldMapMine.CustomTitle.HasValue
+							? channel.WorldMapMine.CustomTitle.Value.AsLoc()
+							: channel.WorldMapMine.Prototype.Strings.Name.TranslatedString.AsLoc();
+					}
 
-                default:
+				default:
                     return typeof(AMOperation).GetField(item.ToString()).GetCustomAttribute<AMNameAttribute>().Name.AsLoc();
             }
         }

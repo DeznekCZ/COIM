@@ -32,8 +32,10 @@ namespace ProgramableNetwork.Ui.DataBand
             display.OnMouseEnterLeave(
                 () =>
                 {
-                    if (channel.Antena != null) antenaInspector.EntityHighlighter.HighlightOnly(channel.Antena, ColorRgba.CornflowerBlue);
-                },
+                    if (channel.Antena != null) {
+						antenaInspector.EntityHighlighter.HighlightOnly(channel.Antena, ColorRgba.CornflowerBlue);
+					}
+				},
                 () =>
                 {
                     antenaInspector.EntityHighlighter.ClearAllHighlights();
@@ -211,13 +213,14 @@ namespace ProgramableNetwork.Ui.DataBand
             void Move(int v)
             {
                 Fix32 newIndex = reference.Value + v;
-                if (newIndex < 0)
-                    reference.Value = dataBandProto.Channels + newIndex;
-                else if (newIndex >= dataBandProto.Channels)
-                    reference.Value = newIndex - dataBandProto.Channels;
-                else
-                    reference.Value = newIndex;
-            }
+                if (newIndex < 0) {
+					reference.Value = dataBandProto.Channels + newIndex;
+				} else if (newIndex >= dataBandProto.Channels) {
+					reference.Value = newIndex - dataBandProto.Channels;
+				} else {
+					reference.Value = newIndex;
+				}
+			}
         }
     }
 }

@@ -19,6 +19,7 @@ using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System.Collections.Generic;
 using System.Linq;
 using Mafi.Core.Console;
+using Mafi.Core.Research;
 using UnityEngine;
 using static Mafi.Unity.Assets.Unity;
 using Display = Mafi.Unity.Ui.Library.Display;
@@ -44,6 +45,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	public bool m_showsLinks;
 	public IGameConsole m_console;
 
+	public ResearchManager ResearchManager { get; }
+
 	public ControllerInspector(
 		UiContext context,
 		CursorManager cursorManager,
@@ -55,6 +58,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		NewInstanceOf<EntityHighlighter> entityHighlighterSelectable,
 		LinesFactory linesFactory,
 		AssetsDb assetsDb,
+		ResearchManager researchManager,
 		IGameConsole console
 		) : base(context) {
 		m_linesFactory = linesFactory;
@@ -66,6 +70,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		EntityHighlighter = entityHighlighter.Instance;
 		EntityHighlighterSelectable = entityHighlighterSelectable.Instance;
 		ShortcutsManager = shortcutsManager;
+		ResearchManager = researchManager;
 		m_invalidOpSound = context.AudioDb.InvalidOp();
 		m_console = console;
 
