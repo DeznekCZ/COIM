@@ -6,7 +6,10 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-    <Version>0.0.1</Version>
+	  <LangVersion>latest</LangVersion>
+    <Version>0.3.4</Version>
+	  <!--<COI_ROOT>C:\Program Files (x86)\Steam\steamapps\common\Captain of Industry</COI_ROOT>-->
+	  <COI_APPDATA>C:\Users\zdeno\AppData\Roaming\Captain of Industry</COI_APPDATA>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -111,7 +114,20 @@
     </None>
   </ItemGroup>
 
+	<ItemGroup>
+		<Translations Include="Translations\*">
+
+		</Translations>
+	</ItemGroup>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;&#xD;&#xA;copy .\bin\Debug\net48\Newtonsoft.Json.dll &quot;%25APPDATA%25\Captain of Industry\Mods\$(MSBuildProjectName)&quot;" />
+    <Exec Command="mkdir &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\Newtonsoft.Json.dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" />
+    <Copy SourceFiles="@(Translations)" DestinationFolder="$(COI_APPDATA)\Mods\$(MSBuildProjectName)\Translations" />
+    <!-- TODO version -->
+    <ZipDirectory SourceDirectory="$(COI_APPDATA)\Mods\$(MSBuildProjectName)" DestinationFile="$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(Version).zip" Overwrite="true" />
   </Target>
 </Project>

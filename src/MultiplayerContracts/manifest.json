@@ -1,0 +1,16 @@
+{
+	"id": "MultiplayerContracts",
+	"version": "0.3.4",
+	"display_name": "Multiplayer trades",
+	"descriptionShort": "Offers an additional option to trade online with other fellow captains",
+	"descriptionLong": "Offers an additional option to trade online with other fellow captains",
+	"authors": [ "DeznekCZ" ],
+	"min_game_version": "0.8.2b",
+	"max_verified_game_version": "0.8.2b",
+	"primary_dlls": [ "Newtonsoft.Json.dll", "MultiplayerContracts.dll" ],
+	"mod_dependencies": [],
+	"optional_mod_dependencies": [],
+	"incompatible_mods": [],
+	"non_locking_dll_load": true,
+	"can_add_to_saved_game": true
+}

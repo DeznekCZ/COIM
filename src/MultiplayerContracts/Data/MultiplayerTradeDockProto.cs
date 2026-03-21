@@ -6,6 +6,8 @@ using Mafi.Core.Prototypes;
 using Mafi.Core.Terrain;
 using Mafi.Serialization;
 using System;
+using Mafi.Base;
+using Mafi.Core.Entities;
 
 namespace MultiplayerContracts
 {
@@ -15,8 +17,8 @@ namespace MultiplayerContracts
 
         public Quantity Capacity { get; }
 
-        public MultiplayerTradeDockProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, ImmutableArray<ImmutableArray<RectangleTerrainArea2iRelative>> reservedOceanAreasSets, Gfx graphics, Quantity? capacity = null)
-            : base(id, strings, layout, costs, reservedOceanAreasSets, graphics)
+        public MultiplayerTradeDockProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics, Quantity? capacity = null)
+            : base(id, strings, layout, costs, new EntityProto.ID(), graphics)
         {
             Capacity = capacity ?? 1000.Quantity();
         }

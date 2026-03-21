@@ -81,12 +81,12 @@ namespace Mafi.Core.Syncers
             return UpdaterRegistrarExtensions.Observe(reg, () => collectionProvider((O)reg), comparator);
         }
 
-        [MustUseReturnValue]
-        public static TriggerBuilder<Lyst<T>> Observe<T, O>(this O reg, Func<O, ReadOnlyArraySlice<T>> collectionProvider, ICollectionComparator<T, ReadOnlyArraySlice<T>> comparator)
-            where O : IUpdaterRegistrar
-        {
-            return UpdaterRegistrarExtensions.Observe(reg, () => collectionProvider((O)reg), comparator);
-        }
+        //[MustUseReturnValue]
+        //public static TriggerBuilder<Lyst<T>> Observe<T, O>(this O reg, Func<O, ReadOnlyArraySlice<T>> collectionProvider, ICollectionComparator<T, ReadOnlyArraySlice<T>> comparator)
+        //    where O : IUpdaterRegistrar
+        //{
+        //    return UpdaterRegistrarExtensions.Observe(reg, () => collectionProvider((O)reg), comparator);
+        //}
 
         public static void DoOnSyncPeriodically<O>(this O reg, Action<O> action, Duration? intervalMaybe = null)
             where O : IUpdaterRegistrar

@@ -1,0 +1,21 @@
+[
+  [ "MpTr_MarketNotConnected", "Žádné tržiště není připojeno" ],
+  [ "MpTr_SearchingOffers", "Hledání nabídek produktů" ],
+  [ "MpTr_TradingProgress", "Obchod probíhá" ],
+  [ "MpTr_UpdateOffers", "Aktualizovat seznam položek" ],
+  [ "MpTr_FailedSearchingOffers", "Trh neodpovídá" ],
+  [ "MpTr_Revocable", "Odvolatelné" ],
+  [ "MpTr_Claimable", "K vyzvednutí" ],
+  [ "MpTr_Market", "Trh" ],
+  [ "MpTr_Storage", "Sklad" ],
+  [ "MpTr_Storage_tooltip", "Zobrazuje všechny produkty uložené v inventáři vašeho doku" ],
+  [ "MpTr_MyOffers", "Mé nabídky" ],
+  [ "MpTr_MyOffers_tooltip", "Zobrazuje všechny nabídky, které jste poslali vybranému trhu" ],
+  [ "MpTr_OnlineOffers", "Nabídky trhu" ],
+  [ "MpTr_OnlineOffers_tooltip", "Zobrazuje všechny nabídky vytvořené ostatními hráči" ],
+  [ "MpTr_AvailableOffersOfType", "Jednorázová nabídka.", "Tato nabídka je k dispozici pro {0} použití." ],
+  [ "MpTr_QuantityAssertion_OfferAboveZero", "Nabídka musí být větší než nula" ],
+  [ "MpTr_QuantityAssertion_DemandAboveZero", "Poptávka musí být větší než nula" ],
+  [ "MpTr_QuantityAssertion_OfferAboveCapacity", "Nelze vytvořit nabídku větší než kapacita: {0}" ],
+  [ "MpTr_QuantityAssertion_DemandAboveCapacity", "Nelze vytvořit poptávku větší než kapacita: {0}" ]
+]

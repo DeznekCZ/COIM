@@ -1,0 +1,21 @@
+[
+  [ "MpTr_MarketNotConnected", "No market connected" ],
+  [ "MpTr_SearchingOffers", "Searching for product offers" ],
+  [ "MpTr_TradingProgress", "Trade in progress" ],
+  [ "MpTr_UpdateOffers", "Update list of items" ],
+  [ "MpTr_FailedSearchingOffers", "Market does not responding" ],
+  [ "MpTr_Revocable", "Revocable" ],
+  [ "MpTr_Claimable", "Claimable" ],
+  [ "MpTr_Market", "Market" ],
+  [ "MpTr_Storage", "Storage" ],
+  [ "MpTr_Storage_tooltip", "Shows all products stored in inventory of your dock" ],
+  [ "MpTr_MyOffers", "My offers" ],
+  [ "MpTr_MyOffers_tooltip", "Shows all offers that you sent to selected market" ],
+  [ "MpTr_OnlineOffers", "Market offers" ],
+  [ "MpTr_OnlineOffers_tooltip", "Shows all offers made by other players" ],
+  [ "MpTr_AvailableOffersOfType", "One time offer.", "This offer is available for {0} uses." ],
+  [ "MpTr_QuantityAssertion_OfferAboveZero", "Offer must be greater than zero" ],
+  [ "MpTr_QuantityAssertion_DemandAboveZero", "Demand must be greater than zero" ],
+  [ "MpTr_QuantityAssertion_OfferAboveCapacity", "Cannot make offer bigger than capacity: {0}" ],
+  [ "MpTr_QuantityAssertion_DemandAboveCapacity", "Cannot make demand bigger than capacity: {0}" ]
+]

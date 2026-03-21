@@ -6,24 +6,26 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
+using Mafi.Collections;
 
 namespace MultiplayerContracts
 {
     public class ContractLists
     {
         public readonly DateTime UpdatedAt = DateTime.Now;
-        public readonly List<long> Owned;
-        public readonly List<long> Claimable;
-        public readonly List<long> Available;
-        public readonly Dictionary<long, ContractParameters> Entries;
+        public readonly Lyst<long> Owned;
+        public readonly Lyst<long> Claimable;
+        public readonly Lyst<long> Available;
+        public readonly Dict<long, ContractParameters> Entries;
 
-        public ContractLists() : this(new List<long>(), new List<long>(), new List<long>(), new Dictionary<long, ContractParameters>()) {
+        public ContractLists() : this([], [], [], []) {
 
         }
 
-        public ContractLists(List<long> owned, List<long> claimable, List<long> available, Dictionary<long, ContractParameters> entries)
+        public ContractLists(Lyst<long> owned, Lyst<long> claimable, Lyst<long> available, Dict<long, ContractParameters> entries)
         {
             this.Owned = owned;
             this.Claimable = claimable;

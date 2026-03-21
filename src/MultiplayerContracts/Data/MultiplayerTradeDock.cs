@@ -10,13 +10,17 @@ using Mafi.Core.Products;
 using Mafi.Core.Vehicles;
 using Mafi.Serialization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Mafi.Core.PathFinding;
+using Mafi.Core.Terrain;
 
 namespace MultiplayerContracts
 {
     [GenerateSerializer(false, null, 0)]
     internal class MultiplayerTradeDock : LayoutEntity, IEntityWithCustomPriority, IEntity, IIsSafeAsHashKey,
-        IStaticEntityWithReservedOcean, ILayoutEntity, IStaticEntity, IEntityWithPosition, IRenderedEntity,
+        IStaticEntityWithReservedOcean, IStaticEntityWithReservedOceanV2, ILayoutEntity, IStaticEntity,
+		IEntityWithPosition, IRenderedEntity, IEntityWithOutputBuffersForUi,
         IAreaSelectableEntity, IEntityWithSimUpdate, IEntityWithSimpleLogisticsControl
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate (object obj, BlobWriter writer)
@@ -31,12 +35,22 @@ namespace MultiplayerContracts
         public string Address => m_market;
         public string Authorization => m_markets.ContainsKey(m_market)
             ? m_markets[m_market] : $@"{{""EntityId"":{Id.Value}, ""CreationTime"":0}}";
-        public ReservedOceanAreaState ReservedOceanAreaState
-        {
-            get;
-            private set;
-        }
-        public IProtoWithReservedOcean ReservedOceanProto { get; private set; }
+
+        
+		[DoNotSave(removedInSaveVersion: SaveVersion.V260_UPDATE_4)]
+		[Obsolete]
+        public ReservedOceanAreaState ReservedOceanAreaState { get; private set; /* for load */ }
+		[NewInSaveVersion(SaveVersion.V260_UPDATE_4)]
+		public Option<ReservedOceanAreaStateV2> ReservedOceanAreaStateV2 { get; private set; /* for load */ }
+		public RectangleTerrainArea2i OceanAreaRequired { get; private set; }
+		public RectangleTerrainArea2i OceanAreaDesired { get; private set; }
+		public RectangleTerrainArea2i OceanAreaBlocked { get; private set; }
+		public ShipHeightClass? ShipHeightClass { get; private set; }
+		public HeightTilesF? MinDepthOverride { get; private set; }
+		public ThicknessTilesI? MaxHeightOverride { get; private set; }
+		public RelTile2i DockDirection { get; private set; }
+		public float NarrowRatio { get; private set; }
+		public IProtoWithReservedOcean ReservedOceanProto { get; private set; }
 
         public override bool CanBePaused => false;
 
@@ -74,17 +88,42 @@ namespace MultiplayerContracts
         public bool IsLogisticsInputDisabled => true;
 
         public bool IsLogisticsOutputDisabled => LogisticsOutputControl != LogisticsControl.Enabled;
+		public IEnumerable<IProductBufferReadOnly> OutputBuffers => m_cargo.Values;
+		
+        // TODO trade dock extensions
+		public Quantity Capacity => Prototype.Capacity;
 
-        public MultiplayerTradeDock(EntityId id, MultiplayerTradeDockProto proto, TileTransform transform, EntityContext context, IVehicleBuffersRegistry vehicleBuffersRegistry)
+		public MultiplayerTradeDock(EntityId id, MultiplayerTradeDockProto proto, TileTransform transform, EntityContext context, IVehicleBuffersRegistry vehicleBuffersRegistry)
             : base(id, proto, transform, context)
         {
             Prototype = proto;
             ReservedOceanProto = proto;
-            ReservedOceanAreaState = new ReservedOceanAreaState(proto, this, IdsCore.Notifications.OceanAccessBlocked, context.NotificationsManager);
             m_vehicleBuffersRegistry = vehicleBuffersRegistry;
             m_storedCargoPrioProvider = new StoredCargoPriorityProvider(this);
             m_cargo = new Dict<ProductProto, ProductBuffer>();
+
+			InitializeOceanAreaData();
         }
+
+		public void InitializeOceanAreaData() {
+			m_proto.ComputeOceanAreaData(
+				Transform,
+				out RectangleTerrainArea2i oceanAreaRequired,
+				out RectangleTerrainArea2i oceanAreaDesired,
+				out float narrowRatio);
+
+			OceanAreaRequired = oceanAreaRequired;
+			OceanAreaDesired = oceanAreaDesired;
+			NarrowRatio = narrowRatio;
+			DockDirection = new RelTile2f(Transform.TransformMatrix.Transform(new Vector2f(1, 0))).RoundedRelTile2i;
+
+			if (ReservedOceanAreaStateV2.IsNone) {
+				ReservedOceanAreaStateV2 = new ReservedOceanAreaStateV2(this,
+					IdsCore.Notifications.OceanAccessBlocked,
+					IdsCore.Notifications.OceanAccessPartlyBlocked,
+					Context.NotificationsManager);
+			}
+		}
 
         public void SimUpdate()
         {
@@ -107,7 +146,7 @@ namespace MultiplayerContracts
             return value;
         }
 
-        private static readonly int SerializerVersion = 3;
+        private static readonly int SerializerVersion = 4;
         private readonly Dict<ProductProto, ProductBuffer> m_cargo;
         internal int m_cargoExportPriority = 5;
         private MultiplayerTradeDockProto m_proto;
@@ -123,10 +162,7 @@ namespace MultiplayerContracts
         [InitAfterLoad(InitPriority.Normal)]
         private void initSelf(int saveVersion)
         {
-            //if (saveVersion < 140)
-            //{
-            //    base.Context.Calendar.NewDay.Add(this, onNewDay);
-            //}
+			InitializeOceanAreaData();
         }
 
         protected override void SerializeData(BlobWriter writer)
@@ -137,7 +173,9 @@ namespace MultiplayerContracts
             writer.WriteInt(m_cargoExportPriority);
             writer.WriteGeneric(m_proto);
             writer.WriteGeneric(m_vehicleBuffersRegistry);
-            ReservedOceanAreaState.Serialize(ReservedOceanAreaState, writer);
+			// Skip 'ReservedOceanAreaState' (deprecated)
+			RectangleTerrainArea2i.Serialize(OceanAreaBlocked, writer);
+			Option<ReservedOceanAreaStateV2>.Serialize(ReservedOceanAreaStateV2, writer);
             writer.WriteGeneric(ReservedOceanProto);
             writer.WriteBool(!IsLogisticsOutputDisabled);
             writer.WriteGeneric(m_markets);
@@ -155,7 +193,15 @@ namespace MultiplayerContracts
             m_cargoExportPriority = reader.ReadInt();
             m_proto = reader.ReadGenericAs<MultiplayerTradeDockProto>();
             reader.SetField(this, "m_vehicleBuffersRegistry", reader.ReadGenericAs<IVehicleBuffersRegistry>());
-            ReservedOceanAreaState = ReservedOceanAreaState.Deserialize(reader);
+			OceanAreaBlocked = version >= 4
+				? RectangleTerrainArea2i.Deserialize(reader)
+				: default;
+			ReservedOceanAreaStateV2 = version >= 4
+				? Option<ReservedOceanAreaStateV2>.Deserialize(reader)
+				: default;
+			if (version < 4) {
+				ReservedOceanAreaState = ReservedOceanAreaState.Deserialize(reader);
+			}
             ReservedOceanProto = reader.ReadGenericAs<IProtoWithReservedOcean>();
 
             if (version > 2)
@@ -167,13 +213,13 @@ namespace MultiplayerContracts
             m_marketNames = Dict<string, string>.Deserialize(reader);
             m_market = reader.ReadString();
 
-            if (version > 1)
-                reader.SetField(this, "m_storedCargoPrioProvider", StoredCargoPriorityProvider.Deserialize(reader));
-            else
-                reader.SetField(this, "m_storedCargoPrioProvider", new StoredCargoPriorityProvider(this));
+            if (version > 1) {
+				reader.SetField(this, "m_storedCargoPrioProvider", StoredCargoPriorityProvider.Deserialize(reader));
+			} else {
+				reader.SetField(this, "m_storedCargoPrioProvider", new StoredCargoPriorityProvider(this));
+			}
 
-
-            reader.RegisterInitAfterLoad(this, "initSelf", InitPriority.Normal);
+			reader.RegisterInitAfterLoad(this, nameof(initSelf), InitPriority.Normal);
         }
 
         public int GetCustomPriority(string id)
@@ -261,5 +307,5 @@ namespace MultiplayerContracts
         {
             LogisticsOutputControl = isDisabled ? LogisticsControl.DisabledButVisible : LogisticsControl.Enabled;
         }
-    }
+	}
 }

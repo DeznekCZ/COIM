@@ -37,18 +37,16 @@ namespace MultiplayerContracts
 
         public static string GetIcon(this IEntity entity)
         {
-            if (entity is LayoutEntity positionedForGraphics)
-                return positionedForGraphics.Prototype.Graphics.IconPath;
-
-            else if (entity is DynamicGroundEntity dynamicForGraphics)
-                return dynamicForGraphics.Prototype.Graphics.IconPath;
-
-            else if (entity is Transport transportForGraphics)
-                return transportForGraphics.Prototype.Graphics.IconPath;
-
-            else
-                return UserInterface.General.Empty128_png;
-        }
+            if (entity is LayoutEntity positionedForGraphics) {
+				return positionedForGraphics.Prototype.Graphics.IconPath;
+			} else if (entity is DynamicGroundEntity dynamicForGraphics) {
+				return dynamicForGraphics.Prototype.Graphics.IconPath;
+			} else if (entity is Transport transportForGraphics) {
+				return transportForGraphics.Prototype.Graphics.IconPath;
+			} else {
+				return UserInterface.General.Empty128_png;
+			}
+		}
 
         public static bool HasPosition(this IEntity entity, out Tile3f position)
         {

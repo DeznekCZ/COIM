@@ -76,13 +76,13 @@ public class FixSavedGames : IInitializer
 		m_contractManager = contractManager;
 		IsBeingLoaded = true;
 
-		Log.Info($"[{ModDefinition.ModName}]: Save game fixer created.");
+		Log.Info($"[{nameof(MultiplayerContracts)}]: Save game fixer created.");
 		((IInitializer)this).DoOnNewGameOrAfterLoad((Action)SavedGameFixer);
 	}
 
 	void IInitializer.DoOnNewGameOnly(Action action)
 	{
-		Log.Info($"[{ModDefinition.ModName}]: Save game fix initialized on new game, so do nothing.");
+		Log.Info($"[{nameof(MultiplayerContracts)}]: Save game fix initialized on new game, so do nothing.");
 	}
 
 	private void SavedGameFixer()
@@ -117,7 +117,7 @@ public class FixSavedGames : IInitializer
 
     void IInitializer.DoOnNewGameOrAfterLoad(Action action)
 	{
-		Log.Info($"[{ModDefinition.ModName}]: Save game fix on loaded game.");
+		Log.Info($"[{nameof(MultiplayerContracts)}]: Save game fix on loaded game.");
         try
 		{
 			SavedGameFixer();
@@ -127,6 +127,6 @@ public class FixSavedGames : IInitializer
 			Log.Exception(e);
             throw;
         }
-		Log.Info($"[{ModDefinition.ModName}]: Save game fix on loaded game: DONE");
+		Log.Info($"[{nameof(MultiplayerContracts)}]: Save game fix on loaded game: DONE");
 	}
 }

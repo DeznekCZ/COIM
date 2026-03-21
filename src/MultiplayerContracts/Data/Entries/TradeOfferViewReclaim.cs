@@ -62,15 +62,17 @@ namespace MultiplayerContracts.Data.Entries
                 .MarginLeft(2.pt())
                 .ObserveEnabledWithReason(() =>
                 {
-                    if (m_tradeInProgress)
-                        return new Mafi.Core.Utils.BoolWithReason(false, "Claim in progress".AsLoc());
+                    if (m_tradeInProgress) {
+						return new Mafi.Core.Utils.BoolWithReason(false, MpTr.ClaimingProgress);
+					}
 
-                    Quantity quantity = tradeDock.GetQuantity();
-                    if (contract.Supply.Quantity > tradeDock.Prototype.Capacity - quantity)
-                        return new Mafi.Core.Utils.BoolWithReason(
-                            false, $"{Tr.EntityStatus__FullStorage}: ({quantity}/{tradeDock.Prototype.Capacity})".AsLoc());
+					Quantity quantity = tradeDock.GetQuantity();
+                    if (contract.Supply.Quantity > tradeDock.Prototype.Capacity - quantity) {
+						return new Mafi.Core.Utils.BoolWithReason(
+							false, $"{Tr.EntityStatus__FullStorage}: ({quantity}/{tradeDock.Prototype.Capacity})".AsLoc());
+					}
 
-                    return new Mafi.Core.Utils.BoolWithReason(true, Tr.Action__Delete);
+					return new Mafi.Core.Utils.BoolWithReason(true, Tr.Action__Delete);
                 }, "".AsLoc())
                 .OnClick(() =>
                 {

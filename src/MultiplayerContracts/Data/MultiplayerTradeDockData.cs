@@ -31,7 +31,6 @@ namespace MultiplayerContracts
                 strings: Proto.CreateStr(NewIds.MultiplayerTradeDock, "Friendly captain dock", "Dock of your friendly captain"),
                 layout: originalProto.Layout,
                 costs: Costs.Buildings.TradeDock.MapToEntityCosts(registrator),
-                reservedOceanAreasSets: ShipyardData.AllApproachesAreas,
                 graphics: new LayoutEntityProto.Gfx(
                     "Assets/Base/Buildings/TradeDock.prefab",
                     new RelTile3f(6, 0, 0),

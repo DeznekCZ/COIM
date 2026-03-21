@@ -12,101 +12,100 @@ using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Security.Policy;
 using System.Threading.Tasks;
+using Mafi.Collections;
 using static Mafi.Unity.Assets.Unity;
 
-namespace MultiplayerContracts.Data.Entries
-{
-    internal class TradeOfferViewBuy : Row
-    {
-        private bool m_tradeInProgress;
+namespace MultiplayerContracts.Data.Entries {
+	internal class TradeOfferViewBuy : Row {
+		private bool m_tradeInProgress;
+		private readonly Lyst<long> m_trades;
+		private readonly ContractParameters m_firstContract;
 
-        public TradeOfferViewBuy(MultiplayerTradeDock tradeDock, long offer, ContractParameters contract, Action removeOffer, IAssetTransactionManager assetsManager, UiContext context)
-            : base(gap: 5.px())
-        {
-            this.Class(Cls.group);
-            this.Padding(10);
+		public TradeOfferViewBuy(MultiplayerTradeDock tradeDock, Lyst<long> offers, Func<long, ContractParameters> contract, Action<long> removeOffer, IAssetTransactionManager assetsManager, UiContext context)
+			: base(gap: 5.px()) {
+			m_trades = offers;
+			m_firstContract = contract(offers.First);
 
-            this.AddAndReturn(new Icon())
-                .Large()
-                .Observe((icon) => (icon, contract.Demand.Product))
-                .Do(entry => entry.icon.Value(entry.Product));
+			this.Class(Cls.group);
+			this.Padding(10);
+			this.JustifyItemsSpaceBetween();
 
-            this.AddAndReturn(new Column(gap: 5.px())
-            {
-                new Label().Height(20).FontBold()
-                    .With(l => l.Observe(() => contract.Demand.Quantity).Do(quantity => l.Value(quantity.Value.ToFix32()))),
-                new Label().Height(11)
-                    .With(l => l.Observe(() => assetsManager.GetAvailableQuantityForRemoval(contract.Demand.Product)).Do(quantity => l.Value($"({quantity.Value})".AsLoc())))
-            }.FlexGrow(1));
+			this.AddAndReturn(new Icon())
+				.Large()
+				.Observe((icon) => (icon, m_firstContract.Demand.Product))
+				.Do(entry => entry.icon.Value(entry.Product));
 
-            this.AddAndReturn(new Icon(UserInterface.General.ArrowRight_svg)
-                            .Width(24.px())
-                            .Height(24.px())
-                        );
+			this.AddAndReturn(new Column(gap: 5.px())
+			{
+				new Label().Height(20).Width(36).FontBold()
+					.With(l => l.Observe(() => m_firstContract.Demand.Quantity).Do(quantity => l.Value(quantity.Value.ToFix32()))),
+				new Label().Height(11).Width(36)
+					.With(l => l.Observe(() => assetsManager.GetAvailableQuantityForRemoval(m_firstContract.Demand.Product)).Do(quantity => l.Value($"({quantity.Value})".AsLoc())))
+			}.FlexGrow(1));
 
-            this.AddAndReturn(new Icon())
-                .Large()
-                .Observe((icon) => (icon, contract.Supply.Product))
-                .Do(entry => entry.icon.Value(entry.Product));
+			this.AddAndReturn(new Icon(UserInterface.General.ArrowRight_svg)
+							.Width(24.px())
+							.Height(24.px())
+						);
 
-            this.AddAndReturn(new Column(gap: 5.px())
-            {
-                new Label().Height(20).FontBold()
-                    .With(l => l.Observe(() => contract.Supply.Quantity).Do(quantity => l.Value(quantity.Value.ToFix32()))),
-                new Label().Height(11)
-                    .With(l => l.Observe(() => assetsManager.GetAvailableQuantityForRemoval(contract.Supply.Product)).Do(quantity => l.Value($"({quantity.Value})".AsLoc())))
-            }.FlexGrow(1));
+			this.AddAndReturn(new Icon())
+				.Large()
+				.Observe((icon) => (icon, m_firstContract.Supply.Product))
+				.Do(entry => entry.icon.Value(entry.Product));
 
-            this.AddAndReturn(new ButtonIcon(Button.Unity, UserInterface.Toolbar.TradeClipped_svg)
-                .NoShrink()
-                .MarginLeft(2.pt())
-                .ObserveEnabledWithReason(() =>
-                {
-                    if (m_tradeInProgress)
-                        return new Mafi.Core.Utils.BoolWithReason(false, "Trade in progress".AsLoc());
+			this.AddAndReturn(new Column(gap: 5.px())
+			{
+				new Label().Height(20).FontBold()
+					.With(l => l.Observe(() => m_firstContract.Supply.Quantity).Do(quantity => l.Value(quantity.Value.ToFix32()))),
+				new Label().Height(11)
+					.With(l => l.Observe(() => assetsManager.GetAvailableQuantityForRemoval(m_firstContract.Supply.Product)).Do(quantity => l.Value($"({quantity.Value})".AsLoc())))
+			}.FlexGrow(1));
 
-                    Quantity quantity = tradeDock.GetQuantity();
-                    if (contract.Demand.Quantity > tradeDock.Prototype.Capacity - quantity)
-                        return new Mafi.Core.Utils.BoolWithReason(
-                            false, $"{Tr.EntityStatus__FullStorage}: ({quantity}/{tradeDock.Prototype.Capacity})".AsLoc());
+			this.AddAndReturn(new ButtonIcon(Button.Unity, UserInterface.Toolbar.TradeClipped_svg)
+				.NoShrink()
+				.MarginLeft(2.pt())
+				.ObserveEnabledWithReason(() => {
+					if (m_tradeInProgress) {
+						return new Mafi.Core.Utils.BoolWithReason(false, MpTr.TradingProgress);
+					}
 
-                    bool enough = assetsManager.GetAvailableQuantityForRemoval(contract.Demand.Product) >= contract.Demand.Quantity;
-                    return new Mafi.Core.Utils.BoolWithReason(enough,
-                        enough
-                            ? $"{Tr.SellPrefix}: {contract.Demand.FormatNumberAndUnitOnly()}\n{Tr.BuyPrefix}: {contract.Supply.FormatNumberAndUnitOnly()}\n".AsLoc()
-                            : Tr.TradeStatus__CantAfford.AsFormatted
-                    );
-                }, "".AsLoc())
-                .OnClick(() =>
-                {
-                    m_tradeInProgress = true;
-                    var much = assetsManager.RemoveAsMuchAs(contract.Demand, Mafi.Core.Products.DestroyReason.QuickTrade);
-                    if (much != contract.Demand.Quantity)
-                    {
-                        tradeDock.AddProduct(much.Of(contract.Demand.Product));
-                        context.AudioDb.GetSharedAudioUi(UserInterface.Audio.InvalidOp_prefab);
-                        return;
-                    }
+					Quantity quantity = tradeDock.GetQuantity();
+					if (m_firstContract.Demand.Quantity > tradeDock.Prototype.Capacity - quantity) {
+						return new Mafi.Core.Utils.BoolWithReason(
+							false, $"{Tr.EntityStatus__FullStorage}: ({quantity}/{tradeDock.Prototype.Capacity})".AsLoc());
+					}
 
-                    MultiplayerTradeManager.TakeContract(tradeDock.Address, tradeDock.Authorization, offer)
-                        .ContinueWith((result) =>
-                        {
-                            if (result.Status == TaskStatus.RanToCompletion && result.Result)
-                            {
-                                tradeDock.AddProduct(contract.Supply);
-                                removeOffer();
-                                RemoveFromHierarchy();
-                                context.AudioDb.GetSharedAudioUi(UserInterface.Audio.MoneyAction_prefab);
-                            }
-                            else
-                            {
-                                tradeDock.AddProduct(contract.Demand);
-                                context.AudioDb.GetSharedAudioUi(UserInterface.Audio.InvalidOp_prefab);
-                                m_tradeInProgress = false;
-                            }
-                        });
-                })
-            );
-        }
-    }
+					bool enough = assetsManager.GetAvailableQuantityForRemoval(m_firstContract.Demand.Product) >= m_firstContract.Demand.Quantity;
+					return new Mafi.Core.Utils.BoolWithReason(enough,
+						enough
+							? MpTr.AvailableOffersOfType.Format(offers.Count)
+							: Tr.TradeStatus__CantAfford.AsFormatted
+					);
+				}, MpTr.AvailableOffersOfType.Format(offers.Count))
+				.OnClick(() => {
+					m_tradeInProgress = true;
+					var much = assetsManager.RemoveAsMuchAs(m_firstContract.Demand, Mafi.Core.Products.DestroyReason.QuickTrade);
+					if (much != m_firstContract.Demand.Quantity) {
+						tradeDock.AddProduct(much.Of(m_firstContract.Demand.Product));
+						context.AudioDb.GetSharedAudioUi(UserInterface.Audio.InvalidOp_prefab);
+						return;
+					}
+
+					MultiplayerTradeManager.TakeContract(tradeDock.Address, tradeDock.Authorization, m_trades.First)
+						.ContinueWith((result) => {
+							if (result.Status == TaskStatus.RanToCompletion && result.Result) {
+								tradeDock.AddProduct(m_firstContract.Supply);
+								removeOffer(m_trades.First);
+								RemoveFromHierarchy();
+								context.AudioDb.GetSharedAudioUi(UserInterface.Audio.MoneyAction_prefab);
+							} else {
+								tradeDock.AddProduct(m_firstContract.Demand);
+								context.AudioDb.GetSharedAudioUi(UserInterface.Audio.InvalidOp_prefab);
+								m_tradeInProgress = false;
+							}
+						});
+				})
+			);
+		}
+	}
 }
