@@ -6,8 +6,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <Version>0.9.15.5</Version>
+    <Version>0.1.6.3</Version>
     <LangVersion>latest</LangVersion>
+    <COI_ROOT>C:\Program Files (x86)\Steam\steamapps\common\Captain of Industry</COI_ROOT>
+    <!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->
+	  <COI_APPDATA>C:\Users\zdeno\AppData\Roaming\Captain of Industry</COI_APPDATA>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -102,10 +105,12 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="copy manifest.json &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
-    <Exec Command="robocopy .\..\ExampleMod.Unity\AssetBundles &quot;%25APPDATA%25\Captain of Industry - 0.8.0\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" />
+    <Exec Command="mkdir &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="robocopy .\..\ExampleMod.Unity\AssetBundles &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" />
+    <!-- TODO version -->
+    <ZipDirectory SourceDirectory="$(COI_APPDATA)\Mods\$(MSBuildProjectName)" DestinationFile="$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(Version).zip" Overwrite="true" />
   </Target>
 </Project>

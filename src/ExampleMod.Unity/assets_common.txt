@@ -25,3 +25,6 @@ pilar_0423
 windturbine_t1_2f96
     Assets/WindPower/WindTurbine_T1.prefab
 
+windturbine_t2_e934
+    Assets/WindPower/WindTurbine_T2.prefab
+

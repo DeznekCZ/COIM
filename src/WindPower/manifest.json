@@ -1,13 +1,16 @@
 {
 	"id": "WindPower",
-	"version": "0.1.6a",
+	"version": "0.1.6c",
 	"display_name": "Wind turbines",
-	"description": "Adds wind turbines to game",
-	"authors": [ "DeznekCZ" ],
+	"description_short": "Adds wind turbines to game",
+	"description_long": "Adds wind turbines to game",
+	"authors": [ "DeznekCZ", "Walter-JS" ],
 	"primary_dlls": [ "WindPower.dll" ],
-	"min_game_version": "0.7.8",
+	"min_game_version": "0.8.0",
+	"max_verified_game_version": "0.8.0",
 	"mod_dependencies": [],
 	"optional_mod_dependencies": [],
 	"incompatible_mods": [],
-	"non_locking_dll_load": true
+	"non_locking_dll_load": true,
+	"can_add_to_saved_game": true
 }
