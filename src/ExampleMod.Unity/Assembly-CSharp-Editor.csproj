@@ -556,12 +556,24 @@
       <HintPath>Library\PackageCache\com.unity.ext.nunit@031a54704bff\net40\unity-custom\nunit.framework.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="WindPower">
+      <HintPath>Assets\DLLs\WindPower.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Facepunch.Steamworks.Win64">
+      <HintPath>Assets\DLLs\Facepunch.Steamworks.Win64.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Mafi.Base">
       <HintPath>Assets\DLLs\Mafi.Base.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System.IO.Hashing">
       <HintPath>Library\PackageCache\com.unity.collections@aea9d3bd5e19\Unity.Collections.Tests\System.IO.Hashing\System.IO.Hashing.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mafi.UnityCore">
+      <HintPath>Assets\DLLs\Mafi.UnityCore.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Mafi.Core">

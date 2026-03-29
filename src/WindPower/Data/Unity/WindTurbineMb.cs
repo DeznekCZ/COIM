@@ -1,4 +1,5 @@
 ﻿using Mafi;
+using Mafi.Collections;
 using Mafi.Core;
 using Mafi.Unity.Entities;
 using Mafi.Unity.Entities.Static;
@@ -38,10 +39,10 @@ public class WindTurbineMb : StaticEntityMb, IEntityMbWithRenderUpdate {
 	}
 
 	public void RenderUpdate(GameTime time) {
-		if (time.IsGamePaused) {
+		if (m_windTrubine is null) {
 			return;
 		}
-		if (m_windTrubine is null) {
+		if (time.IsGamePaused) {
 			return;
 		}
 		// update gondola direction

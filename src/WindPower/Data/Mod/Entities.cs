@@ -55,10 +55,9 @@ namespace WindPower {
 					),
 				costs: ((EntityCostsTpl)new EntityCostsTpl.Builder()
 					// TODO be constructed by special product type later
-					.CP2(5)
+					.CP2(25)
 					.MaintenanceT1(0.5)
 					.Product(25, Ids.Products.ConcreteSlab)
-					.Product(5, Ids.Products.Steel)
 				).MapToEntityCosts(registrator),
 				graphics: new WindTurbineProto.Gfx(
 					prefabPath: "Assets/WindPower/WindTurbine_T1.prefab",
@@ -75,8 +74,8 @@ namespace WindPower {
 				),
 				generatedPower: 60.Kw(),
 				brakingPower: 15.KwMech(),
-				gondolaHeight: new HeightTilesF(16 / 2),
-				bladeWidth: new HeightTilesF((3f / 2f).ToFix32()),
+				gondolaHeight: new HeightTilesF(24 / 2),
+				bladeWidth: new HeightTilesF((4.5f / 2f).ToFix32()),
 				cannotBeReflected: true,
 				constructionDurationPerProduct: Duration.FromSec(1)
 			));
@@ -93,7 +92,7 @@ namespace WindPower {
 								{
 									return new LayoutTokenSpec(
 										heightFrom: 0,
-										heightToExcl: height * 5,
+										heightToExcl: 50,
 										minTerrainHeight: -10,
 										maxTerrainHeight: height - 1,
 										constraint: LayoutTileConstraint.NoRubbleAfterCollapse,
@@ -103,8 +102,8 @@ namespace WindPower {
 								new CustomLayoutToken("~0~", (EntityLayoutParams param, int height) =>
 								{
 									return new LayoutTokenSpec(
-										heightFrom: 35,
-										heightToExcl: 70,
+										heightFrom: 20,
+										heightToExcl: 50,
 										minTerrainHeight: -10,
 										maxTerrainHeight: height - 1,
 										constraint: LayoutTileConstraint.NoRubbleAfterCollapse
@@ -137,8 +136,8 @@ namespace WindPower {
 				),
 				generatedPower: 1800.Kw(),
 				brakingPower: 600.KwMech(),
-				gondolaHeight: new HeightTilesF(16 / 2),
-				bladeWidth: new HeightTilesF((3f / 2f).ToFix32()),
+				gondolaHeight: new HeightTilesF(70 / 2),
+				bladeWidth: new HeightTilesF((70 / 2).ToFix32()),
 				cannotBeReflected: true,
 				constructionDurationPerProduct: Duration.FromSec(1)
 			));
