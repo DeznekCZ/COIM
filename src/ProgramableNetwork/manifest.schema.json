@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "COI Mod manifest schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "primary_dlls"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the mod (e.g. ExampleMod). Must match \"[a-zA-Z0-9][a-zA-Z0-9_-]*\"",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Mod version string (semantic or engine style, e.g. 5.2.1f).",
+      "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+[a-z]?)?$"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Human-readable mod name shown in UI (max 50 characters).",
+      "maxLength": 50
+    },
+    "description_short": {
+      "type": "string",
+      "description": "Short description (max 180 characters).",
+      "maxLength": 180
+    },
+    "description_long": {
+      "type": "string",
+      "description": "Long description shown when mod details are openned; no strict limit."
+    },
+    "authors": {
+      "description": "Author name or array of author names.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "min_game_version": {
+      "type": "string",
+      "description": "Minimum compatible game version (e.g. 0.8.0).",
+      "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+[a-z]?)?$"
+    },
+    "max_verified_game_version": {
+      "type": "string",
+      "description": "Maximum verified game version (e.g. 0.8.0).",
+      "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+[a-z]?)?$"
+    },
+    "primary_dlls": {
+      "type": "array",
+      "description": "List of primary DLL file names included with the mod.\nDLLs must be always sorted from independent to dependent one.",
+      "items": {
+        "type": "string",
+        "pattern": "^.+\\.dll$"
+      },
+      "minItems": 1
+    },
+    "mod_dependencies": {
+      "type": "array",
+      "description": "List of required mod IDs (strings).\nMod ID of the dependency with optional version defined as >= after ID (e.g. ModDep or ModDep>=1.0.0f).",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]*(>=[0-9]+\\.[0-9]+(\\.[0-9]+[a-z]?)?)?$"
+      }
+    },
+    "optional_mod_dependencies": {
+      "type": "array",
+      "description": "List of optional mod IDs (strings).\nMod ID of the dependency with optional version defined as >= after ID (e.g. ModDep or ModDep>=1.0.0f).",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]*(>=[0-9]+\\.[0-9]+(\\.[0-9]+[a-z]?)?)?$"
+      }
+    },
+    "incompatible_mods": {
+      "type": "array",
+      "description": "List of incompatible mod IDs (strings).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "non_locking_dll_load": {
+      "type": "boolean",
+      "description": "If true, DLLs are loaded in a non-locking manner.\n When is set to false, the mod cannot be updated until the game (or Unity Engine) is closed."
+    },
+    "can_add_to_saved_game": {
+      "type": "boolean",
+      "description": "If true, the mod can be added to an existing saved game."
+    },
+    "can_remove_from_saved_game": {
+      "type": "boolean",
+      "description": "If true, the mod can be removed from an existing saved game."
+    },
+    "primary_mod_class_name": {
+      "type": "string",
+      "description": "Name of class loaded from .dlls when multiple of IMod implementations are loaded. This may happen when a dependency mod is attached."
+    }
+  }
+}

@@ -1,0 +1,4 @@
+﻿<Solution>
+  <Project Path="CoiMod.Unity.csproj" />
+  <Project Path="CoiMod.Editor.csproj" />
+</Solution>

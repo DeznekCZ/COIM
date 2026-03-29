@@ -13,7 +13,9 @@ using UnityEngine;
 namespace ProgramableNetwork.Data.Variables
 {
     [GlobalDependency(RegistrationMode.AsSelf, false, false)]
+#if DEBUG
     [GenerateSerializer(false, null, 0)]
+#endif
     public class VariableManager
     {
         [DoNotSave()]

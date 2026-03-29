@@ -89,4 +89,3 @@ class Runtime_Clock_2(Module):
                 output = 0
 
             self.Output.set_int("clock", output)
-        

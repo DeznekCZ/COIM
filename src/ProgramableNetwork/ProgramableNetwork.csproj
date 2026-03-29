@@ -304,10 +304,18 @@
 
 	<ItemGroup Condition=" '$(ProjectDir)' != '*Undefined*' ">
 		<AssetBundles Include="$(ProjectDir)..\$(UnityProjectName)\AssetBundles\**\*" Exclude="**\AssetBundles;**\AssetBundles.manifest" />
-		<Assets Include="$(ProjectDir)..\$(UnityProjectName)\AssetBundles\**\*" Exclude="**\AssetBundles;**\AssetBundles.manifest" />
+		<Assets Include="$(ProjectDir)Assets\**\*" />
 		<Modules Include="$(ProjectDir)..\ProgramableNetwork.Modules\Custom\**\*" />
 		<CoreAPI Include="$(ProjectDir)..\ProgramableNetwork.Modules\Core\**\*" />
 	</ItemGroup>
+
+	<!-- Sanitization -->
+	<PropertyGroup Condition="'$(Configuration)' == 'RELEASE'">
+		<Stanitize></Stanitize>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)' == 'DEBUG'">
+		<Stanitize>_Sanitizer</Stanitize>
+	</PropertyGroup>
 
 	<!-- Coppies data for next use special settings in Unity project the DLLs are specified in manifest file. -->
 	<Target Name="CopyDllsToUnityProject" AfterTargets="PostBuildEvent" Condition=" '$(ProjectDir)' != '*Undefined*' ">
@@ -324,8 +332,11 @@
 		<Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(COI_MODS)\$(TargetName)\" Condition="'$(Configuration)' == 'Debug'" />
 		<!-- TODO add automatically another dll, when needed -->
 		<Copy SourceFiles="@(AssetBundles)" DestinationFolder="$(COI_MODS)\$(TargetName)\AssetBundles" />
+		<Copy SourceFiles="@(Assets)" DestinationFolder="$(COI_MODS)\$(TargetName)\Assets\%(RecursiveDir)" />
 		<Copy SourceFiles="@(Modules)" DestinationFolder="$(COI_MODS)\$(TargetName)\Modules\%(RecursiveDir)" />
 		<Copy SourceFiles="@(CoreAPI)" DestinationFolder="$(COI_MODS)\$(TargetName)\Modules\Core\%(RecursiveDir)" />
-		<ZipDirectory SourceDirectory="$(COI_MODS)\$(TargetName)" DestinationFile="$(COI_MODS)\$(TargetName)_$(ManifestVersion).zip" Overwrite="true" />
+
+		<!-- Compress-Archive on a directory path (without \*) includes the directory name as root in the zip. -->
+		<Exec Command="powershell -NoProfile -Command &quot;Compress-Archive -Path '$(COI_MODS)\$(TargetName)' -DestinationPath '$(COI_MODS)\$(TargetName)_$(ManifestVersion).zip' -Force&quot;" />
 	</Target>
 </Project>

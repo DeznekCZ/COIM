@@ -6,11 +6,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Mafi.Base;
+using Mafi.Collections.ImmutableCollections;
+using Mafi.Core;
+using Mafi.Core.Mods;
+using ProgramableNetwork.Ui.DisplayEntity;
 
 namespace ProgramableNetwork.Data.DisplayEntity
 {
     public class DisplayEntityProto : LayoutEntityProto, ILayoutEntityProto, IProtoWithPropertiesUpdate, ILayoutEntityProtoWithElevation, IProtoWithTiers, IProtoWithUpgrade
     {
+		public static DisplayEntityProto Phantom;
+		public static ID PHANTOM_PRODUCT_ID = new ID("__PHANTOM_DISPLAY");
+
         public override Type EntityType { get; } = typeof(DisplayEntity);
         public Electricity WorkingPower { get; }
         public Electricity IddlePower { get; }
@@ -41,5 +49,40 @@ namespace ProgramableNetwork.Data.DisplayEntity
             this.Upgrade = new UpgradeData(this);
             this.Upgrade.TierData.TierNumberForUi = tierNumber;
         }
-    }
+
+
+		public static void RegisterPhantom(Mafi.Core.Mods.ProtoRegistrator registrator)
+		{
+			Phantom = new DisplayEntityProto(
+					id: PHANTOM_PRODUCT_ID,
+					strings: Proto.CreateStr(PHANTOM_PRODUCT_ID, "Display", "Phantom object for removement"),
+					layout: registrator.LayoutParser.ParseLayoutOrThrow("[1]"),
+					costs: ((EntityCostsTpl)Mafi.Base.Costs.Build.CP2(4)).MapToEntityCosts(registrator),
+                    manager: (display) => new NoManager(),
+					tierNumber: 0,
+					graphics: new LayoutEntityProto.Gfx(
+							prefabPath: NewAssets.Computers.Controller,
+							customIconPath: NewAssets.Computers.Icons.Controller,
+							categories: ImmutableArray<ToolbarEntryData>.Empty
+						)
+				);
+			registrator.PrototypesDb.RegisterPhantom(Phantom);
+		}
+	}
+
+	public class NoManager : IDisplayEntityManager {
+		public DisplayEntity Entity { get; }
+		public DisplayEntityProto Proto { get; }
+		public DisplayEntityMb Mb { get; }
+		public IDisplayEntityInspector Inspector { get; }
+		public void Init(DisplayEntityMb mb) {
+			
+		}
+		public void RenderUpdate(GameTime time) {
+			
+		}
+		public void SyncUpdate(GameTime time) {
+			
+		}
+	}
 }

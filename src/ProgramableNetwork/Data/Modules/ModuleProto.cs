@@ -635,42 +635,42 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddEntityField(string id, string name, Func<Module, IEntity, bool> entitySelector = null, Fix32? distance = null)
+            public Builder AddEntityField(string id, string name, Func<Module, IEntity, bool> entitySelector = null)
             {
-                m_fields.Add(new EntityField(id, name, null, entitySelector, distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, null, entitySelector, 20.ToFix32()));
                 return this;
             }
 
-            public Builder AddEntityField<T>(string id, string name, Fix32? distance = null)
+            public Builder AddEntityField<T>(string id, string name)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, name, null, (module, entity) => entity is T, distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, null, (module, entity) => entity is T, 20.ToFix32()));
                 return this;
             }
 
-            public Builder AddEntityField<T>(string id, string name, string shortDesc, Fix32? distance = null)
+            public Builder AddEntityField<T>(string id, string name, string shortDesc)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T, distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T, 20.ToFix32()));
                 return this;
             }
 
-            public Builder AddEntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
+            public Builder AddEntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, filter, distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, shortDesc, filter, 20.ToFix32()));
                 return this;
             }
 
-            public Builder AddEntityField<T>(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
+            public Builder AddEntityField<T>(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T && (filter?.Invoke(module, entity) ?? true), distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
                 return this;
             }
 
-            public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, Fix32? distance = null)
+            public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity?.GetType()?.IsAssignableTo(t) ?? false && (filter?.Invoke(module, entity) ?? true), distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity?.GetType()?.IsAssignableTo(t) ?? false && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
                 return this;
             }
 

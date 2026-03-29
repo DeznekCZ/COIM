@@ -45,6 +45,7 @@
     <Compile Include="Custom\randomizer.py" />
     <Compile Include="Custom\shift.py" />
     <Compile Include="Custom\template.py" />
+    <Compile Include="Custom\timer.py" />
     <Compile Include="Mafi\Base\Ai\__init__.py" />
     <Compile Include="Mafi\Base\Prototypes\Buildings\ThermalStorages\__init__.py" />
     <Compile Include="Mafi\Base\Prototypes\Buildings\__init__.py" />

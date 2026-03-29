@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ProgramableNetwork</name>
+    </assembly>
+    <members>
+        <member name="M:ProgramableNetwork.Ui.DataBand.FMDataBandChannelView.#ctor(ProgramableNetwork.Ui.AntenaInspector,ProgramableNetwork.FMDataBandChannel)">
+            <summary>
+            Used for common channels
+            </summary>
+            <param name="type"></param>
+            <param name="antenaInspector"></param>
+            <param name="channel"></param>
+        </member>
+        <member name="M:ProgramableNetwork.Ui.DisplayEntity.IDisplayEntityInspector.Create(ProgramableNetwork.Ui.DisplayEntity.DisplayEntityInspector)">
+            <summary>
+            
+            </summary>
+            <param name="panel"></param>
+            <returns>Clearing function</returns>
+        </member>
+        <member name="M:ProgramableNetwork.Ui.IFieldExtensions.Row(Mafi.Unity.UiToolkit.Component.UiComponent,ProgramableNetwork.IField,ProgramableNetwork.Module,System.Boolean@,System.Boolean)">
+            <summary>
+            With default height Sizes.BLOCK_SIZE
+            </summary>
+            <param name="fieldContainer"></param>
+            <param name="entityField"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ProgramableNetwork.Data.Antene.FMManager.Signals(Mafi.Tile3i,System.Nullable{System.Int32},System.Boolean)">
+            <summary>
+            UI question for signals arround
+            </summary>
+            <param name="position"></param>
+            <returns></returns>
+        </member>
+        <member name="P:ProgramableNetwork.Data.Speaker.SpeakerInspector.Sounds">
+            <summary>
+            TODO: add possibility to define custom sound, by any kind of prototype
+            </summary>
+        </member>
+        <member name="M:ProgramableNetwork.Module.Reset">
+            <summary>
+            Resets all volatile data
+            </summary>
+        </member>
+        <member name="M:ProgramableNetwork.ModuleLayout.#ctor(ProgramableNetwork.ModuleProto)">
+            <summary>
+            
+            </summary>
+            <param name="width">when is not set, the width is calculated by number of inputs or outputs</param>
+            <param name="inputs"></param>
+            <param name="outputs"></param>
+        </member>
+        <member name="M:ProgramableNetwork.ModuleLayout.GetWidth(ProgramableNetwork.Module)">
+            <summary>
+            Returns with in slots
+            </summary>
+            <param name="module"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ProgramableNetwork.ModuleProto.Builder.AddDisplay(System.String,System.String,Mafi.Fix32,System.String,System.Boolean,System.String[],System.Boolean,System.Boolean)">
+            <summary>
+            Displays will be shown on the name, the name will be overriden
+            </summary>
+            <param name="id">indexing name in Module.Field[id]</param>
+            <param name="name">Displayerd tooltip value</param>
+            <param name="width">taken module width</param>
+            <returns></returns>
+        </member>
+        <member name="M:ProgramableNetwork.ModuleProto.Builder.Width(System.Int32)">
+            <summary>
+            Overrides default width calculation
+            </summary>
+            <param name="slots"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ProgramableNetwork.ModuleProto.Builder.Width(System.Func{ProgramableNetwork.Module,System.Int32})">
+            <summary>
+            Dynamic width definition
+            TODO make an reaction for extension
+            TODO make replacer for modules, that are converted to dynamic width
+            </summary>
+            <param name="slots"></param>
+            <returns></returns>
+        </member>
+        <member name="T:ProgramableNetwork.Deprecation">
+            <summary>
+            Deprecation class contains module Ids, which was not found during deserialization.
+            They was maybe removed or replaced with different ones, or added by different mode.
+            </summary>
+        </member>
+        <member name="T:ProgramableNetwork.Python.Lexer">
+            <summary>
+            Following grammar, but cutted:
+            <br/>https://docs.python.org/3/reference/grammar.html
+            </summary>
+        </member>
+    </members>
+</doc>

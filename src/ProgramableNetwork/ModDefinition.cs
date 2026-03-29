@@ -3,7 +3,11 @@ using Mafi.Base;
 using Mafi.Core;
 using Mafi.Core.Mods;
 using ProgramableNetwork.Data.Mod;
+using ProgramableNetwork.Data.Modules;
 using System;
+using System.IO;
+using ProgramableNetwork.Data.DisplayEntity;
+using UnityEngine;
 
 namespace ProgramableNetwork
 {
@@ -22,8 +26,10 @@ namespace ProgramableNetwork
         public override void RegisterPrototypes(ProtoRegistrator registrator) {
             Log.Info($"{nameof(ProgramableNetwork)}: registering prototypes");
             CustomAssetManager.Clear();
+            
+			registrator.PrototypesDb.RegisterPhantom(ModuleProto.Phantom);
 
-
+#if DEBUG
             // Register all prototypes here.
 
             // Registers all products from this assembly. See ExampleModIds.Products.cs for examples.
@@ -31,7 +37,7 @@ namespace ProgramableNetwork
             //registrator.RegisterData<Terrain>();
 
             // Use data class registration to register other protos such as machines, recipes, etc.
-            registrator.RegisterData<Modules>();
+            registrator.RegisterDataWithInterface<IModuleGroup>();
             registrator.RegisterData<PyModules>();
             registrator.RegisterData<DataBands>();
             registrator.RegisterData<ControllerTemplates>();
@@ -42,6 +48,12 @@ namespace ProgramableNetwork
 
             // Registers all research from this assembly. See ExampleResearchData.cs for examples.
             registrator.RegisterDataWithInterface<IResearchNodesData>();
+#elif RELEASE
+            // Sanitizer code
+			ControllerProto.RegisterPhantom(registrator);
+			DisplayEntityProto.RegisterPhantom(registrator);
+#endif
         }
     }
+
 }
