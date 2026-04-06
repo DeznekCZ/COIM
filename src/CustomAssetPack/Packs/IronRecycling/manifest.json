@@ -4,7 +4,7 @@
   "version": "0.0.2b",
   "description_short": "Adds iron plate recyclation",
   "description_long": "This mod adds recipe with scrapping of iron plates to scrap iron for later use.\nResearch moved to shreader and compactor unlock",
-  "authors": [ "ThomasTwoFace", "DeznekCZ" ],
+  "authors": [ "ThomasTwoFace" ],
   "mod_dependencies": [
     "CustomAssets>=0.1.7b"
   ],

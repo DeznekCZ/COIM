@@ -1,5 +1,5 @@
 ﻿using CustomAssets.ModuleParser.Registrator;
-using CustomAssets.Python;
+using PythonAPI;
 using CustomAssets.Utils;
 using Mafi;
 using Mafi.Collections;
@@ -24,8 +24,12 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using PythonAPI.Statements;
 using UnityEngine;
 using static Mafi.Core.Prototypes.EntityCostsTpl;
+using CustomAssets.Python;
+using PythonAPI.Expressions;
+using PythonAPI.Runtime;
 
 namespace CustomAssets.Data.Mod;
 

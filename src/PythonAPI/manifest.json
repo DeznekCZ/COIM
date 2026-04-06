@@ -1,0 +1,16 @@
+﻿{
+  "id": "PythonAPI",
+  "version": "1.0.0",
+  "display_name": "Python API for modding",
+  "description_short": "Acts as code library for work with python files, the use of it must by done by user.",
+  "description_long": "Use for example as:\nFileInfo file = new FileInfo(Manifest.RootDirectoryPath + \"\\\\file.py\");\nToken[] tokens = Tokenizer.ParseFile(file.FullName);\nBlock block = Lexer.Parse(tokens);\nDictionary<string, object> context = [];\n// do anything with the main block\nforeach (IStatement statement in block.statements) {\n    statement.Execute(context);\n}\n\nThe context may contain predefined classes or imports.",
+  "authors": [ "DeznekCZ" ],
+  "min_game_version": "0.8.1b",
+  "max_verified_game_version": "0.8.1b",
+  "primary_dlls": [ "PythonAPI.dll" ],
+  "mod_dependencies": [],
+  "optional_mod_dependencies": [],
+  "incompatible_mods": [],
+  "non_locking_dll_load": true,
+  "can_add_to_saved_game": true
+}

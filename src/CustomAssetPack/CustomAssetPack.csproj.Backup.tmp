@@ -411,12 +411,8 @@
 
 	<ItemGroup>
 		<Compile Remove="Generated\**" />
-		<Compile Remove="Packs\HydrogenGenerator\**" />
 		<EmbeddedResource Remove="Generated\**" />
-		<EmbeddedResource Remove="Packs\HydrogenGenerator\**" />
-		<ModFolders Remove="Packs\HydrogenGenerator\**" />
 		<None Remove="Generated\**" />
-		<None Remove="Packs\HydrogenGenerator\**" />
 	</ItemGroup>
 
 	<ItemGroup>

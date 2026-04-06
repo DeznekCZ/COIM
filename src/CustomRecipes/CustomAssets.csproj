@@ -31,12 +31,15 @@
   <ItemGroup>
     <Compile Remove="AssetBundles\**" />
     <Compile Remove="Data\Instructions\**" />
+    <Compile Remove="ModuleParser\Registrator\Definitions\**" />
     <Compile Remove="Translate\**" />
     <EmbeddedResource Remove="AssetBundles\**" />
     <EmbeddedResource Remove="Data\Instructions\**" />
+    <EmbeddedResource Remove="ModuleParser\Registrator\Definitions\**" />
     <EmbeddedResource Remove="Translate\**" />
     <None Remove="AssetBundles\**" />
     <None Remove="Data\Instructions\**" />
+    <None Remove="ModuleParser\Registrator\Definitions\**" />
     <None Remove="Translate\**" />
   </ItemGroup>
 
@@ -174,8 +177,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ModuleParser\Registrator\Definitions\" />
-    <Folder Include="ModuleParser\Runtime\Wrappers\" />
+    <ProjectReference Include="..\PythonAPI\PythonAPI.csproj" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Debug_Pack'">

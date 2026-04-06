@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomAssets.IdGenerator", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomAssetPack", "..\CustomAssetPack\CustomAssetPack.csproj", "{693CB4A7-929B-440B-BAD5-4914D1C9DB6E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PythonAPI", "..\PythonAPI\PythonAPI.csproj", "{BA8C57D3-4957-4A53-964A-8611BD7DA74D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_Pack|Any CPU = Debug_Pack|Any CPU
@@ -39,6 +41,12 @@ Global
 		{693CB4A7-929B-440B-BAD5-4914D1C9DB6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{693CB4A7-929B-440B-BAD5-4914D1C9DB6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{693CB4A7-929B-440B-BAD5-4914D1C9DB6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA8C57D3-4957-4A53-964A-8611BD7DA74D}.Debug_Pack|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA8C57D3-4957-4A53-964A-8611BD7DA74D}.Debug_Pack|Any CPU.Build.0 = Debug|Any CPU
+		{BA8C57D3-4957-4A53-964A-8611BD7DA74D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA8C57D3-4957-4A53-964A-8611BD7DA74D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA8C57D3-4957-4A53-964A-8611BD7DA74D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA8C57D3-4957-4A53-964A-8611BD7DA74D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
