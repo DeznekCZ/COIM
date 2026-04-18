@@ -67,7 +67,7 @@ namespace WindPower.Entity
 			: base(id, proto, transform, context)
 		{
 			this.Prototype = proto;
-			this.m_generator = generatorRegistratorFactory.CreateAndRegisterFor(this, generationPriority: 15);
+			this.m_generator = generatorRegistratorFactory.CreateAndRegisterFor(this, generationPriority: 1);
 			this.m_generator.IsSurplusGenerator = true; // also possible for charging from external sources
 			this.MaintenanceCosts = Prototype.Costs.Maintenance;
 			this.m_maintenance = maintenanceProvidersFactory.CreateFor(this);

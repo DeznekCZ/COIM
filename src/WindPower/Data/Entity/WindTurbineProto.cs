@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Mafi.Collections.ImmutableCollections;
+using WindPower.Data.Unity;
 
 namespace WindPower.Entity {
 	public class WindTurbineProto : LayoutEntityProto, IProtoWithTiers {
@@ -35,15 +36,19 @@ namespace WindPower.Entity {
 
 			public readonly string GondolaGo;
 			public readonly string RotorGo;
-			public readonly string[] BladeGos;
-			public readonly Fix32 SpeedMultiplier;
+			public readonly ImmutableArray<string> BladeGos;
+			public readonly ImmutableArray<string> BlurMeshPaths;
+			public readonly ImmutableArray<BlurConfig> BlurConfig; 
+			public readonly Fix32 MaximumRpm;
 
 			public Gfx(
 				string prefabPath, // inherited
 				string gondolaGo,
 				string rotorGo,
-				string[] bladeGos,
-				Fix32 speedMultiplier,
+				ImmutableArray<string> bladeGos,
+				ImmutableArray<string> blurMeshPaths,
+				ImmutableArray<BlurConfig> blurConfig,
+				Fix32 maximumRpm,
 				// inherited
 				RelTile3f prefabOrigin = new RelTile3f(),
 				Option<string> customIconPath = new Option<string>(), ColorRgba color = new ColorRgba(),
@@ -61,10 +66,12 @@ namespace WindPower.Entity {
 				instancedRenderingExcludedObjectsPattern, maxRenderedLod, disableEmptyChildrenStripping,
 				removeUndergroundVertices, yawForGeneratedIcon, canBePickedUnderground
 			) {
-				SpeedMultiplier = speedMultiplier;
+				MaximumRpm = maximumRpm;
 				GondolaGo = gondolaGo;
 				RotorGo = rotorGo;
 				BladeGos = bladeGos;
+				BlurMeshPaths = blurMeshPaths;
+				BlurConfig = blurConfig;
 			}
 		}
 	}

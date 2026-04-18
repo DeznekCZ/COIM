@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using WindPower.Data.Unity;
 using WindPower.Entity;
 
 namespace WindPower {
@@ -29,29 +30,41 @@ namespace WindPower {
 					.ParseLayoutOrThrow(
 						new EntityLayoutParams(
 							customTokens: [
+								new CustomLayoutToken("~0]", (EntityLayoutParams param, int height) =>
+								{
+									return new LayoutTokenSpec(
+										heightFrom: 0,
+										heightToExcl: 14,
+										minTerrainHeight: -1,
+										maxTerrainHeight: 1,
+										constraint: LayoutTileConstraint.Ground
+									);
+								}),
 								new CustomLayoutToken("~0~", (EntityLayoutParams param, int height) =>
 								{
 									return new LayoutTokenSpec(
-										heightFrom: height,
-										heightToExcl: 9,
-										minTerrainHeight: -10,
-										maxTerrainHeight: height - 1,
+										heightFrom: 5,
+										heightToExcl: 14,
+										minTerrainHeight: -20,
+										maxTerrainHeight: 20,
 										constraint: LayoutTileConstraint.NoRubbleAfterCollapse
+											| LayoutTileConstraint.NoConstructionCubes
 									);
 								})
 							]
 						),
-						"         ~8~~8~~8~~8~~8~         ",
-						"      ~8~~7~~7~~7~~7~~8~~8~      ",
-						"   ~8~~7~~6~~6~~6~~6~~6~~8~~8~   ",
-						"~8~~7~~6~~5~~5~~5~~5~~5~~6~~7~~8~",
-						"~8~~7~~6~~5~[8][8][8]~5~~6~~7~~8~",
-						"~8~~7~~6~~5~[8][8][8]~5~~6~~7~~8~",
-						"~8~~7~~6~~5~[8][8][8]~5~~6~~7~~8~",
-						"~8~~7~~6~~5~~5~~5~~5~~5~~6~~7~~8~",
-						"   ~8~~7~~6~~6~~6~~6~~6~~7~~8~   ",
-						"      ~8~~7~~7~~7~~7~~7~~8~      ",
-						"         ~8~~8~~8~~8~~8~         "
+						"         ~8~~8~~8~~8~~8~~8~         ",
+						"      ~8~~7~~7~~7~~7~~7~~8~~8~      ",
+						"   ~8~~7~~6~~6~~6~~6~~6~~6~~8~~8~   ",
+						"~8~~7~~6~~5~~5~~5~~5~~5~~5~~6~~7~~8~",
+						"~8~~7~~6~~5~~8]~8]~8]~8]~5~~6~~7~~8~",
+						"~8~~7~~6~~5~~8]~8]~8]~8]~5~~6~~7~~8~",
+						"~8~~7~~6~~5~~8]~8]~8]~8]~5~~6~~7~~8~",
+						"~8~~7~~6~~5~~8]~8]~8]~8]~5~~6~~7~~8~",
+						"~8~~7~~6~~5~~5~~5~~5~~5~~5~~6~~7~~8~",
+						"   ~8~~7~~6~~6~~6~~6~~6~~6~~7~~8~   ",
+						"      ~8~~7~~7~~7~~7~~7~~7~~8~      ",
+						"         ~8~~8~~8~~8~~8~~8~         "
 					),
 				costs: ((EntityCostsTpl)new EntityCostsTpl.Builder()
 					// TODO be constructed by special product type later
@@ -61,20 +74,35 @@ namespace WindPower {
 				).MapToEntityCosts(registrator),
 				graphics: new WindTurbineProto.Gfx(
 					prefabPath: "Assets/WindPower/WindTurbine_T1.prefab",
-					gondolaGo: "Scaling/Gondola",
-					rotorGo: "Scaling/Gondola/Rotor",
-					bladeGos: [
-						"Scaling/Gondola/Rotor/Blade",
-						"Scaling/Gondola/Rotor/Blade_1",
-						"Scaling/Gondola/Rotor/Blade_2"
-					],
-					speedMultiplier: 0.85.ToFix32(),
+					gondolaGo: "pivot_axis",
+					rotorGo: "pivot_axis/turbine_axis",
+					bladeGos: ImmutableArray.Empty, //ImmutableArray.Create<string>(
+						//"pivot_axis/turbine_axis/turbine_blade1_axis",
+						//"pivot_axis/turbine_axis/turbine_blade2_axis",
+						//"pivot_axis/turbine_axis/turbine_blade3_axis"
+					//),
+					blurMeshPaths: ImmutableArray.Create(
+						"pivot_axis/turbine_axis/turbine_blade1_axis",
+						"pivot_axis/turbine_axis/turbine_blade2_axis",
+						"pivot_axis/turbine_axis/turbine_blade3_axis",
+						"pivot_axis/turbine_axis/turbine_hub_LOD0",
+						"pivot_axis/turbine_axis/turbine_hub_LOD1",
+						"pivot_axis/turbine_axis/turbine_hub_LOD2",
+						"pivot_axis/turbine_axis/turbine_hub_LOD3",
+						"pivot_axis/turbine_axis/turbine_blades_blur"
+					),
+					blurConfig: ImmutableArray.Create(
+						new BlurConfig(0, 30, 0, 6),
+						new BlurConfig(30, 50, 0, 7),
+						new BlurConfig(50, int.MaxValue, 3, 7)
+					),
+					maximumRpm: 72,
 					customIconPath: "Assets/WindPower/WindTurbine_T1_Icon.png",
 					categories: registrator.GetCategoriesProtos(Ids.ToolbarCategories.Power_General)
 				),
-				generatedPower: 60.Kw(),
-				brakingPower: 15.KwMech(),
-				gondolaHeight: new HeightTilesF(24 / 2),
+				generatedPower: 100.Kw(),
+				brakingPower: 50.KwMech(),
+				gondolaHeight: HeightTilesF.Zero + 18.0.MetersThick(),
 				bladeWidth: new HeightTilesF((4.5f / 2f).ToFix32()),
 				cannotBeReflected: true,
 				constructionDurationPerProduct: Duration.FromSec(1)
@@ -88,31 +116,36 @@ namespace WindPower {
 					.ParseLayoutOrThrow(
 						new EntityLayoutParams(
 							customTokens: [
-								new CustomLayoutToken("00]", (EntityLayoutParams param, int height) =>
-								{
-									return new LayoutTokenSpec(
-										heightFrom: 0,
-										heightToExcl: 50,
-										minTerrainHeight: -10,
-										maxTerrainHeight: height - 1,
-										constraint: LayoutTileConstraint.NoRubbleAfterCollapse,
-										surfaceId: Ids.TerrainTileSurfaces.ConcreteReinforced
-									);
-								}),
-								new CustomLayoutToken("~0~", (EntityLayoutParams param, int height) =>
-								{
-									return new LayoutTokenSpec(
-										heightFrom: 20,
-										heightToExcl: 50,
-										minTerrainHeight: -10,
-										maxTerrainHeight: height - 1,
-										constraint: LayoutTileConstraint.NoRubbleAfterCollapse
-									);
-								})
+								new CustomLayoutToken("00]", (EntityLayoutParams param, int height) => new LayoutTokenSpec(
+									heightFrom: 0,
+									heightToExcl: 50,
+									minTerrainHeight: -2,
+									maxTerrainHeight: 2,
+									constraint: LayoutTileConstraint.NoRubbleAfterCollapse,
+									terrainSurfaceHeight: height == 9 ? 0 : null,
+									surfaceId: Ids.TerrainTileSurfaces.DefaultConcrete
+								)),
+								new CustomLayoutToken("~0~", (EntityLayoutParams param, int height) => new LayoutTokenSpec(
+									heightFrom: 20,
+									heightToExcl: 50,
+									minTerrainHeight: -2,
+									maxTerrainHeight: 2,
+									constraint: LayoutTileConstraint.NoRubbleAfterCollapse
+										| LayoutTileConstraint.NoConstructionCubes
+								)),
+								new CustomLayoutToken("10~", (EntityLayoutParams param, int height) => new LayoutTokenSpec(
+									heightFrom: 20,
+									heightToExcl: 50,
+									minTerrainHeight: -40,
+									maxTerrainHeight: 20,
+									constraint: LayoutTileConstraint.NoRubbleAfterCollapse
+										| LayoutTileConstraint.NoConstructionCubes
+								))
 							]
 						),
 						generateCircleWithCore(
-							radius: 25, radiusSymbol: "~8~", core: 2, coreSymbol: "09]", centerTile: false)
+							radius: 25, radiusSymbol: "18~", core: 3, coreSymbol: "08]", centerTile: false,
+							floor: 4, radiusFloorSymbol: "~8~", coreFloorSymbol: "08]", floorSymbol: "_1_")
 							.ToArray()
 					),
 				// TODO be constructed by special product type later
@@ -123,14 +156,16 @@ namespace WindPower {
 				).MapToEntityCosts(registrator),
 				graphics: new WindTurbineProto.Gfx(
 					prefabPath: "Assets/WindPower/WindTurbine_T2.prefab",
-					gondolaGo: "turbine_box",
-					rotorGo: "turbine_box/turbine_axis/turbine_hub",
-					bladeGos: [
-						//"turbine_box/turbine_axis/turbine_hub/turbine_blade1",
-						//"turbine_box/turbine_axis/turbine_hub/turbine_blade2",
-						//"turbine_box/turbine_axis/turbine_hub/turbine_blade3"
-					],
-					speedMultiplier: 0.25.ToFix32(),
+					gondolaGo: "pivot_axis",
+					rotorGo: "pivot_axis/turbine_axis",
+					bladeGos: ImmutableArray.Empty, //ImmutableArray.Create<string>(
+						//"pivot_axis/turbine_axis/turbine_blade1_axis",
+						//"pivot_axis/turbine_axis/turbine_blade2_axis",
+						//"pivot_axis/turbine_axis/turbine_blade3_axis"
+					//),
+					blurMeshPaths: ImmutableArray.Empty,
+					blurConfig: ImmutableArray.Empty,
+					maximumRpm: -22,
 					customIconPath: "Assets/WindPower/WindTurbine_T1_Icon.png",
 					categories: registrator.GetCategoriesProtos(Ids.ToolbarCategories.Power_General)
 				),
@@ -148,7 +183,9 @@ namespace WindPower {
 		}
 
 		private IEnumerable<string> generateCircleWithCore(
-			int radius, string radiusSymbol, int core, string coreSymbol, bool centerTile = true) {
+			int radius, string radiusSymbol, int core, string coreSymbol, bool centerTile = true,
+			int floor = -1, string coreFloorSymbol = null,  string radiusFloorSymbol = null, string floorSymbol = null
+		) {
 			int radiusS = radius * radius;
 			int coreS = core * core;
 			for (int x = -radius; x <= radius; x++) {
@@ -163,7 +200,15 @@ namespace WindPower {
 					int xS = x * x;
 					int yS = y * y;
 					int dS = xS + yS;
-					if (dS <= coreS) {
+					if (floor >= 0 && x.Abs() <= floor && y.Abs() <= floor) {
+						if (dS <= coreS) {
+							sb.Append(coreFloorSymbol);
+						} else if (dS <= radiusS) {
+							sb.Append(radiusFloorSymbol);
+						} else {
+							sb.Append(floorSymbol);
+						}
+					} else if (dS <= coreS) {
 						sb.Append(coreSymbol);
 					} else if (dS <= radiusS) {
 						sb.Append(radiusSymbol);

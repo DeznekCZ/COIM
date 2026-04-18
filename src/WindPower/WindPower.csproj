@@ -126,7 +126,7 @@
 		<Reference Include="Mafi.TrainsDlc" Condition="'$(TrainsDlc)' == 'true'">
 			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.TrainsDlc.dll</HintPath>
 		</Reference>
-		<Reference Include="Mafi.TrainsDlc" Condition="'$(TrainsDlc)' == 'true'">
+		<Reference Include="Mafi.TrainsDlc.Unity" Condition="'$(TrainsDlc)' == 'true'">
 			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.TrainsDlc.Unity.dll</HintPath>
 		</Reference>
 		<Reference Include="UnityEngine.AssetBundleModule">
@@ -306,9 +306,6 @@
 
 	<ItemGroup Condition=" '$(ProjectDir)' != '*Undefined*' ">
 		<AssetBundles Include="$(ProjectDir)..\$(UnityProjectName)\AssetBundles\**\*" Exclude="**\AssetBundles;**\AssetBundles.manifest" />
-		<Assets Include="$(ProjectDir)..\$(UnityProjectName)\AssetBundles\**\*" Exclude="**\AssetBundles;**\AssetBundles.manifest" />
-		<Modules Include="$(ProjectDir)..\ProgramableNetwork.Modules\Custom\**\*" />
-		<CoreAPI Include="$(ProjectDir)..\ProgramableNetwork.Modules\Core\**\*" />
 	</ItemGroup>
 
 	<!-- Sanitization -->

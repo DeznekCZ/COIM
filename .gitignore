@@ -19,3 +19,4 @@ Builds/
 Thumbs.db
 ehthumbs.db
 desktop.ini
+/src/ExampleMod.Unity/Assets/DLLs/WindPower.pdb
