@@ -9,127 +9,108 @@ using Mafi.Unity;
 
 namespace ProgramableNetwork.Data.Antene
 {
-    [GlobalDependency(RegistrationMode.AsEverything, false, false)]
-    public class FMManager : IDataBandManager
-    {
-        private readonly Dictionary<Tile3i, Antena> m_antenas;
-        private readonly Dictionary<Tile3i, FMDataBand> m_dataBands;
-        private static List<FMDataBand> m_flips;
+	[GlobalDependency(RegistrationMode.AsEverything, false, false)]
+	public class FMManager : IDataBandManager
+	{
+		private readonly Dictionary<Tile3i, Antena> m_antenas;
+		private static List<FMDataBand> m_flips;
 
-        public FMManager(IEntitiesManager entitiesManager, IGameLoopEvents gameLoopEvents) {
+		public FMManager(IEntitiesManager entitiesManager, IGameLoopEvents gameLoopEvents) {
 
-            m_antenas = entitiesManager.GetAllEntitiesOfType<Antena>().ToDictionary(a => a.Position3f.Tile3i);
-            m_dataBands = m_antenas.Where(p => p.Value.DataBand is FMDataBand).ToDictionary(a => a.Key, a => a.Value.DataBand as FMDataBand);
+			m_antenas = entitiesManager.GetAllEntitiesOfType<Antena>().ToDictionary(a => a.Position3f.Tile3i);
 
-            entitiesManager.EntityAdded.AddNonSaveable(this, OnAdded);
-            entitiesManager.EntityRemoved.AddNonSaveable(this, OnRemoved);
-            gameLoopEvents.SyncUpdate.AddNonSaveable(this, OnSync);
-        }
+			entitiesManager.EntityAdded.AddNonSaveable(this, OnAdded);
+			entitiesManager.EntityRemoved.AddNonSaveable(this, OnRemoved);
+		}
 
-        /// <summary>
-        /// UI question for signals arround
-        /// </summary>
-        /// <param name="position"></param>
-        /// <returns></returns>
-        public Dictionary<int, (Fix32, FMDataBandChannel)> Signals(Tile3i position, int? channelIdx = null, bool logging = false)
-        {
-            Dictionary<int, Fix32> distances = new Dictionary<int, Fix32>();
-            Dictionary<int, (Fix32, FMDataBandChannel)> channels = new Dictionary<int, (Fix32, FMDataBandChannel)>();
+		/// <summary>
+		/// UI question for signals arround
+		/// </summary>
+		/// <param name="position"></param>
+		/// <returns></returns>
+		public Dictionary<int, (Fix32 signalStrength, FMDataBandChannel channelInfo)> Signals(Tile3i position, int? channelIdx = null, bool logging = false)
+		{
+			Dictionary<int, Fix32> distances = new Dictionary<int, Fix32>();
+			Dictionary<int, (Fix32, FMDataBandChannel)> channels = new Dictionary<int, (Fix32, FMDataBandChannel)>();
 
-            if (logging) {
+			if (logging) {
 				Log.Info($"[FMManager] Get stats");
 			}
-			foreach (var pair in m_dataBands)
-            {
-                (Tile3i tile, FMDataBand databand) = (pair.Key, pair.Value);
-                Antena antena = databand.Antena;
-                Fix32 distance = (tile.ToCenterVector3() - position.ToCenterVector3()).magnitude.ToFix32();
-                Fix32 targetDistance = (antena.Prototype.DistanceBoost * databand.Prototype.Distance);
 
-                if (logging) {
-					Log.Info($"[FMManager] IS in distance: {distance <= targetDistance}, spread: {targetDistance}, distance: {distance}");
+			foreach ((Tile3i tile, Antena antenna) in m_antenas)
+			{
+				if (antenna.DataBand is not FMDataBand dataBand) {
+					continue;
 				}
-				if (distance <= targetDistance)
-                {
-                    if (channelIdx != null)
-                    {
-                        FMDataBandChannel channel = databand.ActiveChannels[channelIdx ?? 0];
-                        if (channel.ValidIterations > 0 && (!distances.TryGetValue(channel.Index, out Fix32 farther) || farther > distance))
-                        {
-                            distances[channelIdx ?? 0] = distance;
-                            channels[channelIdx ?? 0] = (
-                                channel.ValidIterations > 0 ?
-                                    1 - (distance / targetDistance) :
-                                    Fix32.Zero, channel);
-                        }
-                        if (logging) {
-							Log.Info($"[FMManager] IN distance [{channelIdx ?? 0}]: {distances[channelIdx ?? 0]} with strength: {channels[channelIdx ?? 0].Item1} and datalen: {channels[channelIdx ?? 0].Item2.Value.Length}");
-						}
+
+				Fix32 distance = (tile.ToCenterVector3() - position.ToCenterVector3()).magnitude.ToFix32();
+				Fix32 maxDistance = (antenna.Prototype.DistanceBoost * dataBand.Prototype.Distance);
+
+				if (logging) {
+					Log.Info($"[FMManager] IS in distance: {distance <= maxDistance}, spread: {maxDistance}, distance: {distance}");
+				}
+
+				// Skip unreachable antenna broadcasts
+				if (distance > maxDistance) {
+					continue;
+				}
+
+				// If a channel index is specified, only consider that channel for each data band
+				if (channelIdx != null)
+				{
+					int channelIndex = channelIdx ?? 0;
+					FMDataBandChannel channel = dataBand.ActiveChannels[channelIndex];
+					if (channel.ValidIterations < 1
+						|| (distances.TryGetValue(channel.Index, out Fix32 existing)
+							&& existing <= distance)) {
 						continue;
-                    }
+					}
+					distances[channel.Index] = distance;
+					channels[channel.Index] = (1 - (distance / maxDistance), channel);
 
-                    foreach (FMDataBandChannel channel in databand.ActiveChannels)
-                    {
-                        if (!distances.TryGetValue(channel.Index, out Fix32 farther) || farther > distance)
-                        {
-                            distances[channel.Index] = distance;
-                            channels[channel.Index] = (
-                                channel.ValidIterations > 0 ?
-                                    1 - (distance / targetDistance) :
-                                    Fix32.Zero, channel);
-                        }
-                    }
-                }
-            }
-            return channels;
-        }
+					if (logging) {
+						Log.Info($"[FMManager] IN distance [{channelIndex}]: {distances[channelIndex]} with strength: {channels[channelIndex].Item1} and datalen: {channels[channelIndex].Item2.Value.Length}");
+					}
+					continue;
+				}
 
-        public (Fix32 strenght, Fix32[] values) Signal(Tile3i position, int channelIdx, bool logging = false)
-        {
-            if (Signals(position, channelIdx, logging).TryGetValue(channelIdx, out var channel))
-            {
-                return (channel.Item1, channel.Item2.Value);
-            }
-            return (Fix32.Zero, Array.Empty<Fix32>());
-        }
-
-        private void OnSync(GameTime time)
-        {
-            if (time.IsGamePaused) {
-				return;
-			}
-
-			foreach (var item in m_antenas)
-            {
-                if (item.Value.DataBand is FMDataBand dataBand)
-                {
-                    m_dataBands[item.Key] = dataBand;
-                }
-                else
-                {
-                    m_dataBands.Remove(item.Key);
-                }
-            }
-        }
-
-        private void OnAdded(IEntity entity)
-        {
-            if (entity is Antena antena)
-            {
-                m_antenas[antena.Position3f.Tile3i] = antena;
-                if (antena.DataBand is FMDataBand dataBand) {
-					m_dataBands[antena.Position3f.Tile3i] = dataBand;
+				// If no channel index is specified, consider all channels for each data band
+				foreach (FMDataBandChannel channel in dataBand.ActiveChannels) {
+					if (channel.ValidIterations < 1
+						|| (distances.TryGetValue(channel.Index, out Fix32 existing)
+							&& existing <= distance)) {
+						continue;
+					}
+					distances[channel.Index] = distance;
+					channels[channel.Index] = (1 - (distance / maxDistance), channel);
 				}
 			}
-        }
+			return channels;
+		}
 
-        private void OnRemoved(IEntity entity)
-        {
-            if (entity is Antena antena)
-            {
-                m_antenas.Remove(antena.Position3f.Tile3i);
-                m_dataBands.Remove(antena.Position3f.Tile3i);
-            }
-        }
-    }
+		public (Fix32 strenght, FMDataBandChannel values) Signal(Tile3i position, int channelIdx, bool logging = false)
+		{
+			if (Signals(position, channelIdx, logging).TryGetValue(channelIdx, out var channel))
+			{
+				return (channel.Item1, channel.Item2);
+			}
+			return (Fix32.Zero, null);
+		}
+
+		private void OnAdded(IEntity entity)
+		{
+			if (entity is Antena antena)
+			{
+				m_antenas[antena.Position3f.Tile3i] = antena;
+			}
+		}
+
+		private void OnRemoved(IEntity entity)
+		{
+			if (entity is Antena antena)
+			{
+				m_antenas.Remove(antena.Position3f.Tile3i);
+			}
+		}
+	}
 }

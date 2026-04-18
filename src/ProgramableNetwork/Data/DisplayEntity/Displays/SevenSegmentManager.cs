@@ -1,6 +1,5 @@
 ﻿using Mafi;
 using Mafi.Collections;
-using Mafi.Collections.ImmutableCollections;
 using Mafi.Core;
 using Mafi.Core.Syncers;
 using Mafi.Localization;
@@ -11,48 +10,31 @@ using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using static Mafi.Unity.Assets.Unity;
 using Display = Mafi.Unity.Ui.Library.Display;
 using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 
 namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 {
-	public class SevenSegmentInspector : IDisplayEntityInspector
+	public class SevenSegmentInspector : ColorizedLightInspector, IDisplayEntityInspector
 	{
 		public static string[] SEGMENTS = new string[] { "A", "B", "C", "D", "E", "F", "G", "DP" };
 		private PanelRow m_row;
 		private PanelWithHeader m_act;
 
 		public SevenSegmentInspector(Data.DisplayEntity.DisplayEntity entity)
+			: base(entity)
 		{
-			Entity = entity;
 		}
-
-		public Data.DisplayEntity.DisplayEntity Entity { get; }
 
 		public Action Create(DisplayEntityInspector panel)
 		{
 			Label active;
-			ButtonIcon colorIcon;
-			Dropdown<LightInfo> dropdown;
 			Display number;
+
 			var components = new UiComponent[] {
 				active = new Label("Color".AsLoc()).TextAlign(TextAlignment.LeftMiddle)
 				.FlexGrow(0.4f),
-				dropdown = new Dropdown<LightInfo>(
-					optionViewFactory: (option, index, isInDropdown) => new Icon(UserInterface.General.Circle_svg).Color(option.icon),
-					customButton: colorIcon = new ButtonIcon(UserInterface.General.Circle_svg)
-				)
-				.OnValueChanged((v, i) => {
-					Entity.SetProperty("colorOn.R", v.on.R);
-					Entity.SetProperty("colorOn.G", v.on.G);
-					Entity.SetProperty("colorOn.B", v.on.B);
-					Entity.SetProperty("colorOff.R", v.off.R);
-					Entity.SetProperty("colorOff.G", v.off.G);
-					Entity.SetProperty("colorOff.B", v.off.B);
-				})
-				.SetOptions(Colors().ToImmutableArray())
-				.FlexGrow(0.5f),
+				GetColorPickerComponent(),
 				number = new Display("000".AsLoc()).Width(1.25f * Sizes.BLOCK_SIZE)
 			};
 
@@ -86,38 +68,10 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 					number.Value(final.ToString("D3").AsLoc());
 				  });
 
-			m_row
-			   .Observe(() => new ColorRgba(
-					Entity.GetProperty("colorOn.R", ColorRgba.Red.R).IntegerPart,
-					Entity.GetProperty("colorOn.G", ColorRgba.Red.G).IntegerPart,
-					Entity.GetProperty("colorOn.B", ColorRgba.Red.B).IntegerPart
-				))
-			   .Observe(() => new ColorRgba(
-					Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(100).R).IntegerPart,
-					Entity.GetProperty("colorOff.G", ColorRgba.Red.G).IntegerPart,
-					Entity.GetProperty("colorOff.B", ColorRgba.Red.B).IntegerPart
-				))
-			   .Do((colorOn, colorOff) => {
-				   for (var i = 0; i < dropdown.OptionsCount; i++)
-				   {
-					   var option = dropdown.GetOptionAt(i);
-					   if (option.on == colorOn && option.off == colorOff)
-					   {
-						   //dropdown.SetValueIndex(i);
-						   colorIcon.Icon.Color(option.icon);
-						   return;
-					   }
-				   }
-				   //dropdown.SetValueIndex(0);
-				   //colorIcon.Icon.Color(dropdown.GetOptionAt(0).icon);
-			   });
-
 			m_act = panel.AddRootPanelWithHeader();
 			m_act.Body.AlignItemsCenterMiddle();
 			m_act.Body.Add(new Row(5) { Toggles(panel) });
 			m_act.Header.Add(new Label("Segments".AsLoc()).Class(Cls.panelHeader).TextAlign(TextAlignment.CenterMiddle));
-
-			InitColorSelection(colorIcon, dropdown);
 
 			return () => {
 				m_row.RemoveFromHierarchy();
@@ -163,32 +117,6 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 				off = ColorRgba.LightGray.SetR(100).SetG(100).SetB(100),
 				icon = ColorRgba.LightGray
 			};
-		}
-
-		private void InitColorSelection(ButtonIcon colorIcon, Dropdown<LightInfo> dropdown)
-		{
-			var colorOn = new ColorRgba(
-				Entity.GetProperty("colorOn.R", ColorRgba.Red.R).IntegerPart,
-				Entity.GetProperty("colorOn.G", ColorRgba.Red.G).IntegerPart,
-				Entity.GetProperty("colorOn.B", ColorRgba.Red.B).IntegerPart
-			);
-			var colorOff = new ColorRgba(
-				Entity.GetProperty("colorOff.R", ColorRgba.Red.SetR(100).R).IntegerPart,
-				Entity.GetProperty("colorOff.G", ColorRgba.Red.G).IntegerPart,
-				Entity.GetProperty("colorOff.B", ColorRgba.Red.B).IntegerPart
-			);
-			for (var i = 0; i < dropdown.OptionsCount; i++)
-			{
-				var option = dropdown.GetOptionAt(i);
-				//Log.Info($"At {i} OFF: {option.on.ToHex()} is {colorOn.ToHex()}");
-				//Log.Info($"At {i}  ON: {option.off.ToHex()} is {colorOff.ToHex()}");
-				if (option.on == colorOn && option.off == colorOff)
-				{
-					dropdown.SetValueIndex(i);
-					colorIcon.Icon.Color(option.icon);
-					break;
-				}
-			}
 		}
 
 		private IEnumerable<UiComponent> Toggles(DisplayEntityInspector panel)

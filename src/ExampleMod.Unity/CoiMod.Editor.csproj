@@ -540,6 +540,14 @@
       <HintPath>C:\Program Files\Unity\Hub\Editor\6000.0.66f1\Editor\Data\PlaybackEngines\MetroSupport\UnityEditor.UWP.Extensions.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Mafi.UnityCore">
+      <HintPath>Assets\DLLs\Mafi.UnityCore.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mafi.Unity">
+      <HintPath>Assets\DLLs\Mafi.Unity.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.Collections.LowLevel.ILSupport">
       <HintPath>Library\PackageCache\com.unity.collections@aea9d3bd5e19\Unity.Collections.LowLevel.ILSupport\Unity.Collections.LowLevel.ILSupport.dll</HintPath>
       <Private>False</Private>
@@ -548,8 +556,24 @@
       <HintPath>Library\PackageCache\com.unity.ext.nunit@031a54704bff\net40\unity-custom\nunit.framework.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Mafi">
+      <HintPath>Assets\DLLs\Mafi.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mafi.Core">
+      <HintPath>Assets\DLLs\Mafi.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System.IO.Hashing">
       <HintPath>Library\PackageCache\com.unity.collections@aea9d3bd5e19\Unity.Collections.Tests\System.IO.Hashing\System.IO.Hashing.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mafi.Base">
+      <HintPath>Assets\DLLs\Mafi.Base.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Facepunch.Steamworks.Win64">
+      <HintPath>Assets\DLLs\Facepunch.Steamworks.Win64.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ProgramableNetwork">
@@ -566,30 +590,6 @@
     </Reference>
     <Reference Include="Mafi.ModsAuthoringSupport">
       <HintPath>Assets\DLLs\Mafi.ModsAuthoringSupport.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mafi.UnityCore">
-      <HintPath>Assets\DLLs\Mafi.UnityCore.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mafi.Unity">
-      <HintPath>Assets\DLLs\Mafi.Unity.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Facepunch.Steamworks.Win64">
-      <HintPath>Assets\DLLs\Facepunch.Steamworks.Win64.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mafi.Base">
-      <HintPath>Assets\DLLs\Mafi.Base.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mafi.Core">
-      <HintPath>Assets\DLLs\Mafi.Core.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Mafi">
-      <HintPath>Assets\DLLs\Mafi.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="mscorlib">

@@ -41,6 +41,8 @@ using System.Linq;
 using System.Reflection;
 using Mafi.Base.Prototypes.Machines.PowerGenerators;
 using Mafi.Core.Factory.MechanicalPower;
+using Mafi.Localization;
+using Mafi.Unity.Ui.Library;
 using static Mafi.Unity.Assets.Unity;
 using static Mafi.Unity.Ui.Library.LogisticsZoneUIComponents;
 using CargoDepot = Mafi.Core.Buildings.Cargo.CargoDepot;
@@ -1408,6 +1410,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.ConnectionWrite)
 			.UnlockedBy(Ids.Research.NuclearReactor)
 			.UnlockedBy(Ids.Research.BasicComputing)
+			.AddInput("breed_control", "Control breeding")
+			.AddInput("breed_step", "Breeding step")
 			.AddInput("target", "Target power level")
 			.AddOutput("heat", "Stored Heat")
 			.AddOutput("meltdown", "Is in melt down")
@@ -1415,19 +1419,51 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.Width(4)
 			.UseComputation(PartialQuantity.One * 2)
 			.AddEntityField<NuclearReactor>("reactor", "Connection reactor", "Must be placed next to reactor (2 metres)")
+			.AddBooleanField("field_breeding", "Control breeding")
 			.Action(m => {
 				var reactor = m.Field.Entity<NuclearReactor>("reactor");
 
-				m.Output["heat"] = reactor.HeatAmount.ToFix32();
-				m.Output["meltdown"] = reactor.IsInMeltdown ? 1.ToFix32() : 2.ToFix32();
-				m.Output["power"] = reactor.CurrentPowerLevel.ToFix32();
+				m.Output["heat"] = reactor?.HeatAmount.ToFix32() ?? Fix32.Zero;
+				m.Output["meltdown"] = (reactor?.IsInMeltdown ?? false) ? 1.ToFix32() : 2.ToFix32();
+				m.Output["power"] = reactor?.CurrentPowerLevel.ToFix32() ?? Fix32.Zero;
+				m.Output.Integer["breeding"] = reactor?.EnrichmentStep ?? 0;
+
+				if (reactor == null) {
+					m.SetError("Reactor is not connected");
+					return ModuleStatus.Error;
+				}
 
 				Percent target = m.Input["target", Fix32.Zero].ToPercent();
 				if (!reactor.IsInMeltdown && reactor.TargetPowerLevel != target) {
-					if (target < Percent.Zero || target > reactor.MaxPowerLevelPercent) {
-						return;
+					if (target >= Percent.Zero && target <= reactor.MaxPowerLevelPercent) {
+						reactor.SetTargetPowerLevel(target);
 					}
-					reactor.SetTargetPowerLevel(target);
+				}
+
+				bool breedingControlled = m.Input.Bool["breed_control"];
+				if (breedingControlled) {
+					int breeding = m.Input.Integer["breed_step"];
+					if (breeding == 0 && reactor.EnrichmentStep > 0) {
+						reactor.SetEnrichmentStep(0);
+					} else if (breeding != 0 && breeding != reactor.EnrichmentStep) {
+						reactor.SetEnrichmentStep(breeding);
+					}
+				}
+				return ModuleStatus.Running;
+			})
+			.AddDisplay("power", "Power", 2, 100.ToFix32().ToStringRounded(1) + "%")
+			.AddDisplay("meltdown", "Meltdown", 1, led: true)
+			.AddDisplay("breading", "Breading", 1, image: true)
+			.Display((m) => {
+				m.Display["power"] = (m.Output["power"] * 100).ToStringRounded(1) + "%";
+				m.Display["meltdown"] = m.Output["meltdown"] > 0 ? "" : "1";
+
+				if (m.Field.Entity<NuclearReactor>("reactor") is { } reactor) {
+					m.Display["breading"] = reactor.Prototype.Enrichment.HasValue && m.Output.Integer["breeding"] > 0
+						? reactor.Prototype.Enrichment.Value.OutputProduct.IconPath
+						: reactor.Prototype.SteamOutPerPowerLevel.Product.IconPath;
+				} else {
+					m.Display["breading"] = Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png;
 				}
 			})
 			.AddControllerDevice()
@@ -2455,7 +2491,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					m.Field.Bool["logging"] = false;
 				}
 
-				(Fix32 strenght, Fix32[] signals) = fmManager.Signal(m.Controller.Position3f.Tile3i, m.Field.Integer["fm"], logging);
+				(Fix32 strenght, FMDataBandChannel signals) = fmManager.Signal(m.Controller.Position3f.Tile3i, m.Field.Integer["fm"], logging);
 				if (strenght == 0)
 				// TODO generate noise or read data
 				{
@@ -2465,9 +2501,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 					}
 				} else {
 					m.Output["signal"] = strenght;
-					int minCount = Math.Min(signals.Length, digits);
+					m.Display["id3"] = signals!.Id3 ?? "N/A";
+					Fix32[] signalsValue = signals!.Value!;
+					int minCount = Math.Min(signalsValue.Length, digits);
 					for (int i = 0; i < minCount; i++) {
-						m.Output[NAMES[i]] = signals[i];
+						m.Output[NAMES[i]] = signalsValue[i];
 					}
 					for (int i = minCount; i < digits; i++) {
 						m.Output[NAMES[i]] = 0;
@@ -2483,6 +2521,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 				.AddCustomField("fm", "FM", "Listening frequency",
 					(inspector, settings, refresh, reference) => settings.Add(new Ui.DataBand.FMDataBandChannelView(inspector, refresh, reference))
 				)
+				.AddCustomField("id3", "ID3 (name)", "ID3 metadata for the channel",
+					(inspector, settings, module, refresh, reference)
+						=> settings.AddAndReturn(new Display())
+							.Fill()
+							.TextLeftMiddle()
+							.ObserveValue(() => module.Display["id3", "N/A"].AsLoc()))
 				.AddControllerDevice()
 				// dynamic
 				.Width(i)
@@ -2541,7 +2585,9 @@ public class Modules : ModuleGroup, IModuleGroup {
 						for (int i = 0; i < digits; i++) {
 							signals[i] = m.Input[NAMES[i], 0];
 						}
-						fm.Update(m.Field.Integer["fm"], signals, logging);
+						int channel = m.Field.Integer["fm"];
+						fm.Update(channel, signals, logging);
+						fm.Id3(channel, m.Field["id3", string.Empty]);
 					}
 				} else {
 					m.SetError("No antena connected");
@@ -2556,6 +2602,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 				.AddCustomField("fm", "FM", "Broadcasting frequency",
 					(inspector, settings, refresh, reference) => settings.Add(new Ui.DataBand.FMDataBandChannelView(inspector, refresh, reference))
 				)
+				.AddStringField("id3", "ID3 (name)", defaultValue: null)
 				.AddEntityField<Antena>("antena", "Antena")
 				.AddDisplay("fm", "Frequency", i)
 				.AddControllerDevice()
@@ -2665,13 +2712,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddOutput("value", "Value")
 			.AddDisplay("name", "Variable name (should be longer)", 1)
 			.AddStringField("name", "Variable name", defaultValue: "")
-			//.AddCustomField("variables", "Variables", field =>
-			//{
-			//field.Container.Add(
-			//    new ButtonText(new Mafi.Localization.LocStrFormatted(field.Name))
-			//    .OnClick((e) => GlobalDependencyResolver.Get<VariableWindow>().BuildAndShow(field.Builder))
-			//);
-			//})
+			.AddCustomField("variables", "Variables", (inspector, container, refresh, reference) => {
+				container.Add(
+					new ButtonText("Variables".ToDoLoc())
+					.OnClick(() => inspector.VariableWindowController.ActivateSelf())
+				);
+			})
 			.Width(1)
 			.Action(m => {
 				string name = m.Field["name", ""];
@@ -2701,6 +2747,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddInput("value", "Value")
 			.AddBooleanField("field_value", "Use direct constant")
 			.AddFix32Field("value", "Value")
+			.AddCustomField("variables", "Variables", (inspector, container, refresh, reference) => {
+				container.Add(
+					new ButtonText("Variables".ToDoLoc())
+						.OnClick(() => inspector.VariableWindowController.ActivateSelf())
+				);
+			})
 			.Width(1)
 			.Action(m => {
 				string name = m.Field["name", ""];

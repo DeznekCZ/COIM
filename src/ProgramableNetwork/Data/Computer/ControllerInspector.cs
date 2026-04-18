@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Mafi.Core.Console;
 using Mafi.Core.Research;
+using ProgramableNetwork.Data.Variables;
 using UnityEngine;
 using static Mafi.Unity.Assets.Unity;
 using Display = Mafi.Unity.Ui.Library.Display;
@@ -38,6 +39,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	private readonly Material m_movingArrowsLineMaterialShared;
 	private readonly ControllerView m_view;
 	private readonly ButtonIcon m_colorButton;
+	private readonly VariableWindowController m_variableWindowController;
 
 	// TODO
 	public ModuleConnector m_higlightedOutput;
@@ -54,6 +56,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		ShortcutsManager shortcutsManager,
 		//TerrainCursor terrainCursor,
 		CameraController cameraController,
+		VariableWindowController variableWindowController,
 		NewInstanceOf<EntityHighlighter> entityHighlighter,
 		NewInstanceOf<EntityHighlighter> entityHighlighterSelectable,
 		LinesFactory linesFactory,
@@ -73,6 +76,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		ResearchManager = researchManager;
 		m_invalidOpSound = context.AudioDb.InvalidOp();
 		m_console = console;
+		m_variableWindowController = variableWindowController;
 
 		ProgressBar bar;
 		AddPanelRow(
@@ -168,6 +172,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	public EntitySelector EntitySelectionInput { get; set; }
 	public ModuleConnector OutputConnection { get; internal set; }
 	public CameraController CameraController { get; }
+	public VariableWindowController VariableWindowController => m_variableWindowController;
 
 	public override bool InputUpdate() {
 		if (EntitySelectionInput != null) {
