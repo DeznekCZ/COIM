@@ -133,7 +133,7 @@ namespace ProgramableNetwork.Ui.DataBand
             this.Width(400);
 
             var dataBandProto = controllerInspector.Entity.Context.ProtosDb
-                                           .Get<DataBandProto>(DataBands.DataBand_FM).Value;
+                                           .Get<DataBandProto>(DataBands.DataBand_AM).Value;
 
 
             Row firstRow = Body.AddAndReturn(new Row());
@@ -143,8 +143,8 @@ namespace ProgramableNetwork.Ui.DataBand
             display.Observe(() => reference.Value)
                    .Do(index =>
                    {
-                       string displayValue = ((171 + reference.Value) * 0.5f.ToFix32()).ToStringRounded(1);
-                       display.Value($"AM {displayValue} khz".AsLoc());
+                       string displayValue = ((53 + reference.Value) * 10.ToFix32()).IntegerPart.ToString();
+					   display.Value($"AM {displayValue} kHz".AsLoc());
                    });
 
             Row secondRow = Body.AddAndReturn(new Row());
