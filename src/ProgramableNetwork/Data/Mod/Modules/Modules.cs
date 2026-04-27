@@ -1433,15 +1433,13 @@ public class Modules : ModuleGroup, IModuleGroup {
 					return ModuleStatus.Error;
 				}
 
-				Percent target = m.Input["target", Fix32.Zero].ToPercent();
+				Percent target = m.Input["target", Fix32.Zero].ToPercent()
+					.Clamp(Percent.Zero, reactor.MaxPowerLevelPercent);
 				if (!reactor.IsInMeltdown && reactor.TargetPowerLevel != target) {
-					if (target >= Percent.Zero && target <= reactor.MaxPowerLevelPercent) {
-						reactor.SetTargetPowerLevel(target);
-					}
+					reactor.SetTargetPowerLevel(target);
 				}
 
-				bool breedingControlled = m.Input.Bool["breed_control"];
-				if (breedingControlled) {
+				if (reactor.Prototype.Enrichment.HasValue && m.Input.Bool["breed_control"]) {
 					int breeding = m.Input.Integer["breed_step"];
 					if (breeding == 0 && reactor.EnrichmentStep > 0) {
 						reactor.SetEnrichmentStep(0);
@@ -2186,6 +2184,39 @@ public class Modules : ModuleGroup, IModuleGroup {
 					m.Display["pause"] = $"#C00FF00{UserInterface.EntityIcons.Gears_png}";
 					return ModuleStatus.Error;
 				}
+			})
+			.BuildAndAdd();
+
+		registrator
+			.ModuleBuilderStart("Connection_Boost_Set", "Connection: Unity Boost", "BST",
+				Assets.Base.Products.Icons.Vegetables_svg)
+			.AddCategory(Category.Connection)
+			.AddCategory(Category.ConnectionWrite)
+			.AddCategory(Category.ConnectionRead)
+			.Width(1)
+			.AddInput("boost", "Unity boost active")
+			.AddOutput("boost", "Unity boost active")
+			.AddEntityField<IEntityWithBoost>("entity", "Connection device",
+				"Any building connectable by cable 20m from controller")
+			.AddBooleanField("field_boost", "Set boost by settings", defaultValue: false)
+			.AddBooleanField("boost", "Set boost by settings", defaultValue: false)
+			.AddDisplay("boost", "Boost", 1, image: true)
+			.Action(m => {
+				IEntityWithBoost e = m.Field.Entity<IEntityWithBoost>("entity");
+				if (e is not null && (e is not LayoutEntity ent || ent.Prototype.BoostCost.HasValue)) {
+					bool boost = m.FieldOrInput.Bool["boost"];
+					e.SetBoosted(boost);
+					m.Output.Bool["boost"] = e.IsBoostRequested;
+					return ModuleStatus.Running;
+				} else {
+					m.Output.Bool["boost"] = false;
+					return ModuleStatus.Error;
+				}
+			})
+			.Display(m => {
+				m.Display["boost"] = m.Output.Bool["boost"]
+					? $"#CA000E0{UserInterface.EntityIcons.Boost_png}"
+					: $"#C606060{UserInterface.EntityIcons.Boost_png}";
 			})
 			.BuildAndAdd();
 	}

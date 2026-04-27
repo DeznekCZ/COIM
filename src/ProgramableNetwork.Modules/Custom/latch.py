@@ -20,7 +20,7 @@ class Boolean_Latch(Module):
         Display.LED("on", "Stored signal")
     ]
     width = 2
-    categories = [ DefaultCategories.Arithmetic ]
+    categories = [ DefaultCategories.Boolean, DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
     def Action(self):

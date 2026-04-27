@@ -53,8 +53,8 @@ class Runtime_FlipFlop_2(Module):
         if not self.Input.get_bool("enable", False):
             return
 
-        self.Output.set("output", self.Input.get("in_1", Fix32.Zero))
-        self.Output.set("output", self.Input.get("in_1", Fix32.Zero))
+        self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
+        self.Output.set("out_2", self.Input.get("in_2", Fix32.Zero))
         
         
 
