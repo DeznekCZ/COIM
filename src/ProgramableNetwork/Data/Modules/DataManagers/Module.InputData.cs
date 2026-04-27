@@ -1,4 +1,4 @@
-﻿using Mafi;
+using Mafi;
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Products;
@@ -34,19 +34,20 @@ namespace ProgramableNetwork
 
             public Fix32 this[string name, Fix32 defaultValue]
             {
-                get => module.NumberData.TryGetValue("in__" + name, out int data)
-                    ? Fix32.FromRaw(data) : defaultValue;
+                get => module.InputNumberData.TryGetValue(name, out Fix32 data)
+                    ? data : defaultValue;
             }
 
             public Fix32 this[string name]
             {
                 get => this[name, Fix32.Zero];
-                set => module.NumberData["in__" + name] = value.RawValue;
+                set => module.InputNumberData[name] = value;
             }
 
             public ProductProto Product(string name)
             {
-                module.NumberData.TryGetValue("in__" + name, out int slimId);
+                module.InputNumberData.TryGetValue(name, out Fix32 data);
+                int slimId = data.RawValue;
 
                 if (slimId == 0)
                 {
@@ -72,7 +73,7 @@ namespace ProgramableNetwork
                     }
                 }
 
-                module.NumberData.TryRemove("in__" + name, out slimId);
+                module.InputNumberData.TryRemove(name, out _);
                 module.StringData.TryRemove("in__" + name, out cache);
                 return null;
             }
@@ -80,9 +81,9 @@ namespace ProgramableNetwork
             public T Entity<T>(string name)
                 where T : class, IEntity
             {
-                if (module.NumberData.TryGetValue("in__" + name, out int data))
+                if (module.InputNumberData.TryGetValue(name, out Fix32 data))
                 {
-                    module.Context.EntitiesManager.TryGetEntity(new EntityId(data), out T entity);
+                    module.Context.EntitiesManager.TryGetEntity(new EntityId(data.RawValue), out T entity);
                     return entity;
                 }
                 return default;
@@ -90,7 +91,8 @@ namespace ProgramableNetwork
 
             public IProtoWithIcon EntityProtoIconified(string name)
             {
-                module.NumberData.TryGetValue("in__" + name, out int slimId);
+                module.InputNumberData.TryGetValue(name, out Fix32 data);
+                int slimId = data.RawValue;
 
                 if (slimId == 0)
                 {
@@ -116,7 +118,7 @@ namespace ProgramableNetwork
                     }
                 }
 
-                module.NumberData.TryRemove("in__" + name, out slimId);
+                module.InputNumberData.TryRemove(name, out _);
                 return default;
             }
         }

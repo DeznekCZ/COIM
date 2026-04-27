@@ -536,7 +536,7 @@ namespace ProgramableNetwork
 			{
 				foreach (var input in module.Prototype.Inputs)
 				{
-					module.NumberData.TryRemove("in__" + input.Id, out _);
+					module.InputNumberData.TryRemove(input.Id, out _);
 					// module.StringData.TryRemove("in__" + input.Id, out _);
 				}
 

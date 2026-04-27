@@ -23,10 +23,10 @@ namespace ProgramableNetwork.Ui
         {
             Row visible = new Row(gap: 2.pt())
             {
-                new Label("Shift".AsLoc()).Class(Cls.window__title).FlexGrow(0.2f),
+                new Label(NewTr.Inspector.Shift).Class(Cls.window__title).FlexGrow(0.2f),
                 new Label("+".AsLoc()).TextAlign(TextAlignment.CenterMiddle),
                 new Icon(UserInterface.General.LeftClick128_png).FlexGrow(0.2f),
-                new Label("Add last created / coppied".AsLoc()).FlexGrow(0.6f)
+                new Label(NewTr.Inspector.AddLastCreated).FlexGrow(0.6f)
             };
 
             Column column = new Column(gap: 2.pt())
@@ -34,13 +34,13 @@ namespace ProgramableNetwork.Ui
                 new Row(gap: 2.pt())
                 {
                     new Icon(UserInterface.General.LeftClick128_png).FlexGrow(0.2f),
-                    new Label("Add new module".AsLoc()).FlexGrow(0.8f)
+                    new Label(NewTr.Inspector.AddNewModule).FlexGrow(0.8f)
                 },
                 visible,
                 new Row(gap: 2.pt())
                 {
                     new Icon(UserInterface.General.RightClick128_png).FlexGrow(0.2f),
-                    new Label("Add from template".AsLoc()).FlexGrow(0.8f)
+                    new Label(NewTr.Inspector.AddFromTemplate).FlexGrow(0.8f)
                 },
             };
             column.Observe(() => m_controllerView().LastCreated)

@@ -8,6 +8,7 @@ from Core.module import DefaultControllers, Module
 
 class Runtime_Equal_Selector_7(Module):
     name = "Control: Equal Selector (7 inputs)"
+    description = "Compares <b>main</b> against inputs <b>in_0</b>..<b>in_6</b>; outputs the index of the first match on <b>matching_index</b> and sets <b>output</b> to 1. If nothing matches, <b>matching_index</b> is 99 and <b>output</b> is 0."
     symbol = "MS"
     inputs = [
         Input("main", "Main Input"),

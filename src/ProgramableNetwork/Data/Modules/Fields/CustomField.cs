@@ -1,4 +1,6 @@
 ﻿using Mafi;
+using Mafi.Core.Prototypes;
+using Mafi.Localization;
 using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
@@ -9,32 +11,32 @@ namespace ProgramableNetwork.Ui
     public class CustomField : IField
     {
         private string id;
-        private string name;
-        private string shortDesc;
+        private LocStr name;
+        private LocStr shortDesc;
         private CustomFieldConstructorWithModule ui;
         private Action<CustomField> data;
 
-        public CustomField(string id, string name, string shortDesc, CustomFieldConstructor ui, Action<CustomField> data)
+        public CustomField(string id, Proto.Str strs, CustomFieldConstructor ui, Action<CustomField> data)
         {
             this.id = id;
-            this.name = name;
-            this.shortDesc = shortDesc;
+            this.name = strs.Name;
+            this.shortDesc = strs.DescShort;
             this.ui = (a,b,c,d,e) => ui(a, b, d, e);
             this.data = data;
         }
 
-        public CustomField(string id, string name, string shortDesc, CustomFieldConstructorWithModule ui, Action<CustomField> data)
+        public CustomField(string id, Proto.Str strs, CustomFieldConstructorWithModule ui, Action<CustomField> data)
         {
             this.id = id;
-            this.name = name;
-            this.shortDesc = shortDesc;
+            this.name = strs.Name;
+            this.shortDesc = strs.DescShort;
             this.ui = ui;
             this.data = data;
         }
 
         public string Id => id;
-        public string Name => name;
-        public string ShortDesc => shortDesc;
+        public LocStr Name => name;
+        public LocStr ShortDesc => shortDesc;
 
         public int Size => 1;
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)

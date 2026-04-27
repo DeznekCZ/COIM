@@ -1,4 +1,4 @@
-﻿using Mafi;
+using Mafi;
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Products;
@@ -55,22 +55,22 @@ namespace ProgramableNetwork
 
             public Fix32 this[string name, Fix32 defaultValue]
             {
-                get => module.NumberData.TryGetValue("field__" + name, out int data)
-                    ? Fix32.FromRaw(data) : defaultValue;
+                get => module.FieldNumberData.TryGetValue(name, out Fix32 data)
+                    ? data : defaultValue;
             }
 
             public Fix32 this[string name]
             {
                 get => this[name, Fix32.Zero];
-                set => module.NumberData["field__" + name] = value.RawValue;
+                set => module.FieldNumberData[name] = value;
             }
 
             public T Entity<T>(string name)
                 where T : class, IEntity
             {
-                if (module.NumberData.TryGetValue("field__" + name, out int data))
+                if (module.FieldNumberData.TryGetValue(name, out Fix32 data))
                 {
-                    module.Context.EntitiesManager.TryGetEntity(new EntityId(data), out T entity);
+                    module.Context.EntitiesManager.TryGetEntity(new EntityId(data.RawValue), out T entity);
                     if (!module.StringData.ContainsKey("field__" + name))
                     {
                         Entity(name, entity);
@@ -85,7 +85,7 @@ namespace ProgramableNetwork
             {
                 if (entity is null)
                 {
-                    module.NumberData.TryRemove("field__" + name, out _);
+                    module.FieldNumberData.TryRemove(name, out _);
                     module.StringData.TryRemove("field__" + name, out _);
                     return;
                 }
@@ -93,13 +93,14 @@ namespace ProgramableNetwork
                 entity.HasPosition(out Tile3f posA);
                 var relativePosition = module.Controller.Position3f - posA;
 
-                module.NumberData["field__" + name] = entity.Id.Value;
+                module.FieldNumberData[name] = Fix32.FromRaw(entity.Id.Value);
                 module.StringData["field__" + name] = JsonConvert.SerializeObject(new EntityInfo(entity, relativePosition));
             }
 
             public ProductProto Product(string name)
             {
-                module.NumberData.TryGetValue("field__" + name, out int slimId);
+                module.FieldNumberData.TryGetValue(name, out Fix32 data);
+                int slimId = data.RawValue;
 
                 if (slimId == 0)
                 {
@@ -125,14 +126,15 @@ namespace ProgramableNetwork
                     }
                 }
 
-                module.NumberData.TryRemove("field__" + name, out slimId);
-                module.StringData.TryRemove("field__" + name, out cache);
+                module.FieldNumberData.TryRemove(name, out _);
+                module.StringData.TryRemove("field__" + name, out _);
                 return null;
             }
 
             public IProtoWithIcon EntityProtoIconified(string name)
             {
-                module.NumberData.TryGetValue("field__" + name, out int slimId);
+                module.FieldNumberData.TryGetValue(name, out Fix32 data);
+                int slimId = data.RawValue;
 
                 if (slimId == 0)
                 {
@@ -158,7 +160,7 @@ namespace ProgramableNetwork
                     }
                 }
 
-                module.NumberData.TryRemove("field__" + name, out slimId);
+                module.FieldNumberData.TryRemove(name, out _);
                 return default;
             }
         }

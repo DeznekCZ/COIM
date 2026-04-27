@@ -7,6 +7,7 @@ from Core.module import DefaultControllers, Module
 
 class Runtime_Timer(Module):
     name = "Control: Timer"
+    description = "Counts up by 1 each tick on output <b>timer</b> until it reaches the period (input <b>timer_period</b> or the field, ~10 ticks/s); when it does, <b>done</b> turns on and the counter holds. Triggering <b>reset</b> clears <b>timer</b> and <b>done</b>."
     symbol = "TMR"
     inputs = [
         Input("reset", "Reset Timer"),

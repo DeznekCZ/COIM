@@ -1,6 +1,8 @@
 ﻿using Mafi;
 using Mafi.Core;
 using Mafi.Core.Entities;
+using Mafi.Core.Prototypes;
+using Mafi.Localization;
 using Mafi.Unity.InputControl.Inspectors;
 using System;
 using Mafi.Core.Entities.Static;
@@ -16,16 +18,16 @@ using ProgramableNetwork.Utils;
 namespace ProgramableNetwork.Ui {
 	public class EntityField : IField {
 		private string id;
-		private string name;
-		private string shortDesc;
+		private LocStr name;
+		private LocStr shortDesc;
 		private Func<Module, IEntity, bool> entitySelector;
 		private Fix32 distance;
 		private Fix64 sqrDistance;
 
-		public EntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> entitySelector, Fix32 distance) {
+		public EntityField(string id, Proto.Str strs, Func<Module, IEntity, bool> entitySelector, Fix32 distance) {
 			this.id = id;
-			this.name = name;
-			this.shortDesc = shortDesc;
+			this.name = strs.Name;
+			this.shortDesc = strs.DescShort;
 			this.entitySelector = entitySelector;
 			this.distance = distance;
 			this.sqrDistance = distance.ToFix64() * distance.ToFix64();
@@ -33,15 +35,15 @@ namespace ProgramableNetwork.Ui {
 
 		public string Id => id;
 
-		public string Name => name;
-		public string ShortDesc => shortDesc;
+		public LocStr Name => name;
+		public LocStr ShortDesc => shortDesc;
 
 		public int Size => 40;
 
 		public void Validate(Module module) {
 			EntityInfo entityData = null;
 			// FOR ONLY NEWLY CONSTRUCTED
-			module.NumberData.TryRemove("field__" + Id, out _);
+			module.FieldNumberData.TryRemove(Id, out _);
 			if (module.StringData.TryGetValue("field__" + Id, out var value)) {
 				//Log.Info("Searching for entity in module by config: " + module.Id + " with key: " + Id);
 				entityData = JsonConvert.DeserializeObject<EntityInfo>(value);

@@ -8,6 +8,7 @@ from Core.module import DefaultControllers, Module
 
 class Runtime_Memory_Selector_1(Module):
     name = "Control: Memory Selector (1 input)"
+    description = "When <b>in_1</b> is positive, outputs the value of field <b>field_1</b>; otherwise outputs the <b>default</b> field. Single-input lookup table."
     symbol = "MS"
     inputs = [
         Input("in_1", "Signal input")
@@ -35,6 +36,7 @@ class Runtime_Memory_Selector_1(Module):
 
 class Runtime_Memory_Selector_2(Module):
     name = "Control: Memory Selector (2 inputs)"
+    description = "Priority lookup: outputs the value of <b>field_2</b> if <b>in_2</b> is positive, else <b>field_1</b> if <b>in_1</b> is positive, else the <b>default</b> field. Higher-numbered inputs win ties."
     symbol = "MS"
     inputs = [
         Input("in_1", "Input 1"),
@@ -68,6 +70,7 @@ class Runtime_Memory_Selector_2(Module):
 
 class Runtime_Memory_Selector_4(Module):
     name = "Control: Memory Selector (4 inputs)"
+    description = "Priority lookup: scans inputs <b>in_4</b> down to <b>in_1</b> and outputs the value of the matching <b>field_n</b> for the first positive input; falls back to the <b>default</b> field. Higher-numbered inputs win ties."
     symbol = "MEM SELECT"
     inputs = [
         Input("in_1", "Input 1"),
@@ -113,6 +116,7 @@ class Runtime_Memory_Selector_4(Module):
 
 class Runtime_Memory_Selector_6(Module):
     name = "Control: Memory Selector (6 inputs)"
+    description = "Priority lookup: scans inputs <b>in_6</b> down to <b>in_1</b> and outputs the value of the matching <b>field_n</b> for the first positive input; falls back to the <b>default</b> field. Higher-numbered inputs win ties."
     symbol = "Memory Selector"
     inputs = [
         Input("in_1", "Input 1"),
@@ -170,6 +174,7 @@ class Runtime_Memory_Selector_6(Module):
 
 class Runtime_Memory_Selector_8(Module):
     name = "Control: Memory Selector (8 inputs)"
+    description = "Priority lookup: scans inputs <b>in_8</b> down to <b>in_1</b> and outputs the value of the matching <b>field_n</b> for the first positive input; falls back to the <b>default</b> field. Higher-numbered inputs win ties."
     symbol = "Memory Selector"
     inputs = [
         Input("in_1", "Input 1"),

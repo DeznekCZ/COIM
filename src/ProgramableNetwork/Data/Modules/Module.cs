@@ -60,6 +60,9 @@ namespace ProgramableNetwork
 			Controller = entity;
 			Status = ModuleStatus.Init;
 			NumberData = [];
+			InputNumberData = [];
+			OutputNumberData = [];
+			FieldNumberData = [];
 			StringData = [];
 			InputModules = [];
 		}
@@ -128,10 +131,13 @@ namespace ProgramableNetwork
 
 			writer.WriteLong(Id);
 			writer.WriteString(m_protoId);
-			writer.WriteInt(/*Version*/ 2);
+			writer.WriteInt(/*Version*/ 3);
 			writer.WriteBool(IsPaused);
 			writer.WriteInt((int)Status);
 			Dict<string, int>.Serialize(NumberData, writer);
+			Dict<string, Fix32>.Serialize(InputNumberData, writer);
+			Dict<string, Fix32>.Serialize(OutputNumberData, writer);
+			Dict<string, Fix32>.Serialize(FieldNumberData, writer);
 			Dict<string, string>.Serialize(StringData, writer);
 			Dict<string, ModuleConnector>.Serialize(InputModules, writer);
 		}
@@ -148,6 +154,18 @@ namespace ProgramableNetwork
 				Status = ModuleStatus.Running;
 			}
 			NumberData = Dict<string, int>.Deserialize(reader);
+			if (loadedVersion >= 3)
+			{
+				InputNumberData = Dict<string, Fix32>.Deserialize(reader);
+				OutputNumberData = Dict<string, Fix32>.Deserialize(reader);
+				FieldNumberData = Dict<string, Fix32>.Deserialize(reader);
+			}
+			else
+			{
+				InputNumberData = [];
+				OutputNumberData = [];
+				FieldNumberData = [];
+			}
 			StringData = Dict<string, string>.Deserialize(reader);
 			InputModules = Dict<string, ModuleConnector>.Deserialize(reader);
 
@@ -187,14 +205,41 @@ namespace ProgramableNetwork
 				foreach (ModuleConnectorProto item in this.Prototype.Inputs)
 				{
 					if (NumberData.TryGetValue("in__" + item.Id, out var value)) {
-						Input[item.Id] = value.ToFix32().RawValue;
+						NumberData["in__" + item.Id] = value.ToFix32().RawValue;
 					}
 				}
 				foreach (ModuleConnectorProto item in this.Prototype.Outputs)
 				{
 					if (NumberData.TryGetValue("out__" + item.Id, out var value)) {
-						Output.Integer[item.Id] = value.ToFix32().RawValue;
+						NumberData["out__" + item.Id] = value.ToFix32().RawValue;
 					}
+				}
+			}
+
+			if (loadedVersion < 3)
+			{
+				var keysToRemove = new System.Collections.Generic.List<string>();
+				foreach (var kvp in NumberData)
+				{
+					if (kvp.Key.StartsWith("in__"))
+					{
+						InputNumberData[kvp.Key.Substring("in__".Length)] = Fix32.FromRaw(kvp.Value);
+						keysToRemove.Add(kvp.Key);
+					}
+					else if (kvp.Key.StartsWith("out__"))
+					{
+						OutputNumberData[kvp.Key.Substring("out__".Length)] = Fix32.FromRaw(kvp.Value);
+						keysToRemove.Add(kvp.Key);
+					}
+					else if (kvp.Key.StartsWith("field__"))
+					{
+						FieldNumberData[kvp.Key.Substring("field__".Length)] = Fix32.FromRaw(kvp.Value);
+						keysToRemove.Add(kvp.Key);
+					}
+				}
+				foreach (var k in keysToRemove)
+				{
+					NumberData.TryRemove(k, out _);
 				}
 			}
 		}
@@ -252,6 +297,12 @@ namespace ProgramableNetwork
 
 		[DoNotSave(0, null)]
 		public Dict<string, int> NumberData { get; private set; }
+		[DoNotSave(0, null)]
+		public Dict<string, Fix32> InputNumberData { get; private set; }
+		[DoNotSave(0, null)]
+		public Dict<string, Fix32> OutputNumberData { get; private set; }
+		[DoNotSave(0, null)]
+		public Dict<string, Fix32> FieldNumberData { get; private set; }
 		[DoNotSave(0, null)]
 		public Dict<string, string> StringData { get; private set; }
 

@@ -6,6 +6,7 @@ from Core.io import Output, Input
 
 class Randomizer(Module):
     name = "Randomizer"
+    description = "Pseudo-random generator: emits a deterministic sequence on <b>value</b> seeded by the <b>seed</b> field; each tick advances by input <b>addition</b> (default 256). Re-seeding restarts the sequence."
     symbol = "RAN"
     outputs = [
         Output("value", "Random value")

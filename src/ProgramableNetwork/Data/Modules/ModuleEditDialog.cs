@@ -75,9 +75,13 @@ namespace ProgramableNetwork.Ui
 			{
 				m_module.SetStatus(ModuleStatus.Init);
 				m_module.NumberData.Clear();
+				m_module.FieldNumberData.Clear();
 				m_module.StringData.Clear();
 				foreach (KeyValuePair<string, int> item in ControllerView.m_lastCreated.NumberData) {
 					m_module.NumberData[item.Key] = item.Value;
+				}
+				foreach (KeyValuePair<string, Fix32> item in ControllerView.m_lastCreated.FieldNumberData) {
+					m_module.FieldNumberData[item.Key] = item.Value;
 				}
 				foreach (KeyValuePair<string, string> item in ControllerView.m_lastCreated.StringData) {
 					m_module.StringData[item.Key] = item.Value;

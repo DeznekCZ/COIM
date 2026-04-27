@@ -5,7 +5,9 @@ using Mafi.Localization;
 using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
+using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System;
+using System.Linq;
 using Mafi;
 using Mafi.Core.Research;
 using Mafi.Core.Syncers;
@@ -34,20 +36,28 @@ namespace ProgramableNetwork.Ui {
 		public override Button CreateUi() {
 
 			ButtonRow buttonRow = new ButtonRow(new ButtonVariant().Gap(5));
+
+			PanelWithHeader panel = new PanelWithHeader()
+				.Height(Sizes.BLOCK_SIZE * 4)
+				.Width(320);
+
+			if (item.ResearchDependency.IsNotEmpty) {
+				ImmutableArray<ResearchNode> nodes = item.ResearchDependency.Map(r =>
+					m_controllerView.Inspector.ResearchManager.GetResearchNode(r));
+				panel.Header.Add(new ResearchSummaryIcon(nodes));
+			}
+			panel.Header.Add(new Label(item.Strings.Name).Class(Cls.bold));
+
+			panel.BodyAdd(
+				new ScrollColumn {
+					new Label(item.Strings.DescShort)
+						.TextOverflow(TextOverflow.Wrap)
+						.TextAlign(TextAlignment.LeftTop)
+						.AlignSelf(Align.Stretch)
+				}.FlexGrow(1).AlignSelf(Align.Stretch));
+
 			buttonRow.Add(
-				new PanelWithHeader(item.Strings.Name)
-					.Height(Sizes.BLOCK_SIZE * 4)
-					.Width(300)
-					.BodyAdd(
-						(new Row() {
-							c => c.Add(item.ResearchDependency.Map(r =>
-								new ResearchNodeReferenceUi(m_controllerView.Inspector.ResearchManager
-									.GetResearchNode(r))).AsEnumerable())
-						}).ObserveVisible(buttonRow, () => item.ResearchDependency.IsNotEmpty),
-						new Label(item.Strings.DescShort)
-							.FlexGrow(1)
-							.TextAlign(TextAlignment.LeftTop)
-							.AlignSelf(Align.Stretch)),
+				panel,
 				new ModuleView(new Module(item, m_controllerView.Entity.Context, m_controllerView.Entity), m_controllerView, m_controllerView.Inspector.Context, true, () => { })
 					.With(mv => {
 						mv.Module.Prototype.ExecuteInit(mv.Module, log: false);
@@ -88,6 +98,52 @@ namespace ProgramableNetwork.Ui {
 					Add(new Icon().Value(research.Proto.Graphics.Icons.First));
 				}
 				Add(new Label().Value(research.Proto.Strings.Name));
+			}
+		}
+
+		private class ResearchSummaryIcon : Row {
+			private bool m_allResearched;
+
+			public ResearchSummaryIcon(ImmutableArray<ResearchNode> nodes) {
+				this.Class(Cls.group);
+				this.Margin(5.px());
+				Icon summary = AddAndReturn(new Icon());
+				this.Observe(() => AggregateState(nodes))
+					.Do(state => summary.Value(
+						state == ResearchNodeState.Researched
+							? Mafi.Unity.Assets.Unity.UserInterface.Research.ResearchUnlocked_svg
+							: Mafi.Unity.Assets.Unity.UserInterface.Research.ResearchLocked_svg,
+						state switch {
+							ResearchNodeState.NotResearched => Theme.DangerColor,
+							ResearchNodeState.InProgress => Theme.ImportantColor,
+							ResearchNodeState.Researched => Theme.PositiveColor,
+							_ => Theme.DangerColor
+						}));
+
+				Column floaterContent = new Column();
+				floaterContent.Gap(5.px());
+				foreach (ResearchNode node in nodes) {
+					floaterContent.Add(new ResearchNodeReferenceUi(node));
+				}
+				this.Floater(floaterContent);
+			}
+
+			private ResearchNodeState AggregateState(ImmutableArray<ResearchNode> nodes) {
+				if (m_allResearched) return ResearchNodeState.Researched;
+
+				bool anyMissing = false;
+				bool anyInProgress = false;
+				foreach (ResearchNode node in nodes) {
+					switch (node.State) {
+						case ResearchNodeState.NotResearched: anyMissing = true; break;
+						case ResearchNodeState.InProgress: anyInProgress = true; break;
+					}
+				}
+				if (anyMissing) return ResearchNodeState.NotResearched;
+				if (anyInProgress) return ResearchNodeState.InProgress;
+
+				m_allResearched = true;
+				return ResearchNodeState.Researched;
 			}
 		}
 	}

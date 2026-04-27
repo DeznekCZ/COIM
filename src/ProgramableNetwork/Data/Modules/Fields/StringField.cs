@@ -1,4 +1,6 @@
-﻿using Mafi.Unity.Ui;
+﻿using Mafi.Core.Prototypes;
+using Mafi.Localization;
+using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
@@ -9,16 +11,16 @@ namespace ProgramableNetwork.Ui
     public class StringField : IField
     {
         public string Id { get; }
-        public string Name { get; }
-        public string ShortDesc { get; }
+        public LocStr Name { get; }
+        public LocStr ShortDesc { get; }
 
         public string Default { get; }
 
-        public StringField(string id, string name, string shortDesc, string defaultValue)
+        public StringField(string id, Proto.Str strs, string defaultValue)
         {
             this.Id = id;
-            this.Name = name;
-            this.ShortDesc = shortDesc;
+            this.Name = strs.Name;
+            this.ShortDesc = strs.DescShort;
             this.Default = defaultValue;
         }
 

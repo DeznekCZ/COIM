@@ -1,4 +1,6 @@
 ﻿using Mafi;
+using Mafi.Core.Prototypes;
+using Mafi.Localization;
 using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
@@ -10,22 +12,22 @@ namespace ProgramableNetwork.Ui
 {
     public class ColorField : IField
     {
-        public ColorField(string id, string name, string shortDesc, int defaultValue)
-			: this(id, name, shortDesc, new ColorRgba(defaultValue))
+        public ColorField(string id, Proto.Str strs, int defaultValue)
+			: this(id, strs, new ColorRgba(defaultValue))
         {
         }
 
-        public ColorField(string id, string name, string shortDesc, ColorRgba defaultValue)
+        public ColorField(string id, Proto.Str strs, ColorRgba defaultValue)
         {
             Id = id;
-            Name = name;
+            Name = strs.Name;
             Default = defaultValue;
-            ShortDesc = shortDesc;
+            ShortDesc = strs.DescShort;
         }
 
         public string Id { get; }
-        public string Name { get; }
-        public string ShortDesc { get; }
+        public LocStr Name { get; }
+        public LocStr ShortDesc { get; }
 
         public int Size => 20;
 

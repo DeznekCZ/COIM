@@ -30,7 +30,10 @@ namespace ProgramableNetwork.Python
                 builder.SetSymbol(classEntry.classContext["symbol"] as string);
 
                 if (classEntry.classContext.TryGetValue("description", out object description)) {
-					builder.SetDescritpion(description as string);
+					builder.SetDescription(description as string);
+				}
+				if (classEntry.classContext.TryGetValue("hint", out object hint)) {
+					builder.SetHint(hint as string);
 				}
 				if (classEntry.classContext.TryGetValue("inputs", out object inputs)) {
 					AddIO(inputs as IList, builder.AddInput);
@@ -63,7 +66,6 @@ namespace ProgramableNetwork.Python
 				}
 
 				// TODO search for variable of device
-                builder.SetGfx(Assets.Base.Products.Icons.Vegetables_svg);
                 builder.AddControllerDevice();
 
                 builder.BuildAndAdd();

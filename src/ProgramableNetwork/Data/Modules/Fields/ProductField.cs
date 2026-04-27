@@ -1,6 +1,8 @@
 ﻿using Mafi;
 using Mafi.Core;
 using Mafi.Core.Products;
+using Mafi.Core.Prototypes;
+using Mafi.Localization;
 using Mafi.Unity.Ui;
 using Mafi.Unity.Ui.Library;
 using Mafi.Unity.UiToolkit.Component;
@@ -14,18 +16,18 @@ namespace ProgramableNetwork.Ui
     {
         private Func<Module, ProductProto, bool> filter;
 
-        public ProductField(string id, string name, string shortDesc, Func<Module, ProductProto, bool> filter)
+        public ProductField(string id, Proto.Str strs, Func<Module, ProductProto, bool> filter)
         {
             this.Id = id;
-            this.Name = name;
-            this.ShortDesc = shortDesc;
+            this.Name = strs.Name;
+            this.ShortDesc = strs.DescShort;
             this.filter = filter;
         }
 
         public string Id { get; }
 
-        public string Name { get; }
-        public string ShortDesc { get; }
+        public LocStr Name { get; }
+        public LocStr ShortDesc { get; }
 
         public int Size => 40;
 

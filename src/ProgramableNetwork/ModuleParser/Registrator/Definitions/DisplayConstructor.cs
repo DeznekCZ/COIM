@@ -18,6 +18,11 @@ namespace ProgramableNetwork.ModuleParser.Registrator.Definitions
         {
             return moduleProto => moduleProto.AddDisplay(id, name, 1);
         }
+
+        public static DisplayConstructorAction Icon(string id, string name, string defaultText = "")
+        {
+            return moduleProto => moduleProto.AddDisplay(id, name, 1, defaultText: "[image]" + defaultText);
+        }
     }
 
     public delegate void DisplayConstructorAction(ModuleProto.Builder moduleProto);

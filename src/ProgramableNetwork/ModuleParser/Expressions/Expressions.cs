@@ -700,6 +700,9 @@ namespace ProgramableNetwork.Python
             if (left is null || right is null) {
 				throw new NotImplementedException($"Cannot divide null values");
 			}
+			if (left is string ls) {
+				return ls + (right is string rs ? rs : right?.ToString());
+			}
 			if (left.GetType() != right.GetType()) {
 				throw new NotImplementedException($"Types has no divide yet or never (different type)");
 			}

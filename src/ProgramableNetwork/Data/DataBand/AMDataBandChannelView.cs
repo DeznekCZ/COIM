@@ -32,7 +32,7 @@ namespace ProgramableNetwork.Ui.DataBand
                     }
                     else
                     {
-                        display.Value("Disconnected".AsLoc());
+                        display.Value(NewTr.Inspector.Disconnected);
                     }
                 });
 

@@ -81,7 +81,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		ProgressBar bar;
 		AddPanelRow(
 				new Label()
-					.Value("Computing speed".AsLoc())
+					.Value(NewTr.Inspector.ComputingSpeed)
 					.TextAlign(TextAlignment.LeftMiddle),
 				new UiComponent().Fill(),
 				bar = new ProgressBar()
@@ -90,7 +90,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 				new Display()
 					.Value(0)
 					.Width(150)
-					.Tooltip("Ticks per 60 seconds".AsLoc())
+					.Tooltip(NewTr.Inspector.ComputingSpeedTooltip)
 					.ObserveValue(() => $"{(600 / (1f + Entity.Speed)).ToFix32().ToStringRounded(0)} t/m"),
 				new ButtonText("-".AsLoc())
 					.TextAlign(TextAlignment.CenterMiddle)

@@ -8,6 +8,7 @@ from Core.module import DefaultControllers, Module
 
 class Runtime_Max_2(Module):
     name = "Max (2 inputs)"
+    description = "Outputs the smaller of inputs <b>A</b>, <b>B</b> on <b>min</b> and the larger on <b>max</b>. Unconnected inputs are ignored."
     symbol = "MAX"
 
     inputs = [
@@ -43,6 +44,7 @@ class Runtime_Max_2(Module):
 
 class Runtime_Max_3(Module):
     name = "Max (3 inputs)"
+    description = "Outputs the smallest of inputs <b>A</b>, <b>B</b>, <b>C</b> on <b>min</b> and the largest on <b>max</b>. Unconnected inputs are ignored."
     symbol = "MAX"
 
     inputs = [
@@ -83,6 +85,7 @@ class Runtime_Max_3(Module):
 
 class Runtime_Max_4(Module):
     name = "Max (4 inputs)"
+    description = "Outputs the smallest of inputs <b>A</b>..<b>D</b> on <b>min</b> and the largest on <b>max</b>. Unconnected inputs are ignored."
     symbol = "MAX"
 
     inputs = [
@@ -130,6 +133,7 @@ class Runtime_Max_4(Module):
 
 class Runtime_Max_6(Module):
     name = "Max (6 inputs)"
+    description = "Outputs the smallest of inputs <b>A</b>..<b>F</b> on <b>min</b> and the largest on <b>max</b>. Unconnected inputs are ignored."
     symbol = "MAX"
 
     inputs = [
@@ -191,6 +195,7 @@ class Runtime_Max_6(Module):
 
 class Runtime_Max_8(Module):
     name = "Max (8 inputs)"
+    description = "Outputs the smallest of inputs <b>A</b>..<b>H</b> on <b>min</b> and the largest on <b>max</b>. Unconnected inputs are ignored."
     symbol = "MAX"
 
     inputs = [

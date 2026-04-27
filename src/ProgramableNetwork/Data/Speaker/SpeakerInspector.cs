@@ -27,7 +27,7 @@ namespace ProgramableNetwork.Data.Speaker
             Dropdown<KeyValuePair<string, LocStrFormatted>> dropdown;
             Slider volume;
             AddPanelRow(
-                new Label("Active".AsLoc()).TextAlign(TextAlignment.LeftMiddle)
+                new Label(NewTr.Inspector.Active).TextAlign(TextAlignment.LeftMiddle)
                 .FlexGrow(0.4f),
                 toggle = new Toggle().FlexGrow(0.1f),
                 dropdown = new Dropdown<KeyValuePair<string, LocStrFormatted>>(
@@ -86,19 +86,19 @@ namespace ProgramableNetwork.Data.Speaker
             {
                     new KeyValuePair<string, LocStrFormatted>(
                         UserInterface.Audio.ShipAlarm_prefab,
-                        "Alarm".AsLoc()
+                        NewTr.Inspector.Sound_Alarm
                     ),
                     new KeyValuePair<string, LocStrFormatted>(
                         UserInterface.Audio.MoneyAction_prefab,
-                        "Cash".AsLoc()
+                        NewTr.Inspector.Sound_Cash
                     ),
                     new KeyValuePair<string, LocStrFormatted>(
                         UserInterface.Audio.TurretShot_prefab,
-                        "Shoot".AsLoc()
+                        NewTr.Inspector.Sound_Shoot
                     ),
                     new KeyValuePair<string, LocStrFormatted>(
                         UserInterface.Audio.NewMessage_prefab,
-                        "Message".AsLoc()
+                        NewTr.Inspector.Sound_Message
                     )
             }.ToImmutableArray();
     }

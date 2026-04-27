@@ -1,5 +1,7 @@
 ﻿using Mafi;
 using Mafi.Core;
+using Mafi.Core.Prototypes;
+using Mafi.Localization;
 using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
@@ -10,16 +12,16 @@ namespace ProgramableNetwork.Ui
     public class BooleanField : IField
     {
         public string Id { get; }
-        public string Name { get; }
+        public LocStr Name { get; }
         public bool Default { get; }
-        public string ShortDesc { get; }
+        public LocStr ShortDesc { get; }
 
-        public BooleanField(string id, string name, string shortDesc, bool defaultValue)
+        public BooleanField(string id, Proto.Str strs, bool defaultValue)
         {
             this.Id = id;
-            this.Name = name;
+            this.Name = strs.Name;
             this.Default = defaultValue;
-            this.ShortDesc = shortDesc;
+            this.ShortDesc = strs.DescShort;
         }
 
 

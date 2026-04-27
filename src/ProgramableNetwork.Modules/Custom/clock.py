@@ -8,6 +8,7 @@ from Core.module import DefaultControllers, Module
 
 class Runtime_Clock_1(Module):
     name = "Control: Clock (1 output)"
+    description = "Outputs an integer counter on <b>clock</b> that increments every <b>clock_period</b> ticks and wraps to zero at <b>max_count</b>. With the <b>mode</b> field on, output instead pulses true only on the tick where the counter would change."
     symbol = "CLK"
 
     outputs = [
@@ -52,6 +53,7 @@ class Runtime_Clock_1(Module):
 
 class Runtime_Clock_2(Module):
     name = "Control: Clock (2 outputs)"
+    description = "Outputs an integer counter on <b>clock</b> that increments every <b>clock_period</b> ticks and wraps to zero at <b>max_count</b>, plus an <b>update</b> boolean that pulses true on every tick where the counter changes."
     symbol = "CLOCK"
 
     outputs = [

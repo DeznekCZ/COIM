@@ -47,6 +47,9 @@ namespace ProgramableNetwork.Ui
 		private Px Y;
 		private Texture2D textr;
 
+		private bool m_pickTemplateModuleInAction;
+		private bool m_pickNewModuleInAction;
+
 		private static readonly Lyst<Color> m_colors;
 
 		static ControllerView() {
@@ -303,6 +306,9 @@ namespace ProgramableNetwork.Ui
 							foreach (KeyValuePair<string, int> item in m_lastCreated.NumberData) {
 								m_lastCreated.NumberData[item.Key] = item.Value;
 							}
+							foreach (KeyValuePair<string, Fix32> item in m_lastCreated.FieldNumberData) {
+								m_lastCreated.FieldNumberData[item.Key] = item.Value;
+							}
 							foreach (KeyValuePair<string, string> item in m_lastCreated.StringData) {
 								m_lastCreated.StringData[item.Key] = item.Value;
 							}
@@ -313,10 +319,12 @@ namespace ProgramableNetwork.Ui
 					}
 					m_controller.Context.AudioDb.InvalidOp(true).Play();
 				}
-				else
-				{
+				else {
+					if (m_pickNewModuleInAction) { return; }
+					m_pickNewModuleInAction = true;
 					m_pickNewModule ??= new PickNewModule(
-						"Pick module".AsLoc(), NewModules());
+						NewTr.Inspector.PickModule, NewModules());
+					m_pickNewModuleInAction = false;
 					m_targetRow = targetRow;
 					m_targetColumn = targetColumn;
 					m_pickNewModule.Open(button);
@@ -324,8 +332,11 @@ namespace ProgramableNetwork.Ui
 			}, allowKeyPresses: true);
 			button.OnRightClick(() =>
 			{
+				if (m_pickTemplateModuleInAction) { return; }
+				m_pickTemplateModuleInAction = true;
 				m_pickTemplateModule ??= new PickNewModule(
-					"Pick template".AsLoc(), NewTemplates());
+					NewTr.Inspector.PickTemplate, NewTemplates());
+				m_pickTemplateModuleInAction = false;
 				m_targetRow = targetRow;
 				m_targetColumn = targetColumn;
 				m_pickTemplateModule.Open(button);

@@ -83,6 +83,54 @@ namespace ProgramableNetwork
                 { false, False },
             };
 
+        public partial class Inspector
+        {
+            public static readonly LocStr ComputingSpeed = Loc.Str("ProgramableNetwork_Inspector_ComputingSpeed",
+                "Computing speed", "controller inspector: row label for the speed throttle");
+            public static readonly LocStr ComputingSpeedTooltip = Loc.Str("ProgramableNetwork_Inspector_ComputingSpeedTooltip",
+                "Ticks per 60 seconds", "controller inspector: tooltip for the speed display");
+            public static readonly LocStr PickModule = Loc.Str("ProgramableNetwork_Inspector_PickModule",
+                "Pick module", "controller inspector: heading for the module picker dialog");
+            public static readonly LocStr PickTemplate = Loc.Str("ProgramableNetwork_Inspector_PickTemplate",
+                "Pick template", "controller inspector: heading for the template picker dialog");
+            public static readonly LocStr Shift = Loc.Str("ProgramableNetwork_Inspector_Shift",
+                "Shift", "controller inspector: 'Shift' modifier-key label in add-helper hints");
+            public static readonly LocStr AddLastCreated = Loc.Str("ProgramableNetwork_Inspector_AddLastCreated",
+                "Add last created / copied", "controller inspector: helper hint for shift+click to repeat the last add");
+            public static readonly LocStr AddNewModule = Loc.Str("ProgramableNetwork_Inspector_AddNewModule",
+                "Add new module", "controller inspector: helper hint for left-click to add a module");
+            public static readonly LocStr AddFromTemplate = Loc.Str("ProgramableNetwork_Inspector_AddFromTemplate",
+                "Add from template", "controller inspector: helper hint for right-click to add from a template");
+
+            public static readonly LocStr Active = Loc.Str("ProgramableNetwork_Inspector_Active",
+                "Active", "speaker / light inspector: row label for the on/off toggle");
+            public static readonly LocStr Color = Loc.Str("ProgramableNetwork_Inspector_Color",
+                "Color", "display inspector: row label for the LED color picker");
+            public static readonly LocStr Segments = Loc.Str("ProgramableNetwork_Inspector_Segments",
+                "Segments", "7/16-segment display inspector: panel header for the segment override toggles");
+            public static readonly LocStr Disconnected = Loc.Str("ProgramableNetwork_Inspector_Disconnected",
+                "Disconnected", "radio receiver display when no antena is in range");
+
+            public static readonly LocStr Sound_Alarm = Loc.Str("ProgramableNetwork_Speaker_Sound_Alarm",
+                "Alarm", "speaker sound option: ship alarm");
+            public static readonly LocStr Sound_Cash = Loc.Str("ProgramableNetwork_Speaker_Sound_Cash",
+                "Cash", "speaker sound option: money / cash register");
+            public static readonly LocStr Sound_Shoot = Loc.Str("ProgramableNetwork_Speaker_Sound_Shoot",
+                "Shoot", "speaker sound option: turret shot");
+            public static readonly LocStr Sound_Message = Loc.Str("ProgramableNetwork_Speaker_Sound_Message",
+                "Message", "speaker sound option: new message chime");
+        }
+
+        public partial class FieldStatus
+        {
+            public static readonly LocStr None = Loc.Str("ProgramableNetwork_FieldStatus_None",
+                "NONE", "module field status: nothing connected and the constant override is off");
+            public static readonly LocStr On = Loc.Str("ProgramableNetwork_FieldStatus_On",
+                "ON", "module field status: constant override is on, value comes from the field");
+            public static readonly LocStr Wired = Loc.Str("ProgramableNetwork_FieldStatus_Wired",
+                "WIRED", "module field status: an input pin is connected, value comes from the wire");
+        }
+
         public partial class Tools
         {
             public static readonly LocStr Remove = Loc.Str("ProgramableNetwork_Tool_Delete",

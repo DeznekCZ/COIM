@@ -4,6 +4,7 @@ from Core.module import DefaultControllers, Module, ModuleStatus
 
 class Notification_Info(Module):
     name = "Notification: Info"
+    description = "Sets the controller's <b>Info</b> flag from input <b>in</b>; the controller surfaces an info notification while the input is on."
     symbol = "NOTIF\nINF"
     inputs = [ Input("in", "State") ]
     width = 2
@@ -16,6 +17,7 @@ class Notification_Info(Module):
 
 class Notification_Warning(Module):
     name = "Notification: Warning"
+    description = "Sets the controller's <b>Warning</b> flag from input <b>in</b>; the controller surfaces a warning notification while the input is on."
     symbol = "NOTIF\nWRN"
     inputs = [ Input("in", "State") ]
     width = 2
@@ -28,6 +30,7 @@ class Notification_Warning(Module):
 
 class Notification_Error(Module):
     name = "Notification: Error"
+    description = "Returns Error status while input <b>in</b> is on so the controller raises an error notification; otherwise returns Running."
     symbol = "NOTIF\nERR"
     inputs = [ Input("in", "State") ]
     width = 2

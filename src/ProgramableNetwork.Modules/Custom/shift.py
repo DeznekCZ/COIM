@@ -8,6 +8,7 @@ from Core.module import DefaultControllers, Module
 
 class Runtime_Shift_2(Module):
     name = "Control: Shift (2 inputs)"
+    description = "Cyclic shifter for 2 channels: <b>index</b> (mod 2) selects how far to rotate inputs <b>0</b>, <b>1</b> onto outputs <b>0</b>, <b>1</b>. Output <b>index</b> echoes the wrapped index."
     symbol = "SHIFT"
 
     inputs = [
@@ -45,6 +46,7 @@ class Runtime_Shift_2(Module):
 
 class Runtime_Shift_4(Module):
     name = "Control: Shift (4 inputs)"
+    description = "Cyclic shifter for 4 channels: <b>index</b> (mod 4) selects how far to rotate inputs <b>0</b>..<b>3</b> onto outputs <b>0</b>..<b>3</b>. Output <b>index</b> echoes the wrapped index."
     symbol = "SHIFT"
 
     inputs = [
@@ -135,6 +137,7 @@ class Runtime_Shift_4(Module):
 
 class Runtime_Shift_7(Module):
     name = "Control: Shift (7 inputs)"
+    description = "Cyclic shifter for 7 channels: <b>index</b> (mod 7) selects how far to rotate inputs <b>0</b>..<b>6</b> onto outputs <b>0</b>..<b>6</b>. Output <b>index</b> echoes the wrapped index."
     symbol = "SHIFT"
 
     inputs = [

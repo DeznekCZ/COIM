@@ -26,8 +26,8 @@ namespace ProgramableNetwork.Ui
 				col.BodyAdd(rowBool);
 
 				Label labelSettings = new Label();
-				labelSettings.Value(entityField.Name.AsLoc());
-				labelSettings.Tooltip(entityField.ShortDesc.AsLoc());
+				labelSettings.Value(entityField.Name);
+				labelSettings.Tooltip(entityField.ShortDesc);
 				labelSettings.Width(180);
 				rowBool.Add(labelSettings);
 
@@ -36,16 +36,16 @@ namespace ProgramableNetwork.Ui
 				enabled.OnValueChanged(v => module.Field.Bool[$"field_{entityField.Id}"] = v);
 				rowBool.Add(enabled);
 
-				Display rowDisplay = new Display("NONE".AsLoc());
+				Display rowDisplay = new Display(NewTr.FieldStatus.None);
 				rowDisplay.FlexGrow(1);
 				rowDisplay.ObserveValue(() =>
 				{
 					if (module.Field.Bool[$"field_{entityField.Id}"]) {
-						return "ON".AsLoc();
+						return NewTr.FieldStatus.On;
 					} else if (module.InputModules.ContainsKey(entityField.Id)) {
-						return "WIRED".AsLoc();
+						return NewTr.FieldStatus.Wired;
 					} else {
-						return "NONE".AsLoc();
+						return NewTr.FieldStatus.None;
 					}
 				});
 				rowBool.Add(rowDisplay);
@@ -74,8 +74,8 @@ namespace ProgramableNetwork.Ui
 				col.BodyAdd(rowBool);
 
 				Label labelSettings = new Label();
-				labelSettings.Value(entityField.Name.AsLoc());
-				labelSettings.Tooltip(entityField.ShortDesc.AsLoc());
+				labelSettings.Value(entityField.Name);
+				labelSettings.Tooltip(entityField.ShortDesc);
 				labelSettings.Width(180);
 				rowBool.Add(labelSettings);
 
@@ -84,16 +84,16 @@ namespace ProgramableNetwork.Ui
 				enabled.OnValueChanged(v => module.Field.Bool[$"field_{entityField.Id}"] = v);
 				rowBool.Add(enabled);
 
-				Display rowDisplay = new Display("NONE".AsLoc());
+				Display rowDisplay = new Display(NewTr.FieldStatus.None);
 				rowDisplay.FlexGrow(1);
 				rowDisplay.ObserveValue(() =>
 				{
 					if (module.Field.Bool[$"field_{entityField.Id}"]) {
-						return "ON".AsLoc();
+						return NewTr.FieldStatus.On;
 					} else if (module.InputModules.ContainsKey(entityField.Id)) {
-						return "WIRED".AsLoc();
+						return NewTr.FieldStatus.Wired;
 					} else {
-						return "NONE".AsLoc();
+						return NewTr.FieldStatus.None;
 					}
 				});
 				rowBool.Add(rowDisplay);
@@ -104,7 +104,7 @@ namespace ProgramableNetwork.Ui
 				active.OnValueChanged(v => module.Field.Bool[entityField.Id] = v);
 				rowBool.Add(active);
 
-				Display activeDisplay = new Display("NONE".AsLoc());
+				Display activeDisplay = new Display(NewTr.FieldStatus.None);
 				activeDisplay.FlexGrow(1);
 				activeDisplay.ObserveState(() => !module.Field.Bool[$"field_{entityField.Id}"] ? DisplayState.Inactive : module.Field.Bool[entityField.Id] ? DisplayState.Positive : DisplayState.Danger);
 				activeDisplay.ObserveValue(() =>
@@ -126,8 +126,8 @@ namespace ProgramableNetwork.Ui
 				fieldContainer.Add(row);
 
 				Label label = new Label();
-				label.Value(entityField.Name.AsLoc());
-				label.Tooltip(entityField.ShortDesc.AsLoc());
+				label.Value(entityField.Name);
+				label.Tooltip(entityField.ShortDesc);
 				label.Width(180);
 				row.BodyAdd(label);
 

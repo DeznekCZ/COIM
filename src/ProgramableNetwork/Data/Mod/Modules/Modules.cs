@@ -73,7 +73,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		// SPECIAL
 		registrator
-			.ModuleBuilderStart("Game_Pause", "Pause game (DEBUG)", "GP", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Game_Pause", "Pause game (DEBUG)", "GP")
+			.SetDescription("Debug-only module: when input <b>pause</b> > 0, requests a global game pause via GameSpeedController and lights the info indicator.")
 			.AddCategory(Category.Control)
 			.AddInput("pause", "Pause")
 			.Action(m => {
@@ -91,7 +92,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Constants(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart("Constant", "Constant (integer)", "#I", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Constant", "Constant (integer)", "#I")
+			.SetDescription("Outputs the integer stored in the <b>number</b> field on output <b>value</b>. Used as a literal source in arithmetic chains.")
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Constants)
 			.AddOutput("value", "Value")
@@ -106,7 +108,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Constant_Hex", "Constant (hex)", "#H", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Constant_Hex", "Constant (hex)", "#H")
+			.SetDescription("Outputs the hexadecimal integer stored in the <b>number</b> field on output <b>value</b>. Useful as a bitmask source for boolean/bit operations.")
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Constants)
 			.AddOutput("value", "Value")
@@ -121,7 +124,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Constant_Product", "Constant (product)", "#P", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Constant_Product", "Constant (product)", "#P")
+			.SetDescription("Outputs the product slim-id selected in the <b>product</b> field on output <b>value</b>. Pair with filter/sorter modules to identify a product type.")
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Constants)
 			.AddOutput("value", "Value")
@@ -133,7 +137,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Constant_Crop", "Constant (crop)", "#C", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Constant_Crop", "Constant (crop)", "#C")
+			.SetDescription("Outputs the crop product slim-id selected in the <b>crop</b> field on output <b>value</b>. Field is restricted to crop products only via FarmProductFilter.")
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Constants)
 			.AddOutput("value", "Value")
@@ -145,7 +150,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Constant_Machine", "Constant (machine)", "#M", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Constant_Machine", "Constant (machine)", "#M")
+			.SetDescription("Outputs the MachineProto id selected in the <b>machine</b> field on output <b>value</b>. Used to identify a machine type for downstream connection modules.")
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Constants)
 			.AddOutput("value", "Value")
@@ -157,7 +163,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Constant_Vehicle", "Constant (vehicle)", "#V", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Constant_Vehicle", "Constant (vehicle)", "#V")
+			.SetDescription("Outputs the DrivingEntityProto (vehicle) id selected in the <b>vehicle</b> field on output <b>value</b>. Used to identify a vehicle type for downstream connection modules.")
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Constants)
 			.AddOutput("value", "Value")
@@ -169,7 +176,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Constant_Boolean", "Constant (boolean)", "#B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Constant_Boolean", "Constant (boolean)", "#B")
+			.SetDescription("Outputs 1 if the <b>boolean</b> field is checked, 0 otherwise. The output value is a Fix32 of 0 or 1.")
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Constants)
 			.AddOutput("value", "Value")
@@ -181,7 +189,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Constant_Float", "Constant (float)", "#F", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Constant_Float", "Constant (float)", "#F")
+			.SetDescription("Outputs the fixed-point decimal stored in the <b>float</b> field on output <b>value</b>. Use when fractional constants are needed (e.g. ratios, multipliers).")
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Constants)
 			.AddOutput("value", "Value")
@@ -198,7 +207,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Buttons(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart("Button_1", "Button (on/off)", "0/I", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Button_1", "Button (on/off)", "0/I")
+			.SetDescription("Manual on/off toggle. Output <b>value</b> is 1 while the toggle display is active, 0 when inactive. Player clicks the display to flip it.")
 			.AddCategory(Category.Control)
 			.AddOutput("value", "On - 1, Off - 0")
 			.AddDisplay("toggle", "Toggle", 1, toggle: new[] { "( | )" })
@@ -207,7 +217,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Button_Pass", "Button (pass value)", "0/I", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Button_Pass", "Button (pass value)", "0/I")
+			.SetDescription("Manual gate. When the toggle display is active, passes input <b>value</b> straight through to output <b>value</b>; when inactive, outputs 0.")
 			.AddCategory(Category.Control)
 			.AddInput("value", "Value")
 			.AddOutput("value", "Value")
@@ -219,7 +230,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Arithmetic(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart("Sum", "C = A + B", "A+B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Sum", "C = A + B", "A+B")
+			.SetDescription("Outputs <b>a</b> + <b>b</b> to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is used instead of the input pin (see FieldOrInput).")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
@@ -241,7 +253,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 		foreach (int i in new int[] { 4, 8 }) {
 			var sum = registrator
-				.ModuleBuilderStart($"Sum_{i}", $"C = A + .. ({i - 1})", $"A+({i - 1})", Assets.Base.Products.Icons.Vegetables_svg)
+				.ModuleBuilderStart($"Sum_{i}", $"C = A + .. ({i - 1})", $"A+({i - 1})")
+				.SetDescription($"Outputs the sum of {i} numeric inputs (<b>a</b> through <b>{NAMES[i - 1]}</b>) to <b>sum</b>. Unconnected inputs are treated as 0.")
 				.AddCategory(Category.Arithmetic)
 				.AddOutput("sum", "Sum")
 				.Action(m => { m.Output["c"] = m.Input["a"] + m.Input["b", 0]; })
@@ -256,7 +269,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 
 		registrator
-			.ModuleBuilderStart("Sub", "C = A - B", "A-B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Sub", "C = A - B", "A-B")
+			.SetDescription("Outputs <b>a</b> - <b>b</b> to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is subtracted instead of the input pin.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
@@ -268,7 +282,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Invert", "B = -A", "-A", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Invert", "B = -A", "-A")
+			.SetDescription("Outputs the arithmetic negation of <b>a</b> (i.e. <b>0 - a</b>) to <b>b</b>. Use to flip the sign of a numeric signal.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddOutput("b", "B")
@@ -277,7 +292,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Multiply", "C = A multiply by B", "A*B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Multiply", "C = A multiply by B", "A*B")
+			.SetDescription("Outputs <b>a</b> * <b>b</b> to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is used as the multiplier instead of the input pin.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
@@ -294,7 +310,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Divide", "C = A divide by B", "A/B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Divide", "C = A divide by B", "A/B")
+			.SetDescription("Outputs <b>a</b> / <b>b</b> to <b>c</b>. If <b>b</b> is zero, sets output <b>error</b> to 1 and <b>c</b> to Fix32.MaxValue; otherwise <b>error</b> is 0. <b>field_b</b> switches <b>b</b> to the constant field.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
@@ -317,7 +334,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Modulo", "C = A modulo B", "A%B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Modulo", "C = A modulo B", "A%B")
+			.SetDescription("Outputs <b>a</b> % <b>b</b> to <b>c</b>. If <b>b</b> is zero, sets output <b>error</b> to 1 and <b>c</b> to 0; otherwise <b>error</b> is 0. <b>field_b</b> switches <b>b</b> to the constant field.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
@@ -340,7 +358,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Average", "Average", "~A", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Average", "Average", "~A")
+			.SetDescription("Maintains a running average of <b>input</b> over up to <b>count</b> field samples (default 10). Outputs current sample count to <b>count</b> and the running mean to <b>average</b>. Errors if count < 1.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("input", "Input")
 			.AddOutput("count", "Average")
@@ -378,7 +397,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Stats(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart("Stats_Unity", "Connection: Office - Unity", "UNI", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Stats_Unity", "Connection: Office - Unity", "UNI")
+			.SetDescription("Reads the captain's current Unity total via UpointsManager and outputs it on <b>v</b>. Errors if no CaptainOffice is linked in the <b>office</b> field.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddCategory(Category.Stats)
@@ -396,7 +416,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Stats_Workers", "Connection: Office - Workers", "WRK", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Stats_Workers", "Connection: Office - Workers", "WRK")
+			.SetDescription("Reads worker statistics from WorkersManager. Outputs used <b>u</b>, available <b>a</b>, missing <b>m</b> (deficit, positive when short), and total <b>t = u + a</b>. Errors if no CaptainOffice is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddCategory(Category.Stats)
@@ -420,8 +441,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Stats_Electricity", "Statistic: Electricity", "PWR", Assets.Base.Products.Icons.Vegetables_svg,
-				"Reads globaly used electricity and returns consumption, production, capacity and usage of the capacity")
+			.ModuleBuilderStart("Stats_Electricity", "Statistic: Electricity", "PWR")
+			.SetDescription("Reads global ElectricityManager metrics for the current tick. Outputs <b>consumption</b> (DemandedThisTick), <b>production</b> (GeneratedThisTick), <b>capacity</b> (GenerationCapacityThisTick) in kW, and <b>usage</b> as percentage 0-100 of consumption / capacity.")
 			.AddCategory(Category.Stats)
 			.AddOutput("consumption", "Consumption")
 			.AddOutput("production", "Production")
@@ -468,11 +489,6 @@ public class Modules : ModuleGroup, IModuleGroup {
 					consUnit++;
 				}
 
-				var protosDb = m.Context.ProtosDb;
-				var maintT1 = protosDb.Get<ProductProto>(Mafi.Base.Ids.Products.MaintenanceT1).Value;
-				var maintT2 = protosDb.Get<ProductProto>(Mafi.Base.Ids.Products.MaintenanceT2).Value;
-				var maintT3 = protosDb.Get<ProductProto>(Mafi.Base.Ids.Products.MaintenanceT2).Value;
-
 				int indexCons = cons > 19.ToFix32() ? 0 : 1;
 				int indexProd = prod > 19.ToFix32() ? 0 : 1;
 
@@ -484,7 +500,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Stats_Maintenance", "Connection: Maintenance", "MAINT", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Stats_Maintenance", "Connection: Maintenance", "MAINT")
+			.SetDescription("Reads maintenance buffer of the linked MaintenanceDepot for the selected tier (<b>m</b> field). Outputs current <b>a</b> amount, <b>c</b> capacity, <b>p</b> percentage 0-100, and monthly <b>u</b> use (positive surplus / negative deficit).")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddCategory(Category.Stats)
@@ -542,7 +559,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Stats_Vehicle", "Connection: Office - Vehicles", "VEH", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Stats_Vehicle", "Connection: Office - Vehicles", "VEH")
+			.SetDescription("Reads vehicle stats via IVehiclesManager. With a vehicle type chosen via input or <b>vehicle</b> field: outputs <b>count</b> (owned) and <b>assignable</b>. Without selection: outputs total fleet count to <b>count</b> and 0 to <b>assignable</b>. Errors if no CaptainOffice is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddCategory(Category.Stats)
@@ -573,7 +591,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Speaker", "Connection: Speaker - play", "SPK", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Speaker", "Connection: Speaker - play", "SPK")
+			.SetDescription("Drives a Speaker entity's playback state from the <b>play</b> input or <b>play</b> field (boolean, controlled by <b>field_play</b> toggle). Errors if no Speaker is linked in the <b>speaker</b> field.")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesSound)
 			.AddEntityField<Speaker>("speaker", "Speaker", "Must be placest next to Speaker tower")
@@ -594,8 +613,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Display", "Connection: Display - active", "DIA", Assets.Base.Products.Icons.Vegetables_svg,
-				"Connects lights and display for activation")
+			.ModuleBuilderStart("Connection_Display", "Connection: Display - active", "DIA")
+			.SetDescription("Connects lights and display for activation")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesDisplay)
 			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next to display")
@@ -616,8 +635,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Display_Color", "Connection: Display - color", "CLR", Assets.Base.Products.Icons.Vegetables_svg,
-				"Connects lights and display for activation")
+			.ModuleBuilderStart("Connection_Display_Color", "Connection: Display - color", "CLR")
+			.SetDescription("Drives the LED color of the linked display from the <b>color</b> field (when <b>field_color</b> toggle is on) or <b>color</b> input. Sets both lit and dim color channels on the display entity.")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesDisplay)
 			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next to display")
@@ -647,8 +666,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		var seven8 = registrator
-			.ModuleBuilderStart("Connection_Display_7SEG_8", "Connection: Display - 7 segment (8-inputs)", "7-SEGMENT", Assets.Base.Products.Icons.Vegetables_svg,
-				"Light up 7-segment display and activate lines per signal")
+			.ModuleBuilderStart("Connection_Display_7SEG_8", "Connection: Display - 7 segment (8-inputs)", "7-SEGMENT")
+			.SetDescription("Light up 7-segment display and activate lines per signal")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesDisplay)
 			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres",
@@ -706,8 +725,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		seven8.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Display_7SEG_B", "Connection: Display - 7 segment (2-inputs)", "7-SEG", Assets.Base.Products.Icons.Vegetables_svg,
-				"Light up 7-segment display and activate lines by bits inside single number")
+			.ModuleBuilderStart("Connection_Display_7SEG_B", "Connection: Display - 7 segment (2-inputs)", "7-SEG")
+			.SetDescription("Light up 7-segment display and activate lines by bits inside single number")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesDisplay)
 			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres",
@@ -766,8 +785,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Display_16SEG_B", "Connection: Display - 16 segment (2-inputs)", "16-SEG", Assets.Base.Products.Icons.Vegetables_svg,
-				"Light up 7-segment display and activate lines by bits inside single number")
+			.ModuleBuilderStart("Connection_Display_16SEG_B", "Connection: Display - 16 segment (2-inputs)", "16-SEG")
+			.SetDescription("Light up 16-segment display and activate lines by bits inside single number")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesDisplay)
 			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres",
@@ -811,8 +830,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Arithmetic_Display_7SEG_B", "Arithmetic: 7 segment", "7S-NB", Assets.Base.Products.Icons.Vegetables_svg,
-				"Light up 7-segment display and activate lines by bits inside single number")
+			.ModuleBuilderStart("Arithmetic_Display_7SEG_B", "Arithmetic: 7 segment", "7S-NB")
+			.SetDescription("Light up 7-segment display and activate lines by bits inside single number")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("V", "Number")
 			.AddOutput("bits", "Bits")
@@ -865,8 +884,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Arithmetic_Display_16SEG_B", "Arithmetic: 16 segment", "16S-NB", Assets.Base.Products.Icons.Vegetables_svg,
-				"Light up 16-segment display and activate lines by bits inside single number")
+			.ModuleBuilderStart("Arithmetic_Display_16SEG_B", "Arithmetic: 16 segment", "16S-NB")
+			.SetDescription("Light up 16-segment display and activate lines by bits inside single number")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("V", "Number")
 			.AddOutput("bits", "Bits")
@@ -934,8 +953,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		};
 		foreach (int i in new int[] { 2, 4 }) {
 			var builder = registrator
-				.ModuleBuilderStart($"Fork_{i}", $"Fork: 1 pin to {i}", $"F-{i}", Assets.Base.Products.Icons.Vegetables_svg,
-					description: "Is used for organizing of pin connection. Is not required to use, output may be connected to multiple inputs")
+				.ModuleBuilderStart($"Fork_{i}", $"Fork: 1 pin to {i}", $"F-{i}")
+				.SetDescription("Is used for organizing of pin connection. Is not required to use, output may be connected to multiple inputs")
 				.AddInput("a", "A")
 				.AddControllerDevice()
 				// dynamic
@@ -970,7 +989,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		};
 		foreach (int i in new int[] { 2, 4 }) {
 			var builder = registrator
-				.ModuleBuilderStart($"Boolean_And_{i}", $"Boolean: AND ({i} pins)", $"AND-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+				.ModuleBuilderStart($"Boolean_And_{i}", $"Boolean: AND ({i} pins)", $"AND-{i}")
+				.SetDescription($"Outputs <b>a</b> = 1 on <b>c</b> if all {i} inputs (<b>a</b>..<b>{NAMES[i - 1]}</b>) are > 0, else 0; <b>b</b> (<b>not_c</b>) is the inverse.")
 				.AddCategory(Category.Boolean)
 				.AddOutput("b", "not C")
 				.AddOutput("a", "C")
@@ -1013,7 +1033,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		};
 		foreach (int i in new int[] { 2, 4 }) {
 			var builder = registrator
-				.ModuleBuilderStart($"Boolean_Or_{i}", $"Boolean: OR ({i} pins)", $"OR-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+				.ModuleBuilderStart($"Boolean_Or_{i}", $"Boolean: OR ({i} pins)", $"OR-{i}")
+				.SetDescription($"Outputs <b>a</b> = 1 on <b>c</b> if any of the {i} inputs (<b>a</b>..<b>{NAMES[i - 1]}</b>) is > 0, else 0; <b>b</b> (<b>not_c</b>) is the inverse.")
 				.AddCategory(Category.Boolean)
 				.AddOutput("b", "not C")
 				.AddOutput("a", "C")
@@ -1035,7 +1056,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			builder.BuildAndAdd();
 		}
 		registrator
-			.ModuleBuilderStart($"Boolean_Xor", $"Boolean: XOR", $"XOR", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart($"Boolean_Xor", $"Boolean: XOR", $"XOR")
+			.SetDescription("Outputs <b>a</b> = 1 on <b>c</b> if exactly one of <b>a</b>, <b>b</b> is > 0 (logical XOR); otherwise 0. <b>b</b> (<b>not_c</b>) is the inverse.")
 			.AddCategory(Category.Boolean)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
@@ -1059,7 +1081,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart($"Boolean_Not", $"Boolean: NOT", $"nA", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart($"Boolean_Not", $"Boolean: NOT", $"nA")
+			.SetDescription("Outputs <b>a</b> = 1 if input <b>a</b> is 0 or negative, else 0. Logical inversion of a single input.")
 			.AddCategory(Category.Boolean)
 			.AddInput("a", "A")
 			.AddOutput("a", "not A")
@@ -1092,7 +1115,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 		foreach (int i in new int[] { 4, 8 }) {
 			var builder = registrator
-				.ModuleBuilderStart($"Decision_Select_{i}", $"Select ({i - 1} pins, integer)", $"SEL-{i - 1}", Assets.Base.Products.Icons.Vegetables_svg)
+				.ModuleBuilderStart($"Decision_Select_{i}", $"Select ({i - 1} pins, integer)", $"SEL-{i - 1}")
+				.SetDescription($"Routes the first input whose threshold field (<b>a</b>..<b>{NAMES[i - 3]}</b>) is >= <b>index</b> to <b>selected</b>; falls back to <b>else</b> if none match.")
 				.AddCategory(Category.Decision)
 				.AddCategory(Category.Control)
 				.AddInput("index", "Index")
@@ -1117,7 +1141,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Connections(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (4 pin, input)", "C-IN", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (4 pin, input)", "C-IN")
+			.SetDescription("Reads 4 pins from a paired <b>Connection_Controller_Output</b> module on a remote Controller, matched by the <b>name</b> field. Outputs the remote inputs <b>a</b>, <b>b</b>, <b>c</b>, <b>d</b>; outputs 0 when no matching module is found.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("a", "A")
@@ -1155,7 +1180,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Controller_Output", "Connection: Controller (4 pin, output)", "C-OUT", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Controller_Output", "Connection: Controller (4 pin, output)", "C-OUT")
+			.SetDescription("Exposes 4 inputs (<b>a</b>, <b>b</b>, <b>c</b>, <b>d</b>) under the name set in the <b>name</b> field so a remote <b>Connection_Controller_Input</b> module can read them. Acts as a passive endpoint - it does not drive any entity.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("a", "A")
@@ -1169,7 +1195,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_SwitchOff", "Connection: Switch Off", "S", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_SwitchOff", "Connection: Switch Off", "S")
+			.SetDescription("Pauses or unpauses the linked <b>entity</b> based on <b>pause</b> input (>0 pauses, otherwise resumes). Supports any pausable building and CargoDepots (forwards to the moored CargoShip). Errors if the <b>entity</b> is unset or unsupported.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("pause", "Pause")
@@ -1194,7 +1221,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Storage", "Connection: Storage", "STOCK", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Storage", "Connection: Storage", "STOCK")
+			.SetDescription("Reads the linked storage <b>entity</b> (storages, in/out buffers, virtual miners, FlyWheels, ThermalStorage). Outputs <b>quantity</b>, <b>capacity</b>, <b>fullness</b> (%), and stored <b>product</b> slim-id. With <b>field_product</b> set, filters buffers by the chosen <b>product</b>.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddInput("product", "Product")
@@ -1305,7 +1333,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Transport", "Connection: Transport", "TRANS", Assets.Base.Products.Icons.Vegetables_svg, "Transport connectable by cable 20m from controller")
+			.ModuleBuilderStart("Connection_Transport", "Connection: Transport", "TRANS")
+			.SetDescription("Transport connectable by cable 20m from controller")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("quantity", "Quantity")
@@ -1379,7 +1408,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Settlement", "Connection: Settlement (population)", "SETTLE", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Settlement", "Connection: Settlement (population)", "SETTLE")
+			.SetDescription("Reads the linked SettlementHousingModule <b>entity</b>. Outputs <b>pop_this</b> (population in this housing module) and <b>pop_nearby</b> (population of the parent settlement, falling back to this module). Outputs 0 when no housing is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddCategory(Category.Stats)
@@ -1404,7 +1434,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_NuclearReactor", "Connection: Nuclear Reactor", "NR", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_NuclearReactor", "Connection: Nuclear Reactor", "NR")
+			.SetDescription("Reads and drives the linked NuclearReactor: outputs <b>heat</b>, <b>meltdown</b> flag, and current <b>power</b>; sets target power level from <b>target</b> input (clamped to reactor max). When <b>breed_control</b> input is on, applies <b>breed_step</b> to the enrichment cycle. Errors if no reactor is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddCategory(Category.ConnectionWrite)
@@ -1468,7 +1499,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Farm", "Connection: Farm", "FARM", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Farm", "Connection: Farm", "FARM")
+			.SetDescription("Reads and drives the linked <b>farm</b>: outputs current <b>crop</b> slim-id, <b>water</b> (imported + soil), <b>fertility</b> (%), and <b>fertilizer</b> level (%). Writes <b>fertility</b> target and queues the next slot from <b>crop</b> input (slim-id), GreenManure when <b>fertilize</b> > 0, or NoCrop. Errors if no farm is linked or the crop is invalid.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddCategory(Category.ConnectionRead)
@@ -1557,7 +1589,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Import_Set", "Connection: Import (set)", "IMS", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Import_Set", "Connection: Import (set)", "IMS")
+			.SetDescription("Sets the import logistics mode of the linked <b>logistic</b> building from <b>mode</b> input (0 = auto, 1 = on, 2 = off). For buildings with simple logistics, only on/off is meaningful (mode 2 disables input). Errors if no compatible building is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("mode", "Import mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
@@ -1580,7 +1613,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Import_Get", "Connection: Import (get)", "IMG", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Import_Get", "Connection: Import (get)", "IMG")
+			.SetDescription("Reads the import logistics mode of the linked <b>logistic</b> building to output <b>mode</b> (0 = auto, 1 = on, 2 = off). For buildings with simple logistics, outputs 1 (enabled) or 2 (disabled). Errors if no compatible building is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("mode", "Import mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
@@ -1603,7 +1637,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Export_Set", "Connection: Export (set)", "EXS", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Export_Set", "Connection: Export (set)", "EXS")
+			.SetDescription("Sets the export logistics mode of the linked <b>logistic</b> building from <b>mode</b> input (0 = auto, 1 = on, 2 = off). For buildings with simple logistics, only on/off is meaningful (mode 2 disables output). Errors if no compatible building is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("mode", "Export mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
@@ -1626,7 +1661,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Export_Get", "Connection: Export (get)", "EXG", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Export_Get", "Connection: Export (get)", "EXG")
+			.SetDescription("Reads the export logistics mode of the linked <b>logistic</b> building to output <b>mode</b> (0 = auto, 1 = on, 2 = off). For buildings with simple logistics, outputs 1 (enabled) or 2 (disabled). Errors if no compatible building is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("mode", "Export mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
@@ -1649,7 +1685,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Priority_Set", "Connection: Priority (set)", "P-S", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Priority_Set", "Connection: Priority (set)", "P-S")
+			.SetDescription("Sets the general priority (1-15) of the linked <b>logistic</b> building from the <b>priority</b> input (defaults to 8 when unconnected). Errors if no priority-capable building is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("priority", "Priority: 1 - 15")
@@ -1667,7 +1704,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Priority_Get", "Connection: Priority (get)", "P-G", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Priority_Get", "Connection: Priority (get)", "P-G")
+			.SetDescription("Reads the general priority (1-15) of the linked <b>building</b> and outputs it on <b>priority</b>. Errors if no priority-capable building is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("priority", "Priority: 1 - 15")
@@ -1685,7 +1723,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Vehicle_Get", "Connection: Vehicle count (get)", "V-G", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Vehicle_Get", "Connection: Vehicle count (get)", "V-G")
+			.SetDescription("Reads the vehicle count assigned to the linked <b>building</b>. With a vehicle type chosen via the <b>vehicle</b> input or <b>vehicle</b> field (toggled by <b>field_vehicle</b>), outputs the count of that type to <b>count</b>; otherwise outputs the total count of all assigned vehicles. Errors if no building is linked or the type is invalid.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.Width(4)
@@ -1719,10 +1758,10 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Vehicle_Set", "Connection: Vehicle count (set)", "V-S", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Vehicle_Set", "Connection: Vehicle count (set)", "V-S")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
-			.SetDescritpion("Sets count of vehicles assigned to the building, by default it takes vehicles from all zones.")
+			.SetDescription("Sets count of vehicles assigned to the building, by default it takes vehicles from all zones.")
 			.Width(4)
 			.AddInput("count", "Vehicle count")
 			.AddInput("vehicle", "Vehicle type")
@@ -1779,7 +1818,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Filter_Get", "Connection: Filter (get)", "F-G", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Filter_Get", "Connection: Filter (get)", "F-G")
+			.SetDescription("Reads the assigned product slim-id from the linked <b>entity</b> and outputs it on <b>product</b>. Supports storages, train stations, settlement food/service, hospitals, virtual miners, and sorters; the <b>index</b> input/field selects the compartment/slot. Errors if the entity type is unsupported.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.Width(2)
@@ -1877,7 +1917,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Filter_Set", "Connection: Filter (set)", "F-S", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Filter_Set", "Connection: Filter (set)", "F-S")
+			.SetDescription("Assigns a product filter to the linked <b>entity</b> from the <b>product</b> input or <b>product</b> field (toggled by <b>field_product</b>); the <b>index</b> input/field picks the compartment for multi-slot buildings. Supports storages, cargo depots, train stations, settlement food, hospitals, mine towers, and sorters. Errors if the entity is unsupported or storage is non-empty when re-assigning.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.Width(2)
@@ -2022,7 +2063,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Recipe_Set", "Connection: Recipe (set)", "REC-S", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Recipe_Set", "Connection: Recipe (set)", "REC-S")
+			.SetDescription("Assigns the recipe selected in the <b>recipe</b> field to the linked <b>entity</b> Machine when <b>on</b> is true (input or <b>on</b> field, toggled by <b>field_on</b>). Clears existing assignments and re-assigns; does nothing while <b>on</b> is false. Errors if no machine is linked, no recipe is selected, or the recipe could not be assigned.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.Width(2)
@@ -2068,7 +2110,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Station_TrainInfo", "Connection: Station", "ST-TR", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Station_TrainInfo", "Connection: Station", "ST-TR")
+			.SetDescription("Reads and toggles the linked <b>station</b> (TrainStationBase). Outputs <b>instation</b> (1 when a train of the station group is present) and, for station modules, <b>cargo</b> (1 = loading, 2 = unloading). The <b>direction</b> input switches the module between loading (1) and unloading (2). Errors if no station is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.Width(4)
@@ -2128,8 +2171,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_IsActive", "Connection: Status", "STAT",
-				Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_IsActive", "Connection: Status", "STAT")
+			.SetDescription("Reads operational status of the linked <b>entity</b>. Outputs <b>power</b> (1 when not power-starved or not power-consuming), <b>workers</b> (1 when staffed or no workers needed), <b>constructed</b> (1 when build is finished), and <b>pause</b> (1 when the entity is paused). Errors when no entity is linked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.Width(4)
@@ -2188,8 +2231,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Boost_Set", "Connection: Unity Boost", "BST",
-				Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Connection_Boost_Set", "Connection: Unity Boost", "BST")
+			.SetDescription("Drives the Unity boost state of the linked <b>entity</b> from the <b>boost</b> input or <b>boost</b> field (toggled by <b>field_boost</b>) and reflects the current request on the <b>boost</b> output. Errors when no boost-capable entity is linked or when the building has no BoostCost.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddCategory(Category.ConnectionRead)
@@ -2302,7 +2345,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Comparation(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart("Compare_Int_Equal", "Compare: A = B", "A=B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Compare_Int_Equal", "Compare: A = B", "A=B")
+			.SetDescription("Outputs <b>c</b> = 1 if <b>a</b> equals <b>b</b> (input or <b>field_b</b> constant when enabled), else 0. <b>not_c</b> is the inverse.")
 			.AddCategory(Category.Boolean)
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
@@ -2325,7 +2369,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Compare_Int_Greater", "Compare: A > B", "A>B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Compare_Int_Greater", "Compare: A > B", "A>B")
+			.SetDescription("Outputs <b>c</b> = 1 if <b>a</b> is strictly greater than <b>b</b> (input or <b>field_b</b> constant when enabled), else 0. <b>not_c</b> is the inverse.")
 			.AddCategory(Category.Boolean)
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
@@ -2348,7 +2393,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Compare_Int_Lower", "Compare: A < B", "A<B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Compare_Int_Lower", "Compare: A < B", "A<B")
+			.SetDescription("Outputs <b>c</b> = 1 if <b>a</b> is strictly less than <b>b</b> (input or <b>field_b</b> constant when enabled), else 0. <b>not_c</b> is the inverse.")
 			.AddCategory(Category.Boolean)
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
@@ -2371,7 +2417,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Compare_Int_GreaterOrEqual", "Compare: A ≥ B", "A≥B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Compare_Int_GreaterOrEqual", "Compare: A ≥ B", "A≥B")
+			.SetDescription("Outputs <b>c</b> = 1 if <b>a</b> is greater than or equal to <b>b</b> (input or <b>field_b</b> constant when enabled), else 0. <b>not_c</b> is the inverse.")
 			.AddCategory(Category.Boolean)
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
@@ -2394,7 +2441,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Compare_Int_LowerOrEqual", "Compare: A ≤ B", "A≤B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Compare_Int_LowerOrEqual", "Compare: A ≤ B", "A≤B")
+			.SetDescription("Outputs <b>c</b> = 1 if <b>a</b> is less than or equal to <b>b</b> (input or <b>field_b</b> constant when enabled), else 0. <b>not_c</b> is the inverse.")
 			.AddCategory(Category.Boolean)
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
@@ -2417,7 +2465,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Compare_Int_Max", "Maximum: A or B", "MAX", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Compare_Int_Max", "Maximum: A or B", "MAX")
+			.SetDescription("Routes the larger of <b>a</b> and <b>b</b> (input or <b>field_b</b> constant when enabled) to output <b>a</b> (High) and the smaller to output <b>b</b> (Low).")
 			.AddCategory(Category.Boolean)
 			.AddCategory(Category.Arithmetic)
 			.AddCategory(Category.Decision)
@@ -2462,7 +2511,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 		foreach (int i in new int[] { 2, 4, 8, 16 }) {
 			registrator
-				.ModuleBuilderStart($"Display_Int_{i}", $"Display: {i * 2} digits", $"F-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+				.ModuleBuilderStart($"Display_Int_{i}", $"Display: {i * 2} digits", $"F-{i}")
+				.SetDescription($"Formats input <b>a</b> as a {i * 2}-digit decimal display, splitting integer and fractional parts based on the <b>float</b> field (clamped to {i * 2}).")
 				.AddCategory(Category.Display)
 				.AddInput("a", "A")
 				.AddDisplay("a", "A", i)
@@ -2474,7 +2524,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 
 		registrator
-			.ModuleBuilderStart($"Display_Product", $"Display: product", $"F-P", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart($"Display_Product", $"Display: product", $"F-P")
+			.SetDescription("Renders the icon of the product whose slim-id arrives on input <b>a</b> to display <b>a</b>. Used to visually identify the current product in a chain.")
 			.AddCategory(Category.Display)
 			.AddInput("a", "Product")
 			.AddDisplay("a", "Product", 1, image: true)
@@ -2483,7 +2534,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart($"Display_Entity", $"Display: entity", $"F-E", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart($"Display_Entity", $"Display: entity", $"F-E")
+			.SetDescription("Renders the icon of the entity prototype referenced by input <b>a</b> (machine, vehicle, etc.) to display <b>a</b>. Useful for identifying entity types visually.")
 			.AddCategory(Category.Display)
 			.AddInput("a", "Entity")
 			.AddDisplay("a", "Entity", 1, image: true)
@@ -2492,7 +2544,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart($"Display_Bool", $"Display: LED", $"F-B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart($"Display_Bool", $"Display: LED", $"F-B")
+			.SetDescription("Lights an LED on display <b>a</b> when input <b>a</b> is greater than 0; otherwise the LED is off. Treats any positive numeric value as truthy.")
 			.AddCategory(Category.Display)
 			.AddInput("a", "Product")
 			.AddDisplay("a", "Product", 1, led: true)
@@ -2546,7 +2599,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 		foreach (int i in new int[] { 2, 4, 8, 16 }) {
 			var module = registrator
-				.ModuleBuilderStart($"Radio_In_FM_{i}", $"FM receiver ({i} signals)", $"FM-R", Assets.Base.Products.Icons.Vegetables_svg)
+				.ModuleBuilderStart($"Radio_In_FM_{i}", $"FM receiver ({i} signals)", $"FM-R")
+				.SetDescription($"Listens on the FM channel from the <b>fm</b> field and emits up to {i} signals on outputs <b>a</b>..<b>{NAMES[i - 1]}</b>, plus reception strength on <b>signal</b> and ID3 channel name on display <b>id3</b>. Outputs zero when out of range.")
 				.AddCategory(Category.Antene)
 				.AddCategory(Category.AnteneFM)
 				.AddCustomField("fm", "FM", "Listening frequency",
@@ -2627,7 +2681,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 		foreach (int i in new int[] { 2, 4, 8, 16 }) {
 			var module = registrator
-				.ModuleBuilderStart($"Radio_Out_FM_{i}", $"FM broadcaster ({i} signals)", $"FM-B", Assets.Base.Products.Icons.Vegetables_svg)
+				.ModuleBuilderStart($"Radio_Out_FM_{i}", $"FM broadcaster ({i} signals)", $"FM-B")
+				.SetDescription($"Broadcasts up to {i} input signals (<b>a</b>..<b>{NAMES[i - 1]}</b>) on the FM channel from the <b>fm</b> field via the linked <b>antena</b>, tagging the stream with the <b>id3</b> field. Errors if no antena is connected.")
 				.AddCategory(Category.Antene)
 				.AddCategory(Category.AnteneFM)
 				.AddCustomField("fm", "FM", "Broadcasting frequency",
@@ -2653,7 +2708,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void RadioAM(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart($"Radio_In_AM", $"AM receiver", $"AM-R", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart($"Radio_In_AM", $"AM receiver", $"AM-R")
+			.SetDescription("Reads the AM channel selected in the <b>am</b> field via the linked <b>antena</b> and outputs the received value on <b>am</b>. Errors and outputs 0 if no antena is connected.")
 			.AddCategory(Category.Antene)
 			.AddCategory(Category.AnteneAM)
 			.AddCustomField("am", "AM", "Listening frequency", (inspector, settings, refresh, reference) => settings.Add(new Ui.DataBand.AMDataBandChannelView(inspector, refresh, reference)))
@@ -2690,7 +2746,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart($"Radio_Out_AM", $"AM broadcaster", $"AM-B", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart($"Radio_Out_AM", $"AM broadcaster", $"AM-B")
+			.SetDescription("Broadcasts input <b>am</b> on the AM channel selected in the <b>am</b> field via the linked <b>antena</b>. Skips while the antena is disabled or paused; errors if no antena is connected.")
 			.AddCategory(Category.Antene)
 			.AddCategory(Category.AnteneAM)
 			.AddCustomField("am", "AM", "Listening frequency", (inspector, settings, refresh, reference) => settings.Add(new Ui.DataBand.AMDataBandChannelView(inspector, refresh, reference)))
@@ -2735,7 +2792,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Variables(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart("VariableNetwork_Read", "Network Variable (read)", "*N", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("VariableNetwork_Read", "Network Variable (read)", "*N")
+			.SetDescription("Reads the global network variable identified by the <b>name</b> field via VariableManager and outputs its current value on <b>value</b>. Errors if <b>name</b> is empty.")
 			.AddCategory(Category.Control)
 			.AddCategory(Category.Arithmetic)
 			.UnlockedBy(Ids.Research.Datacenter)
@@ -2768,7 +2826,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("VariableNetwork_Write", "Network Variable (write)", "*N", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("VariableNetwork_Write", "Network Variable (write)", "*N")
+			.SetDescription("Writes input <b>value</b> (or the constant <b>value</b> field when <b>field_value</b> is on) into the global network variable identified by the <b>name</b> field via VariableManager. Errors if <b>name</b> is empty.")
 			.AddCategory(Category.Control)
 			.AddCategory(Category.Arithmetic)
 			.UseComputation(0.1.Quantity())
@@ -2803,7 +2862,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Variable_Read", "Variable (read)", "*C", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Variable_Read", "Variable (read)", "*C")
+			.SetDescription("Reads a controller-local variable: searches the same Controller for a <b>Variable_Write</b> module with a matching <b>name</b> field and outputs its <b>value</b> on <b>value</b>. Outputs 0 when none is found; errors if <b>name</b> is empty.")
 			.AddCategory(Category.Control)
 			.AddCategory(Category.Arithmetic)
 			.AddOutput("value", "Value")
@@ -2837,7 +2897,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Variable_Write", "Variable (write)", "*C", Assets.Base.Products.Icons.Vegetables_svg)
+			.ModuleBuilderStart("Variable_Write", "Variable (write)", "*C")
+			.SetDescription("Holds a controller-local variable named by the <b>name</b> field. Stores input <b>value</b> (or the constant <b>value</b> field when <b>field_value</b> is on) so a paired <b>Variable_Read</b> on the same controller can fetch it. Errors if <b>name</b> is empty.")
 			.AddCategory(Category.Control)
 			.AddCategory(Category.Arithmetic)
 			.AddDisplay("name", "Variable name (should be longer)", 1)

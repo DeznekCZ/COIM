@@ -28,6 +28,10 @@ class Display:
         """ Creates a text display """
         pass
 
+    def Icon(input_id: str, name: str, defaultText: str = ""):
+        """ Creates an icon display """
+        pass
+
 class InputValue:
     def __init__(self, module): pass
     def set(self, name: str, value: Fix32) -> None: pass

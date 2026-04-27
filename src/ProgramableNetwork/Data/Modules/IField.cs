@@ -1,4 +1,5 @@
-﻿using Mafi.Unity.Ui;
+﻿using Mafi.Localization;
+using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
@@ -8,8 +9,8 @@ namespace ProgramableNetwork
     public interface IField
     {
         string Id { get; }
-        string Name { get; }
-        string ShortDesc { get; }
+        LocStr Name { get; }
+        LocStr ShortDesc { get; }
         int Size { get; }
 
         void Validate(Module module);

@@ -51,11 +51,13 @@ namespace ProgramableNetwork.Ui
 			{
 				new PanelWithHeader($"Template: {item.Value.ModuleProto.Strings.Name.TranslatedString}".AsLoc())
 					.Height(Sizes.BLOCK_SIZE * 4)
-					.Width(300)
-					.BodyAdd(new Label(new LocStrFormatted(item.Value.Name))
-						.FlexGrow(1)
-						.TextAlign(TextAlignment.LeftTop)
-						.AlignSelf(Align.Stretch)),
+					.Width(320)
+					.BodyAdd(new ScrollColumn {
+						new Label(new LocStrFormatted(item.Value.Name))
+							.TextOverflow(TextOverflow.Wrap)
+							.TextAlign(TextAlignment.LeftTop)
+							.AlignSelf(Align.Stretch)
+					}.FlexGrow(1).AlignSelf(Align.Stretch)),
 				new ModuleView(new Module(item.Value.ModuleProto, m_controllerView.Entity.Context, m_controllerView.Entity), m_controllerView, m_controllerView.Inspector.Context, true, () => { })
 					.With(mv => {
 						mv.Module.Prototype.ExecuteInit(mv.Module, log: false);

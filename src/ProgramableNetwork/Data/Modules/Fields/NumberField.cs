@@ -1,4 +1,6 @@
 ﻿using Mafi;
+using Mafi.Core.Prototypes;
+using Mafi.Localization;
 using Mafi.Unity.Ui;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
@@ -9,17 +11,17 @@ namespace ProgramableNetwork.Ui
 {
     public class NumberField<T> : IField
     {
-        public NumberField(string id, string name, string shortDesc, T defaultValue)
+        public NumberField(string id, Proto.Str strs, T defaultValue)
         {
             Id = id;
-            Name = name;
+            Name = strs.Name;
             Default = defaultValue;
-            ShortDesc = shortDesc;
+            ShortDesc = strs.DescShort;
         }
 
         public string Id { get; }
-        public string Name { get; }
-        public string ShortDesc { get; }
+        public LocStr Name { get; }
+        public LocStr ShortDesc { get; }
 
         public int Size => 20;
 

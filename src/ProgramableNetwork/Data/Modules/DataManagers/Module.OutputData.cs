@@ -1,4 +1,4 @@
-﻿using Mafi;
+using Mafi;
 using Mafi.Core.Products;
 
 namespace ProgramableNetwork
@@ -31,19 +31,20 @@ namespace ProgramableNetwork
 
             public Fix32 this[string name, Fix32 defaultValue]
             {
-                get => module.NumberData.TryGetValue("out__" + name, out int data)
-                    ? Fix32.FromRaw(data) : defaultValue;
+                get => module.OutputNumberData.TryGetValue(name, out Fix32 data)
+                    ? data : defaultValue;
             }
 
             public Fix32 this[string name]
             {
                 get => this[name, Fix32.Zero];
-                set => module.NumberData["out__" + name] = value.RawValue;
+                set => module.OutputNumberData[name] = value;
             }
 
             public ProductProto Product(string name)
             {
-                module.NumberData.TryGetValue("out__" + name, out int slimId);
+                module.OutputNumberData.TryGetValue(name, out Fix32 data);
+                int slimId = data.RawValue;
 
                 if (slimId == 0)
                 {
@@ -69,7 +70,7 @@ namespace ProgramableNetwork
                     }
                 }
 
-                module.NumberData.TryRemove("out__" + name, out slimId);
+                module.OutputNumberData.TryRemove(name, out _);
                 module.StringData.TryRemove("out__" + name, out cache);
                 return null;
             }

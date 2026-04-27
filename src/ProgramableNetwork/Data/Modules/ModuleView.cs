@@ -297,7 +297,7 @@ namespace ProgramableNetwork.Ui
 			private void AddDisplays(UiContext uiContext, Row displaysPanel, Module module, bool preview, Action refresh) {
 				var displays = module.Prototype.Displays;
 				foreach (ModuleConnectorProto display in displays) {
-					if (display.DefaultText == "[image]")
+					if (display.DefaultText.StartsWith("[image]"))
 					{
 						displaysPanel.Add(ImageDisplay(uiContext, module, display));
 					}
@@ -398,7 +398,10 @@ namespace ProgramableNetwork.Ui
 
 			private UiComponent ImageDisplay(UiContext uiContext, Module module, ModuleConnectorProto display)
 			{
-				var text = new DisplayWithIcon(StatusText(module.Display[display.Id, UserInterface.General.Empty128_png], out DisplayState? state, out ColorRgba? color));
+				string defaultIcon = display.DefaultText.Length > "[image]".Length
+					? display.DefaultText.Substring("[image]".Length)
+					: UserInterface.General.Empty128_png;
+				var text = new DisplayWithIcon(StatusText(module.Display[display.Id, defaultIcon], out DisplayState? state, out ColorRgba? color));
 				if (state.HasValue) {
 					text.State(state ?? DisplayState.Neutral);
 				}
@@ -410,7 +413,7 @@ namespace ProgramableNetwork.Ui
 				text.Icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
 				text.Color(ColorRgba.White);
 				text.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE);
-				text.Observe(() => module.Display[display.Id, UserInterface.General.Empty128_png])
+				text.Observe(() => module.Display[display.Id, defaultIcon])
 					.Do((t) =>
 					{
 						text.Icon.Value(StatusText(t, out DisplayState? newState, out ColorRgba? newColor));

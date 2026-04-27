@@ -7,6 +7,7 @@ from Mafi import Fix32
 
 class Runtime_Delay_1(Module):
     name = "Control: Delay (multi tick)"
+    description = "Delays input <b>input</b> by the number of ticks set in the <b>delay</b> field, then emits the same signal on <b>output</b>. A delay of 1 (or less) passes the value through unchanged."
     symbol = "DLY"
     inputs = [
         Input("input", "Signal input")
@@ -53,6 +54,7 @@ class Runtime_Delay_1(Module):
 
 class Runtime_Delay_2(Module):
     name = "Control: Delay (2 ticks)"
+    description = "Two-stage shift register: outputs <b>1</b> and <b>2</b> carry the input from 1 and 2 ticks ago respectively, refreshed each tick from <b>0</b>."
     symbol = "DLY"
     inputs = [
         Input("0", "Signal input")
@@ -71,6 +73,7 @@ class Runtime_Delay_2(Module):
 
 class Runtime_Delay_4(Module):
     name = "Control: Delay (4 ticks)"
+    description = "Four-stage shift register: outputs <b>1</b>..<b>4</b> carry the input from 1 to 4 ticks ago respectively, refreshed each tick from <b>0</b>."
     symbol = "DELAY"
     inputs = [
         Input("0", "Signal input")
@@ -93,6 +96,7 @@ class Runtime_Delay_4(Module):
 
 class Runtime_Delay_6(Module):
     name = "Control: Delay (6 ticks)"
+    description = "Six-stage shift register: outputs <b>1</b>..<b>6</b> carry the input from 1 to 6 ticks ago respectively, refreshed each tick from <b>0</b>."
     symbol = "DELAY"
     inputs = [
         Input("0", "Signal input")
@@ -119,6 +123,7 @@ class Runtime_Delay_6(Module):
 
 class Runtime_Delay_8(Module):
     name = "Control: Delay (8 ticks)"
+    description = "Eight-stage shift register: outputs <b>1</b>..<b>8</b> carry the input from 1 to 8 ticks ago respectively, refreshed each tick from <b>0</b>."
     symbol = "DELAY"
     inputs = [
         Input("0", "Signal input")

@@ -25,7 +25,7 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 			Toggle toggle;
 
 			var components = new UiComponent[] {
-				active = new Label("Active".AsLoc()).TextAlign(TextAlignment.LeftMiddle)
+				active = new Label(NewTr.Inspector.Active).TextAlign(TextAlignment.LeftMiddle)
 				.FlexGrow(0.4f),
 				toggle = new Toggle().FlexGrow(0.1f),
 				GetColorPickerComponent()

@@ -64,7 +64,7 @@ public class PickNewModule : FloatingColumn {
 
 				foreach (Category category in item.Categories) {
 					if (!categoryDict.TryGetValue(category.Id, out ButtonText categoryButton)) {
-						categoryButton = new ButtonText(Button.ToggleGroup, category.Name.ToDoLoc())
+						categoryButton = new ButtonText(Button.ToggleGroup, category.Name)
 							.Toggleable()
 							.Selected();
 						categoryButton.OnDoubleClick((b) => {
@@ -110,16 +110,20 @@ public class PickNewModule : FloatingColumn {
 				b.Selected();
 			}
 		});
-		categoriesSelection.Add(categoryDict.OrderBy(i => categoryOrdering[i.Key].Name).Select(c => c.Value));
+		categoriesSelection.Add(categoryDict
+			.OrderBy(i => categoryOrdering[i.Key].Name.TranslatedString)
+			.Select(c => c.Value));
 
 		row.Add(new VerticalDivider().Width(10.px()));
 
 		ScrollBoth modulesSelection = row.AddAndReturn(new ScrollBoth())
-			.Width(440.px())
+			.Width(Sizes.BLOCK_SIZE * 4 + 340.px())
 			.Height(600);
 		modulesSelection.Add(buttonList);
 
 		this.Height(Px.Auto);
-		this.Width(600.px());
+		this.Width(Sizes.BLOCK_SIZE * 4 + 500.px());
+		
+		Log.Info($"[PickNewModule] Created");
 	}
 }

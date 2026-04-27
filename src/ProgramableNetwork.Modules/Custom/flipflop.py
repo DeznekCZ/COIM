@@ -1,13 +1,19 @@
 from Core.categories import DefaultCategories
 from Core.fields import Int32Field
-from Core.io import Input, Output
+from Core.io import Input, Output, Display
 from Mafi import Fix32
 from Core.module import DefaultControllers, Module
 
 # File written by Nightinggale
 
+SAVE_ICON = "Assets/Unity/UserInterface/General/Save.svg"
+WRITE_ICON_ON = "#CAAAA00" + SAVE_ICON
+WRITE_ICON_OFF = "#C606060" + SAVE_ICON
+
+
 class Runtime_FlipFlop_1(Module):
     name = "Control: Flip-Flop (1 input)"
+    description = "When <b>enable</b> is on, copies input <b>A</b> to output <b>A</b> and remembers it; while <b>enable</b> is off, the output keeps its last stored value. Single-input D flip-flop."
     symbol = "FLIP-F"
     inputs = [
         Input("enable", "Enable"),
@@ -16,10 +22,13 @@ class Runtime_FlipFlop_1(Module):
     outputs = [
         Output("out_1", "A")
     ]
-   
-    
+    displays = [
+        Display.Icon("write", "Write Enable", WRITE_ICON_OFF),
+        Display.LED("led_1", "Stored A")
+    ]
+
     width = 2
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
@@ -28,10 +37,22 @@ class Runtime_FlipFlop_1(Module):
             return
 
         self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
-        
+
+    def Display(self):
+        if self.Input.get_bool("enable", False):
+            self.Display.set("write", WRITE_ICON_ON)
+        else:
+            self.Display.set("write", WRITE_ICON_OFF)
+
+        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_1", "stored")
+        else:
+            self.Display.set("led_1", "")
+
 
 class Runtime_FlipFlop_2(Module):
     name = "Control: Flip-Flop (2 inputs)"
+    description = "When <b>enable</b> is on, copies inputs <b>A</b> and <b>B</b> to the matching outputs and remembers them; while <b>enable</b> is off, outputs keep their last stored values. Two-channel D flip-flop."
     symbol = "FLIP-FLOP"
     inputs = [
         Input("enable", "Enable"),
@@ -42,24 +63,44 @@ class Runtime_FlipFlop_2(Module):
         Output("out_1", "A"),
         Output("out_2", "B")
     ]
-   
-    
+    displays = [
+        Display.Icon("write", "Write Enable", WRITE_ICON_OFF),
+        Display.LED("led_1", "Stored A"),
+        Display.LED("led_2", "Stored B")
+    ]
+
     width = 3
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
-    def action(self):
+    def Action(self):
         if not self.Input.get_bool("enable", False):
             return
 
         self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
         self.Output.set("out_2", self.Input.get("in_2", Fix32.Zero))
-        
-        
+
+    def Display(self):
+        if self.Input.get_bool("enable", False):
+            self.Display.set("write", WRITE_ICON_ON)
+        else:
+            self.Display.set("write", WRITE_ICON_OFF)
+
+        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_1", "stored")
+        else:
+            self.Display.set("led_1", "")
+
+        if self.Output.get("out_2", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_2", "stored")
+        else:
+            self.Display.set("led_2", "")
+
 
 class Runtime_FlipFlop_3(Module):
     name = "Control: Flip-Flop (3 inputs)"
+    description = "When <b>enable</b> is on, copies inputs <b>A</b>, <b>B</b>, <b>C</b> to the matching outputs and remembers them; while <b>enable</b> is off, outputs keep their last stored values. Three-channel D flip-flop."
     symbol = "FLIP-FLOP"
     inputs = [
         Input("enable", "Enable"),
@@ -72,25 +113,51 @@ class Runtime_FlipFlop_3(Module):
         Output("out_2", "B"),
         Output("out_3", "C")
     ]
-   
-    
+    displays = [
+        Display.Icon("write", "Write Enable", WRITE_ICON_OFF),
+        Display.LED("led_1", "Stored A"),
+        Display.LED("led_2", "Stored B"),
+        Display.LED("led_3", "Stored C")
+    ]
+
     width = 4
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
-    def action(self):
+    def Action(self):
         if not self.Input.get_bool("enable", False):
             return
 
         self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
         self.Output.set("out_2", self.Input.get("in_2", Fix32.Zero))
         self.Output.set("out_3", self.Input.get("in_3", Fix32.Zero))
-        
-        
+
+    def Display(self):
+        if self.Input.get_bool("enable", False):
+            self.Display.set("write", WRITE_ICON_ON)
+        else:
+            self.Display.set("write", WRITE_ICON_OFF)
+
+        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_1", "stored")
+        else:
+            self.Display.set("led_1", "")
+
+        if self.Output.get("out_2", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_2", "stored")
+        else:
+            self.Display.set("led_2", "")
+
+        if self.Output.get("out_3", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_3", "stored")
+        else:
+            self.Display.set("led_3", "")
+
 
 class Runtime_FlipFlop_4(Module):
     name = "Control: Flip-Flop (4 inputs)"
+    description = "When <b>enable</b> is on, copies inputs <b>A</b> through <b>D</b> to the matching outputs and remembers them; while <b>enable</b> is off, outputs keep their last stored values. Four-channel D flip-flop."
     symbol = "FLIP-FLOP"
     inputs = [
         Input("enable", "Enable"),
@@ -105,10 +172,16 @@ class Runtime_FlipFlop_4(Module):
         Output("out_3", "C"),
         Output("out_4", "D")
     ]
-   
-    
+    displays = [
+        Display.Icon("write", "Write Enable", WRITE_ICON_OFF),
+        Display.LED("led_1", "Stored A"),
+        Display.LED("led_2", "Stored B"),
+        Display.LED("led_3", "Stored C"),
+        Display.LED("led_4", "Stored D")
+    ]
+
     width = 5
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
@@ -120,11 +193,37 @@ class Runtime_FlipFlop_4(Module):
         self.Output.set("out_2", self.Input.get("in_2", Fix32.Zero))
         self.Output.set("out_3", self.Input.get("in_3", Fix32.Zero))
         self.Output.set("out_4", self.Input.get("in_4", Fix32.Zero))
-        
-        
+
+    def Display(self):
+        if self.Input.get_bool("enable", False):
+            self.Display.set("write", WRITE_ICON_ON)
+        else:
+            self.Display.set("write", WRITE_ICON_OFF)
+
+        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_1", "stored")
+        else:
+            self.Display.set("led_1", "")
+
+        if self.Output.get("out_2", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_2", "stored")
+        else:
+            self.Display.set("led_2", "")
+
+        if self.Output.get("out_3", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_3", "stored")
+        else:
+            self.Display.set("led_3", "")
+
+        if self.Output.get("out_4", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_4", "stored")
+        else:
+            self.Display.set("led_4", "")
+
 
 class Runtime_FlipFlop_7(Module):
     name = "Control: Flip-Flop (7 inputs)"
+    description = "When <b>enable</b> is on, copies inputs <b>A</b> through <b>G</b> to the matching outputs and remembers them; while <b>enable</b> is off, outputs keep their last stored values. Seven-channel D flip-flop."
     symbol = "FLIP-FLOP"
     inputs = [
         Input("enable", "Enable"),
@@ -145,14 +244,23 @@ class Runtime_FlipFlop_7(Module):
         Output("out_6", "F"),
         Output("out_7", "G")
     ]
-   
-    
+    displays = [
+        Display.Icon("write", "Write Enable", WRITE_ICON_OFF),
+        Display.LED("led_1", "Stored A"),
+        Display.LED("led_2", "Stored B"),
+        Display.LED("led_3", "Stored C"),
+        Display.LED("led_4", "Stored D"),
+        Display.LED("led_5", "Stored E"),
+        Display.LED("led_6", "Stored F"),
+        Display.LED("led_7", "Stored G")
+    ]
+
     width = 8
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
-    def action(self):
+    def Action(self):
         if not self.Input.get_bool("enable", False):
             return
 
@@ -163,4 +271,44 @@ class Runtime_FlipFlop_7(Module):
         self.Output.set("out_5", self.Input.get("in_5", Fix32.Zero))
         self.Output.set("out_6", self.Input.get("in_6", Fix32.Zero))
         self.Output.set("out_7", self.Input.get("in_7", Fix32.Zero))
-        
+
+    def Display(self):
+        if self.Input.get_bool("enable", False):
+            self.Display.set("write", WRITE_ICON_ON)
+        else:
+            self.Display.set("write", WRITE_ICON_OFF)
+
+        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_1", "stored")
+        else:
+            self.Display.set("led_1", "")
+
+        if self.Output.get("out_2", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_2", "stored")
+        else:
+            self.Display.set("led_2", "")
+
+        if self.Output.get("out_3", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_3", "stored")
+        else:
+            self.Display.set("led_3", "")
+
+        if self.Output.get("out_4", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_4", "stored")
+        else:
+            self.Display.set("led_4", "")
+
+        if self.Output.get("out_5", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_5", "stored")
+        else:
+            self.Display.set("led_5", "")
+
+        if self.Output.get("out_6", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_6", "stored")
+        else:
+            self.Display.set("led_6", "")
+
+        if self.Output.get("out_7", Fix32.Zero) != Fix32.Zero:
+            self.Display.set("led_7", "stored")
+        else:
+            self.Display.set("led_7", "")

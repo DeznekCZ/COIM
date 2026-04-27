@@ -172,7 +172,7 @@ namespace ProgramableNetwork
             {
                 PHANTOM_PRODUCT_ID = new ID("__PHANTOM__MODULE__");
                 Phantom = new Builder(null, PHANTOM_PRODUCT_ID)
-                    .SetDescritpion("Module replacement for already nonexsiting module")
+                    .SetDescription("Module replacement for already nonexsiting module")
                     .SetGfx(Assets.Base.Products.Icons.Vegetables_svg)
                     .SetSymbol("!!")
                     .SetName("[Removed module]")
@@ -278,6 +278,7 @@ namespace ProgramableNetwork
             private readonly ID m_id;
             private string m_name;
             private string m_description;
+            private string m_hint = "";
             private Func<Module, ModuleStatus> m_action;
             private Func<Module, ModuleStatus> m_init;
             private Action<Module> m_display;
@@ -347,7 +348,7 @@ namespace ProgramableNetwork
 
 				return new ModuleProto(
                     m_id,
-                    CreateStr(m_id, m_name, m_description),
+                    CreateStr(m_id, m_name, m_description, m_hint),
                     m_registrator == null ? new EntityCosts() : ((EntityCostsTpl)m_costs).MapToEntityCosts(m_registrator),
                     m_gfx,
                     m_tags,
@@ -391,9 +392,19 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder SetDescritpion(string description)
+            public Builder SetDescription(string description)
             {
                 this.m_description = description;
+                return this;
+            }
+
+            /// <summary>
+            /// Translator-context comment attached to the module's name and description.
+            /// Not shown to the player; surfaced to translators so they understand what the module does.
+            /// </summary>
+            public Builder SetHint(string hint)
+            {
+                this.m_hint = hint ?? "";
                 return this;
             }
 
@@ -589,125 +600,125 @@ namespace ProgramableNetwork
 
             public Builder AddBooleanField(string id, string name, string shortDesc = "", bool defaultValue = false)
             {
-                m_fields.Add(new BooleanField(id, name, shortDesc, defaultValue));
+                m_fields.Add(new BooleanField(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddInt32Field(string id, string name, string shortDesc = "", int defaultValue = 0)
             {
-                m_fields.Add(new NumberField<int>(id, name, shortDesc, defaultValue));
+                m_fields.Add(new NumberField<int>(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddHexInt32Field(string id, string name, string shortDesc = "", uint defaultValue = 0)
             {
-                m_fields.Add(new NumberField<HexInt32>(id, name, shortDesc, new HexInt32() { Value = (int)defaultValue }));
+                m_fields.Add(new NumberField<HexInt32>(id, m_id.Field(id, name, shortDesc), new HexInt32() { Value = (int)defaultValue }));
                 return this;
             }
 
             public Builder AddColorField(string id, string name, string shortDesc = "", int defaultValue = 0)
             {
-                m_fields.Add(new ColorField(id, name, shortDesc, defaultValue));
+                m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddColorField(string id, string name, string shortDesc = "", ColorRgba? defaultValue = null)
             {
-                m_fields.Add(new ColorField(id, name, shortDesc, defaultValue ?? new ColorRgba()));
+                m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue ?? new ColorRgba()));
                 return this;
             }
 
             public Builder AddInt64Field(string id, string name, string shortDesc = "", long defaultValue = 0)
             {
-                m_fields.Add(new NumberField<long>(id, name, shortDesc, defaultValue));
+                m_fields.Add(new NumberField<long>(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddFix32Field(string id, string name, string shortDesc = "", Fix32? defaultValue = null)
             {
-                m_fields.Add(new NumberField<Fix32>(id, name, shortDesc, defaultValue ?? Fix32.Zero));
+                m_fields.Add(new NumberField<Fix32>(id, m_id.Field(id, name, shortDesc), defaultValue ?? Fix32.Zero));
                 return this;
             }
 
             public Builder AddStringField(string id, string name, string shortDesc = "", string defaultValue = "")
             {
-                m_fields.Add(new StringField(id, name, shortDesc, defaultValue));
+                m_fields.Add(new StringField(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddEntityField(string id, string name, Func<Module, IEntity, bool> entitySelector = null)
             {
-                m_fields.Add(new EntityField(id, name, null, entitySelector, 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name), entitySelector, 20.ToFix32()));
                 return this;
             }
 
             public Builder AddEntityField<T>(string id, string name)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, name, null, (module, entity) => entity is T, 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name), (module, entity) => entity is T, 20.ToFix32()));
                 return this;
             }
 
             public Builder AddEntityField<T>(string id, string name, string shortDesc)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T, 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity is T, 20.ToFix32()));
                 return this;
             }
 
             public Builder AddEntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, filter, 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), filter, 20.ToFix32()));
                 return this;
             }
 
             public Builder AddEntityField<T>(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity is T && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
                 return this;
             }
 
             public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
             {
-                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity?.GetType()?.IsAssignableTo(t) ?? false && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity?.GetType()?.IsAssignableTo(t) ?? false && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
                 return this;
             }
 
             public Builder AddEntityTypeField<T>(string id, string name, string shortDesc = null, Func<Module, T, bool> filter = null)
                 where T : EntityProto, IProtoWithIcon
             {
-                m_fields.Add(new EntityTypeField<T>(id, name, shortDesc ?? "", filter ?? ((m, proto) => true)));
+                m_fields.Add(new EntityTypeField<T>(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true)));
                 return this;
             }
 
             public Builder AddProductField(string id, string name, string shortDesc = null, Func<Module, ProductProto, bool> filter = null)
             {
-                m_fields.Add(new ProductField(id, name, shortDesc ?? "", filter ?? ((m, proto) => true)));
+                m_fields.Add(new ProductField(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true)));
                 return this;
             }
 
             public Builder AddCustomField(string id, string name, CustomFieldConstructor ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, null, ui, data ?? ((field) => { })));
+                m_fields.Add(new CustomField(id, m_id.Field(id, name), ui, data ?? ((field) => { })));
                 return this;
             }
 
             public Builder AddCustomField(string id, string name, string shortDesc, CustomFieldConstructor ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, shortDesc, ui, data ?? ((field) => { })));
+                m_fields.Add(new CustomField(id, m_id.Field(id, name, shortDesc), ui, data ?? ((field) => { })));
                 return this;
             }
 
             public Builder AddCustomField(string id, string name, CustomFieldConstructorWithModule ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, null, ui, data ?? ((field) => { })));
+                m_fields.Add(new CustomField(id, m_id.Field(id, name), ui, data ?? ((field) => { })));
                 return this;
             }
 
             public Builder AddCustomField(string id, string name, string shortDesc, CustomFieldConstructorWithModule ui, Action<CustomField> data = null)
             {
-                m_fields.Add(new CustomField(id, name, shortDesc, ui, data ?? ((field) => { })));
+                m_fields.Add(new CustomField(id, m_id.Field(id, name, shortDesc), ui, data ?? ((field) => { })));
                 return this;
             }
 
@@ -733,9 +744,9 @@ namespace ProgramableNetwork
 
     public static class ModuleProtoExtensions
     {
-        public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id, string name, string symbol, string gfx = null, string description = "")
+        public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id, string name, string symbol, string gfx = null)
         {
-            return new ModuleProto.Builder(registrator, id, name, description, symbol, new ModuleProto.Gfx(gfx ?? Assets.Base.Products.Icons.Vegetables_svg));
+            return new ModuleProto.Builder(registrator, id, name, "", symbol, new ModuleProto.Gfx(gfx ?? Assets.Base.Products.Icons.Vegetables_svg));
         }
 
         public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id)
@@ -756,6 +767,11 @@ namespace ProgramableNetwork
         public static Proto.Str Display(this ModuleProto.ID operation, string name, string text, string description = "")
         {
             return Proto.CreateStr(new Proto.ID(operation.Value + "__display__" + name), text, description);
+        }
+
+        public static Proto.Str Field(this ModuleProto.ID operation, string name, string text, string description = "")
+        {
+            return Proto.CreateStr(new Proto.ID(operation.Value + "__field__" + name), text, description);
         }
     }
 }
