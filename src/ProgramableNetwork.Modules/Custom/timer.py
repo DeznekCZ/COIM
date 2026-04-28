@@ -18,7 +18,7 @@ class Runtime_Timer(Module):
         Output("done", "Is done")
     ]
     fields = [
-        Int32Field("timer_period", "Timer Period (ticks)", "Updates between each tick of the output, that is 10 times per second", 1)
+        Int32Field("timer_period", "Timer Period (ticks)", "Updates between each tick of the output, that is 10 times per second", 1, True)
     ]
 
     width = 2

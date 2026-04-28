@@ -141,7 +141,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 			.LaterText<RgbColorPicker>(() => NewTr.Inspector.ControllerColor, this, (cp, v) => cp.Title(v));
 		colorPicker.Observe(() => Entity.Color)
 				   .Do(c => colorPicker.Value(c));
-		colorPicker.OnColorChanged(c => Entity.SetColor(c)); // TODO command for multiplayer
+		colorPicker.OnColorChanged(c => context.InputScheduler.ScheduleInputCmd(
+			new ControllerSetColorCmd(Entity.Id, c)));
 		m_colorButton.FloaterInteractive(colorPicker);
 
 		TopRightButtons.Add(m_colorButton);

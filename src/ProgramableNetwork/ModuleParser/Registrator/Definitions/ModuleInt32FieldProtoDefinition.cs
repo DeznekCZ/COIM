@@ -2,17 +2,19 @@
 {
     public class ModuleInt32FieldProtoDefinition : IModuleFieldProtoDefinition
     {
-        public ModuleInt32FieldProtoDefinition(string id, string name, string desc, int defaultValue)
+        public ModuleInt32FieldProtoDefinition(string id, string name, string desc, int defaultValue, bool overrideInput = false)
         {
             this.id = id;
             this.name = name;
             this.desc = desc;
             this.defaultValue = defaultValue;
+            this.overrideInput = overrideInput;
         }
 
         public readonly string id;
         public readonly string name;
         public readonly string desc;
         public readonly int defaultValue;
+        public readonly bool overrideInput;
     }
 }

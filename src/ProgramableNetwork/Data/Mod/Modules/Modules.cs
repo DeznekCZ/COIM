@@ -1,4 +1,4 @@
-﻿using Mafi;
+using Mafi;
 using Mafi.Base;
 using Mafi.Base.Prototypes.Buildings.ThermalStorages;
 using Mafi.Base.Prototypes.Trains;
@@ -235,8 +235,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("c", "Sum")
 			.Action(m => { m.Output["c"] = m.Input["a", 0] + m.FieldOrInput["b"]; })
 			.AddControllerDevice()
@@ -274,8 +273,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("c", "C")
 			.Action(m => { m.Output["c"] = m.Input["a"] - m.FieldOrInput["b", 0]; })
 			.AddControllerDevice()
@@ -297,8 +295,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("c", "C")
 			.Action(m => {
 				Fix32 a = m.Input["a"];
@@ -315,8 +312,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("c", "C")
 			.AddOutput("error", "Error")
 			.Action(m => {
@@ -339,8 +335,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("c", "C")
 			.AddOutput("error", "Error")
 			.Action(m => {
@@ -566,8 +561,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Stats)
 			.AddEntityField<CaptainOffice>("office", "Captains office", "Must be placest next to Captains office")
 			.AddInput("vehicle", "Amount of owned vehicle/ship (all when unselected)")
-			.AddBooleanField("field_vehicle", "Select by settings", defaultValue: false)
-			.AddEntityTypeField<DynamicEntityProto>("vehicle", "Vehicle", "Vehicle count to read").AddInput("vehicle", "Vehicle type")
+			.AddEntityTypeField<DynamicEntityProto>("vehicle", "Vehicle", "Vehicle count to read", overrideInput: true).AddInput("vehicle", "Vehicle type")
 			.AddOutput("count", "Amount of owned vehicle/ship (all when unselected)")
 			.AddOutput("assignable", "Amount of assignable vehicle/ship (all when unselected)")
 			.Width(2)
@@ -597,8 +591,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.DevicesSound)
 			.AddEntityField<Speaker>("speaker", "Speaker", "Must be placest next to Speaker tower")
 			.AddInput("play", "Activate sound")
-			.AddBooleanField("field_play", "Activate sound")
-			.AddBooleanField("play", "Activate sound")
+			.AddBooleanField("play", "Activate sound", overrideInput: true)
 			.Width(1)
 			.Action(m => {
 				if (m.Field.Entity<Speaker>("speaker") is Speaker speaker) {
@@ -619,8 +612,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.DevicesDisplay)
 			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next to display")
 			.AddInput("active", "Activate display")
-			.AddBooleanField("field_active", "Activate display")
-			.AddBooleanField("active", "Activate display")
+			.AddBooleanField("active", "Activate display", overrideInput: true)
 			.Width(1)
 			.Action(m => {
 				if (m.Field.Entity<DisplayEntity>("display") is DisplayEntity display) {
@@ -641,8 +633,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.DevicesDisplay)
 			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next to display")
 			.AddInput("color", "Activate display")
-			.AddBooleanField("field_color", "Override color")
-			.AddColorField("color", "Color", "", ColorRgba.Red)
+			.AddColorField("color", "Color", "", ColorRgba.Red, overrideInput: true)
 			.AddDisplay("color", "Color", 1, led: true)
 			.Width(1)
 			.Action(m => {
@@ -670,7 +661,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.SetDescription("Light up 7-segment display and activate lines per signal")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesDisplay)
-			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres",
+			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 40 metres",
 				filter: (module, entity) => entity.Prototype.Id == NewIds.Controllers.Display7 || entity.Prototype.Id == NewIds.Controllers.Display16)
 			.Width(8)
 			.Action(m => {
@@ -718,8 +709,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 		foreach (var item in SevenSegmentManager.SEGMENTS) {
 			seven8
 				.AddInput(item, item == "DP" ? "Dot" : item)
-				.AddBooleanField($"field_{item}", item == "DP" ? "Dot" : $"Signal: {item}")
-				.AddBooleanField(item, item == "DP" ? "Dot" : $"Signal: {item}");
+				.AddBooleanField(item, item == "DP" ? "Dot" : $"Signal: {item}", overrideInput: true);
 		}
 
 		seven8.BuildAndAdd();
@@ -729,14 +719,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.SetDescription("Light up 7-segment display and activate lines by bits inside single number")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesDisplay)
-			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres",
+			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 40 metres",
 				filter: (module, entity) => entity.Prototype.Id == NewIds.Controllers.Display7 || entity.Prototype.Id == NewIds.Controllers.Display16)
 			.AddInput("N", "Bits")
-			.AddBooleanField("field_N", "Encoded number (Bits, 0-127)")
-			.AddInt32Field("N", "Encoded number (Bits, 0-127)")
+			.AddInt32Field("N", "Encoded number (Bits, 0-127)", overrideInput: true)
 			.AddInput("DP", "Dot")
-			.AddBooleanField("field_DP", "Dot")
-			.AddBooleanField("DP", "Dot")
+			.AddBooleanField("DP", "Dot", overrideInput: true)
 			.Width(2)
 			.Action(m => {
 				if (m.Field.Entity<DisplayEntity>("display") is not DisplayEntity display) {
@@ -789,14 +777,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.SetDescription("Light up 16-segment display and activate lines by bits inside single number")
 			.AddCategory(Category.Devices)
 			.AddCategory(Category.DevicesDisplay)
-			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 20 metres",
+			.AddEntityField<DisplayEntity>("display", "Display", "Must be placest next in 40 metres",
 				filter: (module, entity) => entity.Prototype.Id == NewIds.Controllers.Display7 || entity.Prototype.Id == NewIds.Controllers.Display16)
 			.AddInput("N", "Bits")
-			.AddBooleanField("field_N", "Encoded number (Bits, 0-65 535)")
-			.AddInt32Field("N", "Encoded number (Bits, 0-65 535)")
+			.AddInt32Field("N", "Encoded number (Bits, 0-65 535)", overrideInput: true)
 			.AddInput("DP", "Dot")
-			.AddBooleanField("field_DP", "Dot")
-			.AddBooleanField("DP", "Dot")
+			.AddBooleanField("DP", "Dot", overrideInput: true)
 			.Width(2)
 			.Action(m => {
 				if (m.Field.Entity<DisplayEntity>("display") is not DisplayEntity display) {
@@ -1200,7 +1186,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("pause", "Pause")
-			.AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 20m from controller", filter: (m, e) => e.CanBePaused || e is CargoDepot)
+			.AddEntityField<StaticEntity>("entity", "Connection device", "Any pausable building connectable by cable 40m from controller", filter: (m, e) => e.CanBePaused || e is CargoDepot)
 			.Action(m => {
 				StaticEntity entity = m.Field.Entity<StaticEntity>("entity");
 				Fix32 input = m.Input["pause", 0];
@@ -1230,7 +1216,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddOutput("capacity", "Capacity")
 			.AddOutput("fullness", "Fullness in %")
 			.AddOutput("product", "Product in #")
-			.AddEntityField<LayoutEntity>("entity", "Connected storage", "Storage connectable by cable 20m from"
+			.AddEntityField<LayoutEntity>("entity", "Connected storage", "Storage connectable by cable 40m from"
 					+ " controller\nCan read everything with buffer information including Thermal Storage and"
 					+ " shaft of generators in single row.",
 				filter: (m, e) => e
@@ -1241,8 +1227,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					or FlyWheelEntity
 					or ThermalStorage
 				)
-			.AddBooleanField("field_product", "Product")
-			.AddProductField("product", "Product", "Select filter for product")
+			.AddProductField("product", "Product", "Select filter for product", overrideInput: true)
 			.Width(4)
 			.Action(m => {
 				LayoutEntity entity = m.Field.Entity<LayoutEntity>("entity");
@@ -1334,7 +1319,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		registrator
 			.ModuleBuilderStart("Connection_Transport", "Connection: Transport", "TRANS")
-			.SetDescription("Transport connectable by cable 20m from controller")
+			.SetDescription("Transport connectable by cable 40m from controller")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("quantity", "Quantity")
@@ -1345,8 +1330,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddInput("product", "Product filter")
 			.AddEntityField<Transport>("entity", "Connection device")
 			.AddBooleanField("fullstack", "Cap fullness to 100%", "Bigger tiers of transport may display value over 100%. It's caused by maximum stack size. Activating this option will be the value normalized to 100%.")
-			.AddBooleanField("field_product", "Product")
-			.AddProductField("product", "Product", "Select filter for product")
+			.AddProductField("product", "Product", "Select filter for product", overrideInput: true)
 			.Width(4)
 			.Action(m => {
 				Transport entity = m.Field.Entity<Transport>("entity");
@@ -1594,7 +1578,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("mode", "Import mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
-			.AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
+			.AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (40 metres)",
 				filter: (m, e) => e is IEntityWithLogisticsControl or IEntityWithSimpleLogisticsControl)
 			.Action(m => {
 				IEntity entity = m.Field.Entity<IEntity>("logistic");
@@ -1618,7 +1602,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("mode", "Import mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
-			.AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
+			.AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (40 metres)",
 				filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
 			.Action(m => {
 				IEntity entity = m.Field.Entity<IEntity>("logistic");
@@ -1642,7 +1626,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("mode", "Export mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
-			.AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
+			.AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (40 metres)",
 				filter: (m, e) => e is IEntityWithLogisticsControl or IEntityWithSimpleLogisticsControl)
 			.Action(m => {
 				IEntity entity = m.Field.Entity<IEntity>("logistic");
@@ -1666,7 +1650,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("mode", "Export mode:\n  0 (auto),\n  1 (on),\n  2 (off)")
-			.AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (20 metres)",
+			.AddEntityField<IStaticEntity>("logistic", "Logistic building", "Any logistic building (40 metres)",
 				filter: (m, e) => e is IEntityWithLogisticsControl || e is IEntityWithSimpleLogisticsControl)
 			.Action(m => {
 				IEntity entity = m.Field.Entity<IEntity>("logistic");
@@ -1690,7 +1674,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("priority", "Priority: 1 - 15")
-			.AddEntityField<IEntityWithGeneralPriority>("logistic", "Logistic building", "Any logistic building (20 metres)")
+			.AddEntityField<IEntityWithGeneralPriority>("logistic", "Logistic building", "Any logistic building (40 metres)")
 			.Action(m => {
 				var logistic = m.Field.Entity<IEntityWithGeneralPriority>("logistic");
 				if (logistic is null) {
@@ -1709,7 +1693,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("priority", "Priority: 1 - 15")
-			.AddEntityField<IEntityWithGeneralPriority>("building", "Building", "Any building with configurable priority (20 metres)")
+			.AddEntityField<IEntityWithGeneralPriority>("building", "Building", "Any building with configurable priority (40 metres)")
 			.Action(m => {
 				var logistic = m.Field.Entity<IEntityWithGeneralPriority>("building");
 				if (logistic is null) {
@@ -1730,10 +1714,10 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.Width(4)
 			.AddInput("vehicle", "Vehicle type")
 			.AddOutput("count", "Vehicle count")
-			.AddEntityField<IEntityAssignedWithVehicles>("building", "Building", "Any building with configurable priority (20 metres)")
-			.AddBooleanField("field_vehicle", "Select by settings", defaultValue: false)
+			.AddEntityField<IEntityAssignedWithVehicles>("building", "Building", "Any building with configurable priority (40 metres)")
 			.AddEntityTypeField<DrivingEntityProto>("vehicle", "Vehicle", "Any suppoted vehicle type",
-				filter: (m, p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
+				filter: (m, p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p),
+				overrideInput: true) // TODO filter by building
 			.Action(m => {
 				var logistic = m.Field.Entity<IEntityAssignedWithVehicles>("building");
 				if (logistic is null) {
@@ -1765,12 +1749,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.Width(4)
 			.AddInput("count", "Vehicle count")
 			.AddInput("vehicle", "Vehicle type")
-			.AddEntityField<IEntityAssignedWithVehicles>("building", "Building", "Any building with configurable priority (20 metres)")
-			.AddBooleanField("field_vehicle", "Select type by settings", defaultValue: false)
+			.AddEntityField<IEntityAssignedWithVehicles>("building", "Building", "Any building with configurable priority (40 metres)")
 			.AddEntityTypeField<DrivingEntityProto>("vehicle", "Vehicle", "Any suppoted vehicle type",
-				filter: (m, p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p)) // TODO filter by building
-			.AddBooleanField("field_count", "Set count by settings", defaultValue: false)
-			.AddInt32Field("count", "Vehicle count", defaultValue: 0)
+				filter: (m, p) => m.Field.Entity<Entity>("building") is IEntityAssignedWithVehicles w && w.CanVehicleBeAssigned(p),
+				overrideInput: true) // TODO filter by building
+			.AddInt32Field("count", "Vehicle count", defaultValue: 0, overrideInput: true)
 			.AddCustomField("zone", "Vehicle zone",
 				(ControllerInspector inspector, UiComponent container, Module module, Action refresh, Reference reference) => {
 					Dropdown<LogisticsZone> zonesDropdown = new Dropdown<LogisticsZone>(
@@ -1796,6 +1779,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 					return ModuleStatus.Error;
 				}
 
+				if (!drivingEntity.IsAvailable) {
+					m.SetError("Vehicle type not unlocked yet");
+					return ModuleStatus.Error;
+				}
+
 				int count = m.FieldOrInput["count", Fix32.Zero].IntegerPart;
 
 				int actualCount = logistic.AllVehicles.Where(v => v.Prototype == drivingEntity).Count();
@@ -1807,10 +1795,18 @@ public class Modules : ModuleGroup, IModuleGroup {
 						.GetFreeVehicle<Vehicle>(drivingEntity, logistic.Position2f, zones);
 					if (v.HasValue) {
 						logistic.AssignVehicle(v.Value, doNotCancelJobs: true);
+						m.Warning = false;
+					} else {
+						// No spare vehicle of this type in the chosen zone — surface it instead of
+						// silently no-oping so the user knows they need to build/free one up.
+						m.Warning = true;
 					}
 				} else if (actualCount > count) {
 					Vehicle veh = logistic.AllVehicles.Where(v => v.Prototype == drivingEntity).FirstOrDefault();
 					logistic.UnassignVehicle(veh, cancelJobs: false);
+					m.Warning = false;
+				} else {
+					m.Warning = false;
 				}
 				return ModuleStatus.Running;
 			})
@@ -1825,7 +1821,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.Width(2)
 			.AddInput("index", "Storage compartment")
 			.AddOutput("product", "Product type")
-			.AddEntityField<LayoutEntity>("entity", "Connection device", "Storage connectable by cable 20m from controller",
+			.AddEntityField<LayoutEntity>("entity", "Connection device", "Storage connectable by cable 40m from controller",
 				filter: (m, e) => e is StorageBase || // e is SettlementWasteModule
 								  e is TrainStationModule ||
 								  e is SettlementFoodModule ||
@@ -1835,8 +1831,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 								  e is Sorter // ||
 											  // e is OreSortingPlant
 				)
-			.AddBooleanField("field_index", "Set index by settings", defaultValue: false)
-			.AddInt32Field("index", "Storage compartment")
+			.AddInt32Field("index", "Storage compartment", overrideInput: true)
 			.AddDisplayFiller(1)
 			.AddDisplay("product", "Product", 1, image: true)
 			.Display(m => m.Display["product"] = m.Output.Product("product")?.IconPath)
@@ -1924,7 +1919,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.Width(2)
 			.AddInput("index", "Storage compartment")
 			.AddInput("product", "Product type")
-			.AddEntityField<LayoutEntity>("entity", "Building with filter", "Connectable by cable 20m from controller",
+			.AddEntityField<LayoutEntity>("entity", "Building with filter", "Connectable by cable 40m from controller",
 				filter: (m, e) => e is Storage ||
 								  e is TrainStationModule ||
 								  e is CargoDepotModule ||
@@ -1933,10 +1928,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 								  e is MineTower ||
 								  e is Sorter
 				)
-			.AddBooleanField("field_index", "Set index by settings", defaultValue: false)
-			.AddInt32Field("index", "Storage compartment")
-			.AddBooleanField("field_product", "Set product by settings", defaultValue: false)
-			.AddProductField("product", "Filtered product", filter: (m, p) => true)
+			.AddInt32Field("index", "Storage compartment", overrideInput: true)
+			.AddProductField("product", "Filtered product", filter: (m, p) => true, overrideInput: true)
 			.AddDisplay("index", "Index", 1)
 			.AddDisplay("product", "Product", 1, image: true)
 			.Display(m => {
@@ -2069,10 +2062,9 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.ConnectionWrite)
 			.Width(2)
 			.AddInput("on", "Active recipe")
-			.AddEntityField<Machine>("entity", "Building with filter", "Connectable by cable 20m from controller",
+			.AddEntityField<Machine>("entity", "Building with filter", "Connectable by cable 40m from controller",
 				filter: (m, e) => true /* Get info about is able to set recipe */)
-			.AddBooleanField("field_on", "Active recipe")
-			.AddBooleanField("on", "Active recipe")
+			.AddBooleanField("on", "Active recipe", overrideInput: true)
 			.AddCustomField("recipe", "Recipe", (inspector, settings, module, refresh, reference) => settings.Add(new Ui.RecipeSelector(inspector, module, refresh, reference)))
 			.Action(m => {
 				Machine entity = m.Field.Entity<Machine>("entity");
@@ -2185,7 +2177,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("constructed", "Constructed", 1, led: true)
 			.AddDisplay("pause", "Paused", 1, image: true)
 			.AddEntityField<StaticEntity>("entity", "Connection device",
-				"Any pausable building connectable by cable 20m from controller")
+				"Any pausable building connectable by cable 40m from controller")
 			.Action(m => {
 				StaticEntity e = m.Field.Entity<StaticEntity>("entity");
 				if (e is not null) {
@@ -2240,9 +2232,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddInput("boost", "Unity boost active")
 			.AddOutput("boost", "Unity boost active")
 			.AddEntityField<IEntityWithBoost>("entity", "Connection device",
-				"Any building connectable by cable 20m from controller")
-			.AddBooleanField("field_boost", "Set boost by settings", defaultValue: false)
-			.AddBooleanField("boost", "Set boost by settings", defaultValue: false)
+				"Any building connectable by cable 40m from controller")
+			.AddBooleanField("boost", "Set boost by settings", defaultValue: false, overrideInput: true)
 			.AddDisplay("boost", "Boost", 1, image: true)
 			.Action(m => {
 				IEntityWithBoost e = m.Field.Entity<IEntityWithBoost>("entity");
@@ -2351,8 +2342,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("not_c", "not C")
 			.AddOutput("c", "C")
 			.Action(m => {
@@ -2375,8 +2365,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("not_c", "not C")
 			.AddOutput("c", "C")
 			.Action(m => {
@@ -2399,8 +2388,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("not_c", "not C")
 			.AddOutput("c", "C")
 			.Action(m => {
@@ -2423,8 +2411,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("not_c", "not C")
 			.AddOutput("c", "C")
 			.Action(m => {
@@ -2447,8 +2434,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("not_c", "not C")
 			.AddOutput("c", "C")
 			.Action(m => {
@@ -2473,8 +2459,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Control)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
-			.AddBooleanField("field_b", "Use direct constant")
-			.AddFix32Field("b", "B")
+			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("b", "Low")
 			.AddOutput("a", "High")
 			.Action(m => {
@@ -2835,8 +2820,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("name", "Variable name (should be longer)", 1)
 			.AddStringField("name", "Variable name", defaultValue: "")
 			.AddInput("value", "Value")
-			.AddBooleanField("field_value", "Use direct constant")
-			.AddFix32Field("value", "Value")
+			.AddFix32Field("value", "Value", overrideInput: true)
 			.AddCustomField("variables", "Variables", (inspector, container, refresh, reference) => {
 				container.Add(
 					new ButtonText("Variables".ToDoLoc())
@@ -2904,8 +2888,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("name", "Variable name (should be longer)", 1)
 			.AddStringField("name", "Variable name", defaultValue: "")
 			.AddInput("value", "Value")
-			.AddBooleanField("field_value", "Use direct constant")
-			.AddFix32Field("value", "Value")
+			.AddFix32Field("value", "Value", overrideInput: true)
 			.Width(1)
 			.Action(m => {
 				string name = m.Field["name", ""];

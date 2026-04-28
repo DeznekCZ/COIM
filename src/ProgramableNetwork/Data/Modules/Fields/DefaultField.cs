@@ -8,12 +8,14 @@ using Mafi;
 using Mafi.Core.Syncers;
 using Mafi.Unity.Ui.Library;
 using Mafi.Core;
+using Mafi.Unity.Ui;
 
 namespace ProgramableNetwork.Ui
 {
 	public static class IFieldExtensions
 	{
-		public static RowContainer Row(this UiComponent fieldContainer, IField entityField, Module module, Px height, out bool draw, bool useFiller = true)
+		public static RowContainer Row(this UiComponent fieldContainer, IField entityField, Module module,
+			UiContext uiContext, Px height, out bool draw, bool useFiller = true)
 		{
 			// input field definition
 			if (module.Prototype.Fields.Exists(i => i.Id == $"field_{entityField.Id}" && !(entityField is BooleanField)))
@@ -33,7 +35,8 @@ namespace ProgramableNetwork.Ui
 
 				Toggle enabled = new Toggle();
 				enabled.Value(module.Field.Bool[$"field_{entityField.Id}"]);
-				enabled.OnValueChanged(v => module.Field.Bool[$"field_{entityField.Id}"] = v);
+				enabled.OnValueChanged(v => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+					module.Controller.Id, module.Id, $"field_{entityField.Id}", v ? Fix32.One : Fix32.Zero)));
 				rowBool.Add(enabled);
 
 				Display rowDisplay = new Display(NewTr.FieldStatus.None);
@@ -81,7 +84,8 @@ namespace ProgramableNetwork.Ui
 
 				Toggle enabled = new Toggle();
 				enabled.Value(module.Field.Bool[$"field_{entityField.Id}"]);
-				enabled.OnValueChanged(v => module.Field.Bool[$"field_{entityField.Id}"] = v);
+				enabled.OnValueChanged(v => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+					module.Controller.Id, module.Id, $"field_{entityField.Id}", v ? Fix32.One : Fix32.Zero)));
 				rowBool.Add(enabled);
 
 				Display rowDisplay = new Display(NewTr.FieldStatus.None);
@@ -101,7 +105,8 @@ namespace ProgramableNetwork.Ui
 				Toggle active = new Toggle();
 				active.Value(module.Field.Bool[entityField.Id]);
 				active.ObserveEnabled(() => module.Field.Bool[$"field_{entityField.Id}"]);
-				active.OnValueChanged(v => module.Field.Bool[entityField.Id] = v);
+				active.OnValueChanged(v => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+					module.Controller.Id, module.Id, entityField.Id, v ? Fix32.One : Fix32.Zero)));
 				rowBool.Add(active);
 
 				Display activeDisplay = new Display(NewTr.FieldStatus.None);
@@ -142,9 +147,9 @@ namespace ProgramableNetwork.Ui
 		/// <param name="fieldContainer"></param>
 		/// <param name="entityField"></param>
 		/// <returns></returns>
-		public static RowContainer Row(this UiComponent fieldContainer, IField entityField, Module module, out bool draw, bool useFiller = true)
+		public static RowContainer Row(this UiComponent fieldContainer, IField entityField, Module module, UiContext uiContext, out bool draw, bool useFiller = true)
 		{
-			return fieldContainer.Row(entityField, module, Sizes.BLOCK_SIZE, out draw);
+			return fieldContainer.Row(entityField, module, uiContext, Sizes.BLOCK_SIZE, out draw);
 		}
 	}
 }

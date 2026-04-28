@@ -42,9 +42,11 @@ namespace ProgramableNetwork.Ui
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
             ui.Invoke(inspector, fieldContainer, module, updateDialog, new Reference(
-				(v) => module.Field[id] = v,
+				(v) => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+					module.Controller.Id, module.Id, id, v)),
 				() => module.Field[id, Fix32.Zero],
-				(v) => module.Field[id, false] = v,
+				(v) => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+					module.Controller.Id, module.Id, id, v)),
 				() => module.Field[id, null]
 			));
         }

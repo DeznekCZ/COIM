@@ -40,13 +40,14 @@ namespace ProgramableNetwork.Ui
                         .Where(p => filter.Invoke(module, p)),
                 onProductSelected: (product) =>
                 {
-                    module.Field[Id] = Fix32.FromRaw(product.SlimId.Value);
+                    uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                        module.Controller.Id, module.Id, Id, Fix32.FromRaw(product.SlimId.Value)));
                     updateDialog();
                 },
                 selectedProduct: () => module.Field.Product(Id).CreateOption()
             );
 
-            fieldContainer.Row(this, module, out _).Add(productPicker);
+            fieldContainer.Row(this, module, uiContext, out _).Add(productPicker);
         }
 
         public void InitData(Module module)

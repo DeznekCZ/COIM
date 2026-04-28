@@ -35,7 +35,7 @@ namespace ProgramableNetwork.Ui
                 return;
             }
 
-            RowContainer row = fieldContainer.Row(this, module, out bool draw);
+            RowContainer row = fieldContainer.Row(this, module, uiContext, out bool draw);
             if (!draw) {
 				return;
 			}
@@ -50,7 +50,8 @@ namespace ProgramableNetwork.Ui
 
             toggle.OnValueChanged((v) =>
             {
-                module.Field[Id] = v ? 1 : 0;
+                uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                    module.Controller.Id, module.Id, Id, v ? Fix32.One : Fix32.Zero));
             });
         }
 

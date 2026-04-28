@@ -35,7 +35,7 @@ namespace ProgramableNetwork.Ui
 
 		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            RowContainer row = fieldContainer.Row(this, module, out _, useFiller: false);
+            RowContainer row = fieldContainer.Row(this, module, uiContext, out _, useFiller: false);
 
             var colorPicker = new RgbColorPicker();
             colorPicker.Value(module.Field[Id, Default.AsFix32].AsColorRgba);
@@ -53,7 +53,8 @@ namespace ProgramableNetwork.Ui
 			colorPicker.OnColorChanged((c) => setButton.Enabled(true));
             setButton.OnClick(() =>
             {
-                module.Field[Id] = colorPicker.GetColor().AsFix32;
+                uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                    module.Controller.Id, module.Id, Id, colorPicker.GetColor().AsFix32));
                 setButton.Enabled(false);
             });
         }

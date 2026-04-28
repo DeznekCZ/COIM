@@ -28,7 +28,7 @@ namespace ProgramableNetwork.Ui
 
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
-            RowContainer row = fieldContainer.Row(this, module, out _);
+            RowContainer row = fieldContainer.Row(this, module, uiContext, out _);
 
             var numberEditor = new TextField();
             numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
@@ -46,7 +46,8 @@ namespace ProgramableNetwork.Ui
             setButton.OnClick(() =>
             {
                 string changeValue = numberEditor.GetText();
-                module.Field[Id, false] = changeValue;
+                uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+                    module.Controller.Id, module.Id, Id, changeValue));
                 setButton.Enabled(false);
             });
 

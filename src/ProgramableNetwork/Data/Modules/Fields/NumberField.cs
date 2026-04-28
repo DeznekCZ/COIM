@@ -30,7 +30,7 @@ namespace ProgramableNetwork.Ui
         private Action setter;
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {
-            RowContainer row = fieldContainer.Row(this, module, out _);
+            RowContainer row = fieldContainer.Row(this, module, uiContext, out _);
 
             var numberEditor = new TextField();
             numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
@@ -48,7 +48,8 @@ namespace ProgramableNetwork.Ui
             setButton.OnClick(() =>
             {
                 string changeValue = numberEditor.GetText();
-                module.Field[Id, false] = changeValue;
+                uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+                    module.Controller.Id, module.Id, Id, changeValue));
                 setButton.Enabled(false);
             });
 
@@ -65,27 +66,31 @@ namespace ProgramableNetwork.Ui
                 {
                     if (double.TryParse(numberEditor.GetText(), NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
                     {
-                        setter = () => module.Field[Id] = value.ToFix32();
+                        setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                            module.Controller.Id, module.Id, Id, value.ToFix32()));
                     }
                 }
                 else if (typeof(T) == typeof(int))
                 {
                     if (int.TryParse(numberEditor.GetText(), out int value))
                     {
-                        setter = () => module.Field.Integer[Id] = value;
+                        setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                            module.Controller.Id, module.Id, Id, Fix32.FromInt(value)));
                     }
                 }
                 else if (typeof(T) == typeof(long))
                 {
                     if (long.TryParse(numberEditor.GetText(), out long value))
                     {
-                        setter = () => module.Field[Id, false] = value.ToString();
+                        setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+                            module.Controller.Id, module.Id, Id, value.ToString()));
                     }
                 }
                 else if (typeof(T) == typeof(HexInt32)) {
 					if (uint.TryParse(numberEditor.GetText(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint value))
 					{
-						setter = () => module.Field[Id] = Fix32.FromRaw((int)value);
+						setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+							module.Controller.Id, module.Id, Id, Fix32.FromRaw((int)value)));
 					}
 				}
                 setButton.Enabled(true);

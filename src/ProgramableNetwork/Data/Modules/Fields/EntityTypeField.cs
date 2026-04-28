@@ -28,7 +28,7 @@ namespace ProgramableNetwork.Ui {
 
 		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog) {
 			ProtoTab<T> protoTab = new ProtoTab<T>(uiContext, module, Id, Filter, updateDialog, parentWindow, inspector);
-			fieldContainer.Row(this, module, out _).Add(protoTab);
+			fieldContainer.Row(this, module, uiContext, out _).Add(protoTab);
 		}
 
 		public void InitData(Module module) {

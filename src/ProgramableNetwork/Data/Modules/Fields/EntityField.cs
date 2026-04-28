@@ -76,7 +76,7 @@ namespace ProgramableNetwork.Ui {
 
 		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog) {
 			Picker picker = new Picker(module, id, entitySelector, distance, updateDialog, parentWindow, inspector);
-			fieldContainer.Row(this, module, out _).Add(picker);
+			fieldContainer.Row(this, module, uiContext, out _).Add(picker);
 		}
 
 		public void InitData(Module module) {
@@ -181,7 +181,8 @@ namespace ProgramableNetwork.Ui {
 				m_inspector.EntitySelectionInput = new EntitySelector(m_module, m_distance, m_refresh, m_filter,
 					(entity) => {
 						m_selectionButton.ClassRemove(Cls.selected);
-						m_module.Field.Entity(m_dataName, entity);
+						m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetEntityFieldCmd(
+							m_module.Controller.Id, m_module.Id, m_dataName, entity?.Id));
 						m_refresh();
 					});
 			}

@@ -64,8 +64,8 @@ namespace ProgramableNetwork.Ui
             m_btnClear = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png);
             m_btnClear.Height(Sizes.BLOCK_SIZE * 1.5f);
             m_btnClear.OnClick(() => {
-                m_module.Field[m_fieldId] = Fix32.Zero;
-                m_module.Field[m_fieldId, false] = "";
+                m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleClearFieldCmd(
+                    m_module.Controller.Id, m_module.Id, m_fieldId));
                 m_refresh();
             });
             m_btnClear.Visible(false);
@@ -89,8 +89,10 @@ namespace ProgramableNetwork.Ui
                     optionViewFactory: ProtoPickerFactories.VehicleFactory,
                     onOptionSelected: (DrivingEntityProto product) =>
                     {
-                        m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
-                        m_module.Field[m_fieldId, false] = product.Id.Value;
+                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                            m_module.Controller.Id, m_module.Id, m_fieldId, FixSavedGames.GetPrototypeString(product.Id.Value)));
+                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+                            m_module.Controller.Id, m_module.Id, m_fieldId, product.Id.Value));
                         m_refresh();
                     },
                     button: selectionButton,
@@ -106,8 +108,10 @@ namespace ProgramableNetwork.Ui
                     optionViewFactory: ProtoPickerFactories.ProductFactory,
                     onOptionSelected: (ProductProto product) =>
                     {
-                        m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
-                        m_module.Field[m_fieldId, false] = product.Id.Value;
+                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                            m_module.Controller.Id, m_module.Id, m_fieldId, FixSavedGames.GetPrototypeString(product.Id.Value)));
+                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+                            m_module.Controller.Id, m_module.Id, m_fieldId, product.Id.Value));
                         m_refresh();
                     },
                     button:  selectionButton,
@@ -125,8 +129,10 @@ namespace ProgramableNetwork.Ui
                         .AsProtoPickerOptionButton(),
                     onOptionSelected: (product) =>
                     {
-                        m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(product.Id.Value);
-                        m_module.Field[m_fieldId, false] = product.Id.Value;
+                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                            m_module.Controller.Id, m_module.Id, m_fieldId, FixSavedGames.GetPrototypeString(product.Id.Value)));
+                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+                            m_module.Controller.Id, m_module.Id, m_fieldId, product.Id.Value));
                         m_refresh();
                     },
                     button: selectionButton,
