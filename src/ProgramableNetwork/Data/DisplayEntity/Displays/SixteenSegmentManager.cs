@@ -32,7 +32,7 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 			Display number;
 
 			var components = new UiComponent[] {
-				active = new Label(NewTr.Inspector.Color).TextAlign(TextAlignment.LeftMiddle)
+				active = new Label().LaterText(() => NewTr.Inspector.Color, panel).TextAlign(TextAlignment.LeftMiddle)
 				.FlexGrow(0.4f),
 				GetColorPickerComponent(),
 				number = new Display("000".AsLoc()).Width(1.25f * Sizes.BLOCK_SIZE)
@@ -71,7 +71,7 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 			m_act = panel.AddRootPanelWithHeader();
 			m_act.Body.AlignItemsCenterMiddle();
 			m_act.Body.Add(new Row(5) { Toggles(panel) });
-			m_act.Header.Add(new Label(NewTr.Inspector.Segments).Class(Cls.panelHeader).TextAlign(TextAlignment.CenterMiddle));
+			m_act.Header.Add(new Label().LaterText(() => NewTr.Inspector.Segments, panel).Class(Cls.panelHeader).TextAlign(TextAlignment.CenterMiddle));
 
 			return () => {
 				m_row.RemoveFromHierarchy();

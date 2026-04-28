@@ -81,7 +81,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		ProgressBar bar;
 		AddPanelRow(
 				new Label()
-					.Value(NewTr.Inspector.ComputingSpeed)
+					.LaterText(() => NewTr.Inspector.ComputingSpeed, this)
 					.TextAlign(TextAlignment.LeftMiddle),
 				new UiComponent().Fill(),
 				bar = new ProgressBar()
@@ -90,7 +90,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 				new Display()
 					.Value(0)
 					.Width(150)
-					.Tooltip(NewTr.Inspector.ComputingSpeedTooltip)
+					.LaterText<Display>(() => NewTr.Inspector.ComputingSpeedTooltip, this, (d, v) => d.Tooltip(v))
 					.ObserveValue(() => $"{(600 / (1f + Entity.Speed)).ToFix32().ToStringRounded(0)} t/m"),
 				new ButtonText("-".AsLoc())
 					.TextAlign(TextAlignment.CenterMiddle)
@@ -122,7 +122,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		// UI
 		m_modulesPanel = AddPanelWithHeader();
 		m_modulesPanel.Header.Add(
-			new Label(new Mafi.Localization.LocStrFormatted("Modules"))
+			new Label()
+				.LaterText(() => NewTr.Inspector.Modules, this)
 				.FlexGrow(1)
 				.TextAlign(TextAlignment.CenterMiddle)
 			);
@@ -136,7 +137,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		m_colorButton.Observe(() => Entity.Color)
 				   .Do(color => m_colorButton.Icon.Color(color));
 
-		RgbColorPicker colorPicker = new RgbColorPicker("Controller color:".ToDoLoc());
+		RgbColorPicker colorPicker = new RgbColorPicker()
+			.LaterText<RgbColorPicker>(() => NewTr.Inspector.ControllerColor, this, (cp, v) => cp.Title(v));
 		colorPicker.Observe(() => Entity.Color)
 				   .Do(c => colorPicker.Value(c));
 		colorPicker.OnColorChanged(c => Entity.SetColor(c)); // TODO command for multiplayer

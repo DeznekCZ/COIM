@@ -23,7 +23,8 @@ public class ColorizedLightInspector(Data.DisplayEntity.DisplayEntity entity) {
 	protected UiComponent GetColorPickerComponent() {
 		Column floater = new Column().Padding(5).Gap(5);
 
-		RgbColorPicker colorPicker = floater.AddAndReturn(new RgbColorPicker("Light color:".ToDoLoc()));
+		RgbColorPicker colorPicker = floater.AddAndReturn(new RgbColorPicker()
+			.LaterText<RgbColorPicker>(() => NewTr.Inspector.LightColor, floater, (cp, v) => cp.Title(v)));
 		colorPicker.Observe(() => new ColorRgba(
 					Entity.GetProperty("colorOn.R", ColorRgba.Red.R).IntegerPart,
 					Entity.GetProperty("colorOn.G", ColorRgba.Red.G).IntegerPart,

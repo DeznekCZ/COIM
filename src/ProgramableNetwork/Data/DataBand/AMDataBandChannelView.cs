@@ -36,6 +36,13 @@ namespace ProgramableNetwork.Ui.DataBand
                     }
                 });
 
+            // Re-apply Disconnected on first show; see FMDataBandChannelView for the rationale.
+            display.LaterText<Display>(() => NewTr.Inspector.Disconnected, this, (d, v) => {
+                if (channel.WorldMapMine == null) {
+                    d.Value(v);
+                }
+            });
+
             firstRow.AddAndReturn(new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png))
                 .Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
                 .Margin(Px.Zero)

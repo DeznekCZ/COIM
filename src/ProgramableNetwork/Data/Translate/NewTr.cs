@@ -89,6 +89,14 @@ namespace ProgramableNetwork
                 "Computing speed", "controller inspector: row label for the speed throttle");
             public static readonly LocStr ComputingSpeedTooltip = Loc.Str("ProgramableNetwork_Inspector_ComputingSpeedTooltip",
                 "Ticks per 60 seconds", "controller inspector: tooltip for the speed display");
+            public static readonly LocStr Modules = Loc.Str("ProgramableNetwork_Inspector_Modules",
+                "Modules", "controller inspector: panel header above the module grid");
+            public static readonly LocStr All = Loc.Str("ProgramableNetwork_Inspector_All",
+                "All", "module picker: button that selects all category filters at once");
+            public static readonly LocStr ControllerColor = Loc.Str("ProgramableNetwork_Inspector_ControllerColor",
+                "Controller color:", "controller inspector: title of the color picker floater");
+            public static readonly LocStr LightColor = Loc.Str("ProgramableNetwork_Inspector_LightColor",
+                "Light color:", "display-entity light inspector: title of the color picker floater");
             public static readonly LocStr PickModule = Loc.Str("ProgramableNetwork_Inspector_PickModule",
                 "Pick module", "controller inspector: heading for the module picker dialog");
             public static readonly LocStr PickTemplate = Loc.Str("ProgramableNetwork_Inspector_PickTemplate",

@@ -59,6 +59,15 @@ namespace ProgramableNetwork.Ui.DataBand
                     }
                 });
 
+            // Re-apply Disconnected on first show in case construction captured a pre-rebind LocStr
+            // (the observer above only refires on state changes, so a steady disconnected channel
+            // would otherwise stay frozen with whatever text was current at construction time).
+            display.LaterText<Display>(() => NewTr.Inspector.Disconnected, this, (d, v) => {
+                if (channel.Antena == null) {
+                    d.Value(v);
+                }
+            });
+
             firstRow.AddAndReturn(new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png))
                 .Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
                 .Margin(Px.Zero)

@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -105,6 +106,14 @@ namespace ProgramableNetwork
 				}
 
 				Log.Info($"[ProgramableNetwork] Loaded {count} translations for '{lang.CultureInfoId}' from '{filePath}'.");
+
+				// LocStr captures its TranslatedString at construction. Any static LocStr field that
+				// was initialized by the mod loader before our splice ran is permanently English.
+				// Force-init any not-yet-touched static LocStr fields so they get the (now-current)
+				// Czech, then reach into the already-frozen ones and overwrite their TranslatedString
+				// from s_data. Both passes together cover the whole assembly.
+				LocalizationManager.ScanForStaticLocStrFields(typeof(ModTranslations).Assembly);
+				RebindStaticLocStrs(typeof(ModTranslations).Assembly, sData);
 			}
 			catch (Exception ex)
 			{
@@ -112,6 +121,152 @@ namespace ProgramableNetwork
 			}
 
 			return true;
+		}
+
+		/// <summary>
+		/// Walks every static field in <paramref name="asm"/> whose declaring type lives in
+		/// <c>Mafi.Localization</c> and looks like a localized-string carrier (has an <c>Id</c>
+		/// string field plus at least one other string field). For each such static field reads
+		/// its <c>Id</c>, looks up <paramref name="sData"/>[Id], and copies the translation strings
+		/// from <c>LocData</c>'s <c>ImmutableArray&lt;string&gt;</c> into the matching slots on the
+		/// LocStr instance — index 0 to the first non-<c>Id</c> string field, index 1 to the second
+		/// (covers plural variants), etc.
+		///
+		/// Boxed-write-back pattern works for both struct- and class-based LocStr types.
+		/// </summary>
+		private static void RebindStaticLocStrs(Assembly asm, Dict<string, LocalizationManager.LocData> sData)
+		{
+			// Find the ImmutableArray<string> field on LocData — that's where the parsed translations
+			// live (one entry per JSON value: index 0 = singular translation, index 1 = plural, etc.).
+			Type locDataType = typeof(LocalizationManager.LocData);
+			FieldInfo locDataArrayField = null;
+			foreach (FieldInfo f in locDataType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+			{
+				Type ft = f.FieldType;
+				if (!ft.IsGenericType) continue;
+				if (!ft.Name.StartsWith("ImmutableArray", StringComparison.Ordinal)) continue;
+				Type[] args = ft.GetGenericArguments();
+				if (args.Length != 1 || args[0] != typeof(string)) continue;
+				locDataArrayField = f;
+				break;
+			}
+			if (locDataArrayField == null)
+			{
+				Log.Warning("[ProgramableNetwork] RebindStaticLocStrs: could not find ImmutableArray<string> field on LocData.");
+				return;
+			}
+
+			// Reflect Length + indexer once (ImmutableArray<T> exposes both publicly).
+			Type immutableArrayType = locDataArrayField.FieldType;
+			PropertyInfo lengthProp = immutableArrayType.GetProperty("Length", BindingFlags.Public | BindingFlags.Instance);
+			PropertyInfo itemProp = null;
+			foreach (PropertyInfo p in immutableArrayType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+			{
+				ParameterInfo[] indexers = p.GetIndexParameters();
+				if (indexers.Length == 1 && indexers[0].ParameterType == typeof(int) && p.PropertyType == typeof(string))
+				{
+					itemProp = p;
+					break;
+				}
+			}
+			if (lengthProp == null || itemProp == null)
+			{
+				Log.Warning("[ProgramableNetwork] RebindStaticLocStrs: ImmutableArray<string> shape lacks expected Length/indexer.");
+				return;
+			}
+
+			// Discover LocStr-shaped types: any Mafi.Localization type with an Id string field plus
+			// one or more other string fields (those are the translation slots we'll overwrite).
+			Assembly mafiAsm = typeof(LocStr).Assembly;
+			Dictionary<Type, LocStrShape> shapesByType = new Dictionary<Type, LocStrShape>();
+			foreach (Type t in mafiAsm.GetTypes())
+			{
+				if (t.Namespace != "Mafi.Localization") continue;
+				FieldInfo[] stringFields = t
+					.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)
+					.Where(f => f.FieldType == typeof(string))
+					.ToArray();
+				FieldInfo idField = stringFields.FirstOrDefault(f => f.Name == "Id");
+				if (idField == null) continue;
+				FieldInfo[] translationSlots = stringFields.Where(f => f != idField).ToArray();
+				if (translationSlots.Length == 0) continue;
+				shapesByType[t] = new LocStrShape(idField, translationSlots);
+			}
+
+			int rebound = 0;
+			int missing = 0;
+			object[] indexBuf = new object[1];
+			foreach (Type type in asm.GetTypes())
+			{
+				FieldInfo[] fields;
+				try
+				{
+					fields = type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+				}
+				catch
+				{
+					continue;
+				}
+
+				foreach (FieldInfo field in fields)
+				{
+					if (!shapesByType.TryGetValue(field.FieldType, out LocStrShape shape)) continue;
+
+					object boxed;
+					try { boxed = field.GetValue(null); }
+					catch { continue; }
+					if (boxed == null) continue;
+
+					string id = shape.IdField.GetValue(boxed) as string;
+					if (string.IsNullOrEmpty(id)) continue;
+
+					if (!sData.TryGetValue(id, out LocalizationManager.LocData data))
+					{
+						missing++;
+						continue;
+					}
+
+					object array = locDataArrayField.GetValue(data);
+					if (array == null) continue;
+					int length = (int)lengthProp.GetValue(array);
+					if (length == 0) continue;
+
+					try
+					{
+						bool wrote = false;
+						int slotsToFill = Math.Min(length, shape.Slots.Length);
+						for (int i = 0; i < slotsToFill; i++)
+						{
+							indexBuf[0] = i;
+							string translation = itemProp.GetValue(array, indexBuf) as string;
+							if (string.IsNullOrEmpty(translation)) continue;
+							shape.Slots[i].SetValue(boxed, translation);
+							wrote = true;
+						}
+						if (wrote)
+						{
+							field.SetValue(null, boxed); // write back — required for struct LocStr, harmless for class
+							rebound++;
+						}
+					}
+					catch (Exception ex)
+					{
+						Log.Exception(ex, $"[ProgramableNetwork] Rebind failed for {type.FullName}.{field.Name} (id={id}).");
+					}
+				}
+			}
+			Log.Info($"[ProgramableNetwork] Rebound {rebound} static LocStr fields ({missing} keys not in s_data).");
+		}
+
+		private readonly struct LocStrShape
+		{
+			public readonly FieldInfo IdField;
+			public readonly FieldInfo[] Slots;
+			public LocStrShape(FieldInfo id, FieldInfo[] slots)
+			{
+				IdField = id;
+				Slots = slots;
+			}
 		}
 
 		/// <summary>
