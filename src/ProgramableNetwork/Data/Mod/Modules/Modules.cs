@@ -2561,7 +2561,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 
 				(Fix32 strenght, FMDataBandChannel signals) = fmManager.Signal(m.Controller.Position3f.Tile3i, m.Field.Integer["fm"], logging);
-				if (strenght == 0)
+				if (strenght == 0 || signals?.Value == null)
 				// TODO generate noise or read data
 				{
 					m.Output["signal"] = 0;
@@ -2570,11 +2570,10 @@ public class Modules : ModuleGroup, IModuleGroup {
 					}
 				} else {
 					m.Output["signal"] = strenght;
-					m.Display["id3"] = signals!.Id3 ?? "N/A";
-					Fix32[] signalsValue = signals!.Value!;
-					int minCount = Math.Min(signalsValue.Length, digits);
+					m.Display["id3"] = signals.Id3 ?? "N/A";
+					int minCount = Math.Min(signals.Count, digits);
 					for (int i = 0; i < minCount; i++) {
-						m.Output[NAMES[i]] = signalsValue[i];
+						m.Output[NAMES[i]] = signals.Value[i];
 					}
 					for (int i = minCount; i < digits; i++) {
 						m.Output[NAMES[i]] = 0;
@@ -2651,13 +2650,17 @@ public class Modules : ModuleGroup, IModuleGroup {
 							m.Field.Bool["logging"] = false;
 						}
 
-						Fix32[] signals = new Fix32[digits];
-						for (int i = 0; i < digits; i++) {
-							signals[i] = m.Input[NAMES[i], 0];
+						Fix32[] scratch = SignalBufferPool.Rent();
+						try {
+							for (int i = 0; i < digits; i++) {
+								scratch[i] = m.Input[NAMES[i], 0];
+							}
+							int channel = m.Field.Integer["fm"];
+							fm.Update(channel, scratch, digits, logging);
+							fm.Id3(channel, m.Field["id3", string.Empty]);
+						} finally {
+							SignalBufferPool.Return(scratch);
 						}
-						int channel = m.Field.Integer["fm"];
-						fm.Update(channel, signals, logging);
-						fm.Id3(channel, m.Field["id3", string.Empty]);
 					}
 				} else {
 					m.SetError("No antena connected");

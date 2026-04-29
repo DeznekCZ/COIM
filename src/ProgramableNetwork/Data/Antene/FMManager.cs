@@ -69,7 +69,7 @@ namespace ProgramableNetwork.Data.Antene
 					channels[channel.Index] = (1 - (distance / maxDistance), channel);
 
 					if (logging) {
-						Log.Info($"[FMManager] IN distance [{channelIndex}]: {distances[channelIndex]} with strength: {channels[channelIndex].Item1} and datalen: {channels[channelIndex].Item2.Value.Length}");
+						Log.Info($"[FMManager] IN distance [{channelIndex}]: {distances[channelIndex]} with strength: {channels[channelIndex].Item1} and datalen: {channels[channelIndex].Item2.Count}");
 					}
 					continue;
 				}

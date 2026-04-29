@@ -1,4 +1,4 @@
-﻿using Mafi;
+using Mafi;
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Serialization;
@@ -9,9 +9,16 @@ using System.Linq;
 namespace ProgramableNetwork;
 
 public class FMDataBandChannel : IDataBandChannel {
+	public const int MaxSize = SignalBufferPool.Size;
+
 	public int Index { get; set; }
 	public string Id3 { get; set; }
-	public Fix32[] Value { get; set; }
+	/// <summary>
+	/// Pooled signal buffer; null when the channel is cold.
+	/// Only the first <see cref="Count"/> entries are valid.
+	/// </summary>
+	public Fix32[] Value { get; private set; }
+	public int Count { get; set; }
 	public int ValidIterations { get; set; }
 	public Antena Antena { get => m_antena; set { m_antenaId = value?.Id ?? new EntityId(0); m_antena = value; } }
 
@@ -20,11 +27,34 @@ public class FMDataBandChannel : IDataBandChannel {
 	private Antena m_antena;
 	private EntityId m_antenaId;
 
+	internal void Acquire() {
+		if (Value == null) Value = SignalBufferPool.Rent();
+	}
+
+	internal void Release() {
+		if (Value != null) {
+			SignalBufferPool.Return(Value);
+			Value = null;
+		}
+		Count = 0;
+	}
+
 	public static void Serialize(FMDataBandChannel channel, BlobWriter writer) {
-		writer.WriteByte(/*version*/4);
+		// v5: pooled fixed-size buffer + explicit Count. Wire layout is back-compatible
+		// with v4 (we still write the array as a length-prefixed Fix32[]); the bump signals
+		// the storage-side change and lets future versions add per-channel fields safely.
+		writer.WriteByte(/*version*/5);
 		writer.WriteInt(channel.Index);
 		writer.WriteString(channel.Id3 ?? string.Empty);
-		writer.WriteArray(channel.Value ?? new Fix32[0]);
+		writer.WriteInt(channel.Count);
+		Fix32[] slice;
+		if (channel.Count > 0 && channel.Value != null) {
+			slice = new Fix32[channel.Count];
+			Array.Copy(channel.Value, slice, channel.Count);
+		} else {
+			slice = Array.Empty<Fix32>();
+		}
+		writer.WriteArray(slice);
 		writer.WriteInt(channel.ValidIterations);
 		writer.WriteInt(channel.m_antenaId.Value);
 	}
@@ -33,19 +63,27 @@ public class FMDataBandChannel : IDataBandChannel {
 		var version = reader.ReadByte();
 		int index = reader.ReadInt();
 		string customName = version >= 4 ? reader.ReadString() : string.Empty;
-		Fix32[] value;
+		int explicitCount = version >= 5 ? reader.ReadInt() : -1;
+		Fix32[] storedValues;
 		if (version < 3) {
-			value = reader.ReadArray<int>().Select(Fix32.FromInt).ToArray();
+			storedValues = reader.ReadArray<int>().Select(Fix32.FromInt).ToArray();
 		} else {
-			value = reader.ReadArray<Fix32>();
+			storedValues = reader.ReadArray<Fix32>();
 		}
-		return new FMDataBandChannel() {
+		var channel = new FMDataBandChannel() {
 			Index = index,
 			Id3 = customName,
-			Value = value,
 			ValidIterations = reader.ReadInt(),
 			m_antenaId = new EntityId(version > 0 ? reader.ReadInt() : 0)
 		};
+		int sourceCount = explicitCount >= 0 ? explicitCount : (storedValues?.Length ?? 0);
+		if (sourceCount > 0 && storedValues != null && storedValues.Length > 0) {
+			channel.Acquire();
+			int copyCount = Math.Min(Math.Min(sourceCount, storedValues.Length), MaxSize);
+			Array.Copy(storedValues, channel.Value, copyCount);
+			channel.Count = copyCount;
+		}
+		return channel;
 	}
 
 	public void UpdateAntenaReference(FMDataBand self, IEntitiesManager manager) {
@@ -55,8 +93,7 @@ public class FMDataBandChannel : IDataBandChannel {
 
 	public void Update() {
 		if (Antena?.DataBand is FMDataBand targetDataBand) {
-			Fix32[] data = targetDataBand.Read(Index);
-			OriginalDataBand.Update(Index, data);
+			targetDataBand.CopyChannelInto(Index, OriginalDataBand);
 			OriginalDataBand.Id3(Index, targetDataBand.GetId3(Index));
 		}
 	}

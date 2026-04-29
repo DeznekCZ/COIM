@@ -21,6 +21,8 @@ namespace ProgramableNetwork
 			Context = context;
 			m_redirected = new Lyst<FMDataBandChannel>();
 			m_active = [];
+			// Channel shells are created eagerly, but their signal buffers stay null
+			// until first Update — the pool warms them on demand and reclaims them on invalidation.
 			for (int i = 0; i < prototype.Channels; i++)
 			{
 				m_active.Add(new FMDataBandChannel() { Index = i, OriginalDataBand = this });
@@ -116,8 +118,8 @@ namespace ProgramableNetwork
 			{
 				if (item.ValidIterations-- == 0)
 				{
-					// After one second reset signal
-					item.Value = [];
+					// Buffer goes back to the pool; Id3 cleared. Channel shell stays.
+					item.Release();
 					item.Id3 = string.Empty;
 				}
 			}
@@ -128,28 +130,42 @@ namespace ProgramableNetwork
 			}
 		}
 
-		public void Update(int index, Fix32[] value, bool logging = false)
+		public void Update(int index, Fix32[] src, int count, bool logging = false)
 		{
-			m_active[index].Value = new Fix32[value.Length];
-			Array.Copy(value, m_active[index].Value, value.Length);
-			m_active[index].ValidIterations = 60;
+			var slot = m_active[index];
+			slot.Acquire();
+			Array.Copy(src, slot.Value, count);
+			slot.Count = count;
+			slot.ValidIterations = 60;
 
 			if (logging)
 			{
-				Log.Info($"[FMDataBand] Written [{index}]: {value.Length}, [{string.Join(",", value)}]");
+				Log.Info($"[FMDataBand] Written [{index}]: {count}, [{string.Join(",", slot.Value.Take(count))}]");
 			}
 		}
 
-		public Fix32[] Read(int index)
+		public FMDataBandChannel GetChannel(int index)
 		{
-			if (m_active[index].ValidIterations > 0)
+			return m_active[index];
+		}
+
+		/// <summary>
+		/// Direct band-to-band channel transfer using a single Array.Copy between the two
+		/// pre-allocated pool buffers — no per-tick allocation.
+		/// </summary>
+		public void CopyChannelInto(int index, FMDataBand dest)
+		{
+			var s = m_active[index];
+			var d = dest.m_active[index];
+			if (s.Value == null || s.Count == 0)
 			{
-				Fix32[] ints = new Fix32[m_active[index].Value.Length];
-				Array.Copy(m_active[index].Value, ints, ints.Length);
-				return ints;
+				d.Release();
+				return;
 			}
-			// else only zeros
-			return [];
+			d.Acquire();
+			Array.Copy(s.Value, d.Value, s.Count);
+			d.Count = s.Count;
+			d.ValidIterations = s.ValidIterations;
 		}
 
 		public void CreateChannel()
