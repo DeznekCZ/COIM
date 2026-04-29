@@ -80,12 +80,10 @@ namespace ProgramableNetwork.Ui
 				}
 			}
 
-			if (!anyRow)
-			{
+			if (!anyRow) {
 				m_childrenContainer.AddAndReturn(new Label()
-					.LaterText(() => NewTr.Inspector.ConnectionsEmpty, this)
-					.TextAlign(TextAlignment.CenterMiddle))
-					.RootElement.style.rotate = new StyleRotate(new Rotate(90));
+					.LaterText(() => Tr.None, this)
+					.TextAlign(TextAlignment.CenterMiddle));
 			}
 		}
 

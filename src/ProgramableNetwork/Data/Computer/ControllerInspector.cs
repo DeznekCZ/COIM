@@ -139,8 +139,6 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		// align to top so the connections panel doesn't end up in the middle when there are few modules
 		panels.JustifyItemsStart();
 		panels.AlignItemsStart();
-		//panels.RootElement.style.justifyContent = UnityEngine.UIElements.Justify.FlexStart;
-		//panels.RootElement.style.alignItems = UnityEngine.UIElements.Align.FlexStart;
 
 		// UI
 		m_modulesPanel = panels.AddAndReturn(new PanelWithHeader().Fill().HeightAuto());
