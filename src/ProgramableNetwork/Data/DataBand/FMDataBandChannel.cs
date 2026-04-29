@@ -28,7 +28,9 @@ public class FMDataBandChannel : IDataBandChannel {
 	private EntityId m_antenaId;
 
 	internal void Acquire() {
-		if (Value == null) Value = SignalBufferPool.Rent();
+		if (Value == null) {
+			Value = SignalBufferPool.Rent();
+		}
 	}
 
 	internal void Release() {

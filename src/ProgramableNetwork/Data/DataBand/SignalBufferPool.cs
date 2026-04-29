@@ -18,9 +18,13 @@ namespace ProgramableNetwork
 
         public static void Return(Fix32[] buffer)
         {
-            if (buffer == null || buffer.Length != Size) return;
-            if (s_pool.Count >= MaxPooled) return;
-            Array.Clear(buffer, 0, Size);
+            if (buffer == null || buffer.Length != Size) {
+				return;
+			}
+			if (s_pool.Count >= MaxPooled) {
+				return;
+			}
+			Array.Clear(buffer, 0, Size);
             s_pool.Push(buffer);
         }
     }

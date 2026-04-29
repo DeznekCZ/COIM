@@ -1,12 +1,15 @@
-SkipSplashScreen = 0
+SkipSplashScreen = 1
 SkipMainMenu = 0
+SkipMainMenuAndLoadLastestSave = 1
 LaunchMapEditor = 0
 EnableUiHotReload = 0
 SkipTutorials = 0
 AlwaysSunny = 0
-GodMode = 0
+Sandbox = 0
 UnlockAllProtos = 0
 InstaBuild = 0
 TraceProgramStart = 0
 TraceGameStart = 0
+FullFlushOfLogs = 0
 ShowFatalError = 0
+DisableDlcsLoading = 0

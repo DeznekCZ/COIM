@@ -37,6 +37,8 @@ namespace ProgramableNetwork.Ui {
 
 		public LocStr Name => name;
 		public LocStr ShortDesc => shortDesc;
+		public Fix32 Distance => distance;
+		public Func<Module, IEntity, bool> EntitySelector => entitySelector;
 
 		public int Size => 40;
 

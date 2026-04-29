@@ -105,11 +105,12 @@ namespace ProgramableNetwork.ModuleTester
 
         bool IEntitiesManager.TryGetEntity<T>(EntityId id, out T entity)
         {
-            if (fake.TryGetValue(id.Value, out object oEntity) && oEntity is T t)
-                entity = t;
-            else
-                entity = default;
-            return false;
+            if (fake.TryGetValue(id.Value, out object oEntity) && oEntity is T t) {
+				entity = t;
+			} else {
+				entity = default;
+			}
+			return false;
         }
     }
 }

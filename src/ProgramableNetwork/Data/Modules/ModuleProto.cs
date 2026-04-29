@@ -600,57 +600,73 @@ namespace ProgramableNetwork
 
             public Builder AddBooleanField(string id, string name, string shortDesc = "", bool defaultValue = false, bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new BooleanField(id, m_id.Field(id, name, shortDesc), defaultValue));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new BooleanField(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddInt32Field(string id, string name, string shortDesc = "", int defaultValue = 0, bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new NumberField<int>(id, m_id.Field(id, name, shortDesc), defaultValue));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new NumberField<int>(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddHexInt32Field(string id, string name, string shortDesc = "", uint defaultValue = 0, bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new NumberField<HexInt32>(id, m_id.Field(id, name, shortDesc), new HexInt32() { Value = (int)defaultValue }));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new NumberField<HexInt32>(id, m_id.Field(id, name, shortDesc), new HexInt32() { Value = (int)defaultValue }));
                 return this;
             }
 
             public Builder AddColorField(string id, string name, string shortDesc = "", int defaultValue = 0, bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddColorField(string id, string name, string shortDesc = "", ColorRgba? defaultValue = null, bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue ?? new ColorRgba()));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue ?? new ColorRgba()));
                 return this;
             }
 
             public Builder AddInt64Field(string id, string name, string shortDesc = "", long defaultValue = 0, bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new NumberField<long>(id, m_id.Field(id, name, shortDesc), defaultValue));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new NumberField<long>(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
             public Builder AddFix32Field(string id, string name, string shortDesc = "", Fix32? defaultValue = null, bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new NumberField<Fix32>(id, m_id.Field(id, name, shortDesc), defaultValue ?? Fix32.Zero));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new NumberField<Fix32>(id, m_id.Field(id, name, shortDesc), defaultValue ?? Fix32.Zero));
                 return this;
             }
 
             public Builder AddStringField(string id, string name, string shortDesc = "", string defaultValue = "", bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new StringField(id, m_id.Field(id, name, shortDesc), defaultValue));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new StringField(id, m_id.Field(id, name, shortDesc), defaultValue));
                 return this;
             }
 
@@ -708,15 +724,19 @@ namespace ProgramableNetwork
             public Builder AddEntityTypeField<T>(string id, string name, string shortDesc = null, Func<Module, T, bool> filter = null, bool overrideInput = false)
                 where T : EntityProto, IProtoWithIcon
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new EntityTypeField<T>(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true)));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new EntityTypeField<T>(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true)));
                 return this;
             }
 
             public Builder AddProductField(string id, string name, string shortDesc = null, Func<Module, ProductProto, bool> filter = null, bool overrideInput = false)
             {
-                if (overrideInput) addOverrideToggle(id);
-                m_fields.Add(new ProductField(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true)));
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new ProductField(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true)));
                 return this;
             }
 

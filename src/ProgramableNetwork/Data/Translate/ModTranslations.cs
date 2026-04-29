@@ -143,10 +143,16 @@ namespace ProgramableNetwork
 			foreach (FieldInfo f in locDataType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
 			{
 				Type ft = f.FieldType;
-				if (!ft.IsGenericType) continue;
-				if (!ft.Name.StartsWith("ImmutableArray", StringComparison.Ordinal)) continue;
+				if (!ft.IsGenericType) {
+					continue;
+				}
+				if (!ft.Name.StartsWith("ImmutableArray", StringComparison.Ordinal)) {
+					continue;
+				}
 				Type[] args = ft.GetGenericArguments();
-				if (args.Length != 1 || args[0] != typeof(string)) continue;
+				if (args.Length != 1 || args[0] != typeof(string)) {
+					continue;
+				}
 				locDataArrayField = f;
 				break;
 			}
@@ -181,15 +187,21 @@ namespace ProgramableNetwork
 			Dictionary<Type, LocStrShape> shapesByType = new Dictionary<Type, LocStrShape>();
 			foreach (Type t in mafiAsm.GetTypes())
 			{
-				if (t.Namespace != "Mafi.Localization") continue;
+				if (t.Namespace != "Mafi.Localization") {
+					continue;
+				}
 				FieldInfo[] stringFields = t
 					.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)
 					.Where(f => f.FieldType == typeof(string))
 					.ToArray();
 				FieldInfo idField = stringFields.FirstOrDefault(f => f.Name == "Id");
-				if (idField == null) continue;
+				if (idField == null) {
+					continue;
+				}
 				FieldInfo[] translationSlots = stringFields.Where(f => f != idField).ToArray();
-				if (translationSlots.Length == 0) continue;
+				if (translationSlots.Length == 0) {
+					continue;
+				}
 				shapesByType[t] = new LocStrShape(idField, translationSlots);
 			}
 
@@ -210,15 +222,21 @@ namespace ProgramableNetwork
 
 				foreach (FieldInfo field in fields)
 				{
-					if (!shapesByType.TryGetValue(field.FieldType, out LocStrShape shape)) continue;
+					if (!shapesByType.TryGetValue(field.FieldType, out LocStrShape shape)) {
+						continue;
+					}
 
 					object boxed;
 					try { boxed = field.GetValue(null); }
 					catch { continue; }
-					if (boxed == null) continue;
+					if (boxed == null) {
+						continue;
+					}
 
 					string id = shape.IdField.GetValue(boxed) as string;
-					if (string.IsNullOrEmpty(id)) continue;
+					if (string.IsNullOrEmpty(id)) {
+						continue;
+					}
 
 					if (!sData.TryGetValue(id, out LocalizationManager.LocData data))
 					{
@@ -227,9 +245,13 @@ namespace ProgramableNetwork
 					}
 
 					object array = locDataArrayField.GetValue(data);
-					if (array == null) continue;
+					if (array == null) {
+						continue;
+					}
 					int length = (int)lengthProp.GetValue(array);
-					if (length == 0) continue;
+					if (length == 0) {
+						continue;
+					}
 
 					try
 					{
@@ -239,7 +261,9 @@ namespace ProgramableNetwork
 						{
 							indexBuf[0] = i;
 							string translation = itemProp.GetValue(array, indexBuf) as string;
-							if (string.IsNullOrEmpty(translation)) continue;
+							if (string.IsNullOrEmpty(translation)) {
+								continue;
+							}
 							shape.Slots[i].SetValue(boxed, translation);
 							wrote = true;
 						}
@@ -315,7 +339,9 @@ namespace ProgramableNetwork
 				{
 					foreach (object item in skipEnum)
 					{
-						if (item is string s) skipExport.Add(s);
+						if (item is string s) {
+							skipExport.Add(s);
+						}
 					}
 				}
 
@@ -347,12 +373,20 @@ namespace ProgramableNetwork
 					}
 
 					string key = kvpKeyProp.GetValue(kvp) as string;
-					if (string.IsNullOrEmpty(key)) continue;
-					if (!HasModPrefix(key)) continue;
-					if (skipExport.Contains(key)) continue;
+					if (string.IsNullOrEmpty(key)) {
+						continue;
+					}
+					if (!HasModPrefix(key)) {
+						continue;
+					}
+					if (skipExport.Contains(key)) {
+						continue;
+					}
 
 					object locData = kvpValueProp.GetValue(kvp);
-					if (locData == null) continue;
+					if (locData == null) {
+						continue;
+					}
 
 					if (enUsValueField == null)
 					{
@@ -367,9 +401,15 @@ namespace ProgramableNetwork
 					}
 
 					string enUs = enUsValueField.GetValue(locData) as string ?? "";
-					if (string.IsNullOrEmpty(enUs)) continue;
-					if (enUs.IndexOf("TODO", StringComparison.Ordinal) >= 0) continue;
-					if (enUs.IndexOf("HIDE", StringComparison.Ordinal) >= 0) continue;
+					if (string.IsNullOrEmpty(enUs)) {
+						continue;
+					}
+					if (enUs.IndexOf("TODO", StringComparison.Ordinal) >= 0) {
+						continue;
+					}
+					if (enUs.IndexOf("HIDE", StringComparison.Ordinal) >= 0) {
+						continue;
+					}
 
 					string plural = null;
 					if (pluralField != null)
@@ -403,11 +443,15 @@ namespace ProgramableNetwork
 					string[] values = entries[i].Value;
 					for (int j = 0; j < values.Length; j++)
 					{
-						if (j > 0) sb.Append(", ");
+						if (j > 0) {
+							sb.Append(", ");
+						}
 						sb.Append('"').Append(JsonWriter.JsonEscapeString(values[j])).Append('"');
 					}
 					sb.Append(']');
-					if (i < entries.Count - 1) sb.Append(',');
+					if (i < entries.Count - 1) {
+						sb.Append(',');
+					}
 					sb.AppendLine();
 				}
 				sb.AppendLine("]");
@@ -429,7 +473,9 @@ namespace ProgramableNetwork
 		{
 			for (int i = 0; i < MOD_KEY_PREFIXES.Length; i++)
 			{
-				if (key.StartsWith(MOD_KEY_PREFIXES[i], StringComparison.Ordinal)) return true;
+				if (key.StartsWith(MOD_KEY_PREFIXES[i], StringComparison.Ordinal)) {
+					return true;
+				}
 			}
 			return false;
 		}

@@ -129,7 +129,9 @@ namespace ProgramableNetwork.Ui {
 			}
 
 			private ResearchNodeState AggregateState(ImmutableArray<ResearchNode> nodes) {
-				if (m_allResearched) return ResearchNodeState.Researched;
+				if (m_allResearched) {
+					return ResearchNodeState.Researched;
+				}
 
 				bool anyMissing = false;
 				bool anyInProgress = false;
@@ -139,8 +141,12 @@ namespace ProgramableNetwork.Ui {
 						case ResearchNodeState.InProgress: anyInProgress = true; break;
 					}
 				}
-				if (anyMissing) return ResearchNodeState.NotResearched;
-				if (anyInProgress) return ResearchNodeState.InProgress;
+				if (anyMissing) {
+					return ResearchNodeState.NotResearched;
+				}
+				if (anyInProgress) {
+					return ResearchNodeState.InProgress;
+				}
 
 				m_allResearched = true;
 				return ResearchNodeState.Researched;

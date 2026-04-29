@@ -110,6 +110,19 @@ namespace ProgramableNetwork
             public static readonly LocStr AddFromTemplate = Loc.Str("ProgramableNetwork_Inspector_AddFromTemplate",
                 "Add from template", "controller inspector: helper hint for right-click to add from a template");
 
+            public static readonly LocStr Connections = Loc.Str("ProgramableNetwork_Inspector_Connections",
+                "Connections", "controller inspector: panel header for the per-module entity connections list");
+            public static readonly LocStr ConnectionsEmpty = Loc.Str("ProgramableNetwork_Inspector_ConnectionsEmpty",
+                "No entity-bound fields", "controller inspector: shown in connections panel when no module has any entity field");
+            public static readonly LocStr ConnectionsHintEdit = Loc.Str("ProgramableNetwork_Inspector_ConnectionsHintEdit",
+                "Pick / change entity", "connections panel: helper hint for left-click on a slot");
+            public static readonly LocStr ConnectionsHintCopyNext = Loc.Str("ProgramableNetwork_Inspector_ConnectionsHintCopyNext",
+                "Apply last picked entity (if valid here)", "connections panel: helper hint for shift+click — applies the most recently picked entity to this slot if it passes the slot's filter and distance check");
+            public static readonly LocStr ConnectionsHintClear = Loc.Str("ProgramableNetwork_Inspector_ConnectionsHintClear",
+                "Clear entity", "connections panel: helper hint for right-click on a slot");
+            public static readonly LocStr ConnectionsHintPan = Loc.Str("ProgramableNetwork_Inspector_ConnectionsHintPan",
+                "Pan camera to entity", "connections panel: helper hint for middle-click on a slot");
+
             public static readonly LocStr Active = Loc.Str("ProgramableNetwork_Inspector_Active",
                 "Active", "speaker / light inspector: row label for the on/off toggle");
             public static readonly LocStr Color = Loc.Str("ProgramableNetwork_Inspector_Color",

@@ -47,6 +47,20 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	public bool m_showsLinks;
 	public IGameConsole m_console;
 
+	/// <summary>
+	/// When non-null, the corresponding ModuleView will paint a cable-style highlight
+	/// on its central button.  Set by <see cref="EntityConnectionsView"/> on row hover.
+	/// </summary>
+	public Module HighlightedFromSidePanel;
+
+	/// <summary>
+	/// When non-null, the matching section in <see cref="EntityConnectionsView"/> is
+	/// highlighted.  Set by <see cref="ControllerView.ModuleView"/> on the module's
+	/// fieldsPanel hover so the user can see which side-panel entry owns the configuration
+	/// for the module they're pointing at on the grid.
+	/// </summary>
+	public Module HoveredModuleGraphic;
+
 	public ResearchManager ResearchManager { get; }
 
 	public ControllerInspector(
@@ -119,15 +133,34 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 				}
 			});
 
+		Row panels = this.MainBody.AddAndReturn(new Row())
+			.HeightAuto()
+			.Gap(5.px());
+		// align to top so the connections panel doesn't end up in the middle when there are few modules
+		panels.JustifyItemsStart();
+		panels.AlignItemsStart();
+		//panels.RootElement.style.justifyContent = UnityEngine.UIElements.Justify.FlexStart;
+		//panels.RootElement.style.alignItems = UnityEngine.UIElements.Align.FlexStart;
+
 		// UI
-		m_modulesPanel = AddPanelWithHeader();
+		m_modulesPanel = panels.AddAndReturn(new PanelWithHeader().Fill().HeightAuto());
 		m_modulesPanel.Header.Add(
 			new Label()
 				.LaterText(() => NewTr.Inspector.Modules, this)
 				.FlexGrow(1)
 				.TextAlign(TextAlignment.CenterMiddle)
 			);
-		m_modulesPanel.Add(m_view = new ControllerView(this, refresh).AlignSelfCenter());
+		m_modulesPanel.BodyAdd(m_view = new ControllerView(this, refresh));
+
+		PanelWithHeader connectionsPanel = panels.AddAndReturn(new PanelWithHeader().Fill().HeightAuto());
+		connectionsPanel.Header.Add(
+			new Label()
+				.LaterText(() => NewTr.Inspector.Connections, this)
+				.FlexGrow(1)
+				.TextAlign(TextAlignment.CenterMiddle)
+			);
+		EntityConnectionsView connectionsView = new EntityConnectionsView(this);
+		connectionsPanel.BodyAdd(connectionsView);
 
 		HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, UserInterface.General.Connect128_png))
 			.OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Open(context.UiRoot))

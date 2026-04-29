@@ -58,8 +58,16 @@ namespace ProgramableNetwork.Ui
 				if (!preview)
 				{
 					fieldsPanel.OnMouseEnterLeave(
-							() => m_controller.AddPreviewHighlight(module),
-							() => m_controller.ClearPreviewHighlight()
+							() => {
+								m_controller.m_controller.HoveredModuleGraphic = module;
+								m_controller.AddPreviewHighlight(module);
+							},
+							() => {
+								if (m_controller.m_controller.HoveredModuleGraphic == module) {
+									m_controller.m_controller.HoveredModuleGraphic = null;
+								}
+								m_controller.ClearPreviewHighlight();
+							}
 						);
 					fieldsPanel.OnClick(() => new ModuleEditDialog(module, m_controller, uiContext, fieldsPanel, m_controller.m_controller));
 
@@ -78,6 +86,17 @@ namespace ProgramableNetwork.Ui
 								fieldsPanel.Class(Cls.btn_primary);
 								fieldsPanel.ClassRemove(Cls.btn_general);
 							}
+						});
+
+					// Cable-style highlight when this module is hovered from the connections panel.
+					fieldsPanel.Observe(() => m_controller.m_controller.HighlightedFromSidePanel)
+						.Do((highlighted) =>
+						{
+							bool isMe = highlighted != null && highlighted.Id == module.Id;
+							fieldsPanel.Border(
+								all: 2.px(),
+								radius: 4,
+								color: isMe ? ColorRgba.CornflowerBlue : ColorRgba.CornflowerBlue.SetA(0));
 						});
 
 					if (displaysExists)

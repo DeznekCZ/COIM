@@ -187,10 +187,14 @@ namespace ProgramableNetwork.ModuleTester
 
                 foreach (var type in item)
                 {
-                    if (type.IsArray) continue;
-                    if (type.IsGenericType) continue;
+                    if (type.IsArray) {
+						continue;
+					}
+					if (type.IsGenericType) {
+						continue;
+					}
 
-                    stringBuilder.Append("class ");
+					stringBuilder.Append("class ");
                     stringBuilder.Append(type.Name);
                     stringBuilder.Append(":\n");
 
@@ -211,11 +215,12 @@ namespace ProgramableNetwork.ModuleTester
                             if (field.FieldType == typeof(ColorRgba))
                             {
                                 ColorRgba color = (ColorRgba)field.GetValue(null);
-                                if (color.A == 255)
-                                    stringBuilder.Append($" = ColorRgba({color.R}, {color.G}, {color.B})\n");
-                                else
-                                    stringBuilder.Append($" = ColorRgba({color.R}, {color.G}, {color.B}, {color.A})\n");
-                            }
+                                if (color.A == 255) {
+									stringBuilder.Append($" = ColorRgba({color.R}, {color.G}, {color.B})\n");
+								} else {
+									stringBuilder.Append($" = ColorRgba({color.R}, {color.G}, {color.B}, {color.A})\n");
+								}
+							}
                             else
                             {
                                 stringBuilder.Append(" = None\n");
@@ -251,9 +256,10 @@ namespace ProgramableNetwork.ModuleTester
                             AppendInstanceProperty(property, stringBuilder, names);
                         }
 
-                        if (names.Count == 0)
-                            stringBuilder.Append("        pass\n\n");
-                    }
+                        if (names.Count == 0) {
+							stringBuilder.Append("        pass\n\n");
+						}
+					}
                 }
 
                 Directory.CreateDirectory(directoryname);
@@ -264,26 +270,28 @@ namespace ProgramableNetwork.ModuleTester
 
             void AppendInstanceProperty(PropertyInfo property, StringBuilder stringBuilder, HashSet<string> names)
             {
-                if (!names.Add(property.Name))
-                    return;
+                if (!names.Add(property.Name)) {
+					return;
+				}
 
-                if (property.PropertyType == typeof(bool))
-                    stringBuilder.Append($"        self.{property.Name} = False\n");
-                else if (property.PropertyType == typeof(string))
-                    stringBuilder.Append($"        self.{property.Name} = str(0)\n");
-                else if (property.PropertyType == typeof(int))
-                    stringBuilder.Append($"        self.{property.Name} = int(0)\n");
-                else if (property.PropertyType == typeof(float))
-                    stringBuilder.Append($"        self.{property.Name} = float(0)\n");
-                else if (property.PropertyType == typeof(Fix32))
-                    stringBuilder.Append($"        from Mafi import Fix32\n        self.{property.Name} = Fix32()\n");
-                else if (property.PropertyType == typeof(Fix64))
-                    stringBuilder.Append($"        from Mafi import Fix64\n        self.{property.Name} = Fix64()\n");
-                else if (property.PropertyType.Name.StartsWith("Option"))
-                    stringBuilder.Append($"        from Mafi import Option\n        self.{property.Name} = Option()\n");
-                else
-                    stringBuilder.Append($"        self.{property.Name} = None\n");
-            }
+				if (property.PropertyType == typeof(bool)) {
+					stringBuilder.Append($"        self.{property.Name} = False\n");
+				} else if (property.PropertyType == typeof(string)) {
+					stringBuilder.Append($"        self.{property.Name} = str(0)\n");
+				} else if (property.PropertyType == typeof(int)) {
+					stringBuilder.Append($"        self.{property.Name} = int(0)\n");
+				} else if (property.PropertyType == typeof(float)) {
+					stringBuilder.Append($"        self.{property.Name} = float(0)\n");
+				} else if (property.PropertyType == typeof(Fix32)) {
+					stringBuilder.Append($"        from Mafi import Fix32\n        self.{property.Name} = Fix32()\n");
+				} else if (property.PropertyType == typeof(Fix64)) {
+					stringBuilder.Append($"        from Mafi import Fix64\n        self.{property.Name} = Fix64()\n");
+				} else if (property.PropertyType.Name.StartsWith("Option")) {
+					stringBuilder.Append($"        from Mafi import Option\n        self.{property.Name} = Option()\n");
+				} else {
+					stringBuilder.Append($"        self.{property.Name} = None\n");
+				}
+			}
         }
 
         private static void InitBaseGame(ProtoRegistrator registrator)

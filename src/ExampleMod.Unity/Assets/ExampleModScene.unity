@@ -308,6 +308,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1001 &1081094122
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
+      propertyPath: m_Name
+      value: WindTurbine_T2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 52b22b1ebb718544691a4df635853aca, type: 3}
 --- !u!1001 &1337904142
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -536,13 +593,160 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9a0813d87cba30741ab53b07ffa52758, type: 3}
+--- !u!1 &1965473127
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1965473129}
+  - component: {fileID: 1965473128}
+  - component: {fileID: 1965473131}
+  - component: {fileID: 1965473130}
+  m_Layer: 0
+  m_Name: Game
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1965473128
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1965473127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1979976529, guid: c0989979a0ff6a844853582904a1f461, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GameDataRootDirPathOverride: 
+  WorkingDirPathOverride: '%COI_ROOT%'
+  CoreAssetBundlePathOverride: '%COI_ROOT%/AssetBundles'
+  SplashScreen: {fileID: 0}
+--- !u!4 &1965473129
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1965473127}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.7808819, y: -5.185258, z: 0.4804058}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1965473130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1965473127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 815839490, guid: c0989979a0ff6a844853582904a1f461, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Difficulty: 1
+  DisableUi: 0
+  TerminateOnDllReload: 0
+  DeterminismVerifFreqTicks: 0
+  DisableSimThread: 0
+  LoadGameFromPath: 
+  ClearAllPrefs: 0
+  SetLastSeenVersion: 
+  AcceptedLogTypes: 2147483519
+  LogToGraylog: 0
+  LogCommandsAsCsharp: 0
+  SaveScreenshotIntervalMins: 0
+  SaveTraceOnSimOvertime: 0
+  LogPerfTimingPeriodMins: 0
+  ForceLatestSeenPatch: 
+  ClearLatestSeenPatch: 0
+  EnableDebugRenderer: 0
+  DebugRendererConfig:
+    VehiclePathFindingSuccesses: 0
+    VehiclePathFindingFailures: 0
+    VehicleStuck: 0
+    VehicleGettingUnstuck: 0
+    VehicleReachabilityResults: 0
+    VehicleHomeUnreachable: 0
+    VehicleFailToReachHome: 0
+    ClearancePathabilityProviderValidationErrors: 0
+  IslandMapType: 1
+  ProceduralIslandMapConfig:
+    AreaChunksSquared: 50
+    MinCellDiameter: 64
+    IsFullIsland: 1
+    CellSizeGrowthExp: 0.6
+    CellHeightDiffMean: 4
+    CellHeightDiffStdDev: 3
+    IslandSurfaceId: GrassCellSurface
+    OceanSurfaceId: RockCellSurface
+    CellCliffMaterialId: Rock_Terrain
+  StaticMapConfig:
+    StaticIslandMap: 0
+    EnableErosionSmoothing: 0
+    ErosionTerrainInteractionRate: 0.4
+    ErosionCapacityFactor: 0.2
+    ErosionNumPasses: 5
+  TestingMapConfig:
+    ExtraCellsCount: 0
+    ExtraCliff: 0
+    CliffHeight: 12
+  SquareMapConfig:
+    TerrainWidth: 256
+    TerrainHeight: 256
+    OceanSize: 64
+    OceanAtDirection: -X
+    GroundHeight: 2
+    SurfaceId: GrassCellSurface
+    EnableForest: 0
+    ForestProtoId: ConiferForest
+  RandomSeed: MaFi
+  DisableTerrainPhysics: 0
+  DisableTerrainSurfaceSimulation: 0
+  ExtendTerrainByCloningCount: 0
+  DisablePathFinding: 0
+  DoNotBuildStartingFactory: 0
+  DisableTerrainRendering: 0
+  DisableOceanRendering: 0
+  ProgressiveChunkInitAtGameStart: 0
+  IncludeGenLayoutForEntities: 0
+  ThrowExceptionInProgramInit: 
+  ThrowInModsInit: 
+  ThrowInSceneStart: 
+  ThrowInMainMenuInit: 
+  ThrowInSceneInit: 
+--- !u!114 &1965473131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1965473127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1342797481, guid: c0989979a0ff6a844853582904a1f461, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 1965473129}
   - {fileID: 356707358}
   - {fileID: 887268596}
   - {fileID: 1337904142}
   - {fileID: 1851074107}
   - {fileID: 1710792506}
   - {fileID: 1917927133}
+  - {fileID: 1081094122}
