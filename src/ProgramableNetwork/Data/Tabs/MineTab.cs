@@ -1,12 +1,13 @@
 ﻿using Mafi;
 using Mafi.Core.Syncers;
+using Mafi.Core.World;
 using Mafi.Core.World.Entities;
 using Mafi.Localization;
 using Mafi.Unity.Ui;
 using Mafi.Unity.Ui.Library;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ProgramableNetwork.Ui
@@ -21,11 +22,24 @@ namespace ProgramableNetwork.Ui
             Icon.Size(Percent.Eighty, Percent.Eighty);
 
             var protoPicker = new ProtoPickerPopup<MineInstanceProto>(
-                optionsProvider: () => module.Context.EntitiesManager
-                    .GetAllEntitiesOfType<WorldMapMine>()
-                    .Where(p => p.IsOwnedByPlayer)
-                    .Select(p => new MineInstanceProto(p, fieldId))
-                    .ToList(),
+                optionsProvider: () =>
+                {
+                    var options = new List<MineInstanceProto>();
+                    // Mines owned by the player
+                    options.AddRange(module.Context.EntitiesManager
+                        .GetAllEntitiesOfType<WorldMapMine>()
+                        .Where(p => p.IsOwnedByPlayer)
+                        .Select(p => new MineInstanceProto(p, fieldId)));
+                    // Player's main ship — selectable as a source for ship-* operations.
+                    var ship = module.Context.EntitiesManager
+                        .GetAllEntitiesOfType<BattleShip>()
+                        .FirstOrDefault(s => !s.IsDestroyed);
+                    if (ship != null)
+                    {
+                        options.Add(new MineInstanceProto(ship, fieldId));
+                    }
+                    return options;
+                },
                 optionViewFactory: (product) => new ButtonRow()
                                                     .Gap(5.px())
                                                     .AddAndReturn(new Icon(product.IconPath))
@@ -34,11 +48,21 @@ namespace ProgramableNetwork.Ui
                                                     .AddAndReturn(new Label(product.Strings.Name))
                                                         .Width(Sizes.BLOCK_SIZE * 6)
                                                         .Parent.As<ButtonRow>().Value
-                                                    .Tooltip(MineInstanceProto.GetStrings(fieldId.WorldMapMine, fieldId).DescShort)
+                                                    .Tooltip(product.Strings.DescShort)
                                                     .Height(Sizes.BLOCK_SIZE * 2)
                                                     .Width(Sizes.BLOCK_SIZE * 8)
                                                     .AsProtoPickerOptionButton(),
-                onOptionSelected: (product) => fieldId.WorldMapMine = product.Mine,
+                onOptionSelected: (product) =>
+                {
+                    int slot = currentSlot(fieldId);
+                    if (slot < 0) {
+                        // Defensive — channel not currently in the band's redirected list.
+                        return;
+                    }
+                    var sourceId = product.IsShip ? product.Ship?.Id : product.Mine?.Id;
+                    uiContext.InputScheduler.ScheduleInputCmd(new AntenaChannelSetAmSourceCmd(
+                        module.Id, slot, sourceId));
+                },
                 button: this,
                 title: LocStrFormatted.Empty,
                 config: new ProtoPickerConfig
@@ -50,18 +74,36 @@ namespace ProgramableNetwork.Ui
                 searchable: true
             );
 
+            // Observe both bindings — only one is set at a time.
             this.Observe(() => fieldId.WorldMapMine)
-                .Do((mine) =>
+                .Observe(() => fieldId.BattleShip)
+                .Do((mine, ship) =>
                 {
-                    if (mine is null)
+                    if (mine != null)
                     {
-                        Icon.Empty();
+                        Icon.Value(mine.Prototype.IconPath);
+                        Icon.Tooltip(MineInstanceProto.GetStrings(mine, fieldId).Name);
                         return;
                     }
-
-                    Icon.Value(fieldId.WorldMapMine.Prototype.IconPath);
-                    Icon.Tooltip(MineInstanceProto.GetStrings(fieldId.WorldMapMine, fieldId).Name);
+                    if (ship != null)
+                    {
+                        Icon.Value(ship.Prototype.Graphics.IconPath);
+                        Icon.Tooltip(MineInstanceProto.GetShipStrings(ship).Name);
+                        return;
+                    }
+                    Icon.Empty();
                 });
+        }
+
+        private static int currentSlot(AMDataBandChannel channel)
+        {
+            int i = 0;
+            foreach (var c in channel.OriginalDataBand.Channels)
+            {
+                if (object.ReferenceEquals(c, channel)) { return i; }
+                i++;
+            }
+            return -1;
         }
     }
 }

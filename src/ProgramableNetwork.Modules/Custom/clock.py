@@ -8,7 +8,7 @@ from Core.module import DefaultControllers, Module
 
 class Runtime_Clock_1(Module):
     name = "Control: Clock (1 output)"
-    description = "Outputs an integer counter on <b>clock</b> that increments every <b>clock_period</b> ticks and wraps to zero at <b>max_count</b>. With the <b>mode</b> field on, output instead pulses true only on the tick where the counter would change."
+    description = "Outputs an integer counter on <b>clock</b> that increments every <b>clock_period</b> ticks and wraps to zero at <b>max_count</b>. With the <b>mode</b> field on, output instead pulses true only on the tick where the counter would change. An optional <b>reset</b> input holds the clock at zero and suppresses output while non-zero; counting resumes when reset goes back to zero."
     symbol = "CLK"
 
     outputs = [
@@ -16,7 +16,7 @@ class Runtime_Clock_1(Module):
     ]
 
     fields = [
-        BooleanField("mode", "Show count", "True: show counter. False: true only during the tick where the output changes", False),
+        BooleanField("mode", "Pulse mode", "True: true only during the tick where the output changes. False: show counter", False),
         Int32Field("clock_period", "Clock Period", "Updates between each update of the output", 1),
         Int32Field("max_count", "Max Output", "Output resets when count reaches this value", 2)
     ]
@@ -53,8 +53,11 @@ class Runtime_Clock_1(Module):
 
 class Runtime_Clock_2(Module):
     name = "Control: Clock (2 outputs)"
-    description = "Outputs an integer counter on <b>clock</b> that increments every <b>clock_period</b> ticks and wraps to zero at <b>max_count</b>, plus an <b>update</b> boolean that pulses true on every tick where the counter changes."
-    symbol = "CLOCK"
+    description = "Outputs an integer counter on <b>clock</b> that increments every <b>clock_period</b> ticks and wraps to zero at <b>max_count</b>, plus an <b>update</b> boolean that pulses true on every tick where the counter changes. An optional <b>reset</b> input holds the clock at zero and suppresses output while non-zero; counting resumes when reset goes back to zero."
+
+    inputs = [
+        Input("reset", "Reset (hold non-zero to freeze at 0)")
+    ]
 
     outputs = [
         Output("update", "Updated this tick"),

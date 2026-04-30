@@ -233,7 +233,7 @@ namespace ProgramableNetwork.Ui
 			m_signalPanel.Header.Add(new UiComponent().FlexGrow(1)); // filler
 			m_signalPanel.Header.AddAndReturn(new ButtonText(new Mafi.Localization.LocStrFormatted("+")))
 				.OnClick(() => {
-					Entity.DataBand.CreateChannel();
+					Context.InputScheduler.ScheduleInputCmd(new AntenaCreateRedirectedChannelCmd(Entity.Id));
 					m_signalPanel.Collapsed(false);
 					RefreshRedirections(Entity.DataBand);
 				})
@@ -295,8 +295,8 @@ namespace ProgramableNetwork.Ui
 
 				if (!m_onLoading)
 				{
-					Entity.DataBand = m_databands[tabContainer.ActiveTabIndex ?? 0]
-											.Constructor(Entity, Entity.Context, m_databands[tabContainer.ActiveTabIndex ?? 0]);
+					Context.InputScheduler.ScheduleInputCmd(new AntenaSetDataBandCmd(
+						Entity.Id, m_databands[tabContainer.ActiveTabIndex ?? 0].Id));
 				}
 
 				RefreshRedirections(Entity.DataBand);

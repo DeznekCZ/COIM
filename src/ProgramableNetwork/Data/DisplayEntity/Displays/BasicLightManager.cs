@@ -21,6 +21,8 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 
 		public Action Create(DisplayEntityInspector panel)
 		{
+			UiContext = panel.Context;
+
 			Label active;
 			Toggle toggle;
 
@@ -43,9 +45,8 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 					}
 				});
 
-			toggle.OnValueChanged((playing) => Entity.SetActive(playing));
-
-			//InitColorSelection(colorIcon, dropdown);
+			toggle.OnValueChanged((playing) => panel.Context.InputScheduler.ScheduleInputCmd(
+				new DisplayEntitySetActiveCmd(Entity.Id, playing)));
 
 			return () => m_row.RemoveFromHierarchy();
 		}

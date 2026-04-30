@@ -72,7 +72,10 @@ namespace ProgramableNetwork.Ui.DataBand
                 .Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
                 .Margin(Px.Zero)
                 .OnClick(() => {
-                    channel.OriginalDataBand.RemoveChannel(channel);
+                    int slot = currentSlot(channel);
+                    if (slot < 0) { return; }
+                    antenaInspector.Context.InputScheduler.ScheduleInputCmd(
+                        new AntenaRemoveRedirectedChannelCmd(channel.OriginalDataBand.Antena.Id, slot));
                     RemoveFromHierarchy();
                 })
                 .IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
@@ -87,7 +90,7 @@ namespace ProgramableNetwork.Ui.DataBand
                 .TextOverflow(TextOverflow.Clip)
                 .Height(Sizes.BLOCK_SIZE)
                 .FlexGrow(1)
-                .OnClick(() => channel.Index = 0)
+                .OnClick(() => dispatchSetIndex(antenaInspector, channel, 0))
                 .ObserveEnabled(() => channel.Index > 0);
 
             // move to left fast
@@ -96,7 +99,7 @@ namespace ProgramableNetwork.Ui.DataBand
                 .TextOverflow(TextOverflow.Clip)
                 .Height(Sizes.BLOCK_SIZE)
                 .FlexGrow(1)
-                .OnClick(() => channel.Move(-5));
+                .OnClick(() => dispatchMove(antenaInspector, channel, -5));
 
             // move to left
             secondRow.AddAndReturn(new ButtonText("<".AsLoc()))
@@ -104,7 +107,7 @@ namespace ProgramableNetwork.Ui.DataBand
                 .TextOverflow(TextOverflow.Clip)
                 .Height(Sizes.BLOCK_SIZE)
                 .FlexGrow(1)
-                .OnClick(() => channel.Move(-1));
+                .OnClick(() => dispatchMove(antenaInspector, channel, -1));
 
             // move to right
             secondRow.AddAndReturn(new ButtonText(">".AsLoc()))
@@ -112,7 +115,7 @@ namespace ProgramableNetwork.Ui.DataBand
                 .TextOverflow(TextOverflow.Clip)
                 .Height(Sizes.BLOCK_SIZE)
                 .FlexGrow(1)
-                .OnClick(() => channel.Move(1));
+                .OnClick(() => dispatchMove(antenaInspector, channel, 1));
 
             // move to right fast
             secondRow.AddAndReturn(new ButtonText(">>".AsLoc()))
@@ -120,7 +123,7 @@ namespace ProgramableNetwork.Ui.DataBand
                 .TextOverflow(TextOverflow.Clip)
                 .Height(Sizes.BLOCK_SIZE)
                 .FlexGrow(1)
-                .OnClick(() => channel.Move(5));
+                .OnClick(() => dispatchMove(antenaInspector, channel, 5));
 
             // move to end
             secondRow.AddAndReturn(new ButtonText(">>|".AsLoc()))
@@ -128,7 +131,7 @@ namespace ProgramableNetwork.Ui.DataBand
                 .TextOverflow(TextOverflow.Clip)
                 .Height(Sizes.BLOCK_SIZE)
                 .FlexGrow(1)
-                .OnClick(() => channel.Index = channel.OriginalDataBand.Prototype.Channels - 1)
+                .OnClick(() => dispatchSetIndex(antenaInspector, channel, channel.OriginalDataBand.Prototype.Channels - 1))
                 .ObserveEnabled(() => channel.Index < channel.OriginalDataBand.Prototype.Channels - 2);
 
             try
@@ -230,6 +233,34 @@ namespace ProgramableNetwork.Ui.DataBand
 					reference.Value = newIndex;
 				}
 			}
+        }
+
+        /// <summary>Resolves a channel's current position in its band's redirected list. -1 if not found.</summary>
+        private static int currentSlot(FMDataBandChannel channel)
+        {
+            int i = 0;
+            foreach (var c in channel.OriginalDataBand.Channels)
+            {
+                if (object.ReferenceEquals(c, channel)) { return i; }
+                i++;
+            }
+            return -1;
+        }
+
+        private static void dispatchSetIndex(AntenaInspector inspector, FMDataBandChannel channel, int newIndex)
+        {
+            int slot = currentSlot(channel);
+            if (slot < 0) { return; }
+            inspector.Context.InputScheduler.ScheduleInputCmd(
+                new AntenaChannelSetIndexCmd(channel.OriginalDataBand.Antena.Id, slot, newIndex));
+        }
+
+        private static void dispatchMove(AntenaInspector inspector, FMDataBandChannel channel, int delta)
+        {
+            int total = channel.OriginalDataBand.Prototype.Channels;
+            int next = channel.Index + delta;
+            if (next < 0) { next += total; } else if (next >= total) { next -= total; }
+            dispatchSetIndex(inspector, channel, next);
         }
     }
 }

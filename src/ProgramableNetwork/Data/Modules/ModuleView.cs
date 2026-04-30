@@ -157,8 +157,10 @@ namespace ProgramableNetwork.Ui
 					{
 						btn .OnRightClick(() =>
 							{
-								if (module.InputModules.TryRemove(input.Id, out _))
+								if (module.InputModules.ContainsKey(input.Id))
 								{
+									uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetInputConnectionCmd(
+										module.Controller.Id, module.Id, input.Id, 0L, ""));
 									refresh();
 								}
 								else
@@ -174,7 +176,9 @@ namespace ProgramableNetwork.Ui
 								}
 								else
 								{
-									module.InputModules[input.Id] = m_controller.m_controller.OutputConnection;
+									ModuleConnector src = m_controller.m_controller.OutputConnection;
+									uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetInputConnectionCmd(
+										module.Controller.Id, module.Id, input.Id, src.ModuleId, src.OutputId));
 									refresh();
 								}
 							})
@@ -261,13 +265,16 @@ namespace ProgramableNetwork.Ui
 									return;
 								}
 
+								// Disconnect the first input that consumes this output. Routed through
+								// a command so multiplayer hosts/clients agree.
 								foreach (var target in m_controller.Entity.Modules)
 								{
 									foreach (var connection in target.InputModules)
 									{
 										if (connection.Value.ModuleId == module.Id)
 										{
-											target.InputModules.TryRemove(connection.Key, out _);
+											uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetInputConnectionCmd(
+												target.Controller.Id, target.Id, connection.Key, 0L, ""));
 											refresh();
 											return;
 										}

@@ -43,9 +43,14 @@ namespace ProgramableNetwork
             // Use data class registration to register other protos such as machines, recipes, etc.
             registrator.RegisterDataWithInterface<IModuleGroup>();
             registrator.RegisterData<PyModules>();
-            registrator.RegisterData<DataBands>();
+            // DataBands and Entities take JsonConfig directly via constructor — instantiated
+            // explicitly so the ProtoRegistrator's parameterless `RegisterData<T>()` path
+            // (which calls `new T()`) doesn't have to thread the mod's config through a
+            // static accessor.  Other data classes that don't need config keep the simpler
+            // generic registration form.
+            registrator.RegisterData(new DataBands(JsonConfig));
             registrator.RegisterData<ControllerTemplates>();
-            registrator.RegisterData<Entities>();
+            registrator.RegisterData(new Entities(JsonConfig));
             registrator.RegisterData<Displays>();
             registrator.RegisterData<ControllerNotification>();
             registrator.RegisterData<ModuleIdsGenerator>();

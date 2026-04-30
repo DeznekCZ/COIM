@@ -33,7 +33,8 @@ namespace ProgramableNetwork.Data.Speaker
                 dropdown = new Dropdown<KeyValuePair<string, LocStrFormatted>>(
                     optionViewFactory: (option, index, isInDropdown) => new Label(option.Value)
                 )
-                .OnValueChanged((v, i) => { Entity.SetSound(v.Key ?? UserInterface.Audio.ShipAlarm_prefab); })
+                .OnValueChanged((v, i) => context.InputScheduler.ScheduleInputCmd(
+                    new SpeakerSetSoundCmd(Entity.Id, v.Key ?? UserInterface.Audio.ShipAlarm_prefab)))
                 .SetOptions(BuildSounds())
                 .FlexGrow(0.5f),
                 volume = new Slider().FlexGrow(1)
@@ -63,7 +64,8 @@ namespace ProgramableNetwork.Data.Speaker
                     dropdown.SetValueIndex(0);
                 });
 
-            toggle.OnValueChanged((playing) => Entity.SetPlaying(playing));
+            toggle.OnValueChanged((playing) => context.InputScheduler.ScheduleInputCmd(
+                new SpeakerSetPlayingCmd(Entity.Id, playing)));
 
             this.Observe(() => Entity.Volume)
                 .Do((sound) => {
@@ -72,7 +74,8 @@ namespace ProgramableNetwork.Data.Speaker
 
             volume.OnValueChanged((value, _) =>
             {
-                Entity.SetVolume(Percent.FromFloat(value * 2));
+                context.InputScheduler.ScheduleInputCmd(
+                    new SpeakerSetVolumeCmd(Entity.Id, Percent.FromFloat(value * 2)));
             });
 
             EmbedStatusToTheTop();

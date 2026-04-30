@@ -28,6 +28,8 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 
 		public Action Create(DisplayEntityInspector panel)
 		{
+			UiContext = panel.Context;
+
 			Label active;
 			Display number;
 
@@ -106,8 +108,10 @@ namespace ProgramableNetwork.Ui.DisplayEntity.Displays
 			{
 				toggle.ObserveValue(() => insp.Entity.GetProperty(item, Fix32.Zero) > Fix32.Zero);
 				toggle.OnValueChanged(on => {
-					insp.Entity.SetProperty(item, on ? Fix32.One : Fix32.Zero);
-					insp.Entity.SetActive(true);
+					insp.Context.InputScheduler.ScheduleInputCmd(
+						new DisplayEntitySetPropertyCmd(insp.Entity.Id, item, on ? Fix32.One : Fix32.Zero));
+					insp.Context.InputScheduler.ScheduleInputCmd(
+						new DisplayEntitySetActiveCmd(insp.Entity.Id, true));
 				});
 			}
 		}

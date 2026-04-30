@@ -51,7 +51,12 @@ namespace ProgramableNetwork
 
     internal class Entities : AValidatedData
     {
+        private readonly ModJsonConfig m_config;
 
+        public Entities(ModJsonConfig config)
+        {
+            m_config = config;
+        }
 
         protected override void RegisterDataInternal(ProtoRegistrator registrator) {
 
@@ -96,7 +101,7 @@ namespace ProgramableNetwork
                     customIconPath: NewAssets.Computers.Icons.Antena,
                     categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                 ),
-                distanceBoost: Fix32.Two
+                distanceBoost: ((float)m_config.GetDouble("antena_t2_boost", 2.0)).ToFix32()
             ));
 
             antenaT1.SetNextTierIndirect(antenaT2);

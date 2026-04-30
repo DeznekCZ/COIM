@@ -1,0 +1,25 @@
+{
+  "databand_fm_distance": {
+    "default": 2000,
+    "is_integer": true,
+    "min": 1,
+    "max": 1000000,
+    "description": "Base FM data-band redirection range. Multiplied by the antena's distance boost."
+  },
+
+  "databand_am_distance": {
+    "default": 500,
+    "is_integer": true,
+    "min": 1,
+    "max": 1000000,
+    "description": "Base AM data-band range (world-map tiles). Multiplied by the antena's distance boost."
+  },
+
+  "antena_t2_boost": {
+    "default": 2.0,
+    "is_integer": false,
+    "min": 1.0,
+    "max": 100.0,
+    "description": "Range multiplier for tier-2 antena (multiplied with the data-band base distance)."
+  }
+}

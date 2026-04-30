@@ -20,6 +20,7 @@ namespace ProgramableNetwork
 		ICommandProcessor<ModuleSetStringFieldCmd>,
 		ICommandProcessor<ModuleSetEntityFieldCmd>,
 		ICommandProcessor<ModuleClearFieldCmd>,
+		ICommandProcessor<ModuleSetInputConnectionCmd>,
 		ICommandProcessor<ControllerSetColorCmd>
 	{
 		private readonly IEntitiesManager m_entitiesManager;
@@ -88,6 +89,20 @@ namespace ProgramableNetwork
 				return;
 			}
 			controller.SetColor(cmd.Color);
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModuleSetInputConnectionCmd cmd)
+		{
+			if (!tryGetModule(cmd.ControllerId, cmd.ModuleId, out _, out Module module, out string error)) {
+				cmd.SetResultError(error);
+				return;
+			}
+			if (cmd.IsDisconnect) {
+				module.InputModules.TryRemove(cmd.InputId, out _);
+			} else {
+				module.InputModules[cmd.InputId] = new ModuleConnector(cmd.SourceModuleId, cmd.SourceOutputId);
+			}
 			cmd.SetResultSuccess();
 		}
 

@@ -21,6 +21,13 @@ namespace ProgramableNetwork
         public static readonly Proto.ID DataBand_FM = new Proto.ID("ProgramableNetwork_DataBand_FM");
         public static readonly Proto.ID DataBand_AM = new Proto.ID("ProgramableNetwork_DataBand_AM");
 
+        private readonly ModJsonConfig m_config;
+
+        public DataBands(ModJsonConfig config)
+        {
+            m_config = config;
+        }
+
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
             registrator.PrototypesDb.Add(DataBandProto.Create<UnkownnDataBandType, IDataBandChannel>(
@@ -45,7 +52,7 @@ namespace ProgramableNetwork
                 FMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((171 + i.Index).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " MHz",
                 buttons: (inspector, dataBand) => new Ui.DataBand.FMDataBandChannelView(inspector, dataBand),
-                distance: 2000.ToFix32()
+                distance: m_config.GetInt("databand_fm_distance", 2000).ToFix32()
                 ));
 
             registrator.PrototypesDb.Add(DataBandProto.Create<AMDataBand, AMDataBandChannel>(
@@ -58,7 +65,7 @@ namespace ProgramableNetwork
                 AMDataBand.Deserialize,
                 channelDisplay: (c, i) => ((53 + i.Index).ToFix32() * 10.ToFix32()).IntegerPart + " kHz",
                 buttons: (inspector, dataBand) => new Ui.DataBand.AMDataBandChannelView(inspector, dataBand),
-                distance: 500.ToFix32()
+                distance: m_config.GetInt("databand_am_distance", 500).ToFix32()
                 ));
         }
     }
