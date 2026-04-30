@@ -91,6 +91,14 @@ namespace ProgramableNetwork
                 "Ticks per 60 seconds", "controller inspector: tooltip for the speed display");
             public static readonly LocStr Modules = Loc.Str("ProgramableNetwork_Inspector_Modules",
                 "Modules", "controller inspector: panel header above the module grid");
+            public static readonly LocStr Mode_Edit = Loc.Str("ProgramableNetwork_Inspector_Mode_Edit",
+                "Edit", "controller inspector: header toggle — only field floaters are usable, no add/move");
+            public static readonly LocStr Mode_Add = Loc.Str("ProgramableNetwork_Inspector_Mode_Add",
+                "Add", "controller inspector: header toggle — clicking a module copies it; '+' slots add new modules");
+            public static readonly LocStr Mode_Move = Loc.Str("ProgramableNetwork_Inspector_Mode_Move",
+                "Move", "controller inspector: header toggle — pick up a module by click, drop it on a free slot");
+            public static readonly LocStr Mode_PickedUp = Loc.Str("ProgramableNetwork_Inspector_Mode_PickedUp",
+                "Picked up — click free slot to drop", "controller inspector: status hint shown next to mode toggle while a module is being moved");
             public static readonly LocStr All = Loc.Str("ProgramableNetwork_Inspector_All",
                 "All", "module picker: button that selects all category filters at once");
             public static readonly LocStr ControllerColor = Loc.Str("ProgramableNetwork_Inspector_ControllerColor",

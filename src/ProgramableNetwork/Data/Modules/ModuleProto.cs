@@ -517,6 +517,27 @@ namespace ProgramableNetwork
                 m_displays.Add(new ModuleConnectorProto("_", Str.Empty, width, "[fill]"));
                 return this;
             }
+
+            /// <summary>
+            /// Slider display — reads its current value from <c>module.Display[id]</c> and
+            /// the slider bounds from <c>module.Display[id + "_min"]</c> /
+            /// <c>module.Display[id + "_max"]</c> at runtime, falling back to the defaults
+            /// passed here.  Width is in module cells (1–4).  Render is non-interactive
+            /// (it's a display, not an input).
+            /// TODO(displays): the whole display API needs richer fields (cable-style
+            /// metadata for binding, not stringly-typed DefaultText parsing).  This entry
+            /// is a placeholder — deferred for later.
+            /// </summary>
+            public Builder AddDisplaySlider(string id, string name, Fix32 width, float min = 0f, float max = 1f)
+            {
+                string defaultText = "[slider]:"
+                    + min.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    + ":"
+                    + max.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width, defaultText));
+                return this;
+            }
+
             public Builder AddDisplayFromPython(DisplayConstructorAction proto)
             {
                 proto(this);

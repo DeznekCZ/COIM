@@ -16,10 +16,12 @@ using Mafi.Unity.UiStatic.Cursors;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Library.FloatingPanel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mafi.Core.Console;
 using Mafi.Core.Research;
+using Mafi.Unity.UiToolkit;
 using ProgramableNetwork.Data.Variables;
 using UnityEngine;
 using static Mafi.Unity.Assets.Unity;
@@ -61,6 +63,20 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	/// </summary>
 	public Module HoveredModuleGraphic;
 
+	/// <summary>
+	/// Active editor mode toggled by buttons in the Modules panel header.  Defaults to
+	/// <see cref="ControllerEditMode.Edit"/>.  Read by <see cref="ControllerView.ModuleView"/>
+	/// to decide what a click on a module does, and by free-slot rendering to decide whether
+	/// '+' adders are interactive.
+	/// </summary>
+	public ControllerEditMode Mode { get; set; } = ControllerEditMode.Edit;
+
+	/// <summary>
+	/// When non-null in <see cref="ControllerEditMode.Move"/>, the user has clicked this
+	/// module to "pick it up"; the next click on a free slot drops it there.
+	/// </summary>
+	public Module PickedUpModule;
+
 	public ResearchManager ResearchManager { get; }
 
 	public ControllerInspector(
@@ -91,6 +107,10 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		m_invalidOpSound = context.AudioDb.InvalidOp();
 		m_console = console;
 		m_variableWindowController = variableWindowController;
+
+		// Wider than the default 650px inspector so the module grid + cable corridors
+		// + side connections panel all have room without crowding.
+		WindowSize(750.px(), Px.Auto);
 
 		ProgressBar bar;
 		AddPanelRow(
@@ -148,6 +168,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 				.FlexGrow(1)
 				.TextAlign(TextAlignment.CenterMiddle)
 			);
+		AddModeToggle(m_modulesPanel.Header);
 		m_modulesPanel.BodyAdd(m_view = new ControllerView(this, refresh));
 
 		PanelWithHeader connectionsPanel = panels.AddAndReturn(new PanelWithHeader().Fill().HeightAuto());
@@ -182,8 +203,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 
 		this.Observe(() => Entity)
 			.Observe(() => Entity?.Modules)
-			.Observe(() => Entity?.Rows)
-			.Do((entity, module, rows) => refresh());
+			.Do((entity, modules) => refresh());
 
 		this.Observe(() => Entity?.State)
 			.Do((state) => {
@@ -194,6 +214,41 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	private void refresh() {
 		if (Entity is null) {
 			m_view.RedrawComponents();
+		}
+	}
+
+	private void AddModeToggle(RowContainer header)
+	{
+		// Three buttons (Edit / Add / Move) acting as a single-selection group.
+		// Active button is restyled via Cls.btn_primary; others use Cls.btn_general
+		// — same pattern used elsewhere (e.g. ModuleView's running/idle state).
+		var modes = new (ControllerEditMode mode, Func<LocStr> label)[]
+		{
+			(ControllerEditMode.Edit, () => NewTr.Inspector.Mode_Edit),
+			(ControllerEditMode.Add,  () => NewTr.Inspector.Mode_Add),
+			(ControllerEditMode.Move, () => NewTr.Inspector.Mode_Move),
+		};
+
+		foreach ((ControllerEditMode mode, Func<LocStr> labelGetter) in modes)
+		{
+			ButtonText btn = new ButtonText(new LocStrFormatted(""))
+				.Class(Cls.btn_toggleGroup)
+				.Height(Sizes.BLOCK_SIZE)
+				.Width(Sizes.BLOCK_SIZE * 2.5f);
+			btn.LaterText(labelGetter, this, (btn, v) => btn.Value(v));
+			btn.OnClick(() => {
+				if (Mode == ControllerEditMode.Move && mode != ControllerEditMode.Move)
+				{
+					// Leaving Move mode drops anything that was picked up.
+					PickedUpModule = null;
+				}
+				Mode = mode;
+				m_view.RedrawComponents();
+			});
+			btn.Observe(() => Mode).Do(active => {
+				btn.Selected(active == mode);
+			});
+			header.Add(btn);
 		}
 	}
 

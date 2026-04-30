@@ -69,7 +69,47 @@ namespace ProgramableNetwork.Ui
 								m_controller.ClearPreviewHighlight();
 							}
 						);
-					fieldsPanel.OnClick(() => new ModuleEditDialog(module, m_controller, uiContext, fieldsPanel, m_controller.m_controller));
+					fieldsPanel.OnClick(() =>
+					{
+						var inspector = m_controller.m_controller;
+						switch (inspector.Mode)
+						{
+							case ControllerEditMode.Add:
+								// Adopt this module's prototype + data as the "last created"
+								// template so shift-click on a free slot stamps a copy.
+								ControllerView.m_lastCreated = module;
+								break;
+							case ControllerEditMode.Move:
+								// Click toggles pick-up. A second click on the same module cancels.
+								if (inspector.PickedUpModule == null)
+								{
+									inspector.PickedUpModule = module;
+								}
+								else if (inspector.PickedUpModule.Id == module.Id)
+								{
+									inspector.PickedUpModule = null;
+								}
+								else
+								{
+									// Target slot is occupied — can't drop here.
+									uiContext.AudioDb.InvalidOp(true).Play();
+								}
+								break;
+							case ControllerEditMode.Edit:
+							default:
+								new ModuleEditDialog(module, m_controller, uiContext, fieldsPanel, inspector);
+								break;
+						}
+					});
+					// Right-click in Add mode removes the module — pairs with left-click
+					// (which copies it as the "last created" template).
+					fieldsPanel.OnRightClick(() =>
+					{
+						if (m_controller.m_controller.Mode == ControllerEditMode.Add)
+						{
+							m_controller.RemoveModule(module);
+						}
+					});
 
 					this.Observe(() => module.Status)
 						.Observe(() => module.Error)
@@ -88,15 +128,23 @@ namespace ProgramableNetwork.Ui
 							}
 						});
 
-					// Cable-style highlight when this module is hovered from the connections panel.
+					// Cable-style highlight when this module is hovered from the connections panel,
+					// or when it has been picked up in Move mode.
 					fieldsPanel.Observe(() => m_controller.m_controller.HighlightedFromSidePanel)
-						.Do((highlighted) =>
+						.Observe(() => m_controller.m_controller.PickedUpModule)
+						.Do((highlighted, picked) =>
 						{
-							bool isMe = highlighted != null && highlighted.Id == module.Id;
-							fieldsPanel.Border(
-								all: 2.px(),
-								radius: 4,
-								color: isMe ? ColorRgba.CornflowerBlue : ColorRgba.CornflowerBlue.SetA(0));
+							bool isHovered = highlighted != null && highlighted.Id == module.Id;
+							bool isPicked = picked != null && picked.Id == module.Id;
+							ColorRgba color;
+							if (isPicked) {
+								color = ColorRgba.Gold;
+							} else if (isHovered) {
+								color = ColorRgba.CornflowerBlue;
+							} else {
+								color = ColorRgba.CornflowerBlue.SetA(0);
+							}
+							fieldsPanel.Border(all: 2.px(), radius: 4, color: color);
 						});
 
 					if (displaysExists)
@@ -159,9 +207,12 @@ namespace ProgramableNetwork.Ui
 							{
 								if (module.InputModules.ContainsKey(input.Id))
 								{
-									uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetInputConnectionCmd(
-										module.Controller.Id, module.Id, input.Id, 0L, ""));
-									refresh();
+									// Wait for the disconnect to actually apply before refreshing
+									// the UI — otherwise the redraw runs against stale state.
+									uiContext.InputScheduler.ScheduleAndOnApplied(
+										new ModuleSetInputConnectionCmd(
+											module.Controller.Id, module.Id, input.Id, 0L, ""),
+										btn, refresh);
 								}
 								else
 								{
@@ -177,9 +228,10 @@ namespace ProgramableNetwork.Ui
 								else
 								{
 									ModuleConnector src = m_controller.m_controller.OutputConnection;
-									uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetInputConnectionCmd(
-										module.Controller.Id, module.Id, input.Id, src.ModuleId, src.OutputId));
-									refresh();
+									uiContext.InputScheduler.ScheduleAndOnApplied(
+										new ModuleSetInputConnectionCmd(
+											module.Controller.Id, module.Id, input.Id, src.ModuleId, src.OutputId),
+										btn, refresh);
 								}
 							})
 							.Observe(() =>
@@ -266,16 +318,18 @@ namespace ProgramableNetwork.Ui
 								}
 
 								// Disconnect the first input that consumes this output. Routed through
-								// a command so multiplayer hosts/clients agree.
+								// a command so multiplayer hosts/clients agree, and refresh waits for
+								// the cmd to actually apply.
 								foreach (var target in m_controller.Entity.Modules)
 								{
 									foreach (var connection in target.InputModules)
 									{
 										if (connection.Value.ModuleId == module.Id)
 										{
-											uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetInputConnectionCmd(
-												target.Controller.Id, target.Id, connection.Key, 0L, ""));
-											refresh();
+											uiContext.InputScheduler.ScheduleAndOnApplied(
+												new ModuleSetInputConnectionCmd(
+													target.Controller.Id, target.Id, connection.Key, 0L, ""),
+												btn, refresh);
 											return;
 										}
 									}
@@ -340,6 +394,10 @@ namespace ProgramableNetwork.Ui
 						if (display.Width > 0) {
 							displaysPanel.Add(new Display().StateInactive().Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE));
 						}
+					}
+					else if (display.DefaultText.StartsWith("[slider]"))
+					{
+						displaysPanel.Add(SliderDisplay(uiContext, module, display, preview));
 					}
 					else
 					{
@@ -571,6 +629,80 @@ namespace ProgramableNetwork.Ui
 					});
 				return text;
 			}
+
+			// TODO(displays): revisit the slider/display abstraction — the display
+			// definition needs richer fields (similar to inputs/outputs/cable info) so a
+			// single proto entry carries enough to render and bind data without parsing
+			// the DefaultText string.  Current implementation works for the slider but is
+			// the minimum-viable shape; deferred for later.
+			//
+			// Slider display.  Value lives on module.Display[id] and the bounds on
+			// module.Display[id + "_min"] / module.Display[id + "_max"], so a Python
+			// action() can drive everything by writing strings back through the Display
+			// dict.  Proto-time defaults are baked into DefaultText as
+			// "[slider]:<min>:<max>" by AddDisplaySlider.  Width is display.Width clamped
+			// to 1-4 cells.  IgnoreInputPicking makes the slider non-interactive — it's a
+			// display, not an input.
+			private UiComponent SliderDisplay(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview)
+			{
+				// Parse the proto-time defaults out of DefaultText.
+				float defaultMin = 0f;
+				float defaultMax = 1f;
+				if (display.DefaultText.Length > "[slider]".Length)
+				{
+					string body = display.DefaultText.Substring("[slider]".Length);
+					if (body.Length > 0)
+					{
+						char sep = body[0];
+						string[] parts = body.Substring(1).Split(sep);
+						if (parts.Length >= 1 && float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float pmin)) {
+							defaultMin = pmin;
+						}
+						if (parts.Length >= 2 && float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float pmax)) {
+							defaultMax = pmax;
+						}
+					}
+				}
+
+				string keyMin = display.Id + "_min";
+				string keyMax = display.Id + "_max";
+
+				float resolveMin()
+				{
+					string s = module.Display[keyMin, ""];
+					return float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : defaultMin;
+				}
+				float resolveMax()
+				{
+					string s = module.Display[keyMax, ""];
+					return float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : defaultMax;
+				}
+
+				int blockWidth = Math.Max(1, Math.Min(4, display.Width.ToFloat().RoundToInt()));
+				var slider = new Mafi.Unity.UiToolkit.Library.Slider();
+				slider.Size(Sizes.BLOCK_SIZE * blockWidth, Sizes.BLOCK_SIZE);
+				slider.IgnoreInputPicking(); // read-only display, not an input
+
+				slider.Observe(() => module.Display[display.Id, "0"])
+					  .Observe(resolveMin)
+					  .Observe(resolveMax)
+					  .Do((valStr, min, max) =>
+					  {
+						  if (max <= min) {
+							max = min + 1f; // safety: avoid divide-by-zero in Slider.Value
+						}
+						slider.Range(min, max);
+						  if (float.TryParse(valStr, NumberStyles.Float, CultureInfo.InvariantCulture, out float v))
+						  {
+							  slider.Value(v);
+						  }
+						  else
+						  {
+							  slider.Value(min);
+						  }
+					  });
+				return slider;
+			}
 		}
 
 		private void AddPreviewHighlight(Module module)
@@ -590,22 +722,10 @@ namespace ProgramableNetwork.Ui
 				return;
 			}
 
-			// remove module
+			// remove module (positions live on the module, no separate grid to clear)
 			Entity.Modules.RemoveFirst(m => m.Id == module.Id);
 
-			// remove placements
-			for (int i = 0; i < Entity.Rows.Count; i++)
-			{
-				for (int j = 0; j < Entity.Rows[i].Count; j++)
-				{
-					if (Entity.Rows[i][j].ModuleId == module.Id)
-					{
-						Entity.Rows[i][j] = ModulePlacement.Empty;
-					}
-				}
-			}
-
-			// Remove connections
+			// Remove connections that referenced the deleted module
 			foreach (Module item in Entity.Modules)
 			{
 				foreach (KeyValuePair<string, ModuleConnector> input in item.InputModules.ToList())
@@ -620,61 +740,53 @@ namespace ProgramableNetwork.Ui
 			RedrawComponents();
 		}
 
+		// New move logic operating directly on Module.Row / Module.Column.
+		// Replaces the broken cache/Rows-based version.
 		public bool CanMove(Module module, int x = 0, int y = 0)
 		{
-			// GUARD
+			if (module == null || module.Controller == null || Entity == null) {
+				return false;
+			}
 			if (module.Controller.Id != Entity.Id) {
 				return false;
 			}
 
-			// Read from placement cache
-			if (!ModulePlacementCache.TryGetValue(module.Id, out var placement)) {
-				return false;
-			}
-
-			if (y > 0 && placement.y + y >= Entity.Prototype.Rows - 1) {
-				return false;
-			}
-			if (y < 0 && placement.y + y <= 0) {
-				return false;
-			}
-
-			int len = module.Layout.GetWidth(module);
-			if (x > 0 && placement.x + y + len >= Entity.Prototype.Columns - 1) {
-				return false;
-			}
-			if (x < 0 && placement.x + y <= 0) {
-				return false;
-			}
-
-			for (int i = 0; i < len; i++)
-			{
-				var place = module.Controller.Rows[placement.y + y][placement.x + x + i];
-				if (place.ModuleId != 0 && place.ModuleId != module.Id) {
-					return false;
-				}
-			}
-
-			return true;
+			int targetRow = module.Row + y;
+			int targetCol = module.Column + x;
+			int width = module.Layout.GetWidth(module);
+			return IsRangeFree(targetRow, targetCol, width, ignore: module);
 		}
 
 		public void Move(Module module, int x = 0, int y = 0)
 		{
-			// MUST BE GUARDED BEFORE
-			int width = module.Layout.GetWidth(module);
-
-			(int sourceX, int sourceY) = ModulePlacementCache[module.Id];
-			for (int i = sourceX; i < sourceX + width; i++)
-			{
-				Entity.Rows[sourceY][i] = ModulePlacement.Empty;
+			if (!CanMove(module, x, y)) {
+				return;
 			}
-			int targetX = sourceX + x;
-			int targetY = sourceY + y;
-			for (int i = targetX; i < targetX + width; i++)
-			{
-				Entity.Rows[targetY][i] = targetX == i ? ModulePlacement.Origin(module.Id) : ModulePlacement.Rest(module.Id);
-			}
+			module.Row += y;
+			module.Column += x;
 			RedrawComponents();
+		}
+
+		// Drop a module at an explicit (row, col). Returns true on success.
+		public bool TryMoveTo(Module module, int targetRow, int targetCol)
+		{
+			if (module == null || module.Controller == null || Entity == null) {
+				return false;
+			}
+			if (module.Controller.Id != Entity.Id) {
+				return false;
+			}
+
+			int width = module.Layout.GetWidth(module);
+			if (!IsRangeFree(targetRow, targetCol, width, ignore: module))
+			{
+				m_controller.Context.AudioDb.InvalidOp(true).Play();
+				return false;
+			}
+			module.Row = targetRow;
+			module.Column = targetCol;
+			RedrawComponents();
+			return true;
 		}
 	}
 }

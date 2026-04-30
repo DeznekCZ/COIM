@@ -186,9 +186,11 @@ namespace ProgramableNetwork
             if (m_operation >= AMOperation.ReadShipCrew && m_operation <= AMOperation.ReadShipIsAtHome)
             {
                 BattleShip ship = m_ship;
-                if (ship == null || ship.IsDestroyed) return;
+                if (ship == null || ship.IsDestroyed) {
+					return;
+				}
 
-                switch (m_operation)
+				switch (m_operation)
                 {
                     case AMOperation.ReadShipCrew:
                         OriginalDataBand.Update(Index, ship.CurrentCrew.ToFix32());

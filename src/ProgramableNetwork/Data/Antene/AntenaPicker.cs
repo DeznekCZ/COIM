@@ -14,7 +14,9 @@ namespace ProgramableNetwork.Ui
     {
         private readonly Action m_refresh;
         private readonly Window m_window;
-        private readonly ISelectionInspector<Antena, AntenaSelector, Antena> m_inspector;
+        // Concrete type (not the interface) so we can reach Context.InputScheduler for
+        // command dispatch — the interface only exposes selection plumbing.
+        private readonly AntenaInspector m_inspector;
         private readonly FMDataBandChannel m_module;
         private readonly Fix32 m_distance;
         private Button m_selectionButton;

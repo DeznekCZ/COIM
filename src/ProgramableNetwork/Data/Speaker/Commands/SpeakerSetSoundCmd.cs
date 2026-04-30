@@ -31,7 +31,7 @@ namespace ProgramableNetwork
 		protected override void SerializeData(BlobWriter writer)
 		{
 			base.SerializeData(writer);
-			Mafi.EntityId.Serialize(EntityId, writer);
+			EntityId.Serialize(EntityId, writer);
 			writer.WriteString(SoundPrefab ?? string.Empty);
 		}
 
@@ -49,7 +49,7 @@ namespace ProgramableNetwork
 		protected override void DeserializeData(BlobReader reader)
 		{
 			base.DeserializeData(reader);
-			reader.SetField(this, nameof(EntityId), Mafi.EntityId.Deserialize(reader));
+			reader.SetField(this, nameof(EntityId), EntityId.Deserialize(reader));
 			reader.SetField(this, nameof(SoundPrefab), reader.ReadString());
 		}
 

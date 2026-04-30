@@ -60,9 +60,9 @@ public class ColorizedLightInspector(Data.DisplayEntity.DisplayEntity entity) {
 	}
 
 	private void setColorToEntity(ColorRgba v) {
-		// All six writes go through the input scheduler so multiplayer hosts/clients agree
-		// on the colour set in the same tick.  If UiContext is somehow unset we fall back to
-		// direct mutation rather than dropping the user input on the floor.
+		// One command for all six channels — the executor derives the off colour from the on
+		// colour, so hosts/clients agree on a single atomic colour change per click/drag tick.
+		// Direct fallback only fires when there is no scheduler at all (e.g. tests).
 		var scheduler = UiContext?.InputScheduler;
 		if (scheduler == null) {
 			Entity.SetProperty("colorOn.R", v.R);
@@ -73,11 +73,6 @@ public class ColorizedLightInspector(Data.DisplayEntity.DisplayEntity entity) {
 			Entity.SetProperty("colorOff.B", v.B.Min(100));
 			return;
 		}
-		scheduler.ScheduleInputCmd(new DisplayEntitySetPropertyCmd(Entity.Id, "colorOn.R", v.R.ToFix32()));
-		scheduler.ScheduleInputCmd(new DisplayEntitySetPropertyCmd(Entity.Id, "colorOn.G", v.G.ToFix32()));
-		scheduler.ScheduleInputCmd(new DisplayEntitySetPropertyCmd(Entity.Id, "colorOn.B", v.B.ToFix32()));
-		scheduler.ScheduleInputCmd(new DisplayEntitySetPropertyCmd(Entity.Id, "colorOff.R", v.R.Min(100).ToFix32()));
-		scheduler.ScheduleInputCmd(new DisplayEntitySetPropertyCmd(Entity.Id, "colorOff.G", v.G.Min(100).ToFix32()));
-		scheduler.ScheduleInputCmd(new DisplayEntitySetPropertyCmd(Entity.Id, "colorOff.B", v.B.Min(100).ToFix32()));
+		scheduler.ScheduleInputCmd(new DisplayEntitySetLightColorCmd(Entity.Id, v));
 	}
 }

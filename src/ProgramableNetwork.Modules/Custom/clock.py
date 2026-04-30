@@ -54,6 +54,7 @@ class Runtime_Clock_1(Module):
 class Runtime_Clock_2(Module):
     name = "Control: Clock (2 outputs)"
     description = "Outputs an integer counter on <b>clock</b> that increments every <b>clock_period</b> ticks and wraps to zero at <b>max_count</b>, plus an <b>update</b> boolean that pulses true on every tick where the counter changes. An optional <b>reset</b> input holds the clock at zero and suppresses output while non-zero; counting resumes when reset goes back to zero."
+    symbol = "CLK"
 
     inputs = [
         Input("reset", "Reset (hold non-zero to freeze at 0)")

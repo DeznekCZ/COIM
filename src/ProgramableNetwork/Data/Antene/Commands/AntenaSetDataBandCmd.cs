@@ -33,7 +33,7 @@ namespace ProgramableNetwork
 		protected override void SerializeData(BlobWriter writer)
 		{
 			base.SerializeData(writer);
-			Mafi.EntityId.Serialize(AntenaId, writer);
+			EntityId.Serialize(AntenaId, writer);
 			writer.WriteString(DataBandProtoId.Value ?? string.Empty);
 		}
 
@@ -51,7 +51,7 @@ namespace ProgramableNetwork
 		protected override void DeserializeData(BlobReader reader)
 		{
 			base.DeserializeData(reader);
-			reader.SetField(this, nameof(AntenaId), Mafi.EntityId.Deserialize(reader));
+			reader.SetField(this, nameof(AntenaId), EntityId.Deserialize(reader));
 			reader.SetField(this, nameof(DataBandProtoId), new Proto.ID(reader.ReadString()));
 		}
 

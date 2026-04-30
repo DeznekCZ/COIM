@@ -30,7 +30,7 @@ namespace ProgramableNetwork
 		protected override void SerializeData(BlobWriter writer)
 		{
 			base.SerializeData(writer);
-			Mafi.EntityId.Serialize(AntenaId, writer);
+			EntityId.Serialize(AntenaId, writer);
 		}
 
 		public new static AntenaCreateRedirectedChannelCmd Deserialize(BlobReader reader)
@@ -47,7 +47,7 @@ namespace ProgramableNetwork
 		protected override void DeserializeData(BlobReader reader)
 		{
 			base.DeserializeData(reader);
-			reader.SetField(this, nameof(AntenaId), Mafi.EntityId.Deserialize(reader));
+			reader.SetField(this, nameof(AntenaId), EntityId.Deserialize(reader));
 		}
 
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction =

@@ -44,7 +44,7 @@ namespace ProgramableNetwork
 		protected override void SerializeData(BlobWriter writer)
 		{
 			base.SerializeData(writer);
-			Mafi.EntityId.Serialize(ControllerId, writer);
+			EntityId.Serialize(ControllerId, writer);
 			writer.WriteLong(ModuleId);
 			writer.WriteString(InputId);
 			writer.WriteLong(SourceModuleId);
@@ -65,7 +65,7 @@ namespace ProgramableNetwork
 		protected override void DeserializeData(BlobReader reader)
 		{
 			base.DeserializeData(reader);
-			reader.SetField(this, nameof(ControllerId), Mafi.EntityId.Deserialize(reader));
+			reader.SetField(this, nameof(ControllerId), EntityId.Deserialize(reader));
 			reader.SetField(this, nameof(ModuleId), reader.ReadLong());
 			reader.SetField(this, nameof(InputId), reader.ReadString());
 			reader.SetField(this, nameof(SourceModuleId), reader.ReadLong());

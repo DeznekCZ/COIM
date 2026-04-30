@@ -68,15 +68,13 @@ namespace ProgramableNetwork.Python
             ModuleProto proto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID(name))
                 .ValueOrThrow("Missing module");
             Module module = new Module(proto, controller.Context, controller);
+            // Position is owned by the module itself since Controller.MODULE_LAYOUT_INFO.
+            module.Row = row;
+            module.Column = column;
             controller.Modules.Add(module);
             Thread.Sleep(1);
 
             int width = module.Layout.GetWidth(module);
-            controller.Rows[row][column] = ModulePlacement.Origin(module.Id);
-            for (int i = 1; i < width; i++) {
-				controller.Rows[row][column + i] = ModulePlacement.Rest(module.Id);
-			}
-
 			column += width;
             if (column == controller.Prototype.Columns)
             {

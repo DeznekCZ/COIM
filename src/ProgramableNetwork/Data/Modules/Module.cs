@@ -73,6 +73,11 @@ namespace ProgramableNetwork
 		public string Error { get; private set; } = "";
 		public long Id { get; private set; }
 
+		// Position on the controller grid. Owned by the module since
+		// Controller.MODULE_LAYOUT_INFO; controllers no longer store a layout.
+		public int Row { get; set; }
+		public int Column { get; set; }
+
 		public ModuleProto Prototype {
 			get => m_proto;
 			set
@@ -131,7 +136,7 @@ namespace ProgramableNetwork
 
 			writer.WriteLong(Id);
 			writer.WriteString(m_protoId);
-			writer.WriteInt(/*Version*/ 3);
+			writer.WriteInt(/*Version*/ Controller.MODULE_LAYOUT_INFO);
 			writer.WriteBool(IsPaused);
 			writer.WriteInt((int)Status);
 			Dict<string, int>.Serialize(NumberData, writer);
@@ -140,6 +145,8 @@ namespace ProgramableNetwork
 			Dict<string, Fix32>.Serialize(FieldNumberData, writer);
 			Dict<string, string>.Serialize(StringData, writer);
 			Dict<string, ModuleConnector>.Serialize(InputModules, writer);
+			writer.WriteInt(Row);
+			writer.WriteInt(Column);
 		}
 
 		protected void DeserializeData(BlobReader reader)
@@ -168,6 +175,13 @@ namespace ProgramableNetwork
 			}
 			StringData = Dict<string, string>.Deserialize(reader);
 			InputModules = Dict<string, ModuleConnector>.Deserialize(reader);
+
+			if (loadedVersion >= Controller.MODULE_LAYOUT_INFO)
+			{
+				Row = reader.ReadInt();
+				Column = reader.ReadInt();
+			}
+			// else: position is back-filled by Controller from its legacy Rows table.
 
 			Log.Info($"[Programable Network] Instance (deserialization): {GetHashCode()}({Id}), version: {loadedVersion}");
 		}

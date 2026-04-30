@@ -63,6 +63,50 @@ namespace ProgramableNetwork.Ui
 			});
 			row.Add(remove);
 
+			ButtonText moveLeft = new ButtonText("<".AsLoc())
+				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+				.TextAlign(TextAlignment.CenterMiddle)
+				.OnClick(() => { if (controllerView.CanMove(m_module, x: -1)) {
+						controllerView.Move(m_module, x: -1);
+					}
+				});
+			moveLeft.ObserveEnabled(() => controllerView.CanMove(m_module, x: -1));
+			moveLeft.Tooltip("Move module left".ToDoLoc());
+			row.Add(moveLeft);
+
+			ButtonText moveUp = new ButtonText("^".AsLoc())
+				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+				.TextAlign(TextAlignment.CenterMiddle)
+				.OnClick(() => { if (controllerView.CanMove(m_module, y: -1)) {
+						controllerView.Move(m_module, y: -1);
+					}
+				});
+			moveUp.ObserveEnabled(() => controllerView.CanMove(m_module, y: -1));
+			moveUp.Tooltip("Move module up".ToDoLoc());
+			row.Add(moveUp);
+
+			ButtonText moveDown = new ButtonText("v".AsLoc())
+				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+				.TextAlign(TextAlignment.CenterMiddle)
+				.OnClick(() => { if (controllerView.CanMove(m_module, y: 1)) {
+						controllerView.Move(m_module, y: 1);
+					}
+				});
+			moveDown.ObserveEnabled(() => controllerView.CanMove(m_module, y: 1));
+			moveDown.Tooltip("Move module down".ToDoLoc());
+			row.Add(moveDown);
+
+			ButtonText moveRight = new ButtonText(">".AsLoc())
+				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+				.TextAlign(TextAlignment.CenterMiddle)
+				.OnClick(() => { if (controllerView.CanMove(m_module, x: 1)) {
+						controllerView.Move(m_module, x: 1);
+					}
+				});
+			moveRight.ObserveEnabled(() => controllerView.CanMove(m_module, x: 1));
+			moveRight.Tooltip("Move module right".ToDoLoc());
+			row.Add(moveRight);
+
 			ButtonIcon paste = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.ImportFromString_svg)
 				.Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE)
 				.Margin(Px.Zero)

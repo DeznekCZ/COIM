@@ -42,10 +42,6 @@ namespace ProgramableNetwork.Ui
 		private List<IDataUpdater> m_updaters;
 		private bool m_pickNew;
 		private readonly Action m_refresh;
-		private Img img;
-		private Px X;
-		private Px Y;
-		private Texture2D textr;
 
 		private bool m_pickTemplateModuleInAction;
 		private bool m_pickNewModuleInAction;
@@ -71,23 +67,20 @@ namespace ProgramableNetwork.Ui
 		}
 
 		public ControllerView(ControllerInspector controller, Action refresh)
-			: base(gap: 5)
+			: base(gap: 0) // gap is now provided by explicit channel rows we insert ourselves
 		{
 			m_controller = controller;
 			m_updaters = new List<IDataUpdater>();
 			m_refresh = refresh;
+			// Padding gives the absolute-positioned cable corridors visible room above
+			// and to the sides of the module rows.  Bottom is left flush with the panel.
+			// Lane offsets are capped (MAX_LANE_OFFSET_PX) so cables stay inside the
+			// padding zone — no overflow:hidden trickery needed.
+			this.Padding(top: VIEW_PAD_TOP, right: VIEW_PAD, bottom: Px.Zero, left: VIEW_PAD);
 			AddModuleImplementation(refresh);
 
-			this.Observe(() => img)
-				.Observe(() => controller.m_higlightedOutput ?? controller.m_higlightedInput)
-				.Observe(() => controller.m_showsLinks)
-				.Do((image, highlight, force) =>
-				{
-					if (image == null) {
-						return;
-					}
-					image.VisibleForRender(highlight != null || force);
-				});
+			// Per-segment visibility is observed inside CreateConnectionPath, so no
+			// global img-toggle observer is needed here anymore.
 		}
 
 		public Controller Entity => m_controller.Entity;
@@ -115,7 +108,14 @@ namespace ProgramableNetwork.Ui
 
 		private IEnumerable<long> WasOrderChanged()
 		{
-			return Entity?.Rows?.SelectMany(item => item)?.Select(item => item.ModuleId);
+			if (Entity?.Modules == null) {
+				yield break;
+			}
+			foreach (var m in Entity.Modules)
+			{
+				// Encode id+row+col so any change to module set OR positions triggers a redraw.
+				yield return m.Id ^ ((long)m.Row << 40) ^ ((long)m.Column << 24);
+			}
 		}
 
 		public void RedrawComponents()
@@ -131,58 +131,506 @@ namespace ProgramableNetwork.Ui
 			Clear();
 			ModulePlacementCache.Clear();
 
-			for (int i = 0; i < Entity.Rows.Count; i++)
+			int totalRows = Entity.Prototype.Rows;
+			int totalCols = Entity.Prototype.Columns;
+			float bs = (float)Sizes.BLOCK_SIZE.Pixels;
+			Px rowH = Sizes.BLOCK_SIZE * 4;
+			Px rowW = Sizes.BLOCK_SIZE * totalCols;
+			m_channelBlockHeight = 4f * bs;
+
+			// Bucket modules by row (ignoring out-of-range rows defensively).
+			var byRow = new Dictionary<int, List<Module>>();
+			foreach (var m in Entity.Modules ?? new Lyst<Module>())
 			{
-				var rowElement = new Row();
-				rowElement.Height(Sizes.BLOCK_SIZE * 4);
-				rowElement.Width(Entity.Prototype.Columns * Sizes.BLOCK_SIZE);
+				if (m == null || m.Prototype == null) {
+					continue;
+				}
+				if (m.Row < 0 || m.Row >= totalRows) {
+					continue;
+				}
+				if (!byRow.TryGetValue(m.Row, out var list)) { list = new List<Module>(); byRow[m.Row] = list; }
+				list.Add(m);
+			}
 
-				var row = Entity.Rows[i];
-				for (int j = 0; j < row.Count; j++)
+			// --- Pre-pass: collect every cable's routing spec -------------------------------
+			// channel index 0      = top channel (above row 0).
+			// channel index r + 1  = gap above row r (between row r-1 and row r), for r >= 1.
+			int channelCount = totalRows + 1;
+			m_cableSpecs.Clear();
+			ColourPaletteReset();
+			float pad = VIEW_PAD_PX;
+
+			foreach (Module dstMod in Entity.Modules ?? new Lyst<Module>())
+			{
+				if (dstMod?.Prototype == null) {
+					continue;
+				}
+				foreach (var kv in dstMod.InputModules)
 				{
-					if (!row[j].Placement) {
+					Module srcMod = (Entity.Modules ?? new Lyst<Module>()).Find(m => m.Id == kv.Value.ModuleId);
+					if (srcMod?.Prototype == null) {
+						continue;
+					}
+					if (srcMod.Row < 0 || srcMod.Row >= totalRows) {
+						continue;
+					}
+					if (dstMod.Row < 0 || dstMod.Row >= totalRows) {
 						continue;
 					}
 
-					var module = (Entity.Modules ?? new Lyst<Module>())
-						.AsEnumerable()
-						.FirstOrDefault(m => m.Id == row[j].ModuleId);
+					var srcOut = srcMod.Prototype.Outputs.Find(o => o.Id == kv.Value.OutputId);
+					var dstIn  = dstMod.Prototype.Inputs .Find(i => i.Id == kv.Key);
+					if (srcOut == null || dstIn == null) {
+						continue;
+					}
 
-					if (module == null)
+					int srcOutCol = srcMod.Column + (srcMod.Layout.GetWidth(srcMod) - srcMod.Prototype.Outputs.Count)
+						+ srcMod.Prototype.Outputs.IndexOf(srcOut);
+					int dstInCol  = dstMod.Column + (dstMod.Layout.GetWidth(dstMod) - dstMod.Prototype.Inputs.Count)
+						+ dstMod.Prototype.Inputs .IndexOf(dstIn);
+
+					// Universal rule: source side ALWAYS uses the channel below src (output is
+					// at the bottom of src, so the cable drops into the channel right below).
+					// Destination side ALWAYS uses the channel above dst (input is at the top
+					// of dst, so the cable comes down from the channel right above).
+					// When src and dst are vertically adjacent (src above dst), these two
+					// channels happen to be the same — and the 3-segment direct route falls
+					// out naturally; otherwise a 5-segment wrap is used.
+					int srcChannel = srcMod.Row + 1;
+					int dstChannel = dstMod.Row;
+
+					m_cableSpecs.Add(new CableSpec {
+						Src = srcMod, OutputId = kv.Value.OutputId,
+						Dst = dstMod, InputId = kv.Key,
+						SrcChannelIdx = srcChannel, DstChannelIdx = dstChannel,
+						WrapLeft = decideWrapLeft(srcMod, dstMod),
+						ColorIndex = ColourPaletteIndex(kv.Value.ModuleId, kv.Value.OutputId),
+						SrcXp = pad + (srcOutCol + 0.5f) * bs,
+						DstXp = pad + (dstInCol + 0.5f) * bs,
+					});
+				}
+			}
+
+			// --- Sort + assign per-channel lane indices -----------------------------------
+			// In each channel, group cable-ends by which side of the channel they're
+			// connecting to (TOP = row above the channel, BOTTOM = row below) so
+			// "shortest path" cables sit closer to the row they connect to, and within
+			// each side we sort by X to keep enter/exit verticals from crossing each other.
+			m_channelLaneCounts = new int[channelCount];
+			AssignChannelLanes(channelCount);
+
+			// --- Sort + assign side-corridor lane indices ---------------------------------
+			AssignSideLanes();
+
+			m_channelHeights = new float[channelCount];
+			for (int i = 0; i < channelCount; i++)
+			{
+				m_channelHeights[i] = ComputeChannelHeight(m_channelLaneCounts[i]);
+			}
+
+			// Top channel — empty UiComponent, height observes the precomputed cable count.
+			Add(new UiComponent().Width(rowW).Height(m_channelHeights[0].px()));
+
+			for (int i = 0; i < totalRows; i++)
+			{
+				// Module row — full height regardless of contents (empty rows look the same as full).
+				var rowElement = new Row();
+				rowElement.Height(rowH);
+				rowElement.Width(rowW);
+
+				if (!byRow.TryGetValue(i, out var rowModules))
+				{
+					rowModules = new List<Module>(0);
+				}
+				rowModules.Sort((a, b) => a.Column.CompareTo(b.Column));
+
+				int cursor = 0;
+				int idx = 0;
+				while (cursor < totalCols)
+				{
+					Module placed = null;
+					while (idx < rowModules.Count && rowModules[idx].Column < cursor)
 					{
-						AddFreeSlot(rowElement, i, j);
-						continue;
+						idx++;
 					}
-					rowElement.Add(new ModuleView(module, this, m_controller.Context, false, () => RedrawComponents(modules)));
-					ModulePlacementCache[module.Id] = (i, j);
+					if (idx < rowModules.Count && rowModules[idx].Column == cursor)
+					{
+						placed = rowModules[idx];
+						idx++;
+					}
+
+					if (placed == null)
+					{
+						AddFreeSlot(rowElement, i, cursor);
+						cursor++;
+					}
+					else
+					{
+						int width = placed.Layout.GetWidth(placed);
+						if (width <= 0) {
+							width = 1;
+						}
+						if (cursor + width > totalCols) {
+							width = totalCols - cursor;
+						}
+						rowElement.Add(new ModuleView(placed, this, m_controller.Context, false, () => RedrawComponents(modules)));
+						ModulePlacementCache[placed.Id] = (i, cursor);
+						cursor += width;
+					}
 				}
 
 				Add(rowElement);
+
+				// Channel row below this module row — height already sized to the lane count.
+				Add(new UiComponent().Width(rowW).Height(m_channelHeights[i + 1].px()));
 			}
 
-			RepaintLines(Entity.Prototype, m_controller.m_higlightedOutput?.ModuleId, m_controller.m_showsLinks);
+			RepaintLines();
 		}
 
-		private void RepaintLines(ControllerProto proto, long? highlight, bool forceShow)
+		// Top edge Y (in absolute pad-relative coords) of the channel at index i.
+		private float channelTopY(int channelIdx)
+		{
+			float y = VIEW_PAD_TOP_PX; // top padding pushes content down by this much
+			for (int i = 0; i < channelIdx; i++)
+			{
+				y += m_channelHeights[i] + m_channelBlockHeight;
+			}
+			return y;
+		}
+
+		// Top edge Y of module row r.
+		private float rowTopY(int row)
+		{
+			// Channel 0 sits before row 0; channel r+1 sits between row r-1 and row r ... so
+			// row r is preceded by channels 0..r and rows 0..r-1.
+			float y = VIEW_PAD_TOP_PX;
+			for (int i = 0; i <= row; i++) {
+				y += m_channelHeights[i];
+			}
+			y += row * m_channelBlockHeight;
+			return y;
+		}
+
+		// Y of the n-th lane inside channel `channelIdx`.  Lanes are spaced evenly within
+		// the channel (excluding CHANNEL_PADDING_PX top/bottom margins) so the wire centre
+		// line always lands inside the channel UiComponent.
+		// Lane = -1 is the "vertical pass-through" sentinel: cable doesn't reserve a lane
+		// (zero horizontal width inside the channel) and just runs through at the centre.
+		private float channelLaneY(int channelIdx, int lane)
+		{
+			if (m_channelHeights == null || channelIdx < 0 || channelIdx >= m_channelHeights.Length) {
+				return VIEW_PAD_TOP_PX;
+			}
+			float chTop    = channelTopY(channelIdx);
+			float chHeight = m_channelHeights[channelIdx];
+			if (lane < 0) {
+				return chTop + chHeight * 0.5f;
+			}
+			int   count    = m_channelLaneCounts[channelIdx];
+			if (count <= 1) {
+				return chTop + chHeight * 0.5f;
+			}
+			float usable = Math.Max(0f, chHeight - 2f * CHANNEL_PADDING_PX);
+			float step   = Math.Min(CHANNEL_LANE_PX, usable / Math.Max(1, count - 1));
+			float startY = chTop + chHeight * 0.5f - step * (count - 1) * 0.5f;
+			return startY + lane * step;
+		}
+
+		// --- Layout constants -------------------------------------------------------------
+		// Single source of truth for the row gap.  The Column's gap is set to 0 (we use
+		// dedicated channel rows between modules instead), and channel heights are derived
+		// from cable count + min/lane spacing — never hand-tuned in two places.
+		private const float LINE_THICKNESS_PX = 4f;
+		private const float MIN_CHANNEL_PX = 5f;       // empty channel still has at least this much room
+		private const float CHANNEL_LANE_PX = 4f;      // vertical distance between two cables in the same channel
+		private const float CHANNEL_PADDING_PX = 3f;   // padding inside a channel above/below the lane stack
+		// Vertical fudge so the cables visually sit on the port circles.  With the
+		// top-vs-side padding split, rowTopY anchors directly to the small top padding
+		// and the math meets the port centres without an offset (was -10 when the top
+		// padding was 56 — kept the constant in case future visual tweaks need it).
+		private const float CABLE_Y_OFFSET_PX = 0f;
+		// Outer padding around the ControllerView.  Sides need room for the side
+		// corridors (cables wrapping outside the rows); top/bottom only need a small
+		// breath because cables don't extend beyond the channel rows themselves.
+		private const float VIEW_PAD_PX     = 56f; // side padding (left/right — for side corridors)
+		private const float VIEW_PAD_TOP_PX = 4f;  // top padding — small, just visual breathing room
+		private static readonly Px VIEW_PAD     = VIEW_PAD_PX.px();
+		private static readonly Px VIEW_PAD_TOP = VIEW_PAD_TOP_PX.px();
+		// Side corridor configuration.
+		private const float CHANNEL_BASE_PX = 8f;
+		private const float SIDE_LANE_PX = 4f;
+		private const float MAX_LANE_OFFSET_PX = VIEW_PAD_PX - 6f;
+
+		// --- Wire colours -----------------------------------------------------------------
+		private const byte WIRE_ALPHA_ACTIVE = 200; // when hovered or m_showsLinks is on
+		private const byte WIRE_ALPHA_IDLE = 110;   // black/idle baseline
+		private const byte WIRE_BORDER_ALPHA = 60;  // border is more transparent than the fill
+
+		// --- Per-redraw channel state -----------------------------------------------------
+		// Filled by RedrawComponents.  m_channelHeights[i] is the height of channel i
+		// (i = 0 is the top channel above row 0; i = r+1 is the gap above row r for r >= 0).
+		// m_channelLaneCounts[i] mirrors how many lanes are reserved in channel i.  Cables
+		// derive their Y from these values + cumulative row heights so the cable math and
+		// the laid-out channel components can never drift apart.
+		private float[] m_channelHeights;
+		private int[]   m_channelLaneCounts;
+		private float   m_channelBlockHeight;   // == 4 * BLOCK_SIZE (constant module row height)
+
+		// Per-cable routing decision computed up-front in RedrawComponents.  Capturing it
+		// in one place lets us sort cables within each channel before assigning lanes, so
+		// the visible order minimises crossings.
+		private sealed class CableSpec
+		{
+			public Module Src;
+			public string OutputId;
+			public Module Dst;
+			public string InputId;
+			public int    SrcChannelIdx;
+			public int    DstChannelIdx;
+			public int    SrcChannelLane;
+			public int    DstChannelLane;
+			public bool   WrapLeft;
+			public int    SideLane;
+			public int    ColorIndex;
+			public float  SrcXp;
+			public float  DstXp;
+		}
+		private readonly List<CableSpec> m_cableSpecs = new List<CableSpec>();
+
+		private static float ComputeChannelHeight(int laneCount)
+		{
+			// Every channel keeps at least MIN_CHANNEL_PX of breathing room — even empty
+			// ones — so adjacent module rows never touch.
+			if (laneCount <= 0) {
+				return MIN_CHANNEL_PX;
+			}
+			float needed = laneCount * CHANNEL_LANE_PX + 2f * CHANNEL_PADDING_PX;
+			return Math.Max(MIN_CHANNEL_PX, needed);
+		}
+
+		private void ColourPaletteReset()
+		{
+			m_colorCombinations = [];
+		}
+
+		private int ColourPaletteIndex(long sourceModuleId, string outputId)
+		{
+			string key = $"{sourceModuleId}.{outputId}";
+			if (m_colorCombinations.Count == 0)
+			{
+				m_colorCombinations[key] = 0;
+				return 0;
+			}
+			if (m_colorCombinations.TryGetValue(key, out int idx)) {
+				return idx;
+			}
+			idx = (m_colorCombinations.Values.Max() + 1) % m_colors.Count;
+			m_colorCombinations[key] = idx;
+			return idx;
+		}
+
+		// For each cable end touching a channel, work out which side of the channel it
+		// connects from (TOP = row above the channel, BOTTOM = row below) and the X span
+		// it occupies.  Sort cables in the channel by (side, XMin) so TOP-touching ends
+		// fill the upper lanes and BOTTOM-touching ends fill the lower lanes, then PACK
+		// non-overlapping spans onto the same lane to minimise the total lane count
+		// (channel height grows only when cables actually conflict).
+		private struct ChannelEntry
+		{
+			public CableSpec Cable;
+			public bool IsSrc;
+			public bool IsBoth;
+			public int  Side;   // 0 = top, 1 = both/middle, 2 = bottom
+			public float XMin;
+			public float XMax;
+		}
+
+		private void AssignChannelLanes(int channelCount)
+		{
+			float layoutW = (Entity?.Prototype?.Columns ?? 0) * (float)Sizes.BLOCK_SIZE.Pixels;
+			float pad     = VIEW_PAD_PX;
+			float leftEdge  = pad - MAX_LANE_OFFSET_PX;          // worst-case left  side-corridor X
+			float rightEdge = pad + layoutW + MAX_LANE_OFFSET_PX; // worst-case right side-corridor X
+
+			var buckets = new List<ChannelEntry>[channelCount];
+			for (int i = 0; i < channelCount; i++) {
+				buckets[i] = new List<ChannelEntry>();
+			}
+
+			foreach (var c in m_cableSpecs)
+			{
+				if (c.SrcChannelIdx == c.DstChannelIdx)
+				{
+					// Adjacent-row cable — single channel, hBot spans srcXp..dstXp directly.
+					float xMin = Math.Min(c.SrcXp, c.DstXp);
+					float xMax = Math.Max(c.SrcXp, c.DstXp);
+					addEntry(c.SrcChannelIdx, new ChannelEntry {
+						Cable = c, IsSrc = true, IsBoth = true, Side = 1, XMin = xMin, XMax = xMax
+					});
+				}
+				else
+				{
+					// Source side — horizontal stretches from srcXp to the side corridor.
+					addSpanningEntry(c, isSrc: true,  c.SrcChannelIdx, c.SrcXp);
+					// Destination side — same shape on the dst side.
+					addSpanningEntry(c, isSrc: false, c.DstChannelIdx, c.DstXp);
+				}
+			}
+
+			void addEntry(int channelIdx, ChannelEntry e)
+			{
+				if (channelIdx >= 0 && channelIdx < buckets.Length) {
+					buckets[channelIdx].Add(e);
+				}
+			}
+
+			void addSpanningEntry(CableSpec cable, bool isSrc, int channelIdx, float xEndpoint)
+			{
+				int row  = isSrc ? cable.Src.Row : cable.Dst.Row;
+				int side = (row == channelIdx - 1) ? 0 : (row == channelIdx ? 2 : 1);
+				float xSide = cable.WrapLeft ? leftEdge : rightEdge;
+				addEntry(channelIdx, new ChannelEntry {
+					Cable = cable, IsSrc = isSrc, IsBoth = false, Side = side,
+					XMin = Math.Min(xEndpoint, xSide),
+					XMax = Math.Max(xEndpoint, xSide),
+				});
+			}
+
+			for (int ch = 0; ch < channelCount; ch++)
+			{
+				var list = buckets[ch];
+				// Sort: top side first, then both, then bottom; within each side by XMin.
+				list.Sort((a, b) =>
+				{
+					int s = a.Side.CompareTo(b.Side);
+					return s != 0 ? s : a.XMin.CompareTo(b.XMin);
+				});
+
+				// Greedy interval packing — separate lane stacks per side so the side
+				// ordering (top → middle → bottom) is preserved while non-overlapping
+				// spans within a side reuse the same lane.
+				// Zero-width cables (src and dst at the same X — e.g., adjacent-row direct
+				// drops in the same column) don't claim a lane at all; their vertical run
+				// just passes through the channel and its placement Y can be the centre.
+				var laneEnds = new List<float>();
+				int currentSide = -1;
+				int sideOffset = 0;
+				const float ZERO_WIDTH_EPS = 0.5f;
+
+				for (int idx = 0; idx < list.Count; idx++)
+				{
+					var e = list[idx];
+					if (e.XMax - e.XMin < ZERO_WIDTH_EPS)
+					{
+						// Pure vertical cable — sentinel lane = -1 means "use channel centre".
+						if (e.IsBoth)
+						{
+							e.Cable.SrcChannelLane = -1;
+							e.Cable.DstChannelLane = -1;
+						}
+						else if (e.IsSrc) {
+							e.Cable.SrcChannelLane = -1;
+						} else {
+							e.Cable.DstChannelLane = -1;
+						}
+						continue;
+					}
+
+					if (e.Side != currentSide)
+					{
+						sideOffset += laneEnds.Count;
+						laneEnds.Clear();
+						currentSide = e.Side;
+					}
+					int lane = -1;
+					for (int i = 0; i < laneEnds.Count; i++)
+					{
+						if (laneEnds[i] < e.XMin) { lane = i; break; }
+					}
+					if (lane < 0)
+					{
+						lane = laneEnds.Count;
+						laneEnds.Add(e.XMax);
+					}
+					else
+					{
+						laneEnds[lane] = e.XMax;
+					}
+					int finalLane = sideOffset + lane;
+					if (e.IsBoth)
+					{
+						e.Cable.SrcChannelLane = finalLane;
+						e.Cable.DstChannelLane = finalLane;
+					}
+					else if (e.IsSrc) {
+						e.Cable.SrcChannelLane = finalLane;
+					} else {
+						e.Cable.DstChannelLane = finalLane;
+					}
+				}
+				sideOffset += laneEnds.Count;
+				m_channelLaneCounts[ch] = sideOffset;
+			}
+		}
+
+		// Side corridors carry the long vSide segment of any 5-segment cable.  Sort cables
+		// on the same side by their span (min channel idx then max), so cables wrapping
+		// shorter distances sit on inner lanes — keeps vSide segments from crossing.
+		private void AssignSideLanes()
+		{
+			var left  = m_cableSpecs.Where(c => c.WrapLeft  && c.SrcChannelIdx != c.DstChannelIdx).ToList();
+			var right = m_cableSpecs.Where(c => !c.WrapLeft && c.SrcChannelIdx != c.DstChannelIdx).ToList();
+			Comparison<CableSpec> bySpan = (a, b) =>
+			{
+				int aMin = Math.Min(a.SrcChannelIdx, a.DstChannelIdx);
+				int bMin = Math.Min(b.SrcChannelIdx, b.DstChannelIdx);
+				int c1 = aMin.CompareTo(bMin);
+				if (c1 != 0) {
+					return c1;
+				}
+				int aMax = Math.Max(a.SrcChannelIdx, a.DstChannelIdx);
+				int bMax = Math.Max(b.SrcChannelIdx, b.DstChannelIdx);
+				return aMax.CompareTo(bMax);
+			};
+			left.Sort(bySpan);
+			right.Sort(bySpan);
+			for (int i = 0; i < left.Count;  i++) {
+				left[i].SideLane  = i;
+			}
+			for (int i = 0; i < right.Count; i++) {
+				right[i].SideLane = i;
+			}
+		}
+
+		// Live UiComponents that draw connection paths. Cleared and rebuilt each RepaintLines.
+		private readonly List<UiComponent> m_lineSegments = new List<UiComponent>();
+
+		private void RepaintLines()
 		{
 			try
 			{
-				if (img != null && img.IsAttached) {
-					img.RemoveFromHierarchy();
+				// Tear down any segments from the previous repaint.
+				foreach (var s in m_lineSegments)
+				{
+					if (s != null && s.IsAttached) {
+						s.RemoveFromHierarchy();
+					}
 				}
+				m_lineSegments.Clear();
 
-				X = (Sizes.BLOCK_SIZE * proto.Columns);
-				Y = (4 * Sizes.BLOCK_SIZE * proto.Rows) + (3 * 5);
-				// Sizes of the connection draw overlay texture
-				// The connection draw overlay texture
-				textr = new Texture2D(X.Pixels.FloorToInt(), Y.Pixels.FloorToInt());
-				drawConnectionLines(X.Pixels.FloorToInt(), Y.Pixels.FloorToInt(), textr, highlight);
+				// All routing decisions (channel/lane indices, wrap side, colour) were
+				// computed and sorted in RedrawComponents.  Just hand them to the path builder.
+				foreach (var c in m_cableSpecs)
+				{
+					Color uColor = m_colors[c.ColorIndex];
+					ColorRgba activeColor = new ColorRgba(uColor.r, uColor.g, uColor.b, 1f).SetA(WIRE_ALPHA_ACTIVE);
+					ColorRgba idleColor   = ColorRgba.Black.SetA(WIRE_ALPHA_IDLE);
 
-				img = new Img(textr);
-				img.Size(X, Y);
-				img.IgnoreInputPicking().AbsolutePositionCenter(null, new Px?(0)).BringToFront();
-				img.VisibleForRender(false);
-				Add(img);
+					CreateConnectionPath(c.Src, c.OutputId, c.Dst, c.InputId,
+						activeColor, idleColor, c.WrapLeft, c.SideLane,
+						c.SrcChannelIdx, c.SrcChannelLane, c.DstChannelIdx, c.DstChannelLane);
+				}
 			}
 			catch (Exception e)
 			{
@@ -191,86 +639,191 @@ namespace ProgramableNetwork.Ui
 			}
 		}
 
-		private void drawConnectionLines(int X, int Y, Texture2D textr, long? moduleId) {
-			// Set the texture to fully transparent (since by default it's filled with half transparent gray/grey pixels)
-			//byte[] buf = new byte[sizeof(Color) * X * Y];
-			//textr.SetPixelData<byte>(buf, 0, 0);
-			for (int x = 0; x < X; x++)
-			{
-				for (int y = 0; y < Y; y++)
-				{
-					textr.SetPixel(x, y, new Color(0, 0, 0, 0));
-				}
+		// Picks the wrap side based on the average X of source/dest ports.  If the wire's
+		// midpoint sits in the left half of the layout, wrap left (shorter detour); else right.
+		private bool decideWrapLeft(Module src, Module dst)
+		{
+			if (Entity?.Prototype == null) {
+				return true;
 			}
-			// Function that draws the line
-			//   from an output at srcPos module grid position
-			//   to an input at dstPos module grid position
-			void drawConnectionLine((int y1, int x1) srcPos, (int y2, int x2) dstPos, Color color)
+			float layoutW = Entity.Prototype.Columns;
+			float midCol = ((src.Column + (src.Layout.GetWidth(src) * 0.5f))
+						   + (dst.Column + (dst.Layout.GetWidth(dst) * 0.5f))) * 0.5f;
+			return midCol < layoutW * 0.5f;
+		}
+
+		// Returns a darker shade of the given colour by scaling each RGB channel by `factor`,
+		// with an explicit alpha so the border can be more transparent than the fill.
+		private static ColorRgba darken(ColorRgba src, float factor, byte alpha)
+		{
+			byte r = (byte)Mathf.Clamp(Mathf.RoundToInt(src.R * factor), 0, 255);
+			byte g = (byte)Mathf.Clamp(Mathf.RoundToInt(src.G * factor), 0, 255);
+			byte b = (byte)Mathf.Clamp(Mathf.RoundToInt(src.B * factor), 0, 255);
+			return new ColorRgba(r, g, b, alpha);
+		}
+
+		// Lays down a 5-segment routing path of absolute-positioned UiComponents:
+		//   src.bottom → DOWN clearance → side corridor → UP → top corridor → DOWN to dst.top
+		// The path always wraps around the OUTSIDE of the module grid (top corridor + one side
+		// corridor) so it never cuts through other modules.  Each segment observes module
+		// positions for live updates, and observes hover/showsLinks to flip its colour between
+		// the per-output hue and a flat black baseline (always visible, never hidden).
+		private void CreateConnectionPath(Module src, string outputId, Module dst, string inputId,
+			ColorRgba activeColor, ColorRgba idleColor, bool wrapLeft, int sideLane,
+			int srcChannelIdx, int srcChannelLane, int dstChannelIdx, int dstChannelLane)
+		{
+			// Border tones — same hue as the fill but darker so it reads as an outline rather
+			// than a flat black frame.  Alpha is kept lower than the fill so the wire stays
+			// soft against the busy module grid.
+			ColorRgba activeBorder = darken(activeColor, factor: 0.45f, alpha: WIRE_BORDER_ALPHA);
+			ColorRgba idleBorder   = darken(idleColor,   factor: 0.45f, alpha: WIRE_BORDER_ALPHA);
+
+			UiComponent vSrc  = makeSegment(horizontal: false, idleColor, idleBorder);
+			UiComponent hBot  = makeSegment(horizontal: true,  idleColor, idleBorder);
+			UiComponent vSide = makeSegment(horizontal: false, idleColor, idleBorder);
+			UiComponent hTop  = makeSegment(horizontal: true,  idleColor, idleBorder);
+			UiComponent vDst  = makeSegment(horizontal: false, idleColor, idleBorder);
+			var segs = new (UiComponent seg, bool horizontal)[] {
+				(vSrc, false), (hBot, true), (vSide, false), (hTop, true), (vDst, false)
+			};
+
+			void update()
 			{
-				const int Stroke = 3; // The number of pixels on each side of the center of a line
-				// Translate module grid positions to pixel coordinates
-				Vector2 srcVec = new Vector2((((float)srcPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)srcPos.Item1 + 3.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(srcPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
-				Vector2 dstVec = new Vector2((((float)dstPos.Item2 + 0.5f) * Sizes.BLOCK_SIZE).Pixels, (float)textr.height - (((4f * (float)dstPos.Item1 + 0.5f) * Sizes.BLOCK_SIZE).Pixels + (float)(dstPos.Item1 * 2 * Sizes.IMAGE_PADDING.Pixels)));
-				// Slightly modified line drawing function from here: https://discussions.unity.com/t/create-line-on-a-texture/41000
-				Vector2 t = srcVec;
-				float frac = 1f / Mathf.Sqrt(Mathf.Pow(dstVec.x - srcVec.x, 2f) + Mathf.Pow(dstVec.y - srcVec.y, 2f));
-				float ctr = 0f;
-				Vector2 diff = srcVec - dstVec;
-				while ((int)t.x != (int)dstVec.x || (int)t.y != (int)dstVec.y)
+				if (src.Prototype == null || dst.Prototype == null || Entity?.Prototype == null) {
+					return;
+				}
+				if (m_channelHeights == null || m_channelHeights.Length == 0) {
+					return;
+				}
+
+				ModuleConnectorProto srcOut = src.Prototype.Outputs.Find(o => o.Id == outputId);
+				ModuleConnectorProto dstIn  = dst.Prototype.Inputs .Find(i => i.Id == inputId);
+				if (srcOut == null || dstIn == null) {
+					return;
+				}
+
+				int srcOutCount = src.Prototype.Outputs.Count;
+				int dstInCount  = dst.Prototype.Inputs.Count;
+				int srcOutCol   = src.Column + (src.Layout.GetWidth(src) - srcOutCount) + src.Prototype.Outputs.IndexOf(srcOut);
+				int dstInCol    = dst.Column + (dst.Layout.GetWidth(dst) - dstInCount)  + dst.Prototype.Inputs .IndexOf(dstIn);
+
+				float bs       = (float)Sizes.BLOCK_SIZE.Pixels;
+				int totalCols  = Entity.Prototype.Columns;
+				float layoutW  = totalCols * bs;
+				float pad      = VIEW_PAD_PX;
+				float yFix     = CABLE_Y_OFFSET_PX;
+
+				// Port endpoints — Y is read straight off the layout's cumulative offsets so
+				// the cable always lands on the actual rendered port circle.
+				float srcXp = pad + (srcOutCol + 0.5f) * bs;
+				float srcYp = rowTopY(src.Row) + 3.5f * bs + yFix;
+				float dstXp = pad + (dstInCol + 0.5f) * bs;
+				float dstYp = rowTopY(dst.Row) + 0.5f * bs + yFix;
+
+				// Side corridor stacking: capped so it doesn't escape the padding zone.
+				float rawSide = CHANNEL_BASE_PX + sideLane * SIDE_LANE_PX;
+				float sideOffset = Math.Min(rawSide, MAX_LANE_OFFSET_PX);
+				float sideCorridorX = wrapLeft ? pad - sideOffset : pad + layoutW + sideOffset;
+
+				// In-channel Y for source and destination ends.  Uses the precomputed lane
+				// counts and channel heights from RedrawComponents so the cable centre line
+				// always lands inside the matching channel UiComponent.
+				float srcChannelY = channelLaneY(srcChannelIdx, srcChannelLane);
+				float dstChannelY = channelLaneY(dstChannelIdx, dstChannelLane);
+
+				float t = LINE_THICKNESS_PX;
+				float halfT = t * 0.5f;
+
+				if (srcChannelIdx == dstChannelIdx && srcChannelIdx != 0)
 				{
-					t = Vector2.Lerp(srcVec, dstVec, ctr);
-					ctr += frac;
-					// Added for loop to allow drawing thicker "lines" relatively quickly
-					for (int off = -Stroke; off <= Stroke; off++)
-					{
-						if (Mathf.Abs(diff.x) <= Mathf.Abs(diff.y))
-						{
-							textr.SetPixel((int)t.x + off, (int)t.y, color);
-						}
-						else
-						{
-							textr.SetPixel((int)t.x, (int)t.y + off, color);
-						}
-					}
+					// Both endpoints share a single inter-row channel — direct 3-segment route.
+					float gapY = srcChannelY;
+					placeRect(vSrc, srcXp - halfT, Math.Min(srcYp, gapY), t, Math.Abs(gapY - srcYp));
+					placeRect(hBot, Math.Min(srcXp, dstXp) - halfT, gapY - halfT, Math.Abs(srcXp - dstXp) + t, t);
+					placeRect(vSide, 0f, 0f, 0f, 0f);
+					placeRect(hTop,  0f, 0f, 0f, 0f);
+					placeRect(vDst, dstXp - halfT, Math.Min(gapY, dstYp), t, Math.Abs(dstYp - gapY));
+				}
+				else
+				{
+					// Two distinct channels OR top channel: 5-segment wrap via side corridor.
+					placeRect(vSrc, srcXp - halfT, Math.Min(srcYp, srcChannelY), t, Math.Abs(srcChannelY - srcYp));
+					float hBotLeft  = Math.Min(srcXp, sideCorridorX) - halfT;
+					float hBotWidth = Math.Abs(sideCorridorX - srcXp) + t;
+					placeRect(hBot, hBotLeft, srcChannelY - halfT, hBotWidth, t);
+					placeRect(vSide, sideCorridorX - halfT, Math.Min(srcChannelY, dstChannelY), t, Math.Abs(dstChannelY - srcChannelY));
+					float hTopLeft  = Math.Min(sideCorridorX, dstXp) - halfT;
+					float hTopWidth = Math.Abs(dstXp - sideCorridorX) + t;
+					placeRect(hTop, hTopLeft, dstChannelY - halfT, hTopWidth, t);
+					placeRect(vDst, dstXp - halfT, Math.Min(dstChannelY, dstYp), t, Math.Abs(dstYp - dstChannelY));
 				}
 			}
 
-			m_colorCombinations = [];
-			foreach (Module mod in Entity.Modules)
+			// Position observer: re-running update() any time either endpoint moves.
+			vSrc.Observe(() => src.Row)
+				.Observe(() => src.Column)
+				.Observe(() => dst.Row)
+				.Observe(() => dst.Column)
+				.Do((sr, sc, dr, dc) => update());
+
+			// Colour observer (per segment): coloured when the wire is "active" (its
+			// endpoint module is hovered, or the connections button is on), black otherwise.
+			// Always visible — visibility itself doesn't toggle anymore.
+			foreach (var pair in segs)
 			{
-				foreach (KeyValuePair<string, ModuleConnector> keyValuePair in mod.InputModules)
-				{
-					ModuleConnector mc = keyValuePair.Value;
-					
-					//if (moduleId != null && (moduleId != mod.Id || moduleId != mc.ModuleId)) continue;
+				var localSeg = pair.seg;
+				var localHoriz = pair.horizontal;
+				localSeg.Observe(() => m_controller.m_higlightedOutput?.ModuleId)
+				   .Observe(() => m_controller.m_higlightedInput?.ModuleId)
+				   .Observe(() => m_controller.m_showsLinks)
+				   .Do((hlOut, hlIn, force) =>
+				   {
+					   bool active = force
+						   || (hlOut.HasValue && (hlOut.Value == src.Id || hlOut.Value == dst.Id))
+						   || (hlIn .HasValue && (hlIn .Value == src.Id || hlIn .Value == dst.Id));
+					   localSeg.Background(active ? activeColor : idleColor);
+					   applyBorder(localSeg, localHoriz, active ? activeBorder : idleBorder);
+				   });
+			}
 
-					(int y1, int x1) srcPos; // Position of the module that has the output that's connected to the currently handled input
-					if (ModulePlacementCache.TryGetValue(mc.ModuleId, out srcPos))
-					{
-						// Get module that has the output that's connected to the currently handled input
-						Module srcMod = Entity.Modules.Find((Module m) => m.Id == mc.ModuleId);
-						// Add horizontal offset to get the actual output position
-						ModuleConnectorProto outputConnectorFromSource = srcMod.Prototype.Outputs.Find((ModuleConnectorProto mcp) => mcp.Id == mc.OutputId);
-						srcPos.Item2 += (srcMod.Layout.GetWidth(srcMod) - srcMod.Prototype.Outputs.Count) + srcMod.Prototype.Outputs.IndexOf(outputConnectorFromSource);
-						(int y2, int x2) dstPos = ModulePlacementCache[mod.Id]; // Position of the module that has the currently handled input
-						// Add horizontal offset to get the actual input position
-						ModuleConnectorProto inputConnectionFromMod = mod.Prototype.Inputs.Find((ModuleConnectorProto mcp) => mcp.Id == keyValuePair.Key);
-						dstPos.Item2 += (mod.Layout.GetWidth(mod) - mod.Prototype.Inputs.Count) + mod.Prototype.Inputs.IndexOf(inputConnectionFromMod);
+			update(); // initial layout
 
-						string colorKey = $"{mc.ModuleId}.{mc.OutputId}";
-						int colorIndex = 0;
-						if (m_colorCombinations.Count == 0) {
-							m_colorCombinations[colorKey] = colorIndex;
-						} else if (m_colorCombinations.TryGetValue(colorKey, out colorIndex) == false) {
-							colorIndex = m_colorCombinations.Values.Max();
-							colorIndex = (colorIndex + 1) % m_colors.Count;
-							m_colorCombinations[colorKey] = colorIndex;
-						}
-						drawConnectionLine(srcPos, dstPos, m_colors[colorIndex]);
-					}
+			UiComponent makeSegment(bool horizontal, ColorRgba bg, ColorRgba bd)
+			{
+				var seg = new UiComponent()
+					.Background(bg)
+					.IgnoreInputPicking();
+				applyBorder(seg, horizontal, bd);
+				Add(seg);
+				seg.BringToFront();
+				m_lineSegments.Add(seg);
+				return seg;
+			}
+
+			// Borders only on the long edges so two perpendicular segments meeting at
+			// a corner don't stack their borders (which used to draw a "+" cross).
+			void applyBorder(UiComponent c, bool horizontal, ColorRgba color)
+			{
+				Px b = 1.px();
+				Px z = Px.Zero;
+				if (horizontal) {
+					c.Border(top: b, right: z, bottom: b, left: z, color: color, radius: 0);
+				} else {
+					c.Border(top: z, right: b, bottom: z, left: b, color: color, radius: 0);
 				}
 			}
-			textr.Apply(); // Push the texture changes to the GPU
+
+			void placeRect(UiComponent c, float left, float top, float width, float height)
+			{
+				if (width  < 0) {
+					width  = 0;
+				}
+				if (height < 0) {
+					height = 0;
+				}
+				c.AbsolutePosition(top: top.px(), null, null, left: left.px());
+				c.Size(width.px(), height.px());
+			}
 		}
 
 		private PickNewModule m_pickNewModule;
@@ -284,67 +837,101 @@ namespace ProgramableNetwork.Ui
 			Column column = rowElement.AddAndReturn(new Column())
 				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 4);
 
-			// add filler
+			// top filler
 			column.AddAndReturn(new UiComponent())
 				  .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
 
 			AddHelper addHelperUI = new AddHelper(() => this);
-			ButtonText button = column.AddAndReturn(new ButtonText(new LocStrFormatted("+")));
+			ModuleSlotButton button = column.AddAndReturn(new ModuleSlotButton(this, targetRow, targetColumn));
 			button.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 2);
-			button.Class(Cls.group);
-			button.Floater(addHelperUI.Display);
-			button.OnClick(() =>
-			{
-				if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-				{
-					if (m_lastCreated != null)
-					{
-						if (TryPlaceAt(m_lastCreated.Prototype, targetRow, targetColumn))
-						{
-							m_lastCreated.Prototype.ExecuteInit(m_lastCreated, log: false);
+			// Hint floater (the "+ click to add" helper) is meaningful only in Add mode —
+			// returning Option.None in any other mode suppresses the popup entirely.
+			button.Floater(() => m_controller.Mode == ControllerEditMode.Add
+				? addHelperUI.Display()
+				: Option<UiComponent>.None);
 
-							foreach (KeyValuePair<string, int> item in m_lastCreated.NumberData) {
-								m_lastCreated.NumberData[item.Key] = item.Value;
-							}
-							foreach (KeyValuePair<string, Fix32> item in m_lastCreated.FieldNumberData) {
-								m_lastCreated.FieldNumberData[item.Key] = item.Value;
-							}
-							foreach (KeyValuePair<string, string> item in m_lastCreated.StringData) {
-								m_lastCreated.StringData[item.Key] = item.Value;
-							}
-
-							m_lastCreated.Prototype.DisplayUpdate(m_lastCreated);
-							return;
-						}
-					}
-					m_controller.Context.AudioDb.InvalidOp(true).Play();
-				}
-				else {
-					if (m_pickNewModuleInAction) { return; }
-					m_pickNewModuleInAction = true;
-					m_pickNewModule ??= new PickNewModule(
-						NewTr.Inspector.PickModule, NewModules());
-					m_pickNewModuleInAction = false;
-					m_targetRow = targetRow;
-					m_targetColumn = targetColumn;
-					m_pickNewModule.Open(button);
-				}
-			}, allowKeyPresses: true);
-			button.OnRightClick(() =>
-			{
-				if (m_pickTemplateModuleInAction) { return; }
-				m_pickTemplateModuleInAction = true;
-				m_pickTemplateModule ??= new PickNewModule(
-					NewTr.Inspector.PickTemplate, NewTemplates());
-				m_pickTemplateModuleInAction = false;
-				m_targetRow = targetRow;
-				m_targetColumn = targetColumn;
-				m_pickTemplateModule.Open(button);
-			});
-
-			// add filler
+			// bottom filler
 			column.AddAndReturn(new UiComponent())
 				  .Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+		}
+
+		// --- Public slot helpers used by ModuleSlotButton ----------------------------------
+
+		// True iff the picked module (or any module of its width) would fit in (row, col).
+		public bool IsValidDropAt(int row, int col, Module picked)
+		{
+			if (picked == null) {
+				return false;
+			}
+			int width = picked.Layout.GetWidth(picked);
+			return IsRangeFree(row, col, width, ignore: picked);
+		}
+
+		// Drops the inspector's picked-up module at (row, col).  Returns false if no module
+		// is picked up or the slot doesn't fit; on success clears PickedUpModule.
+		public bool TryDropPickedAt(int row, int col)
+		{
+			var inspector = m_controller;
+			var picked = inspector.PickedUpModule;
+			if (picked == null) {
+				return false;
+			}
+			if (!TryMoveTo(picked, row, col)) {
+				return false;
+			}
+			inspector.PickedUpModule = null;
+			return true;
+		}
+
+		// Stamps a copy of the most-recently created/picked module at (row, col), preserving
+		// its number/field/string data so shift-paste reproduces the original's settings.
+		public bool TryShiftAddAt(int row, int col)
+		{
+			if (m_lastCreated == null) {
+				return false;
+			}
+			if (!TryPlaceAt(m_lastCreated.Prototype, row, col)) {
+				return false;
+			}
+
+			m_lastCreated.Prototype.ExecuteInit(m_lastCreated, log: false);
+			foreach (KeyValuePair<string, int> item in m_lastCreated.NumberData) {
+				m_lastCreated.NumberData[item.Key] = item.Value;
+			}
+			foreach (KeyValuePair<string, Fix32> item in m_lastCreated.FieldNumberData) {
+				m_lastCreated.FieldNumberData[item.Key] = item.Value;
+			}
+			foreach (KeyValuePair<string, string> item in m_lastCreated.StringData) {
+				m_lastCreated.StringData[item.Key] = item.Value;
+			}
+			m_lastCreated.Prototype.DisplayUpdate(m_lastCreated);
+			return true;
+		}
+
+		public void OpenAddPickerAt(int row, int col, UiComponent anchor)
+		{
+			if (m_pickNewModuleInAction) {
+				return;
+			}
+			m_pickNewModuleInAction = true;
+			m_pickNewModule ??= new PickNewModule(NewTr.Inspector.PickModule, NewModules());
+			m_pickNewModuleInAction = false;
+			m_targetRow = row;
+			m_targetColumn = col;
+			m_pickNewModule.Open(anchor);
+		}
+
+		public void OpenTemplatePickerAt(int row, int col, UiComponent anchor)
+		{
+			if (m_pickTemplateModuleInAction) {
+				return;
+			}
+			m_pickTemplateModuleInAction = true;
+			m_pickTemplateModule ??= new PickNewModule(NewTr.Inspector.PickTemplate, NewTemplates());
+			m_pickTemplateModuleInAction = false;
+			m_targetRow = row;
+			m_targetColumn = col;
+			m_pickTemplateModule.Open(anchor);
 		}
 
 		private IEnumerable<AModuleProtoSelector> NewTemplates()
@@ -391,35 +978,53 @@ namespace ProgramableNetwork.Ui
 		{
 			var module = new Module(moduleProto, Entity.Context, Entity);
 			var width = module.Layout.GetWidth(module);
-			var placeFound = true;
-			var row = Entity.Rows[targetRow];
 
-			var end = targetColumn + width;
-			for (int columnEnd = targetColumn; columnEnd < end; columnEnd++)
-			{
-				if (row[columnEnd].ModuleId != 0)
-				{
-					placeFound = false;
-					break;
-				}
-			}
-
-			if (placeFound)
-			{
-				for (int i = targetColumn; i < end; i++)
-				{
-					row[i] = (module.Id, false);
-				}
-				row[targetColumn] = (module.Id, true);
-				Entity.Modules.Add(module);
-				m_lastCreated = module;
-				return true;
-			}
-			else
+			if (!IsRangeFree(targetRow, targetColumn, width, ignore: null))
 			{
 				m_controller.Context.AudioDb.InvalidOp(true).Play();
 				return false;
 			}
+
+			module.Row = targetRow;
+			module.Column = targetColumn;
+			Entity.Modules.Add(module);
+			m_lastCreated = module;
+			return true;
+		}
+
+		// True iff every cell in [col, col+width) on the given row is unoccupied.
+		// `ignore` lets a module be excluded from the check (used for moves).
+		private bool IsRangeFree(int row, int col, int width, Module ignore)
+		{
+			if (Entity?.Prototype == null) {
+				return false;
+			}
+			if (row < 0 || row >= Entity.Prototype.Rows) {
+				return false;
+			}
+			if (col < 0 || col + width > Entity.Prototype.Columns) {
+				return false;
+			}
+
+			foreach (var m in Entity.Modules)
+			{
+				if (m == null || m.Prototype == null) {
+					continue;
+				}
+				if (ignore != null && m.Id == ignore.Id) {
+					continue;
+				}
+				if (m.Row != row) {
+					continue;
+				}
+				int mw = m.Layout.GetWidth(m);
+				int mEnd = m.Column + mw;
+				int end = col + width;
+				if (m.Column < end && col < mEnd) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		private class ModuleIdComparator : ICollectionComparator<long, IEnumerable<long>>

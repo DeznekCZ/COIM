@@ -19,6 +19,7 @@ using Mafi.Core.Entities.Static;
 using Mafi.Core.Notifications;
 using ProgramableNetwork.Data.Mod;
 using System.Reflection;
+using Mafi.Collections.ImmutableCollections;
 using Mafi.Localization;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Research;
@@ -29,6 +30,11 @@ namespace ProgramableNetwork
 	public class Controller : LayoutEntityBase, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
 		IUnityConsumingEntity, IComputingConsumingEntity, IElectricityConsumingEntity, IMaintainedEntity, IObjectWithCustomTitle
 	{
+		// Serialization version where the per-cell layout grid (Controller.Rows) was
+		// dropped and each Module started carrying its own (Row, Column). Used by both
+		// Controller and Module deserialization for version-gated reads.
+		public const int MODULE_LAYOUT_INFO = 4;
+
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 		{
 			((Controller) obj).SerializeData(writer);
@@ -56,16 +62,6 @@ namespace ProgramableNetwork
 			m_notificationErrorManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.ErrorNotification);
 			ResearchManager = researchManager;
 			Modules = new Lyst<Module>();
-			Rows = new Lyst<Lyst<ModulePlacement>>();
-			for (int i = 0; i < Prototype.Rows; i++)
-			{
-				Lyst<ModulePlacement> row = new Lyst<ModulePlacement>();
-				for (int j = 0; j < Prototype.Columns; j++)
-				{
-					row.Add((ModulePlacement)(0, true));
-				}
-				Rows.Add(row);
-			}
 
 			Action initSettings = proto.InitModules(this);
 			foreach (Module module in Modules)
@@ -107,7 +103,8 @@ namespace ProgramableNetwork
 			// TODO copy modules, name, entity connections, ...
 			data.Set<StaticEntityProto.ID>("controller_proto", m_protoId, (str, blob) => blob.WriteString(str.Value));
 			data.SetArray<Module>("controller_modules", Modules.ToImmutableArray(), Module.Serialize);
-			data.SetArray<Lyst<ModulePlacement>>("controller_rows", Rows.ToImmutableArray(), Lyst<ModulePlacement>.Serialize);
+			// Module positions are carried on the modules themselves since MODULE_LAYOUT_INFO,
+			// so no separate "controller_rows" entry is needed.
 			data.SetInt("controller_speed", Speed);
 			data.SetInt("color", (int)Color.Rgba);
 		}
@@ -121,7 +118,7 @@ namespace ProgramableNetwork
 				// TODO play sound
 				return;
 			}
-			
+
 			var newModules = data.GetArray("controller_modules", Module.Deserialize);
 			if (newModules != null)
 			{
@@ -138,11 +135,12 @@ namespace ProgramableNetwork
 					}
 				}
 			}
-			var newLocation = data.GetArray("controller_rows", Lyst<ModulePlacement>.Deserialize);
-			if (newLocation != null)
+			// Legacy clones may still have "controller_rows"; back-fill module positions if so.
+			ImmutableArray<Lyst<ModulePlacement>>? newLocation =
+				data.GetArray("controller_rows", Lyst<ModulePlacement>.Deserialize);
+			if (newLocation.HasValue)
 			{
-				this.Rows.Clear();
-				this.Rows.AddRange(newLocation?.AsEnumerable());
+				MigrateLegacyRowsIntoModules(newLocation.Value.AsEnumerable());
 			}
 			var newSpeed = data.GetInt("controller_speed");
 			if (newSpeed != null)
@@ -154,6 +152,29 @@ namespace ProgramableNetwork
 			if (color != null)
 			{
 				this.Color = (uint)color.Value;
+			}
+		}
+
+		private void MigrateLegacyRowsIntoModules(IEnumerable<Lyst<ModulePlacement>> legacyRows)
+		{
+			var moduleById = new Dictionary<long, Module>();
+			foreach (var m in Modules)
+			{
+				moduleById[m.Id] = m;
+			}
+			int rowIdx = 0;
+			foreach (var row in legacyRows)
+			{
+				for (int col = 0; col < row.Count; col++)
+				{
+					var p = row[col];
+					if (p.Placement && p.ModuleId != 0 && moduleById.TryGetValue(p.ModuleId, out var m))
+					{
+						m.Row = rowIdx;
+						m.Column = col;
+					}
+				}
+				rowIdx++;
 			}
 		}
 
@@ -211,25 +232,10 @@ namespace ProgramableNetwork
 				}
 			}
 
-			for (int i = 0; i < Prototype.Rows; i++)
+			if (m_legacyRows != null)
 			{
-				if (i == Rows.Count)
-				{
-					var row = new Lyst<ModulePlacement>();
-					for (int j = 0; j < Prototype.Columns; j++)
-					{
-						row.Add((ModulePlacement)(0, true));
-					}
-					Rows.Add(row);
-				}
-				else
-				{
-					var row = Rows[i];
-					for (int j = row.Count; j < Prototype.Columns; j++)
-					{
-						row.Add((ModulePlacement)(0, true));
-					}
-				}
+				MigrateLegacyRowsIntoModules(m_legacyRows);
+				m_legacyRows = null;
 			}
 
 			if (Color == ColorRgba.Empty)
@@ -259,7 +265,7 @@ namespace ProgramableNetwork
 		{
 			base.SerializeData(writer);
 			writer.WriteString(m_protoId.Value);
-			writer.WriteInt(/*Version*/ 3);
+			writer.WriteInt(/*Version*/ MODULE_LAYOUT_INFO);
 
 			writer.WriteString(ErrorMessage ?? "");
 			Option<string>.Serialize(CustomTitle, writer);
@@ -278,7 +284,7 @@ namespace ProgramableNetwork
 			writer.WriteInt(m_clock);
 
 			Lyst<Module>.Serialize(Modules, writer);
-			Lyst<Lyst<ModulePlacement>>.Serialize(Rows, writer);
+			// Layout grid (Rows) was dropped at MODULE_LAYOUT_INFO; positions live on each Module now.
 		}
 
 		protected override void DeserializeData(BlobReader reader)
@@ -335,9 +341,15 @@ namespace ProgramableNetwork
 			}
 
 			Modules = Lyst<Module>.Deserialize(reader);
-			Rows = Lyst<Lyst<ModulePlacement>>.Deserialize(reader);
+			if (version < MODULE_LAYOUT_INFO)
+			{
+				// Legacy save: positions live in the controller's grid. Stash and back-fill
+				// into modules in initContexts (after prototypes are resolved).
+				m_legacyRows = Lyst<Lyst<ModulePlacement>>.Deserialize(reader);
+			}
 
-			Log.Info($"Deserialized with {Modules.Count} modules and {Rows.Count} rows");
+			Log.Info($"Deserialized with {Modules.Count} modules" +
+				(m_legacyRows != null ? $" + {m_legacyRows.Count} legacy rows (will migrate)" : ""));
 			reader.RegisterInitAfterLoad(this, nameof(initContexts), InitPriority.Normal);
 		}
 
@@ -629,8 +641,55 @@ namespace ProgramableNetwork
 		[DoNotSave()]
 		public Lyst<Module> Modules { get; private set; }
 
+		// Holds the layout table read from a pre-MODULE_LAYOUT_INFO save until
+		// initContexts can back-fill module positions; cleared right after.
+		[DoNotSave(0, null)]
+		private Lyst<Lyst<ModulePlacement>> m_legacyRows;
+
+		// Computed grid view over Modules' (Row, Column). Recomputed on every read; do not
+		// mutate the returned Lyst — it is a snapshot. Kept for line-painting / read-only consumers.
 		[DoNotSave()]
-		public Lyst<Lyst<ModulePlacement>> Rows { get; private set; }
+		public Lyst<Lyst<ModulePlacement>> Rows
+		{
+			get
+			{
+				int rows = Prototype != null ? Prototype.Rows : 0;
+				int cols = Prototype != null ? Prototype.Columns : 0;
+				var grid = new Lyst<Lyst<ModulePlacement>>();
+				for (int i = 0; i < rows; i++)
+				{
+					var row = new Lyst<ModulePlacement>();
+					for (int j = 0; j < cols; j++)
+					{
+						row.Add(ModulePlacement.Empty);
+					}
+					grid.Add(row);
+				}
+				if (Modules == null) {
+					return grid;
+				}
+				foreach (var m in Modules)
+				{
+					if (m == null || m.Prototype == null) {
+						continue;
+					}
+					int width = m.Layout.GetWidth(m);
+					if (m.Row < 0 || m.Row >= grid.Count) {
+						continue;
+					}
+					var row = grid[m.Row];
+					for (int x = 0; x < width; x++)
+					{
+						int c = m.Column + x;
+						if (c < 0 || c >= row.Count) {
+							continue;
+						}
+						row[c] = x == 0 ? ModulePlacement.Origin(m.Id) : ModulePlacement.Rest(m.Id);
+					}
+				}
+				return grid;
+			}
+		}
 
 		[DoNotSave()]
 		public int GeneralPriority { get; set; }

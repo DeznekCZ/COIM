@@ -169,9 +169,13 @@ namespace ProgramableNetwork
 
 		private static IDataBandChannel getRedirectedChannel(Antena antena, int slot)
 		{
-			if (antena.DataBand == null) return null;
+			if (antena.DataBand == null) {
+				return null;
+			}
 			var list = antena.DataBand.Channels.ToList();
-			if (slot < 0 || slot >= list.Count) return null;
+			if (slot < 0 || slot >= list.Count) {
+				return null;
+			}
 			return list[slot];
 		}
 	}

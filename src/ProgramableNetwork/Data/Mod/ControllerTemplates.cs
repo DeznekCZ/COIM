@@ -196,12 +196,12 @@ The controller can use maintenance from T1 to T3 base on layout of the modules:
             ModuleProto storageProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID(moduleProto.ModuleId())).Value;
             Module module = new Module(storageProto, controller.Context, controller);
 
+            // Position is owned by the module itself since Controller.MODULE_LAYOUT_INFO.
+            module.Row = row;
+            module.Column = column;
             controller.Modules.Add(module);
-            controller.Rows[row][column++] = ModulePlacement.Origin(module.Id);
             int width = module.Layout.GetWidth(module);
-            for (int j = 1; j < width; j++) {
-                controller.Rows[row][column++] = ModulePlacement.Rest(module.Id);
-            }
+            column += width;
 
             Thread.Sleep(1); // increment module id, because is based on time
             return module;
