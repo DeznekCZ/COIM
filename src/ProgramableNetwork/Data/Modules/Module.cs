@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace ProgramableNetwork
 {
-	[GenerateSerializer(false, null, 0)]
+	[ManuallyWrittenSerialization]
 	public partial class Module : IEntity, IEntityWithCloneableConfig
 	{
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate (object obj, BlobWriter writer)
@@ -64,6 +64,7 @@ namespace ProgramableNetwork
 			OutputNumberData = [];
 			FieldNumberData = [];
 			StringData = [];
+			ArrayData = [];
 			InputModules = [];
 		}
 
@@ -128,6 +129,27 @@ namespace ProgramableNetwork
 
 		[DoNotSave(0, null)]
 		public Dict<string, ModuleConnector> InputModules { get; private set; } // todo get by module id, cached
+
+		// MODULE_COMPACT_DATA: bitmask describing which optional containers carry
+		// content for this module instance.  An "absent" flag means the matching
+		// dict/array was empty and nothing was written for it — read-back paths
+		// substitute a fresh empty container.  Packed into a single byte so most
+		// modules (which use only one or two of these) shrink their on-disk size
+		// from a header-per-empty-dict down to one bit per slot.
+		[Flags]
+		private enum DataFlags : byte
+		{
+			None             = 0,
+			NumberData       = 1 << 0,
+			InputNumberData  = 1 << 1,
+			OutputNumberData = 1 << 2,
+			FieldNumberData  = 1 << 3,
+			StringData       = 1 << 4,
+			InputModules     = 1 << 5,
+			ArrayData        = 1 << 6,
+			// bit 7 reserved for future use
+		}
+
 		protected void SerializeData(BlobWriter writer)
 		{
 			if (m_protoId == null) {
@@ -136,17 +158,31 @@ namespace ProgramableNetwork
 
 			writer.WriteLong(Id);
 			writer.WriteString(m_protoId);
-			writer.WriteInt(/*Version*/ Controller.MODULE_LAYOUT_INFO);
+			writer.WriteInt(/*Version*/ Controller.MODULE_COMPACT_DATA);
 			writer.WriteBool(IsPaused);
 			writer.WriteInt((int)Status);
-			Dict<string, int>.Serialize(NumberData, writer);
-			Dict<string, Fix32>.Serialize(InputNumberData, writer);
-			Dict<string, Fix32>.Serialize(OutputNumberData, writer);
-			Dict<string, Fix32>.Serialize(FieldNumberData, writer);
-			Dict<string, string>.Serialize(StringData, writer);
-			Dict<string, ModuleConnector>.Serialize(InputModules, writer);
+
+			DataFlags flags = DataFlags.None;
+			if (NumberData != null       && NumberData.Count       > 0) flags |= DataFlags.NumberData;
+			if (InputNumberData != null  && InputNumberData.Count  > 0) flags |= DataFlags.InputNumberData;
+			if (OutputNumberData != null && OutputNumberData.Count > 0) flags |= DataFlags.OutputNumberData;
+			if (FieldNumberData != null  && FieldNumberData.Count  > 0) flags |= DataFlags.FieldNumberData;
+			if (StringData != null       && StringData.Count       > 0) flags |= DataFlags.StringData;
+			if (InputModules != null     && InputModules.Count     > 0) flags |= DataFlags.InputModules;
+			if (ArrayData != null        && ArrayData.Length       > 0) flags |= DataFlags.ArrayData;
+			writer.WriteByte((byte)flags);
+
+			if ((flags & DataFlags.NumberData)       != 0) Dict<string, int>.Serialize(NumberData, writer);
+			if ((flags & DataFlags.InputNumberData)  != 0) Dict<string, Fix32>.Serialize(InputNumberData, writer);
+			if ((flags & DataFlags.OutputNumberData) != 0) Dict<string, Fix32>.Serialize(OutputNumberData, writer);
+			if ((flags & DataFlags.FieldNumberData)  != 0) Dict<string, Fix32>.Serialize(FieldNumberData, writer);
+			if ((flags & DataFlags.StringData)       != 0) Dict<string, string>.Serialize(StringData, writer);
+			if ((flags & DataFlags.InputModules)     != 0) Dict<string, ModuleConnector>.Serialize(InputModules, writer);
 			writer.WriteInt(Row);
 			writer.WriteInt(Column);
+			if ((flags & DataFlags.ArrayData) != 0) {
+				writer.WriteArray(ArrayData);
+			}
 		}
 
 		protected void DeserializeData(BlobReader reader)
@@ -160,28 +196,54 @@ namespace ProgramableNetwork
 			} else {
 				Status = ModuleStatus.Running;
 			}
-			NumberData = Dict<string, int>.Deserialize(reader);
-			if (loadedVersion >= 3)
+
+			if (loadedVersion >= Controller.MODULE_COMPACT_DATA)
 			{
-				InputNumberData = Dict<string, Fix32>.Deserialize(reader);
-				OutputNumberData = Dict<string, Fix32>.Deserialize(reader);
-				FieldNumberData = Dict<string, Fix32>.Deserialize(reader);
+				// v6+: single byte tells us which containers are present.  Absent
+				// flags get a fresh empty container — same shape the constructor sets.
+				DataFlags flags = (DataFlags)reader.ReadByte();
+				NumberData       = (flags & DataFlags.NumberData)       != 0 ? Dict<string, int>.Deserialize(reader)            : new Dict<string, int>();
+				InputNumberData  = (flags & DataFlags.InputNumberData)  != 0 ? Dict<string, Fix32>.Deserialize(reader)          : new Dict<string, Fix32>();
+				OutputNumberData = (flags & DataFlags.OutputNumberData) != 0 ? Dict<string, Fix32>.Deserialize(reader)          : new Dict<string, Fix32>();
+				FieldNumberData  = (flags & DataFlags.FieldNumberData)  != 0 ? Dict<string, Fix32>.Deserialize(reader)          : new Dict<string, Fix32>();
+				StringData       = (flags & DataFlags.StringData)       != 0 ? Dict<string, string>.Deserialize(reader)         : new Dict<string, string>();
+				InputModules     = (flags & DataFlags.InputModules)     != 0 ? Dict<string, ModuleConnector>.Deserialize(reader): new Dict<string, ModuleConnector>();
+				Row = reader.ReadInt();
+				Column = reader.ReadInt();
+				ArrayData = (flags & DataFlags.ArrayData) != 0
+					? (reader.ReadArray<Fix32>() ?? System.Array.Empty<Fix32>())
+					: System.Array.Empty<Fix32>();
 			}
 			else
 			{
-				InputNumberData = [];
-				OutputNumberData = [];
-				FieldNumberData = [];
-			}
-			StringData = Dict<string, string>.Deserialize(reader);
-			InputModules = Dict<string, ModuleConnector>.Deserialize(reader);
+				// Legacy path (pre-v5): all dicts written unconditionally, no
+				// array yet.  ArrayData defaults to empty for any save older than
+				// MODULE_COMPACT_DATA.
+				NumberData = Dict<string, int>.Deserialize(reader);
+				if (loadedVersion >= 3)
+				{
+					InputNumberData = Dict<string, Fix32>.Deserialize(reader);
+					OutputNumberData = Dict<string, Fix32>.Deserialize(reader);
+					FieldNumberData = Dict<string, Fix32>.Deserialize(reader);
+				}
+				else
+				{
+					InputNumberData = [];
+					OutputNumberData = [];
+					FieldNumberData = [];
+				}
+				StringData = Dict<string, string>.Deserialize(reader);
+				InputModules = Dict<string, ModuleConnector>.Deserialize(reader);
 
-			if (loadedVersion >= Controller.MODULE_LAYOUT_INFO)
-			{
-				Row = reader.ReadInt();
-				Column = reader.ReadInt();
+				if (loadedVersion >= Controller.MODULE_LAYOUT_INFO)
+				{
+					Row = reader.ReadInt();
+					Column = reader.ReadInt();
+				}
+				// else: position is back-filled by Controller from its legacy Rows table.
+
+				ArrayData = System.Array.Empty<Fix32>();
 			}
-			// else: position is back-filled by Controller from its legacy Rows table.
 
 			Log.Info($"[Programable Network] Instance (deserialization): {GetHashCode()}({Id}), version: {loadedVersion}");
 		}
@@ -319,6 +381,12 @@ namespace ProgramableNetwork
 		public Dict<string, Fix32> FieldNumberData { get; private set; }
 		[DoNotSave(0, null)]
 		public Dict<string, string> StringData { get; private set; }
+		// Single Fix32[] scratch buffer per module — runtime arrays (ring buffers,
+		// FIR windows, history slices).  Public getter for direct read in inner
+		// loops; the setter is private so size changes go through ArrayAccess.Resize
+		// which keeps the existing contents and zero-fills any new slots.
+		[DoNotSave(0, null)]
+		public Fix32[] ArrayData { get; private set; }
 
 		[DoNotSave(0, null)]
 		public OutputData Output => new OutputData(this);
@@ -334,6 +402,9 @@ namespace ProgramableNetwork
 
 		[DoNotSave(0, null)]
 		public DisplayData Display => new DisplayData(this);
+
+		[DoNotSave(0, null)]
+		public ArrayAccess Array => new ArrayAccess(this);
 
 		public LocStrFormatted DefaultTitle => throw new NotImplementedException();
 

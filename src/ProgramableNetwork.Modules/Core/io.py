@@ -74,3 +74,56 @@ class DisplayValue:
     def __init__(self, module): pass
     def set(self, name: str, value: str) -> None: pass
     def get(self, name: str, default: str) -> str: pass
+
+class ArrayValue:
+    """ Per-module Fix32 scratch array.  One array per module, persisted with the
+        save game.  Use this for ring buffers, history windows, and any other
+        index-keyed runtime state — preferable to abusing Output names since the
+        array survives field changes only when YOU resize it, has O(1) indexed
+        access, and survives no string-key allocation on the hot path.
+
+        Bounds are checked: get() returns the supplied default for out-of-range
+        indices, set() silently no-ops, so you don't need your own guard. """
+
+    def __init__(self, module): pass
+
+    @property
+    def length(self) -> int:
+        """ Current size of the array (0 by default for newly-created modules). """
+        pass
+
+    def get(self, idx: int, default: Fix32) -> Fix32:
+        """ Read slot `idx` (0-based).  Returns `default` if `idx` is out of range. """
+        pass
+
+    def set(self, idx: int, value: Fix32) -> None:
+        """ Write slot `idx`.  Silently no-ops if `idx` is out of range — call
+            resize() first if you need to grow the array. """
+        pass
+
+    def resize(self, size: int, fill_new: Fix32 = 0) -> None:
+        """ Grow or shrink the array.  Existing slots are preserved up to
+            min(old_size, size); new tail slots (when growing) are filled with
+            `fill_new` (defaults to zero).  Negative sizes are clamped to 0.
+            Cheap when the size is unchanged.  Allocates a new array on every
+            actual size change — call sparingly.
+
+            The `fill_new` parameter exists so Python modules can seed new
+            buffer slots without writing a per-tick loop (the parser only
+            supports if/else statements). """
+        pass
+
+    def clear(self) -> None:
+        """ Zero every slot in place.  Does NOT change the array length — use
+            resize(0) if you also want to drop the buffer. """
+        pass
+
+    def shift_left_with(self, incoming: Fix32) -> Fix32:
+        """ Atomic array-copy shift-register step.  Shifts every slot one
+            position to the left (slot[i] = slot[i+1]), writes `incoming` to
+            the last slot, and returns the value that was previously in
+            slot[0].  Empty arrays just echo `incoming` back unchanged.
+
+            Use this to implement a delay / FIR / sliding window from Python
+            without a per-tick loop. """
+        pass

@@ -22,7 +22,7 @@ using UnityEngine;
 
 namespace ProgramableNetwork.Data.Speaker
 {
-    [GenerateSerializer(false, null, 0)]
+    [ManuallyWrittenSerialization]
     public class Speaker : LayoutEntityBase, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
         IElectricityConsumingEntity, IMaintainedEntity
     {

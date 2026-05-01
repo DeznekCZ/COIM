@@ -194,11 +194,17 @@ namespace ProgramableNetwork.Ui
 					var input = inputs[i];
 					bool isConnected = module.InputModules.ContainsKey(input.Id);
 
-					ButtonText btn = new ButtonText(new LocStrFormatted(isConnected ? "◎" : "○"))
-						.Background(ColorRgba.Green)
-						.Color(ColorRgba.Gold)
-						.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+					PortPinButton btn = new PortPinButton(PortPinButton.PortKind.Input, isConnected)
 						.Tooltip(new LocStrFormatted((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' ')));
+					// Paint the dot with the matching cable's hue so the user can
+					// trace which output this input is wired to at a glance.
+					if (isConnected)
+					{
+						var cableColor = m_controller.GetCableColor(module, input.Id, isInput: true);
+						if (cableColor.HasValue) {
+							btn.DotColor(cableColor.Value);
+						}
+					}
 					inputsPanel.Add(btn);
 
 					if (!preview)
@@ -221,49 +227,40 @@ namespace ProgramableNetwork.Ui
 							})
 							.OnClick(() =>
 							{
-								if (m_controller.m_controller.OutputConnection == null)
+								var inspector = m_controller.m_controller;
+								if (inspector.OutputConnection == null)
 								{
 									uiContext.AudioDb.InvalidOp(true).Play();
+									return;
 								}
-								else
+								ModuleConnector held = inspector.OutputConnection;
+								// Left-click on an input that's ALREADY carrying the held
+								// cable disconnects it — same shape as right-click but
+								// without putting the held output down, so the user can
+								// keep rerouting without an extra click.
+								if (module.InputModules.TryGetValue(input.Id, out var existing)
+									&& existing.Equals(held))
 								{
-									ModuleConnector src = m_controller.m_controller.OutputConnection;
 									uiContext.InputScheduler.ScheduleAndOnApplied(
 										new ModuleSetInputConnectionCmd(
-											module.Controller.Id, module.Id, input.Id, src.ModuleId, src.OutputId),
+											module.Controller.Id, module.Id, input.Id, 0L, ""),
 										btn, refresh);
+									return;
 								}
+								// Otherwise attach (overwrites any other prior source).
+								uiContext.InputScheduler.ScheduleAndOnApplied(
+									new ModuleSetInputConnectionCmd(
+										module.Controller.Id, module.Id, input.Id, held.ModuleId, held.OutputId),
+									btn, refresh);
 							})
-							.Observe(() =>
+							// Inputs are "open" (enlarged circle) while an output is picked,
+							// signalling that a click on this pin would complete the connection.
+							// Outputs never enter the open state — they stay closed and look
+							// identical to idle inputs.
+							.Observe(() => m_controller.m_controller.OutputConnection != null)
+							.Do(open =>
 							{
-								var text = ColorRgba.Gold;
-								var background = ColorRgba.DarkGreen;
-
-								if (isConnected && m_controller.m_controller.OutputConnection != null &&
-									module.InputModules
-										.Where(pair => pair.Key == input.Id)
-										.Select(pair => pair.Value)
-										.Any(connector => connector.Equals(m_controller.m_controller.OutputConnection)))
-								{
-									text = ColorRgba.White;
-									background = ColorRgba.DarkGreen;
-								}
-
-								else if (isConnected && m_controller.m_controller.m_higlightedOutput != null && m_controller.m_controller.OutputConnection == null &&
-									module.InputModules
-										.Where(pair => pair.Key == input.Id)
-										.Select(pair => pair.Value)
-										.Any(connector => connector.Equals(m_controller.m_controller.m_higlightedOutput)))
-								{
-									text = ColorRgba.White;
-									background = ColorRgba.DarkGreen;
-								}
-
-								return (text, background);
-							})
-							.Do(pair => 
-							{
-								btn.Color(pair.text);
+								btn.Open(open);
 							});
 
 						btn.OnMouseEnterLeave(
@@ -294,15 +291,20 @@ namespace ProgramableNetwork.Ui
 						.FirstOrDefault(c => c.ModuleId == module.Id
 										  && c.OutputId == output.Id) != null;
 
-					ButtonText btn = new ButtonText(new LocStrFormatted(isConnected ? "◎" : "○"))
-						.Background(ColorRgba.Red)
-						.Color(ColorRgba.Gold)
-						.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
+					PortPinButton btn = new PortPinButton(PortPinButton.PortKind.Output, isConnected)
 						.With(b => b.ObserveEnabled(() => m_controller.m_controller.OutputConnection == null
 													   || (m_controller.m_controller.OutputConnection.ModuleId == module.Id
 														&& m_controller.m_controller.OutputConnection.OutputId == output.Id)))
 						.Tooltip(new LocStrFormatted((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' ')));
-
+					// Same hue as the cable(s) leaving this output — every connection from
+					// one output shares a single palette index, so any one wins the lookup.
+					if (isConnected)
+					{
+						var cableColor = m_controller.GetCableColor(module, output.Id, isInput: false);
+						if (cableColor.HasValue) {
+							btn.DotColor(cableColor.Value);
+						}
+					}
 
 					inputsPanel.Add(btn);
 
@@ -352,24 +354,6 @@ namespace ProgramableNetwork.Ui
 								() => { m_controller.m_controller.m_higlightedOutput = new ModuleConnector(module.Id, output.Id); },
 								() => { m_controller.m_controller.m_higlightedOutput = null; }
 							);
-
-						btn .Observe(() =>
-							{
-								var text = ColorRgba.Gold;
-								var background = ColorRgba.DarkGreen;
-
-								if (m_controller.m_controller.OutputConnection != null
-									&& m_controller.m_controller.OutputConnection.ModuleId == module.Id
-									&& m_controller.m_controller.OutputConnection.OutputId == output.Id) {
-									background = ColorRgba.Green;
-								}
-
-								return (text, background);
-							})
-							.Do(pairs =>
-							{
-								btn.Color(pairs.text);
-							});
 					}
 				}
 			}

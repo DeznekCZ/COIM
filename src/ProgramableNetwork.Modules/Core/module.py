@@ -1,6 +1,6 @@
 from Core.categories import Category
 from Core.fields import Field, FieldValue
-from Core.io import Input, Output, Display, DisplayDefinition, InputValue, OutputValue, FieldOrInputValue, DisplayValue
+from Core.io import Input, Output, Display, DisplayDefinition, InputValue, OutputValue, FieldOrInputValue, DisplayValue, ArrayValue
 from Core.translate import LocStr, LocStr1, LocStrFormatted
 
 from Mafi.Core.Entities import Entity
@@ -40,6 +40,10 @@ class Module:
         self.FieldOrInput = FieldOrInputValue(self)
         # defines an interface to data of displays inside module
         self.Display = DisplayValue(self)
+        # per-module Fix32 scratch array (ring buffers, windows, history slices) —
+        # use self.Array.resize(N) to size it, then self.Array[i] / .get(i, d) /
+        # .set(i, v) for indexed access.  Persists with the save game.
+        self.Array = ArrayValue(self)
         # defines an interface to raw data inside module
         self.NumberData = {}
         # defines an interface to raw data inside module

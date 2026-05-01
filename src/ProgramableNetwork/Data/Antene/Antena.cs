@@ -15,7 +15,7 @@ using static ProgramableNetwork.DataBands;
 
 namespace ProgramableNetwork
 {
-    [GenerateSerializer(false, null, 0)]
+    [ManuallyWrittenSerialization]
     public class Antena : LayoutEntityBase, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
         IUnityConsumingEntity, IComputingConsumingEntity, IElectricityConsumingEntity, IMaintainedEntity
     {

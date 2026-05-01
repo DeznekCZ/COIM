@@ -18,7 +18,7 @@ using System.Reflection;
 
 namespace ProgramableNetwork.Data.DisplayEntity
 {
-	[GenerateSerializer(false, null, 0)]
+	[ManuallyWrittenSerialization]
 	public class DisplayEntity : LayoutEntity, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
 		IElectricityConsumingEntity, IMaintainedEntity, IUpgradableEntity
 	{

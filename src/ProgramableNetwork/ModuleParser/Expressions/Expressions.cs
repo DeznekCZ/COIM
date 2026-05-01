@@ -132,6 +132,14 @@ namespace ProgramableNetwork.Python
 			return __int__(v1) ^ __int__(v2);
         }
 
+        public static object __and__(object v1, object v2)
+        {
+            if (v1 is null && v2 is null) {
+				return 0;
+			}
+			return __int__(v1) & __int__(v2);
+        }
+
         public static object __call__(object executable, List<(string name, object value)> arguments)
         {
             if (executable is Constructor constructor)
@@ -144,11 +152,31 @@ namespace ProgramableNetwork.Python
             }
             if (executable is MemberCall member)
             {
-                ParameterInfo[] parameters = member.Type[0].GetParameters();
                 object[] values = arguments
                     .Select(a => a.value)
                     .ToArray();
-                return member.Type[0].Invoke(member.Target, values);
+
+                // Pick the overload whose parameter count matches the call
+                // site.  Was previously always invoking member.Type[0], which
+                // meant any method with multiple overloads (e.g. ArraySetter
+                // .resize(size) vs .resize(size, fill_new)) ran the first
+                // registered one and threw "argument count does not match"
+                // for every other shape.  Exact arity match wins; if none
+                // matches, fall through to the first overload so the original
+                // mismatch error still surfaces with a meaningful message.
+                MethodInfo chosen = null;
+                for (int i = 0; i < member.Type.Length; i++)
+                {
+                    if (member.Type[i].GetParameters().Length == values.Length)
+                    {
+                        chosen = member.Type[i];
+                        break;
+                    }
+                }
+                if (chosen == null) {
+                    chosen = member.Type[0];
+                }
+                return chosen.Invoke(member.Target, values);
             }
             if (executable is Method function)
             {

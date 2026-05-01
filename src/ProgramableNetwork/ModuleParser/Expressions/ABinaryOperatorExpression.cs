@@ -48,7 +48,7 @@ namespace ProgramableNetwork.Python
             if (left) {
 				return Expressions.__int__(leftValue) == 0 ? throw new ArgumentException(string.Format(format, this.left)) : leftValue;
 			} else {
-				return Expressions.__int__(leftValue) == 0 ? throw new ArgumentException(string.Format(format, right)) : rightValue;
+				return Expressions.__int__(rightValue) == 0 ? throw new ArgumentException(string.Format(format, right)) : rightValue;
 			}
 		}
     }

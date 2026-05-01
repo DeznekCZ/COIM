@@ -157,7 +157,6 @@ namespace ProgramableNetwork.Ui
 			// channel index r + 1  = gap above row r (between row r-1 and row r), for r >= 1.
 			int channelCount = totalRows + 1;
 			m_cableSpecs.Clear();
-			ColourPaletteReset();
 			float pad = VIEW_PAD_PX;
 
 			foreach (Module dstMod in Entity.Modules ?? new Lyst<Module>())
@@ -203,13 +202,50 @@ namespace ProgramableNetwork.Ui
 						Src = srcMod, OutputId = kv.Value.OutputId,
 						Dst = dstMod, InputId = kv.Key,
 						SrcChannelIdx = srcChannel, DstChannelIdx = dstChannel,
-						WrapLeft = decideWrapLeft(srcMod, dstMod),
-						ColorIndex = ColourPaletteIndex(kv.Value.ModuleId, kv.Value.OutputId),
+						// WrapLeft assigned by AssignWrapSides() after sort — needs the full
+						// cable set to balance load evenly between left and right corridors.
+						WrapLeft = false,
+						// ColorIndex assigned after sort below so palette ordering follows
+						// (src.Row, src.Column, dst.Row, dst.Column) — same as iteration order.
+						ColorIndex = 0,
 						SrcXp = pad + (srcOutCol + 0.5f) * bs,
 						DstXp = pad + (dstInCol + 0.5f) * bs,
 					});
 				}
 			}
+
+			// Order cables by (src.Row, src.Column, dst.Row, dst.Column).  This drives:
+			//   - palette assignment (top-left source → first colour, deterministic),
+			//   - RepaintLines draw order (z-order: later rows paint over earlier ones),
+			//   - tie-breaking inside the per-channel sort when XMin ties.
+			m_cableSpecs.Sort((a, b) =>
+			{
+				int c = a.Src.Row.CompareTo(b.Src.Row);
+				if (c != 0) {
+					return c;
+				}
+				c = a.Src.Column.CompareTo(b.Src.Column);
+				if (c != 0) {
+					return c;
+				}
+				c = a.Dst.Row.CompareTo(b.Dst.Row);
+				if (c != 0) {
+					return c;
+				}
+				return a.Dst.Column.CompareTo(b.Dst.Column);
+			});
+
+			ColourPaletteReset();
+			foreach (var cable in m_cableSpecs)
+			{
+				cable.ColorIndex = ColourPaletteIndex(cable.Src.Id, cable.OutputId);
+			}
+
+			// Decide left vs right corridor for each wrapping cable, balancing load
+			// between sides instead of letting every cable pick its geometric near
+			// side independently (which used to bunch all cables on one corridor
+			// when the modules in use clustered in one half of the layout).
+			AssignWrapSides();
 
 			// --- Sort + assign per-channel lane indices -----------------------------------
 			// In each channel, group cable-ends by which side of the channel they're
@@ -398,6 +434,47 @@ namespace ProgramableNetwork.Ui
 		}
 		private readonly List<CableSpec> m_cableSpecs = new List<CableSpec>();
 
+		// Looks up the cable colour painting the connection that touches the given
+		// (module, portId).  Returns null when the port is unconnected — callers
+		// (PortPinButton) treat that as "stay transparent".  Reads m_cableSpecs which
+		// is fully populated and coloured by RedrawComponents before any ModuleView /
+		// PortPinButton instances are constructed for the current redraw.
+		public ColorRgba? GetCableColor(Module module, string portId, bool isInput)
+		{
+			if (module == null || string.IsNullOrEmpty(portId) || m_cableSpecs.Count == 0) {
+				return null;
+			}
+			foreach (var cable in m_cableSpecs)
+			{
+				if (isInput)
+				{
+					if (cable.Dst.Id == module.Id && cable.InputId == portId) {
+						return cableColorFromIndex(cable.ColorIndex);
+					}
+				}
+				else
+				{
+					if (cable.Src.Id == module.Id && cable.OutputId == portId) {
+						return cableColorFromIndex(cable.ColorIndex);
+					}
+				}
+			}
+			return null;
+		}
+
+		// Converts the Unity Color stored in the palette to an opaque ColorRgba.  The
+		// palette colours carry the half-transparent line alpha (used for cable fills);
+		// for the port dot we want a full-saturation fill so the user can recognise
+		// the matching hue.
+		private static ColorRgba cableColorFromIndex(int idx)
+		{
+			if (idx < 0 || idx >= m_colors.Count) {
+				return ColorRgba.Black;
+			}
+			Color c = m_colors[idx];
+			return new ColorRgba(c.r, c.g, c.b, 1f);
+		}
+
 		private static float ComputeChannelHeight(int laneCount)
 		{
 			// Every channel keeps at least MIN_CHANNEL_PX of breathing room — even empty
@@ -436,6 +513,13 @@ namespace ProgramableNetwork.Ui
 		// fill the upper lanes and BOTTOM-touching ends fill the lower lanes, then PACK
 		// non-overlapping spans onto the same lane to minimise the total lane count
 		// (channel height grows only when cables actually conflict).
+		//
+		// TODO: split each row channel into two sub-channels — one reserved for
+		// source-side (output→corridor) horizontals, one for destination-side
+		// (corridor→input) horizontals.  Today they share one channel and can
+		// collide when their X spans overlap; with sub-channels, an output-end
+		// and an input-end from the same channel could never visually meet, and
+		// channel height for typical rows would drop to one lane each.
 		private struct ChannelEntry
 		{
 			public CableSpec Cable;
@@ -507,15 +591,17 @@ namespace ProgramableNetwork.Ui
 					return s != 0 ? s : a.XMin.CompareTo(b.XMin);
 				});
 
-				// Greedy interval packing — separate lane stacks per side so the side
-				// ordering (top → middle → bottom) is preserved while non-overlapping
-				// spans within a side reuse the same lane.
+				// Greedy interval packing — single global lane stack; the
+				// (Side, XMin) sort order means top-side cables get tried first
+				// and tend to occupy the lower-indexed (visually upper) lanes,
+				// but a bottom-side cable can REUSE one of those lanes if its
+				// X span doesn't overlap with what's already there.  Without
+				// this lane reuse, every top-side end forces its own lane even
+				// when a bottom-side end at a non-overlapping X could share it.
 				// Zero-width cables (src and dst at the same X — e.g., adjacent-row direct
 				// drops in the same column) don't claim a lane at all; their vertical run
 				// just passes through the channel and its placement Y can be the centre.
 				var laneEnds = new List<float>();
-				int currentSide = -1;
-				int sideOffset = 0;
 				const float ZERO_WIDTH_EPS = 0.5f;
 
 				for (int idx = 0; idx < list.Count; idx++)
@@ -537,12 +623,6 @@ namespace ProgramableNetwork.Ui
 						continue;
 					}
 
-					if (e.Side != currentSide)
-					{
-						sideOffset += laneEnds.Count;
-						laneEnds.Clear();
-						currentSide = e.Side;
-					}
 					int lane = -1;
 					for (int i = 0; i < laneEnds.Count; i++)
 					{
@@ -557,26 +637,27 @@ namespace ProgramableNetwork.Ui
 					{
 						laneEnds[lane] = e.XMax;
 					}
-					int finalLane = sideOffset + lane;
 					if (e.IsBoth)
 					{
-						e.Cable.SrcChannelLane = finalLane;
-						e.Cable.DstChannelLane = finalLane;
+						e.Cable.SrcChannelLane = lane;
+						e.Cable.DstChannelLane = lane;
 					}
 					else if (e.IsSrc) {
-						e.Cable.SrcChannelLane = finalLane;
+						e.Cable.SrcChannelLane = lane;
 					} else {
-						e.Cable.DstChannelLane = finalLane;
+						e.Cable.DstChannelLane = lane;
 					}
 				}
-				sideOffset += laneEnds.Count;
-				m_channelLaneCounts[ch] = sideOffset;
+				m_channelLaneCounts[ch] = laneEnds.Count;
 			}
 		}
 
 		// Side corridors carry the long vSide segment of any 5-segment cable.  Sort cables
-		// on the same side by their span (min channel idx then max), so cables wrapping
-		// shorter distances sit on inner lanes — keeps vSide segments from crossing.
+		// on the same side by their channel-range start, then greedy-pack non-overlapping
+		// ranges onto the same lane — same idea as AssignChannelLanes uses for X spans,
+		// applied to vertical channel-index spans.  Two cables on the same wrap side can
+		// share a side lane iff their [min..max] channel ranges are disjoint, since their
+		// vSide segments occupy disjoint Y intervals on that single corridor X.
 		private void AssignSideLanes()
 		{
 			var left  = m_cableSpecs.Where(c => c.WrapLeft  && c.SrcChannelIdx != c.DstChannelIdx).ToList();
@@ -595,11 +676,37 @@ namespace ProgramableNetwork.Ui
 			};
 			left.Sort(bySpan);
 			right.Sort(bySpan);
-			for (int i = 0; i < left.Count;  i++) {
-				left[i].SideLane  = i;
-			}
-			for (int i = 0; i < right.Count; i++) {
-				right[i].SideLane = i;
+			packSideLanes(left);
+			packSideLanes(right);
+		}
+
+		// Greedy interval packing for one side corridor.  Each lane tracks the highest
+		// channel idx already claimed; a new cable reuses the first lane whose end is
+		// strictly below the cable's start (so adjacent ranges still get separate lanes
+		// — channel rows have height, and two cables that touch the same channel could
+		// otherwise visually merge).
+		private static void packSideLanes(List<CableSpec> cables)
+		{
+			var laneEnds = new List<int>();
+			foreach (var c in cables)
+			{
+				int min = Math.Min(c.SrcChannelIdx, c.DstChannelIdx);
+				int max = Math.Max(c.SrcChannelIdx, c.DstChannelIdx);
+				int chosen = -1;
+				for (int i = 0; i < laneEnds.Count; i++)
+				{
+					if (laneEnds[i] < min) { chosen = i; break; }
+				}
+				if (chosen < 0)
+				{
+					chosen = laneEnds.Count;
+					laneEnds.Add(max);
+				}
+				else
+				{
+					laneEnds[chosen] = max;
+				}
+				c.SideLane = chosen;
 			}
 		}
 
@@ -639,17 +746,61 @@ namespace ProgramableNetwork.Ui
 			}
 		}
 
-		// Picks the wrap side based on the average X of source/dest ports.  If the wire's
-		// midpoint sits in the left half of the layout, wrap left (shorter detour); else right.
-		private bool decideWrapLeft(Module src, Module dst)
+		// Decide left/right side corridor for every wrapping cable.  Goal: balance
+		// load between corridors so cables don't all pile up on one side just
+		// because the modules in use cluster geometrically — but the geometric
+		// signal stays primary, so cables genuinely close to a corridor keep
+		// their short detour.
+		//
+		// Each side's cost = (horizontal detour the cable would actually walk on
+		// that side) + (cables already routed there) × LOAD_BIAS.  The detour
+		// term is the SUM of both pin distances to the chosen corridor, which
+		// matches the real wire length (hBot + hTop) — using the sum instead of
+		// just the midpoint means a cable with one pin near the right edge pays
+		// the FULL cost of dragging the other pin all the way over, so the
+		// geometric preference scales with how far apart the pins are.
+		//
+		// LOAD_BIAS is tuned to ~2 × BLOCK_SIZE: an imbalance of N cables on a
+		// side is worth N × 2 blocks of extra detour.  That alternates cables
+		// near the layout centre but doesn't push edge-anchored cables across
+		// the whole layout to the opposite corridor.
+		private void AssignWrapSides()
 		{
 			if (Entity?.Prototype == null) {
-				return true;
+				return;
 			}
-			float layoutW = Entity.Prototype.Columns;
-			float midCol = ((src.Column + (src.Layout.GetWidth(src) * 0.5f))
-						   + (dst.Column + (dst.Layout.GetWidth(dst) * 0.5f))) * 0.5f;
-			return midCol < layoutW * 0.5f;
+			float bs       = (float)Sizes.BLOCK_SIZE.Pixels;
+			float pad      = VIEW_PAD_PX;
+			float layoutPx = Entity.Prototype.Columns * bs;
+			float leftEdge  = pad;
+			float rightEdge = pad + layoutPx;
+			float loadBias  = bs * 2f;
+
+			int leftCount  = 0;
+			int rightCount = 0;
+			foreach (var cable in m_cableSpecs)
+			{
+				if (cable.SrcChannelIdx == cable.DstChannelIdx) {
+					// Adjacent-row direct route — no corridor used; WrapLeft is
+					// inert for routing but still feeds AssignChannelLanes' bookkeeping.
+					cable.WrapLeft = (cable.SrcXp + cable.DstXp) * 0.5f < (leftEdge + rightEdge) * 0.5f;
+					continue;
+				}
+				// Detour walked on each side = sum of both pin distances to that
+				// corridor (= length of the two horizontal segments combined).
+				// Bigger when the cable's farther pin is far from the corridor.
+				float leftDetour  = (cable.SrcXp - leftEdge)  + (cable.DstXp - leftEdge);
+				float rightDetour = (rightEdge - cable.SrcXp) + (rightEdge - cable.DstXp);
+				float leftScore  = leftDetour  + leftCount  * loadBias;
+				float rightScore = rightDetour + rightCount * loadBias;
+				if (leftScore <= rightScore) {
+					cable.WrapLeft = true;
+					leftCount++;
+				} else {
+					cable.WrapLeft = false;
+					rightCount++;
+				}
+			}
 		}
 
 		// Returns a darker shade of the given colour by scaling each RGB channel by `factor`,
@@ -766,24 +917,47 @@ namespace ProgramableNetwork.Ui
 				.Observe(() => dst.Column)
 				.Do((sr, sc, dr, dc) => update());
 
-			// Colour observer (per segment): coloured when the wire is "active" (its
-			// endpoint module is hovered, or the connections button is on), black otherwise.
-			// Always visible — visibility itself doesn't toggle anymore.
+			// Colour observer (per segment): activates only for the cable whose
+			// specific pin is hovered, OR for any cable touching the module body
+			// the user is currently over.  Hovering a single pin highlights only
+			// that pin's wire (not all of the module's cables) so the user can
+			// trace one connection at a time.  The global m_showsLinks toggle
+			// still forces every wire to active.  Always visible — visibility
+			// itself doesn't toggle anymore.
 			foreach (var pair in segs)
 			{
 				var localSeg = pair.seg;
 				var localHoriz = pair.horizontal;
-				localSeg.Observe(() => m_controller.m_higlightedOutput?.ModuleId)
-				   .Observe(() => m_controller.m_higlightedInput?.ModuleId)
-				   .Observe(() => m_controller.m_showsLinks)
-				   .Do((hlOut, hlIn, force) =>
-				   {
-					   bool active = force
-						   || (hlOut.HasValue && (hlOut.Value == src.Id || hlOut.Value == dst.Id))
-						   || (hlIn .HasValue && (hlIn .Value == src.Id || hlIn .Value == dst.Id));
-					   localSeg.Background(active ? activeColor : idleColor);
-					   applyBorder(localSeg, localHoriz, active ? activeBorder : idleBorder);
-				   });
+				localSeg.Observe(() =>
+				{
+					if (m_controller.m_showsLinks) {
+						return true;
+					}
+					// Pin-specific match: the hovered pin must equal this cable's
+					// exact (ModuleId, PortId) endpoint, not just the same module.
+					var hlOut = m_controller.m_higlightedOutput;
+					if (hlOut != null) {
+						return hlOut.ModuleId == src.Id && hlOut.OutputId == outputId;
+					}
+					var hlIn = m_controller.m_higlightedInput;
+					if (hlIn != null) {
+						// ModuleConnector reuses OutputId for both kinds — for
+						// inputs it carries the input's id.
+						return hlIn.ModuleId == dst.Id && hlIn.OutputId == inputId;
+					}
+					// Module-level fallback: cable hover by hovering any non-pin
+					// part of the source or destination module body.
+					var hovMod = m_controller.HoveredModuleGraphic;
+					if (hovMod != null) {
+						return hovMod.Id == src.Id || hovMod.Id == dst.Id;
+					}
+					return false;
+				})
+				.Do(active =>
+				{
+					localSeg.Background(active ? activeColor : idleColor);
+					applyBorder(localSeg, localHoriz, active ? activeBorder : idleBorder);
+				});
 			}
 
 			update(); // initial layout

@@ -202,6 +202,58 @@ namespace ProgramableNetwork.Python
             }
         }
 
+        // Per-module Fix32 scratch array.  Exposed as `module.Array` in Python.
+        public ArraySetter Array => new ArraySetter(module);
+
+        public class ArraySetter
+        {
+            private readonly Module module;
+
+            public ArraySetter(Module module)
+            {
+                this.module = module;
+            }
+
+            public int length => module.Array.Length;
+
+            public Fix32 get(int idx, Fix32 defaultValue)
+            {
+                return module.Array[idx, defaultValue];
+            }
+
+            public void set(int idx, Fix32 value)
+            {
+                module.Array[idx] = value;
+            }
+
+            public void resize(int size)
+            {
+                module.Array.Resize(size);
+            }
+
+            // Python overload — when growing, seed the new tail slots with the
+            // supplied value instead of zero.  Lets Python modules avoid a loop
+            // when extending a delay buffer / window with a continuation value.
+            public void resize(int size, Fix32 fill_new)
+            {
+                module.Array.Resize(size, fill_new);
+            }
+
+            public void clear()
+            {
+                module.Array.Clear();
+            }
+
+            // Atomic shift-register step: shifts every slot one position left,
+            // writes `incoming` to the last slot, and returns the value that
+            // was previously in slot[0].  Lets Python modules implement an
+            // array-copy delay / FIR / sliding window without a per-tick loop.
+            public Fix32 shift_left_with(Fix32 incoming)
+            {
+                return module.Array.ShiftLeftWith(incoming);
+            }
+        }
+
         public ModuleStatus Status
         {
             get => module.Status;

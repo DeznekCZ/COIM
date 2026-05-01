@@ -299,7 +299,7 @@ namespace ProgramableNetwork.Python
 			IExpression f = shifts.Last();
             for (int i = shifts.Count - 2; i >= 0; i--)
             {
-                f = new BitXorExpression(shifts[i], f);
+                f = new BitAndExpression(shifts[i], f);
             }
             return f;
         }
@@ -358,7 +358,11 @@ namespace ProgramableNetwork.Python
                 }
                 else
                 {
-                    f = new ModExpression(sums[i].Item2, f);
+                    // Subtraction: a - b ≡ a + (-b).  Was previously creating a
+                    // ModExpression (a % b) — completely wrong; turned every
+                    // subtraction into a modulo and tripped ZeroCheck on any
+                    // 0-LHS expression like `0 - 1` (parsed as `0 % 1`).
+                    f = new AddExpression(sums[i].Item2, new NegativeExpression(f));
                 }
             }
             return f;
@@ -410,7 +414,11 @@ namespace ProgramableNetwork.Python
                         PythonTokens.minus,
                         PythonTokens.invert
             }, out Token token, ignore ?? defaultIgnore)) {
-                operators.Push(PythonTokens.plus);
+                // Push the actual operator we matched — was previously hard-coded
+                // to `plus`, which made unary `-x` and `~x` silently behave as
+                // identity (no-op).  The pop loop below already dispatches per
+                // token, so just feed it the right one.
+                operators.Push(token.type);
             }
             IExpression expression = power(operators.Count == 0 ? ignore ?? defaultIgnore : defaultIgnore);
             while (operators.Count > 0) {

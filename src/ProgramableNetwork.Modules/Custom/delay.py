@@ -5,9 +5,16 @@ from Core.module import DefaultControllers, Module
 
 from Mafi import Fix32
 
+
+# Reference example for the Module.Array API.  Implements a configurable
+# multi-tick delay as an array-copy shift register: every tick reads slot[0],
+# shifts the buffer left by one, and writes the new input at the end.  All of
+# that happens inside Module.Array.shift_left_with() — Python's parser has no
+# for/while loop, so the loop is in C#.  Resize seeds new slots with the most
+# recent sample so the output stays continuous when the delay field grows.
 class Runtime_Delay_1(Module):
-    name = "Control: Delay (multi tick)"
-    description = "Delays input <b>input</b> by the number of ticks set in the <b>delay</b> field, then emits the same signal on <b>output</b>. A delay of 1 (or less) passes the value through unchanged."
+    name = "Control: Delay (configurable)"
+    description = "Delays input <b>input</b> by the number of ticks set in the <b>delay</b> field, then emits the same signal on <b>output</b>. A delay of 1 (or less) passes the value through unchanged. Maximum delay is 64 ticks. When the field is increased the new tail of the buffer is seeded with the most recent sample so the output stays continuous; when shrunk the oldest pending samples continue to emit in order."
     symbol = "DLY"
     inputs = [
         Input("input", "Signal input")
@@ -15,41 +22,41 @@ class Runtime_Delay_1(Module):
     outputs = [
         Output("output", "Signal output")
     ]
-
     fields = [
-        Int32Field("delay", "Delay", "Sets how many ticks the output should be delayed", 1)
+        Int32Field("delay", "Delay", "How many ticks the output should be delayed (capped at 64)", 1)
     ]
-
     width = 1
-
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
     def action(self):
         input = self.Input.get("input", Fix32.Zero)
         delay = self.Field.get_int("delay", 1)
+        if delay > 64:
+            delay = 64
 
+        # Pass-through fast path — drop the buffer if the field shrank.
         if delay <= 1:
-            # No need to buffer delays if they are this short
+            if self.Array.length > 0:
+                self.Array.resize(0)
             self.Output.set("output", input)
             return
 
-        # Update the counter
-        count = self.Output.get_int("count", 0)
-        if count >= delay:
-            count = 0
+        # Keep buffer sized to the field.  On grow, seed new tail slots with
+        # the most recent sample so the output stays continuous; on shrink,
+        # resize() truncates from the tail (oldest pending samples keep
+        # emitting in order).
+        old_length = self.Array.length
+        if old_length != delay:
+            last_value = Fix32.Zero
+            if old_length > 0:
+                last_value = self.Array.get(old_length - 1, Fix32.Zero)
+            self.Array.resize(delay, last_value)
 
-        # Generate a name for the buffer storage, which is unique to the count.
-        # The simplest approach is to convert the int to a string.
-        buffer_name = unicode(count)
-
-        # Here it gets more complicated to follow what goes on.
-        # The buffer is put on output and then input is put into the same buffer.
-        # Since the name of the buffer follows the counter, each name is used at a fixed internal.
-        # This will provide the same result as a list where you push to one end and pop from the other.
-        # The difference being that here we don't have to worry about all the other values.
-        self.Output.set("output", self.Output.get(buffer_name, Fix32.Zero))
-        self.Output.set(buffer_name, input)
+        # Atomic shift-register step: shift left, push input at end, return
+        # what was at slot[0].  That value has been waiting `delay` ticks.
+        oldest = self.Array.shift_left_with(input)
+        self.Output.set("output", oldest)
 
 
 class Runtime_Delay_2(Module):

@@ -1125,6 +1125,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 	}
 
+	// Configurable multi-tick delay was moved to Python — see Runtime_Delay_1
+	// in src/ProgramableNetwork.Modules/Custom/delay.py.  It now serves as the
+	// reference example for the Module.Array API; the C#-side helpers it relies
+	// on (ArrayAccess.Resize(size, fillNew) / ArrayAccess.ShiftLeftWith) are
+	// what make the loop-free Python action() possible.
+
 	private void Connections(ProtoRegistrator registrator) {
 		registrator
 			.ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (4 pin, input)", "C-IN")

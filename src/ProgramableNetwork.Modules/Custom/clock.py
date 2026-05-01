@@ -11,6 +11,10 @@ class Runtime_Clock_1(Module):
     description = "Outputs an integer counter on <b>clock</b> that increments every <b>clock_period</b> ticks and wraps to zero at <b>max_count</b>. With the <b>mode</b> field on, output instead pulses true only on the tick where the counter would change. An optional <b>reset</b> input holds the clock at zero and suppresses output while non-zero; counting resumes when reset goes back to zero."
     symbol = "CLK"
 
+    inputs = [
+        Input("reset", "Reset (hold non-zero to freeze at 0)")
+    ]
+
     outputs = [
         Output("clock", "Clock")
     ]
@@ -20,13 +24,24 @@ class Runtime_Clock_1(Module):
         Int32Field("clock_period", "Clock Period", "Updates between each update of the output", 1),
         Int32Field("max_count", "Max Output", "Output resets when count reaches this value", 2)
     ]
-   
+
     width = 1
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
     def action(self):
+        # Reset held — freeze the sub-tick counter and the public output at 0,
+        # suppress any pulse, and exit before the increment runs.  Counting
+        # resumes from zero on the first tick where reset goes back to 0.
+        if self.Input.get_int("reset", 0) > 0:
+            self.Output.set_int("sub_clock", 0)
+            if self.Field.get_bool("mode", False):
+                self.Output.set_bool("clock", False)
+            else:
+                self.Output.set_int("clock", 0)
+            return
+
         sub_clock = self.Output.get_int("sub_clock", 0)
         sub_clock = sub_clock + 1
         update = False
@@ -76,6 +91,14 @@ class Runtime_Clock_2(Module):
     controllers = [ DefaultControllers.Controller ]
 
     def action(self):
+        # Reset held — freeze every output at 0 and exit before the increment.
+        # Counting resumes from zero on the first tick where reset goes back to 0.
+        if self.Input.get_int("reset", 0) > 0:
+            self.Output.set_int("sub_clock", 0)
+            self.Output.set_bool("update", False)
+            self.Output.set_int("clock", 0)
+            return
+
         sub_clock = self.Output.get_int("sub_clock", 0)
         sub_clock = sub_clock + 1
         update = False

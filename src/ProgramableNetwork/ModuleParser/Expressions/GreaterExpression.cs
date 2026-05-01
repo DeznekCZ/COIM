@@ -12,7 +12,7 @@
 
         protected override object Evaluate(object left, object right)
         {
-            return Expressions.__ge__(left, right);
+            return Expressions.__gt__(left, right);
         }
     }
 }

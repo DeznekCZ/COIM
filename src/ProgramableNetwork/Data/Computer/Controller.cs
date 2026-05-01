@@ -26,7 +26,7 @@ using Mafi.Core.Research;
 
 namespace ProgramableNetwork
 {
-	[GenerateSerializer(false, null, 0)]
+	[ManuallyWrittenSerialization]
 	public class Controller : LayoutEntityBase, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
 		IUnityConsumingEntity, IComputingConsumingEntity, IElectricityConsumingEntity, IMaintainedEntity, IObjectWithCustomTitle
 	{
@@ -34,6 +34,14 @@ namespace ProgramableNetwork
 		// dropped and each Module started carrying its own (Row, Column). Used by both
 		// Controller and Module deserialization for version-gated reads.
 		public const int MODULE_LAYOUT_INFO = 4;
+
+		// Serialization version where Module's optional containers (the five Number/
+		// String dicts, InputModules, and the new Fix32[] ArrayData scratch buffer)
+		// are gated behind a single byte bitmask so empty containers cost nothing
+		// on disk.  Older saves read each dict unconditionally; v5+ writes only the
+		// populated ones.  ArrayData was introduced in this same version — pre-v5
+		// modules load with an empty array.
+		public const int MODULE_COMPACT_DATA = 5;
 
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 		{
