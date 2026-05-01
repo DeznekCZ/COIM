@@ -1260,6 +1260,7 @@
 	["ProgramableNetwork_Module_Variable_Write__input__value__name", "Wert"],
 	["ProgramableNetwork_Module_Variable_Write__name", "Variable (schreiben)"],
 	["ProgramableNetwork_ModulesCount", "Anzahl der Module: {0}"],
+	["ProgramableNetwork_NetworkVariablesTitle", "Netzwerkvariablen"],
 	["ProgramableNetwork_SoundNotification__desc", "Die Steuerung enthält ein Problem, das ihr Verhalten stören kann"],
 	["ProgramableNetwork_SoundNotification__name", "Wird abgespielt"],
 	["ProgramableNetwork_Speaker_Sound_Alarm", "Alarm"],

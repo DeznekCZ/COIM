@@ -1260,6 +1260,7 @@
 	["ProgramableNetwork_Module_Variable_Write__input__value__name", "Value"],
 	["ProgramableNetwork_Module_Variable_Write__name", "Variable (write)"],
 	["ProgramableNetwork_ModulesCount", "Count of modules: {0}"],
+	["ProgramableNetwork_NetworkVariablesTitle", "Network variables"],
 	["ProgramableNetwork_SoundNotification__desc", "Controller contains issue, which may broke his behaviour"],
 	["ProgramableNetwork_SoundNotification__name", "Playing"],
 	["ProgramableNetwork_Speaker_Sound_Alarm", "Alarm"],

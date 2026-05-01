@@ -1261,6 +1261,7 @@
 	["ProgramableNetwork_Module_Variable_Write__input__value__name", "Значение"],
 	["ProgramableNetwork_Module_Variable_Write__name", "Переменная (запись)"],
 	["ProgramableNetwork_ModulesCount", "Количество модулей: {0}"],
+	["ProgramableNetwork_NetworkVariablesTitle", "Сетевые переменные"],
 	["ProgramableNetwork_SoundNotification__desc", "Контроллер содержит проблему, которая может нарушить его работу"],
 	["ProgramableNetwork_SoundNotification__name", "Воспроизведение"],
 	["ProgramableNetwork_Speaker_Sound_Alarm", "Тревога"],

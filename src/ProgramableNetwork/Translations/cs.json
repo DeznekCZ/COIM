@@ -1260,6 +1260,7 @@
 	["ProgramableNetwork_Module_Variable_Write__input__value__name", "Hodnota"],
 	["ProgramableNetwork_Module_Variable_Write__name", "Proměnná (zápis)"],
 	["ProgramableNetwork_ModulesCount", "Počet modulů: {0}"],
+	["ProgramableNetwork_NetworkVariablesTitle", "Síťové proměnné"],
 	["ProgramableNetwork_SoundNotification__desc", "Řadič obsahuje problém, který může narušit jeho chování"],
 	["ProgramableNetwork_SoundNotification__name", "Přehrává se"],
 	["ProgramableNetwork_Speaker_Sound_Alarm", "Poplach"],
