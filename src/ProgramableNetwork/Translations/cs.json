@@ -20,6 +20,7 @@
 	["ProgramableNetwork_Category_DevicesSound__name", "Zvuková zařízení"],
 	["ProgramableNetwork_Category_Devices__name", "Audiovizuální zařízení"],
 	["ProgramableNetwork_Category_Display__name", "Zobrazovací moduly"],
+	["ProgramableNetwork_Category_Saved__name", "Uložené plány"],
 	["ProgramableNetwork_Category_Stats__name", "Statistické moduly"],
 	["ProgramableNetwork_Category__desc", "Obsahuje budovy pro práci se sítí (výpočty, řadič)"],
 	["ProgramableNetwork_Category__name", "Síť"],

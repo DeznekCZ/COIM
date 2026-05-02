@@ -188,6 +188,16 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 			.OnClick(() => GlobalDependencyResolver.Get<ConnectionInfo>().Open(context.UiRoot))
 			.OnMouseEnterLeave(addPreviewHighlightAll, ClearPreviewHighlight);
 
+		// "Save controller as blueprint" — dual to the per-module save button in
+		// ModuleEditDialog.  Snapshots the entire controller (modules, layout,
+		// internal cables, color, speed) into BlueprintsLibrary as
+		// [PN-Controller]-<name> so the player can paste it elsewhere via the
+		// base-game blueprint browser.
+		ButtonIcon saveCtrlBp = new ButtonIcon(Button.Header, UserInterface.General.Save_svg);
+		saveCtrlBp.Tooltip("Save this controller (with modules) as a reusable blueprint".ToDoLoc());
+		saveCtrlBp.OnClick(() => SaveBlueprintDialog.ForController(Entity, saveCtrlBp, context));
+		HeaderButtons.Add(saveCtrlBp);
+
 		m_colorButton = new ButtonIcon(UserInterface.Cursors.Paint32_png);
 		m_colorButton.Observe(() => Entity.Color)
 				   .Do(color => m_colorButton.Icon.Color(color));

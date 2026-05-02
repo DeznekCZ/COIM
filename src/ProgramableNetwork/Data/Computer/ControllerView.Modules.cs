@@ -1101,7 +1101,10 @@ namespace ProgramableNetwork.Ui
 				return;
 			}
 			m_pickTemplateModuleInAction = true;
-			m_pickTemplateModule ??= new PickNewModule(NewTr.Inspector.PickTemplate, NewTemplates());
+			// Rebuild every open so player-saved blueprints added since the last open
+			// show up.  The Python-defined templates are stable across game runs but
+			// the BlueprintsLibrary scanner needs a fresh sweep each time.
+			m_pickTemplateModule = new PickNewModule(NewTr.Inspector.PickTemplate, NewTemplates());
 			m_pickTemplateModuleInAction = false;
 			m_targetRow = row;
 			m_targetColumn = col;
@@ -1122,6 +1125,60 @@ namespace ProgramableNetwork.Ui
 						return (false, null);
 					}
 				}, item);
+			}
+
+			// Also yield every player-saved module blueprint from the base game's
+			// BlueprintsLibrary (entries with the [PN-Module]- title prefix).  This
+			// is the runtime side of the "save as blueprint" feature — the picker
+			// shows them alongside Python-defined templates so the user gets one
+			// unified list of reusable configs.  DI lookup + ProtosDb deref are
+			// done in a helper method (no yield in there) so we can use try/catch.
+			foreach (var sel in EnumerateBlueprintSelectors())
+			{
+				yield return sel;
+			}
+		}
+
+		private IEnumerable<AModuleProtoSelector> EnumerateBlueprintSelectors()
+		{
+			Mafi.Core.Entities.Blueprints.BlueprintsLibrary library = null;
+			Mafi.Core.Prototypes.ProtosDb protosDb = null;
+			try
+			{
+				library = ProgramableNetwork.GlobalDependencyResolver.Get<Mafi.Core.Entities.Blueprints.BlueprintsLibrary>();
+				protosDb = m_controller.Entity.Context.ProtosDb;
+			}
+			catch (System.Exception e)
+			{
+				Log.Exception(e);
+			}
+			if (library == null || protosDb == null)
+			{
+				return System.Linq.Enumerable.Empty<AModuleProtoSelector>();
+			}
+			return EnumerateBlueprintSelectorsCore(library, protosDb);
+		}
+
+		private IEnumerable<AModuleProtoSelector> EnumerateBlueprintSelectorsCore(
+			Mafi.Core.Entities.Blueprints.BlueprintsLibrary library,
+			Mafi.Core.Prototypes.ProtosDb protosDb)
+		{
+			foreach (var bp in ProgramableNetwork.ModuleBlueprints.EnumerateAll(library))
+			{
+				Mafi.Option<ModuleProto> protoOpt = ProgramableNetwork.ModuleBlueprints.ResolveStoredProto(bp, protosDb);
+				if (!protoOpt.HasValue)
+				{
+					Log.Warning($"[ModuleBlueprints] Skipping '{bp.Name}' — module proto not found in current ProtosDb");
+					continue;
+				}
+				yield return new BlueprintModuleSelector(this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+				{
+					if (TryPlaceAt(moduleProto, m_targetRow, m_targetColumn))
+					{
+						return (true, m_lastCreated);
+					}
+					return (false, null);
+				}, bp, protoOpt.Value);
 			}
 		}
 

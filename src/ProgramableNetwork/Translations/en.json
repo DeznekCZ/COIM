@@ -20,6 +20,7 @@
 	["ProgramableNetwork_Category_DevicesSound__name", "Sound devices"],
 	["ProgramableNetwork_Category_Devices__name", "Audiovisual devices"],
 	["ProgramableNetwork_Category_Display__name", "Display modules"],
+	["ProgramableNetwork_Category_Saved__name", "Saved blueprints"],
 	["ProgramableNetwork_Category_Stats__name", "Stats modules"],
 	["ProgramableNetwork_Category__desc", "Contains buildings for for work with network (computation, controller)"],
 	["ProgramableNetwork_Category__name", "Network"],

@@ -1,7 +1,6 @@
 using System;
 using System.Text;
 using Mafi;
-using Mafi.Core.Syncers;
 using Mafi.Localization;
 using Mafi.Unity;
 using Mafi.Unity.InputControl;
@@ -11,12 +10,10 @@ using Mafi.Unity.UiToolkit.Library;
 using ProgramableNetwork.Python;
 using UnityEngine.UIElements;
 
-// Alias the ambiguous types so we can write `Label`/`TextField` and mean
-// the Unity primitives (which we manipulate via .style, .text directly),
-// while keeping Mafi's components available under fully-qualified names
-// where we actually want their wrappers.
+// Alias the ambiguous Label so we can write `new Label()` and mean Unity's
+// primitive (which we manipulate via .style / .text directly).  Mafi's
+// Label wrapper is still reachable via its full namespace when needed.
 using Label = UnityEngine.UIElements.Label;
-using MafiTextField = Mafi.Unity.UiToolkit.Library.TextField;
 
 namespace ProgramableNetwork;
 
@@ -51,7 +48,11 @@ namespace ProgramableNetwork;
 public class PlcPyCodeEditorWindow : Window {
 
 	private readonly PlcPyCodeEditorWindowController m_controller;
-	private readonly MafiTextField m_codeEditor;
+	// Custom code editor — own caret, selection, undo, clipboard, syntax
+	// rendering.  Replaces the dual-layer (transparent TextField + colored
+	// overlay) approach so colored text and caret can never drift; both
+	// are computed from the same buffer + same monospace font metrics.
+	private readonly PlcPyTextEditor m_codeEditor;
 	private readonly Label m_lineNumbers;
 	private readonly Label m_errorLabel;
 	private readonly Label m_statsLabel;
@@ -115,7 +116,10 @@ public class PlcPyCodeEditorWindow : Window {
 		// Line-numbers gutter — narrow right-aligned label, separated from
 		// the editor by a 1px border so the eye registers the divide
 		// without the gutter blending into the textfield background.
+		// Monospace font matches the editor side so a single-digit number on
+		// line 1 sits at the same baseline as a triple-digit one on line 999.
 		m_lineNumbers = new Label("1");
+		m_lineNumbers.AddToClassList(Cls.fontMonospace);
 		m_lineNumbers.style.minWidth = 40;
 		m_lineNumbers.style.paddingRight = 6;
 		m_lineNumbers.style.paddingLeft = 6;
@@ -129,32 +133,42 @@ public class PlcPyCodeEditorWindow : Window {
 		m_lineNumbers.pickingMode = PickingMode.Ignore;
 		editorBox.Add(m_lineNumbers);
 
-		// Editor field — Mafi TextField in multiline mode.  Default font is
-		// kept (no displayFont class) so the player sees actual case in
-		// their code rather than the LCD-style upper-case rendering.
-		m_codeEditor = new MafiTextField();
-		m_codeEditor.Multiline(true);
-		m_codeEditor.RootElement.style.flexGrow = 1;
-		m_codeEditor.RootElement.style.flexShrink = 1;
-		editorBox.Add(m_codeEditor.RootElement);
+		// Editor — fully custom PlcPyTextEditor; owns its own buffer,
+		// caret, selection, undo, mouse + keyboard handling, and
+		// rendering.  Added directly to editorBox (no ScrollView wrapper)
+		// so flexGrow=1 reaches a real height — wrapping in a ScrollView
+		// puts the editor in an auto-sized contentContainer where
+		// flexGrow has nothing to grow into, the editor collapses to 0×0,
+		// and `overflow: hidden` then clips the absolute-positioned text
+		// label out of view.  Long scripts overflow the editor for now;
+		// a content-driven sizing pass + ScrollView re-wrap is the right
+		// follow-up if scripts ever grow past the visible window.
+		m_codeEditor = new PlcPyTextEditor();
+		m_codeEditor.style.flexGrow = 1;
+		m_codeEditor.style.flexShrink = 1;
+		m_codeEditor.SyntaxHighlighter = PlcPySyntax.ToRichText;
+		editorBox.Add(m_codeEditor);
 
-		// Tab key → four spaces.  By default Tab focus-cycles out of the
-		// TextField, which is useless inside a code area.  Intercept at the
-		// trickle-down phase so we beat the focus controller.
-		m_codeEditor.RootElement.RegisterCallback<KeyDownEvent>(onEditorKeyDown, TrickleDown.TrickleDown);
+		// Floater nav hook — runs as the FIRST step inside the editor's
+		// own OnKeyDown via PlcPyTextEditor.KeyDownInterceptor, so Tab /
+		// Enter / Up / Down get a chance to drive the IntelliSense popup
+		// before the editor would treat them as indent / newline / caret
+		// movement.  A separate KeyDownEvent registration wouldn't work:
+		// the editor registers its own handler in its constructor, before
+		// we'd register ours, and "first registered wins" at TrickleDown.
+		m_codeEditor.KeyDownInterceptor = onEditorKeyDown;
 
-		m_codeEditor.OnValueChanged(text => {
+		m_codeEditor.OnValueChanged = text => {
 			UpdateLineNumbers(text);
 			RefreshIdentifierTooltip();
 			OnEditorTextChanged(text);
-		});
+		};
 
-		// Tooltip triggers off the editor caret rather than the preview's
-		// hit-test — Unity's character-index APIs aren't uniformly public,
-		// and tying the tooltip to the cursor means the player gets help
-		// for whatever they're currently typing or clicking on.
-		m_codeEditor.RootElement.RegisterCallback<MouseUpEvent>(_ => RefreshIdentifierTooltip());
-		m_codeEditor.RootElement.RegisterCallback<KeyUpEvent>(_ => RefreshIdentifierTooltip());
+		// Tooltip refresh on caret movement — the editor doesn't expose a
+		// caret-changed event explicitly, so piggy-back on KeyUp / MouseUp
+		// (the two ways the caret can move without a value change).
+		m_codeEditor.RegisterCallback<MouseUpEvent>(_ => RefreshIdentifierTooltip());
+		m_codeEditor.RegisterCallback<KeyUpEvent>(_ => RefreshIdentifierTooltip());
 
 		// ---- API reference panel (right side) --------------------------
 		// Static list of well-known identifiers + brief docs, populated
@@ -222,9 +236,11 @@ public class PlcPyCodeEditorWindow : Window {
 		m_floater = new VisualElement();
 		m_floater.style.position = Position.Absolute;
 		m_floater.style.flexDirection = FlexDirection.Column;
-		m_floater.style.minWidth = 180;
-		m_floater.style.maxWidth = 360;
-		m_floater.style.maxHeight = 200;
+		// Width pinned to ~50% of the editor each time the floater opens
+		// (see OpenFloater).  No max-height — the hint label below grows
+		// with its wrapped text, so the popup's overall size is driven by
+		// content, not capped to a fixed rectangle that'd cut the doc off
+		// for longer entries.
 		m_floater.style.backgroundColor = new StyleColor(new UnityEngine.Color(0.16f, 0.16f, 0.18f, 0.97f));
 		m_floater.style.borderTopWidth = 1;
 		m_floater.style.borderBottomWidth = 1;
@@ -239,11 +255,20 @@ public class PlcPyCodeEditorWindow : Window {
 		body.Add(m_floater);
 		m_floaterParent = body;
 
-		m_floaterRowsContainer = new VisualElement();
-		m_floaterRowsContainer.style.flexDirection = FlexDirection.Column;
-		m_floaterRowsContainer.style.paddingTop = 2;
-		m_floaterRowsContainer.style.paddingBottom = 2;
-		m_floaterRowsContainer.style.maxHeight = 160;
+		// Rows container — a vertical-scrolling ScrollView so completion
+		// lists longer than the popup can scroll instead of being clipped.
+		// Stored as VisualElement field but instantiated as ScrollView;
+		// .Add() goes through ScrollView.contentContainer automatically,
+		// so the rest of the code (RebuildFloaterRows / Clear) keeps
+		// working unchanged.
+		ScrollView rowsScroll = new ScrollView(ScrollViewMode.Vertical);
+		rowsScroll.style.flexDirection = FlexDirection.Column;
+		rowsScroll.style.paddingTop = 2;
+		rowsScroll.style.paddingBottom = 2;
+		rowsScroll.style.maxHeight = 160;
+		rowsScroll.style.flexGrow = 0;
+		rowsScroll.style.flexShrink = 1;
+		m_floaterRowsContainer = rowsScroll;
 		m_floater.Add(m_floaterRowsContainer);
 
 		// Hint row pinned at the bottom of the floater — updated by
@@ -284,13 +309,23 @@ public class PlcPyCodeEditorWindow : Window {
 		body.Add(footer);
 
 		ButtonText saveButton = new ButtonText("Save".ToDoLoc());
-		saveButton.OnClick(() => m_controller.Save(m_codeEditor.GetText()));
+		saveButton.OnClick(() => m_controller.Save(m_codeEditor.Text));
 		footer.Add(saveButton.RootElement);
 
 		ButtonText compileButton = new ButtonText("Compile".ToDoLoc());
 		compileButton.RootElement.style.marginLeft = 8;
-		compileButton.OnClick(() => CompileNow(m_codeEditor.GetText()));
+		compileButton.OnClick(() => CompileNow(m_codeEditor.Text));
 		footer.Add(compileButton.RootElement);
+
+		// Revert pulls the module's persisted code + error state into the
+		// editor.  Counterpart to Save — Save pushes, Revert pulls.  Without
+		// it the editor has no way to discard local edits or to refresh the
+		// runtime error after a Save (since the editor no longer polls the
+		// module live; see the comment on the missing periodic refresher).
+		ButtonText revertButton = new ButtonText("Revert".ToDoLoc());
+		revertButton.RootElement.style.marginLeft = 8;
+		revertButton.OnClick(() => LoadFromModule(m_controller.CurrentModule));
+		footer.Add(revertButton.RootElement);
 
 		VisualElement spacer = new VisualElement();
 		spacer.style.flexGrow = 1;
@@ -300,8 +335,12 @@ public class PlcPyCodeEditorWindow : Window {
 		backButton.OnClick(() => m_controller.Back());
 		footer.Add(backButton.RootElement);
 
-		// ---- Live status update -----------------------------------------
-		this.DoOnSyncPeriodically(() => RefreshStatus(), Duration.OneTick);
+		// No periodic poll of the module's state.  The editor is independent
+		// after opening — its visible code, error strip, and token count
+		// only change in response to player actions (typing, Compile, Save,
+		// Revert).  Polling clobbered local Compile results because the
+		// module's persisted __compile_error stays stale until the next
+		// tick after Save, which made fixed errors flash back on screen.
 	}
 
 	// Fill the API panel with one row per entry in PlcPySyntax.Docs.  Each
@@ -341,13 +380,12 @@ public class PlcPyCodeEditorWindow : Window {
 	// → `self` — so the player still gets help on a name that has no
 	// direct entry but inherits semantics from a known prefix.
 	private void RefreshIdentifierTooltip() {
-		TextElement textElement = m_codeEditor.RootElement.Q<TextElement>();
-		if (textElement is null) {
+		if (m_codeEditor == null) {
 			SetTooltipText("");
 			return;
 		}
-		string source = m_codeEditor.GetText() ?? "";
-		int cursor = textElement.selection.cursorIndex;
+		string source = m_codeEditor.Text ?? "";
+		int cursor = m_codeEditor.CaretIndex;
 		if (cursor < 0 || cursor > source.Length) {
 			SetTooltipText("");
 			return;
@@ -414,6 +452,7 @@ public class PlcPyCodeEditorWindow : Window {
 		return char.IsLetterOrDigit(c) || c == '_' || c == '.';
 	}
 
+	// Pushes the colored rich-text version of the current source into the
 	// Recompute the gutter on every value change.  Counted via a single
 	// pass; line text is built into a pre-sized StringBuilder.
 	private void UpdateLineNumbers(string code) {
@@ -436,20 +475,25 @@ public class PlcPyCodeEditorWindow : Window {
 		m_lineNumbers.text = sb.ToString();
 	}
 
-	// Editor keyboard handler — covers IntelliSense triggers, floater
-	// navigation, and the Tab → four-spaces shortcut.  Ctrl+Space and
-	// floater-active arrow/Enter/Tab/Escape need to beat both the
-	// TextField's own focus handling and any default key-binding, so we
-	// register at TrickleDown phase and call StopPropagation/Prevent
-	// Default eagerly when we consume the event.
-	private void onEditorKeyDown(KeyDownEvent evt) {
+	// Floater-aware key interceptor — assigned to
+	// PlcPyTextEditor.KeyDownInterceptor and called as the FIRST step of
+	// the editor's OnKeyDown.  Returning true means "consumed; stop the
+	// editor's normal handling".  The editor itself handles Tab → 4
+	// spaces, arrow keys, etc., but only when this interceptor passes.
+	// Escape is intentionally NOT handled here — it's consumed in the
+	// InputUpdate override below.  Handling it here too would close the
+	// floater synchronously and then UnityInputManager's poll-based
+	// Escape pass would still see the keypress and deactivate the editor
+	// controller — closing the window on the same press the player meant
+	// only to dismiss the floater.
+	private bool onEditorKeyDown(KeyDownEvent evt) {
 		// Ctrl+Space → open the floater with all top-level names (or
 		// the dotted-parent set if the cursor is on `something.`).
 		if (evt.ctrlKey && evt.keyCode == UnityEngine.KeyCode.Space) {
 			OpenFloater();
 			evt.StopPropagation();
 			evt.PreventDefault();
-			return;
+			return true;
 		}
 
 		if (m_floaterOpen) {
@@ -458,49 +502,25 @@ public class PlcPyCodeEditorWindow : Window {
 					MoveFloaterSelection(+1);
 					evt.StopPropagation();
 					evt.PreventDefault();
-					return;
+					return true;
 				case UnityEngine.KeyCode.UpArrow:
 					MoveFloaterSelection(-1);
 					evt.StopPropagation();
 					evt.PreventDefault();
-					return;
+					return true;
 				case UnityEngine.KeyCode.Return:
 				case UnityEngine.KeyCode.KeypadEnter:
 				case UnityEngine.KeyCode.Tab:
 					InsertFloaterSelection();
 					evt.StopPropagation();
 					evt.PreventDefault();
-					return;
-				case UnityEngine.KeyCode.Escape:
-					CloseFloater();
-					evt.StopPropagation();
-					evt.PreventDefault();
-					return;
+					return true;
 			}
-			// Any other key falls through to the TextField, then
-			// OnEditorTextChanged refilters the floater on the new value.
+			// Any other key falls through to the editor (typing /
+			// backspace etc.), then OnEditorTextChanged refilters the
+			// floater on the new value.
 		}
-
-		// Tab → four spaces.  Shift+Tab is left alone so the user can still
-		// escape the field if they really need to (focus controller handles it).
-		// Skipped while the floater is open because Tab there means "insert".
-		if (evt.keyCode == UnityEngine.KeyCode.Tab && !evt.shiftKey && !m_floaterOpen) {
-			TextElement textElement = m_codeEditor.RootElement.Q<TextElement>();
-			if (textElement is null) {
-				return;
-			}
-			string current = m_codeEditor.GetText() ?? "";
-			int cursor = textElement.selection.cursorIndex;
-			if (cursor < 0 || cursor > current.Length) {
-				cursor = current.Length;
-			}
-			string updated = current.Substring(0, cursor) + "    " + current.Substring(cursor);
-			m_codeEditor.SetValue(new LocStrFormatted(updated));
-			textElement.selection.cursorIndex = cursor + 4;
-			textElement.selection.selectIndex = cursor + 4;
-			evt.StopPropagation();
-			evt.PreventDefault();
-		}
+		return false;
 	}
 
 	// Called from the OnValueChanged handler.  When the floater is open
@@ -509,8 +529,7 @@ public class PlcPyCodeEditorWindow : Window {
 	// open the floater scoped to that dotted parent.
 	private void OnEditorTextChanged(string text) {
 		text = text ?? "";
-		TextElement textElement = m_codeEditor.RootElement.Q<TextElement>();
-		int cursor = textElement?.selection.cursorIndex ?? text.Length;
+		int cursor = m_codeEditor.CaretIndex;
 		if (cursor < 0 || cursor > text.Length) {
 			cursor = text.Length;
 		}
@@ -533,9 +552,8 @@ public class PlcPyCodeEditorWindow : Window {
 	}
 
 	private void OpenFloater() {
-		string text = m_codeEditor.GetText() ?? "";
-		TextElement textElement = m_codeEditor.RootElement.Q<TextElement>();
-		int cursor = textElement?.selection.cursorIndex ?? text.Length;
+		string text = m_codeEditor.Text ?? "";
+		int cursor = m_codeEditor.CaretIndex;
 		if (cursor < 0 || cursor > text.Length) {
 			cursor = text.Length;
 		}
@@ -575,6 +593,16 @@ public class PlcPyCodeEditorWindow : Window {
 		m_floaterTriggerParent = parent;
 		m_floaterTriggerPos = triggerPos;
 		m_floaterOpen = true;
+		// Pin width to 50% of the editor's resolved width so the popup
+		// stays a constant size across selection changes — without an
+		// explicit width, the floater would resize to fit each row's
+		// hint text and "wobble" as the player arrows through entries.
+		// Falls back to a fixed 320 px if the editor hasn't measured yet
+		// (very first open before layout); the next open uses the real
+		// width once the editor is laid out.
+		float editorWidth = m_codeEditor.resolvedStyle.width;
+		float floaterWidth = editorWidth > 0 ? editorWidth * 0.5f : 320f;
+		m_floater.style.width = floaterWidth;
 		m_floater.style.display = DisplayStyle.Flex;
 		// Suppress the bottom-of-window caret tooltip while the floater is
 		// open — the in-floater hint takes over so the player isn't reading
@@ -588,62 +616,31 @@ public class PlcPyCodeEditorWindow : Window {
 		PositionFloaterAtCaret(text, cursor);
 		m_floaterParent?.schedule.Execute(() => {
 			if (m_floaterOpen) {
-				PositionFloaterAtCaret(m_codeEditor.GetText() ?? "", m_floaterTriggerPos);
+				PositionFloaterAtCaret(m_codeEditor.Text ?? "", m_floaterTriggerPos);
 			}
 		}).ExecuteLater(0);
 	}
 
-	// Translate the caret's logical (line, column) into a body-local pixel
-	// position and stamp it onto the floater's `left/top`.  Approximations
-	// where Unity's text APIs don't give us precise metrics:
-	//   - line height is taken from the editor's resolvedStyle font size
-	//     (×1.4 — matches the Unity TextElement default lineHeight ratio);
-	//   - column → x is `col × 0.55 × fontSize` (no real per-char width
-	//     measurement; default UI font is proportional, so this is just a
-	//     "roughly right of the typed letters" placement, not exact).
-	// Players who want an at-the-pixel caret marker would need a real
-	// `MeasureTextSize` integration, which is the bigger follow-up.
+	// Position the floater under the caret line, in the floater's parent
+	// (body) local space.  The custom editor exposes its own pixel math
+	// (GetPixelForIndex + LineHeight), so we go editor-local → world →
+	// parent-local without re-deriving font metrics.  Clamps inside the
+	// parent rect; flips above the caret if it would overflow the bottom.
 	private void PositionFloaterAtCaret(string text, int cursor) {
-		TextElement textElement = m_codeEditor.RootElement.Q<TextElement>();
-		if (textElement == null || m_floaterParent == null) {
+		if (m_codeEditor == null || m_floaterParent == null) {
 			return;
 		}
-		if (cursor < 0 || cursor > text.Length) {
-			cursor = text.Length;
+		if (cursor < 0 || cursor > (text?.Length ?? 0)) {
+			cursor = text?.Length ?? 0;
 		}
 
-		// Line index + column within line.
-		int line = 0;
-		int lineStart = 0;
-		for (int i = 0; i < cursor; i++) {
-			if (text[i] == '\n') {
-				line++;
-				lineStart = i + 1;
-			}
-		}
-		int col = cursor - lineStart;
+		UnityEngine.Vector2 caretEditorLocal = m_codeEditor.GetPixelForIndex(cursor);
+		// Below the caret line: bump down by the line height + 2 px gap so
+		// the popup doesn't sit on top of the line being edited.
+		caretEditorLocal.y += m_codeEditor.LineHeight + 2;
 
-		float fontSize = textElement.resolvedStyle.fontSize;
-		if (fontSize <= 0) {
-			fontSize = 12;
-		}
-		float lineHeight = fontSize * 1.4f;
-		float charWidth = fontSize * 0.55f;
-
-		// TextField wraps the TextElement in a ScrollView — pull the
-		// scrollOffset so the floater follows the visible position when the
-		// player has scrolled the editor.  Falls back to zero offset if the
-		// ScrollView isn't found (some Unity TextField layouts skip it).
-		ScrollView scroll = m_codeEditor.RootElement.Q<ScrollView>();
-		UnityEngine.Vector2 scrollOffset = scroll?.scrollOffset ?? UnityEngine.Vector2.zero;
-
-		UnityEngine.Rect textWorld = textElement.worldBound;
-		float caretWorldX = textWorld.x + (col * charWidth) - scrollOffset.x + 4;
-		// Place the floater UNDER the caret line (line+1 row down, plus a
-		// 2px breathing gap).
-		float caretWorldY = textWorld.y + ((line + 1) * lineHeight) - scrollOffset.y + 2;
-
-		UnityEngine.Vector2 local = m_floaterParent.WorldToLocal(new UnityEngine.Vector2(caretWorldX, caretWorldY));
+		UnityEngine.Vector2 caretWorld = m_codeEditor.LocalToWorld(caretEditorLocal);
+		UnityEngine.Vector2 local = m_floaterParent.WorldToLocal(caretWorld);
 
 		// Clamp inside the parent's resolved size so the floater doesn't
 		// disappear off the right or bottom edge if the caret is near the
@@ -661,7 +658,7 @@ public class PlcPyCodeEditorWindow : Window {
 		}
 		if (parentH > 0 && local.y + floaterH > parentH - 4) {
 			// Doesn't fit below — flip above the line.
-			local.y -= (floaterH + lineHeight + 4);
+			local.y -= (floaterH + m_codeEditor.LineHeight + 4);
 			if (local.y < 4) {
 				local.y = 4;
 			}
@@ -738,8 +735,11 @@ public class PlcPyCodeEditorWindow : Window {
 			row.text = entry.Name;
 			row.style.paddingLeft = 12;
 			row.style.paddingRight = 12;
-			row.style.paddingTop = 2;
-			row.style.paddingBottom = 2;
+			// 6 px top + 6 px bottom gives the rows breathing room so
+			// adjacent entries (and the highlighted selection rectangle)
+			// read as separate lines instead of a smushed strip.
+			row.style.paddingTop = 6;
+			row.style.paddingBottom = 6;
 			row.style.color = new StyleColor(new UnityEngine.Color(0.85f, 0.9f, 1f, 1f));
 			row.RegisterCallback<MouseDownEvent>(_ => {
 				m_floaterSelected = m_floaterRows.IndexOf(row);
@@ -767,6 +767,17 @@ public class PlcPyCodeEditorWindow : Window {
 		}
 		m_floaterSelected = (m_floaterSelected + delta + m_floaterRows.Count) % m_floaterRows.Count;
 		ApplyFloaterSelectionStyles();
+		// Pull the selected row into the visible part of the scroll view
+		// so arrow navigation past the viewport edge follows the cursor.
+		// Cast is safe — m_floaterRowsContainer is always a ScrollView
+		// (built that way in the constructor); the field type is the
+		// VisualElement base purely so existing .Add / .Clear calls keep
+		// working without route-through ceremony.
+		if (m_floaterRowsContainer is ScrollView scroll
+			&& m_floaterSelected >= 0
+			&& m_floaterSelected < m_floaterRows.Count) {
+			scroll.ScrollTo(m_floaterRows[m_floaterSelected]);
+		}
 	}
 
 	// Tints the selected row + writes its doc into the tooltip strip so
@@ -809,9 +820,8 @@ public class PlcPyCodeEditorWindow : Window {
 			return;
 		}
 
-		TextElement textElement = m_codeEditor.RootElement.Q<TextElement>();
-		string text = m_codeEditor.GetText() ?? "";
-		int cursor = textElement?.selection.cursorIndex ?? text.Length;
+		string text = m_codeEditor.Text ?? "";
+		int cursor = m_codeEditor.CaretIndex;
 		if (cursor < 0 || cursor > text.Length) {
 			cursor = text.Length;
 		}
@@ -820,13 +830,10 @@ public class PlcPyCodeEditorWindow : Window {
 			return;
 		}
 
-		string updated = text.Substring(0, m_floaterTriggerPos) + visibleName + text.Substring(cursor);
-		m_codeEditor.SetValue(new LocStrFormatted(updated));
-		int newCursor = m_floaterTriggerPos + visibleName.Length;
-		if (textElement != null) {
-			textElement.selection.cursorIndex = newCursor;
-			textElement.selection.selectIndex = newCursor;
-		}
+		// ReplaceRange handles both buffer mutation and caret repositioning
+		// (caret lands right after the inserted text), so no manual cursor
+		// fiddling needed afterwards.
+		m_codeEditor.ReplaceRange(m_floaterTriggerPos, cursor, visibleName);
 		CloseFloater();
 	}
 
@@ -850,8 +857,31 @@ public class PlcPyCodeEditorWindow : Window {
 		}
 	}
 
-	private void RefreshStatus() {
-		Module module = m_controller.CurrentModule;
+	private void ShowError(string text) {
+		m_errorLabel.text = text;
+		m_errorStrip.style.display = DisplayStyle.Flex;
+	}
+
+	private void HideError() {
+		m_errorLabel.text = "";
+		m_errorStrip.style.display = DisplayStyle.None;
+	}
+
+	// Snapshots the module's saved code + error state into the editor.
+	// Called from OnActivate (initial open) and the Revert button (manual
+	// pull).  After this returns the editor stays independent: the visible
+	// code/error/stats only change in response to the player's actions
+	// until the next Save or Revert.  The error strip mirrors what the
+	// running module knows (its persisted compile or runtime error), so
+	// the player still sees runtime failures after a Revert without us
+	// polling every tick.
+	public void LoadFromModule(Module module) {
+		CloseFloater();
+		string current = module?.Field["code", ""] ?? "";
+		m_codeEditor.Text = current;
+		UpdateLineNumbers(current);
+		SetTooltipText("");
+
 		if (module == null) {
 			m_statsLabel.text = "(no module bound)";
 			HideError();
@@ -859,7 +889,6 @@ public class PlcPyCodeEditorWindow : Window {
 		}
 
 		m_statsLabel.text = "Tokens: " + module.LexerNodeCount;
-
 		string compileError = module.StringData.TryGetValue("__compile_error", out string ce) ? ce : null;
 		string runError = module.StringData.TryGetValue("__run_error", out string re) ? re : null;
 		if (!string.IsNullOrEmpty(compileError)) {
@@ -871,22 +900,31 @@ public class PlcPyCodeEditorWindow : Window {
 		}
 	}
 
-	private void ShowError(string text) {
-		m_errorLabel.text = text;
-		m_errorStrip.style.display = DisplayStyle.Flex;
-	}
-
-	private void HideError() {
-		m_errorLabel.text = "";
-		m_errorStrip.style.display = DisplayStyle.None;
-	}
-
-	// Called by the controller on activate (and on re-OpenFor while already
-	// active) to seed the editor text from the module's current code field.
-	public void LoadFromModule(Module module) {
-		string current = module?.Field["code", ""] ?? "";
-		m_codeEditor.SetValue(new LocStrFormatted(current));
-		UpdateLineNumbers(current);
-		SetTooltipText("");
+	// Intercept Escape + swallow Mafi's poll-based input dispatch while
+	// the editor is focused.
+	//
+	// UIElements StopPropagation on KeyDownEvent only stops the UIElements
+	// event pipeline — Mafi.Core's UnityInputManager polls Unity's legacy
+	// `Input.GetKeyDown` directly every tick and would otherwise fire its
+	// own bindings (Tab focus cycling, hotkeys, camera moves) on top of
+	// the player's typing.  Returning true here short-circuits that
+	// dispatch so only the editor sees the keypress.
+	//
+	// Escape is special-cased twice: once to close an open floater
+	// (counterpart to the UIElements path), and a second time so the
+	// player can still close the editor via Escape even while the editor
+	// has focus — without that carve-out the focus-gate below would block
+	// it forever.
+	public override bool InputUpdate() {
+		if (m_floaterOpen && UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.Escape)) {
+			CloseFloater();
+			return true;
+		}
+		if (m_codeEditor != null && m_codeEditor.HasFocus()
+			&& UnityEngine.Input.anyKey
+			&& !UnityEngine.Input.GetKey(UnityEngine.KeyCode.Escape)) {
+			return true;
+		}
+		return base.InputUpdate();
 	}
 }

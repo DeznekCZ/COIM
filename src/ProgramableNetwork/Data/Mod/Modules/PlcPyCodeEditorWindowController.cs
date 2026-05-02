@@ -20,13 +20,31 @@ namespace ProgramableNetwork;
 [GlobalDependency(RegistrationMode.AsSelf)]
 public class PlcPyCodeEditorWindowController : WindowController<PlcPyCodeEditorWindow> {
 
+	// Editor-tailored config: same as InspectorWindow but with camera +
+	// keyboard shortcuts disabled while the editor is active.  Without
+	// these flags, arrow keys / WASD pan the camera under the editor and
+	// number-key hotkeys fire toolbar actions, even though the player is
+	// trying to type.  The window-level InputUpdate override returns true
+	// while the editor has focus to consume Mafi's poll-based dispatch,
+	// but Mafi only blocks the camera/shortcut paths when the controller
+	// CONFIG asks it to — those paths run separately from the per-tick
+	// dispatch loop.
+	private static readonly ControllerConfig EDITOR_CONFIG = new ControllerConfig {
+		DeactivateOnNonUiClick = true,
+		AllowInspectorCursor = true,
+		Group = ControllerGroup.Inspector,
+		BlockShortcuts = true,
+		DisableCameraControl = true,
+		BlockCameraControlIfInputWasProcessed = true,
+	};
+
 	private readonly UiContext m_uiContext;
 	private Module m_currentModule;
 
 	public PlcPyCodeEditorWindowController(
 		ControllerContext controllerContext,
 		UiContext uiContext
-	) : base(controllerContext, ControllerConfig.InspectorWindow) {
+	) : base(controllerContext, EDITOR_CONFIG) {
 		m_uiContext = uiContext;
 	}
 
@@ -56,6 +74,20 @@ public class PlcPyCodeEditorWindowController : WindowController<PlcPyCodeEditorW
 		}
 	}
 
+	// Centralized "close → reopen inspector" so every close path (Back
+	// button, X button, Escape, click-outside) lands the player back on the
+	// PLC-PY's controller inspector.  We capture the module reference up
+	// front because the deactivate side-effects below could cause it to be
+	// reset before TryActivateFor reads it.
+	protected override void OnDeactivate() {
+		base.OnDeactivate();
+		Module module = m_currentModule;
+		if (module != null && module.Controller != null
+			&& m_uiContext.InspectorsManager.TryActivateFor(module.Controller, out var inspector)) {
+			m_uiContext.InputMgr.ActivateNewController(inspector);
+		}
+	}
+
 	// Routes the player's edited text into the same command pipeline the
 	// inline StringField uses, so multiplayer / replay / undo all stay
 	// consistent.  No close on save — the player can keep tweaking and
@@ -71,17 +103,9 @@ public class PlcPyCodeEditorWindowController : WindowController<PlcPyCodeEditorW
 			code ?? ""));
 	}
 
-	// Closes the editor and re-opens the controller's inspector so the player
-	// lands back where they came from (matches the TrainDesignerWindow
-	// OpenInspectorForEntityOnClose behavior at a higher level).  We capture
-	// the module's controller before deactivate because m_currentModule may
-	// be reset during the close path.
+	// Back button — delegated to OnDeactivate, which handles the inspector
+	// restore for every close path.
 	public void Back() {
-		Module module = m_currentModule;
 		DeactivateSelf();
-		if (module != null && module.Controller != null
-			&& m_uiContext.InspectorsManager.TryActivateFor(module.Controller, out var inspector)) {
-			m_uiContext.InputMgr.ActivateNewController(inspector);
-		}
 	}
 }

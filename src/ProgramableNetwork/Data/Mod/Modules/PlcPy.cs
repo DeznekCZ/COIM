@@ -43,6 +43,71 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 		// the context is fresh per tick.
 		Func<IArgumentValue[], object> fixCtor = args => Expressions.__fix__(args[0].Value);
 
+		// `range(...)` — produces a List<int> the for-statement can iterate.
+		// Mirrors Python's three forms (range(stop), range(start, stop),
+		// range(start, stop, step)).  Returns int (not Fix32) so loop
+		// indices feed directly into Module.Array.get(i, ...) etc; if a
+		// player needs Fix32 they can wrap with fix(i) inside the body.
+		Func<IArgumentValue[], object> rangeCtor = args => {
+			int start, stop, step;
+			if (args.Length == 1) {
+				start = ToIntForRange(args[0].Value);
+				stop = start;
+				start = 0;
+				step = 1;
+			} else if (args.Length == 2) {
+				start = ToIntForRange(args[0].Value);
+				stop = ToIntForRange(args[1].Value);
+				step = 1;
+			} else if (args.Length >= 3) {
+				start = ToIntForRange(args[0].Value);
+				stop = ToIntForRange(args[1].Value);
+				step = ToIntForRange(args[2].Value);
+			} else {
+				throw new PythonRuntimeException("range() requires 1 to 3 arguments");
+			}
+			if (step == 0) {
+				throw new PythonRuntimeException("range() step argument must not be zero");
+			}
+			List<int> values = new List<int>();
+			if (step > 0) {
+				for (int i = start; i < stop; i += step) {
+					values.Add(i);
+				}
+			} else {
+				for (int i = start; i > stop; i += step) {
+					values.Add(i);
+				}
+			}
+			return values;
+		};
+
+		// `len(x)` — string length, collection count, dict size.  Falls
+		// through to manually counting an IEnumerable for things like the
+		// List<int> range() returns or any custom iterable a wrapper might
+		// expose.  Player-facing error if the value isn't sized.
+		Func<IArgumentValue[], object> lenCtor = args => {
+			object v = args[0].Value;
+			if (v is null) {
+				throw new PythonRuntimeException("len(): argument is None");
+			}
+			if (v is string s) {
+				return s.Length;
+			}
+			if (v is System.Collections.ICollection col) {
+				return col.Count;
+			}
+			if (v is System.Collections.IEnumerable en) {
+				int n = 0;
+				foreach (object _ in en) {
+					n++;
+				}
+				return n;
+			}
+			throw new PythonRuntimeException(
+				"len(): not supported for " + v.GetType().Name);
+		};
+
 		registrator
 			.ModuleBuilderStart("PLC_PY", "Custom: PLC (Python)", "PLC-PY")
 			.SetDescription("Player-programmable logic controller — Python flavor. Write a Python script in the <b>code</b> field that reads <b>self.Input</b>, writes <b>self.Output</b>, and accesses <b>self.Field</b>/<b>self.Display</b>/<b>self.Array</b> like any other module. Computing cost scales with the script size (0.5 + 0.01 per lexer token); requires T3 maintenance.")
@@ -175,6 +240,11 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 						["self"] = new ModuleWrapper(m, plcClass),
 						["Fix32"] = typeof(Fix32),
 						["fix"] = new Constructor(fixCtor, new[] { "value" }),
+						// Loop helpers — variadic args, so the parameter-name list
+						// is set to the maximum the player can pass; Constructor
+						// hands extra slots through args[i] indexing in the lambda.
+						["range"] = new Constructor(rangeCtor, new[] { "start", "stop", "step" }),
+						["len"] = new Constructor(lenCtor, new[] { "value" }),
 					};
 					foreach (IStatement stmt in block.statements) {
 						stmt.Execute(context);
@@ -191,5 +261,26 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
+	}
+
+	// Coerces a player-supplied range() argument to int.  Goes through
+	// Expressions.__fix__ first so any numeric type Expressions already
+	// understands (int, float, Fix32) routes through the same conversion
+	// path; then rounds to the nearest int.  Anything that __fix__ can't
+	// convert raises a Python-flavored runtime error in the caller.
+	private static int ToIntForRange(object value) {
+		if (value is int i) {
+			return i;
+		}
+		if (value is null) {
+			throw new PythonRuntimeException("range(): None is not a valid argument");
+		}
+		try {
+			return Expressions.__fix__(value).ToIntRounded();
+		} catch (Exception convertError) {
+			throw new PythonRuntimeException(
+				"range(): cannot convert " + value.GetType().Name + " to int",
+				convertError);
+		}
 	}
 }

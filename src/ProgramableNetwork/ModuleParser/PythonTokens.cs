@@ -60,6 +60,14 @@
         semicolon,
         returnp,
         pass,
+        // Loop control — added so PLC scripts can use `for x in xs:`,
+        // `while cond:`, plus `break` / `continue` as Python expects.
+        // Not used by the bundled Custom/*.py modules (they predate loop
+        // support); the lexer dispatches them in Lexer.cs.
+        forp,
+        whilep,
+        breakp,
+        continuep,
         eof
     }
 }

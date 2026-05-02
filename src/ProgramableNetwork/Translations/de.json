@@ -20,6 +20,7 @@
 	["ProgramableNetwork_Category_DevicesSound__name", "Tongeräte"],
 	["ProgramableNetwork_Category_Devices__name", "Audiovisuelle Geräte"],
 	["ProgramableNetwork_Category_Display__name", "Anzeigemodule"],
+	["ProgramableNetwork_Category_Saved__name", "Gespeicherte Blueprints"],
 	["ProgramableNetwork_Category_Stats__name", "Statistikmodule"],
 	["ProgramableNetwork_Category__desc", "Enthält Gebäude für die Arbeit mit dem Netzwerk (Berechnung, Steuerung)"],
 	["ProgramableNetwork_Category__name", "Netzwerk"],

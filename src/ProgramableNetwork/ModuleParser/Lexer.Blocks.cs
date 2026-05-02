@@ -91,6 +91,55 @@ namespace ProgramableNetwork.Python
             }
         }
 
+        // `for VAR in EXPR:` followed by an indented block (or single inline
+        // statement after the colon, mirroring the same dual form ParseIf
+        // accepts).  VAR is bound to a fresh identifier name; the actual
+        // assignment happens at runtime inside ForStatement.Execute.
+        private void ParseFor(Block tree)
+        {
+            Token variable = RequireNext(PythonTokens.name);
+            RequireNext(PythonTokens.ink);
+            IExpression iterable = ParseExpression();
+            RequireNext(PythonTokens.block);
+
+            if (IsNext(PythonTokens.newline, out Token _))
+            {
+                RequireNext(PythonTokens.indent);
+
+                Block block = ParseBlock(tree, PythonTokens.dedent);
+                tree.Add(new ForStatement(variable.value, iterable, block));
+
+                RequireNext(PythonTokens.dedent);
+            }
+            else
+            {
+                Block block = ParseBlock(tree, PythonTokens.newline);
+                tree.Add(new ForStatement(variable.value, iterable, block));
+            }
+        }
+
+        // `while EXPR:` block; same dual form as ParseFor / ParseIf.
+        private void ParseWhile(Block tree)
+        {
+            IExpression condition = ParseExpression();
+            RequireNext(PythonTokens.block);
+
+            if (IsNext(PythonTokens.newline, out Token _))
+            {
+                RequireNext(PythonTokens.indent);
+
+                Block block = ParseBlock(tree, PythonTokens.dedent);
+                tree.Add(new WhileStatement(condition, block));
+
+                RequireNext(PythonTokens.dedent);
+            }
+            else
+            {
+                Block block = ParseBlock(tree, PythonTokens.newline);
+                tree.Add(new WhileStatement(condition, block));
+            }
+        }
+
         private void ParseElse(IfStatement ifs, Block tree)
         {
             RequireNext(PythonTokens.block);

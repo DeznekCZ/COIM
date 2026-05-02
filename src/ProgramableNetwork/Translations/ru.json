@@ -21,6 +21,7 @@
 	["ProgramableNetwork_Category_DevicesSound__name", "Звуковые устройства"],
 	["ProgramableNetwork_Category_Devices__name", "Аудиовизуальные устройства"],
 	["ProgramableNetwork_Category_Display__name", "Модули дисплея"],
+	["ProgramableNetwork_Category_Saved__name", "Сохранённые планы"],
 	["ProgramableNetwork_Category_Stats__name", "Статистические модули"],
 	["ProgramableNetwork_Category__desc", "Содержит здания для работы с сетью (вычисления, управление)"],
 	["ProgramableNetwork_Category__name", "Сеть"],

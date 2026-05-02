@@ -24,6 +24,10 @@ public static class PlcPySyntax {
 	private const string COLOR_NUMBER   = "#b5cea8";  // green  — numeric literals
 	private const string COLOR_COMMENT  = "#6a9955";  // green  — comments
 	private const string COLOR_OPERATOR = "#dcdcaa";  // tan    — operators / punctuation
+	// Distinct from the keyword blue so the player can spot `self` at a
+	// glance — it's the only player-visible variable that's pre-bound by
+	// the runtime, which is worth signalling differently from `if`/`def`.
+	private const string COLOR_SELF     = "#c586c0";  // violet — the implicit `self` binding
 
 	// Identifier docs displayed when the player hovers a known name in
 	// the editor.  Keep entries short — these render in a tooltip strip.
@@ -58,6 +62,13 @@ public static class PlcPySyntax {
 					new Completion("or",    "Boolean or."),
 					new Completion("not",   "Boolean not."),
 					new Completion("return","Exit current call with a value."),
+					new Completion("for",      "for VAR in EXPR: — iterate over a list/range."),
+					new Completion("while",    "while EXPR: — loop while expression is truthy."),
+					new Completion("break",    "Exit the innermost for/while immediately."),
+					new Completion("continue", "Skip the rest of this iteration."),
+					new Completion("in",       "Loop binder (for x in xs:) and membership test."),
+					new Completion("range",    "range(stop) / (start, stop) / (start, stop, step) — int sequence."),
+					new Completion("len",      "len(value) — string/list/dict size."),
 				};
 			case "self":
 				return new[] {
@@ -139,6 +150,13 @@ public static class PlcPySyntax {
 		{ "True",          "Boolean true." },
 		{ "False",         "Boolean false." },
 		{ "None",          "Null / not-connected sentinel." },
+		{ "for",           "for VAR in EXPR: — iterate over a list, string, or range. break/continue allowed." },
+		{ "while",         "while EXPR: — loop while expression is truthy. Per-tick cap of 100k iterations." },
+		{ "break",         "Exit the innermost enclosing for/while immediately." },
+		{ "continue",      "Skip the rest of the current loop iteration and continue with the next." },
+		{ "in",            "Inside `for VAR in EXPR:` introduces the iteration; elsewhere it's a membership test (`x in xs`)." },
+		{ "range",         "range(stop) / range(start, stop) / range(start, stop, step) — returns a list of ints to iterate." },
+		{ "len",           "len(value) — length of a string, list, dict, or any iterable." },
 	};
 
 	// Walks the tokens once, building a colored rich-text version of the
@@ -164,7 +182,7 @@ public static class PlcPySyntax {
 		List<int> lineOffsets = ComputeLineOffsets(source);
 		List<ColorSpan> spans = new List<ColorSpan>(tokens.Length);
 		foreach (Token token in tokens) {
-			string color = ColorFor(token.type);
+			string color = ColorFor(token);
 			if (color == null) {
 				continue;
 			}
@@ -172,7 +190,13 @@ public static class PlcPySyntax {
 			if (lineIdx < 0 || lineIdx >= lineOffsets.Count) {
 				continue;
 			}
-			int start = lineOffsets[lineIdx] + token.column;
+			// Tokenizer emits column as 1-based for keyword/name/etc.
+			// (`token.Index + 1`).  Convert to 0-based here so the start
+			// offset lines up with the source string indexing.  Without
+			// the -1 every colored span paints one character to the right
+			// of the actual token, which is exactly the visible drift.
+			int columnZeroBased = Math.Max(0, token.column - 1);
+			int start = lineOffsets[lineIdx] + columnZeroBased;
 			int length = token.length;
 			if (length <= 0 || start < 0 || start + length > source.Length) {
 				continue;
@@ -220,8 +244,15 @@ public static class PlcPySyntax {
 		return offsets;
 	}
 
-	private static string ColorFor(PythonTokens type) {
-		switch (type) {
+	private static string ColorFor(Token token) {
+		// `self` is lexed as a plain `name` (the tokenizer doesn't know about
+		// it).  Recognise it here so the player gets a distinct color for the
+		// runtime-injected wrapper without having to teach the tokenizer a
+		// new keyword that the lexer would then need to special-case.
+		if (token.type == PythonTokens.name && token.value == "self") {
+			return COLOR_SELF;
+		}
+		switch (token.type) {
 			case PythonTokens.ifp:
 			case PythonTokens.elif:
 			case PythonTokens.elsep:
@@ -239,6 +270,10 @@ public static class PlcPySyntax {
 			case PythonTokens.none:
 			case PythonTokens.btrue:
 			case PythonTokens.bfalse:
+			case PythonTokens.forp:
+			case PythonTokens.whilep:
+			case PythonTokens.breakp:
+			case PythonTokens.continuep:
 				return COLOR_KEYWORD;
 			case PythonTokens.str:
 			case PythonTokens.mstr:

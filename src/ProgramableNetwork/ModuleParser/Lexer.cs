@@ -58,6 +58,28 @@ namespace ProgramableNetwork.Python
                         ParseIf(tree);
                         break;
 
+                    case PythonTokens.forp:
+                        ParseFor(tree);
+                        break;
+
+                    case PythonTokens.whilep:
+                        ParseWhile(tree);
+                        break;
+
+                    case PythonTokens.breakp:
+                        // `break` is a single statement.  Don't consume the newline
+                        // unconditionally — the outer while-loop expects the
+                        // dispatcher to leave terminators for the `case newline`
+                        // branch to handle.
+                        IsNext(PythonTokens.newline, out Token _, defaultIgnore);
+                        tree.Add(new BreakStatement());
+                        break;
+
+                    case PythonTokens.continuep:
+                        IsNext(PythonTokens.newline, out Token _, defaultIgnore);
+                        tree.Add(new ContinueStatement());
+                        break;
+
                     case PythonTokens.elif:
                         if (!(tree.statements.Last() is IfStatement ifs1)) {
 							throw new PythonParseException(token, $"elif is allowed only after if or elif statement");

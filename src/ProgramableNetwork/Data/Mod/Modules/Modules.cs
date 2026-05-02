@@ -2326,7 +2326,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			return ModuleStatus.Error;
 		}
 
-		m.Output["product"] = Fix32.FromRaw(buffers[0].Invoke()?.Product.SlimId.Value ?? 0);
+		m.Output["product"] = Fix32.FromRaw(buffers[index].Invoke()?.Product.SlimId.Value ?? 0);
 		return ModuleStatus.Running;
 	}
 

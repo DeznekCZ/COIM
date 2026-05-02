@@ -88,5 +88,10 @@ namespace ProgramableNetwork
         public static Category DevicesDisplay { get; } = new Category(id: "devices_display", name: name(nameof(DevicesDisplay), "Display devices"));
         public static Category DevicesSound { get; } = new Category(id: "devices_sound", name: name(nameof(DevicesSound), "Sound devices"));
         public static Category Devices { get; } = new Category(id: "devices_av", name: name(nameof(Devices), "Audiovisual devices"), DevicesDisplay, DevicesSound);
+
+        // Player-saved blueprints surface in the picker under this category. Populated at
+        // runtime by scanning the base-game BlueprintsLibrary for entries with the
+        // [PN-Module]- title prefix; never registered on a real ModuleProto.
+        public static Category Saved { get; } = new Category(id: "saved", name: name(nameof(Saved), "Saved blueprints"));
     }
 }

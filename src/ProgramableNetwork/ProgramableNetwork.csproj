@@ -156,6 +156,9 @@
 		<Reference Include="UnityEngine.UIModule">
 			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIModule.dll</HintPath>
 		</Reference>
+		<Reference Include="UnityEngine.IMGUIModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+		</Reference>
 		<Reference Include="UnityEngine.TerrainPhysicsModule">
 			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.TerrainPhysicsModule.dll</HintPath>
 		</Reference>

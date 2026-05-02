@@ -107,6 +107,20 @@ namespace ProgramableNetwork.Ui
 			moveRight.Tooltip("Move module right".ToDoLoc());
 			row.Add(moveRight);
 
+			ButtonIcon saveBp = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg)
+				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
+				.Margin(Px.Zero)
+				.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
+				.Icon.Padding(Sizes.IMAGE_PADDING)
+					 .Margin(Px.Zero)
+				.Parent.As<ButtonIcon>().Value;
+			saveBp.Tooltip("Save this module as a reusable blueprint".ToDoLoc());
+			saveBp.OnClick(() =>
+			{
+				SaveBlueprintDialog.ForModule(m_module, saveBp, uiContext);
+			});
+			row.Add(saveBp);
+
 			ButtonIcon paste = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.ImportFromString_svg)
 				.Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE)
 				.Margin(Px.Zero)
