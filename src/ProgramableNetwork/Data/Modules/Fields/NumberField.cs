@@ -11,21 +11,32 @@ namespace ProgramableNetwork.Ui
 {
     public class NumberField<T> : IField
     {
-        public NumberField(string id, Proto.Str strs, T defaultValue)
+        public NumberField(string id, Proto.Str strs, T defaultValue, bool showInTooltip = false)
         {
             Id = id;
             Name = strs.Name;
             Default = defaultValue;
             ShortDesc = strs.DescShort;
+            ShowInTooltip = showInTooltip;
         }
 
         public string Id { get; }
         public LocStr Name { get; }
         public LocStr ShortDesc { get; }
+        public bool ShowInTooltip { get; }
 
         public int Size => 20;
 
         public T Default { get; }
+
+        public string GetTooltipValue(Module module)
+        {
+            if (typeof(T) == typeof(Fix32))    return module.Field[Id].ToString();
+            if (typeof(T) == typeof(int))      return module.Field.Integer[Id].ToString();
+            if (typeof(T) == typeof(long))     return module.Field[Id, "0"];
+            if (typeof(T) == typeof(HexInt32)) return module.Field[Id].RawValue.ToString("X");
+            return module.Field[Id].ToString();
+        }
 
         private Action setter;
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)

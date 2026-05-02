@@ -5,6 +5,9 @@ from Mafi import Fix32
 from Core.module import DefaultControllers, Module
 
 # File written by Nightinggale
+# Optimized: hot-path field/input reads are pulled into locals so that each
+# tick performs each lookup once instead of two or three times (every
+# `self.Field`/`self.Input`/`self.Output` access also allocates a wrapper).
 
 class Runtime_Clock_1(Module):
     name = "Control: Clock (1 output)"
@@ -31,19 +34,20 @@ class Runtime_Clock_1(Module):
     controllers = [ DefaultControllers.Controller ]
 
     def action(self):
+        pulse_mode = self.Field.get_bool("mode", False)
+
         # Reset held — freeze the sub-tick counter and the public output at 0,
         # suppress any pulse, and exit before the increment runs.  Counting
         # resumes from zero on the first tick where reset goes back to 0.
         if self.Input.get_int("reset", 0) > 0:
             self.Output.set_int("sub_clock", 0)
-            if self.Field.get_bool("mode", False):
+            if pulse_mode:
                 self.Output.set_bool("clock", False)
             else:
                 self.Output.set_int("clock", 0)
             return
 
-        sub_clock = self.Output.get_int("sub_clock", 0)
-        sub_clock = sub_clock + 1
+        sub_clock = self.Output.get_int("sub_clock", 0) + 1
         update = False
 
         if sub_clock >= self.Field.get_int("clock_period", 0):
@@ -52,19 +56,18 @@ class Runtime_Clock_1(Module):
 
         self.Output.set_int("sub_clock", sub_clock)
 
-        if self.Field.get_bool("mode", False):
+        if pulse_mode:
             self.Output.set_bool("clock", update)
             return
 
         if sub_clock == 0:
-            output = self.Output.get_int("clock", 0)
-            output = output + 1
+            output = self.Output.get_int("clock", 0) + 1
 
             if output >= self.Field.get_int("max_count", 0):
                 output = 0
 
             self.Output.set_int("clock", output)
-        
+
 
 class Runtime_Clock_2(Module):
     name = "Control: Clock (2 outputs)"
@@ -84,9 +87,9 @@ class Runtime_Clock_2(Module):
         Int32Field("clock_period", "Clock Period", "Updates between each update of the output", 1),
         Int32Field("max_count", "Reset value", "Output resets when count reaches this value", 2)
     ]
-   
+
     width = 2
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
@@ -99,8 +102,7 @@ class Runtime_Clock_2(Module):
             self.Output.set_int("clock", 0)
             return
 
-        sub_clock = self.Output.get_int("sub_clock", 0)
-        sub_clock = sub_clock + 1
+        sub_clock = self.Output.get_int("sub_clock", 0) + 1
         update = False
 
         if sub_clock >= self.Field.get_int("clock_period", 0):
@@ -111,8 +113,7 @@ class Runtime_Clock_2(Module):
         self.Output.set_bool("update", update)
 
         if sub_clock == 0:
-            output = self.Output.get_int("clock", 0)
-            output = output + 1
+            output = self.Output.get_int("clock", 0) + 1
 
             if output >= self.Field.get_int("max_count", 0):
                 output = 0

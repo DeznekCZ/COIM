@@ -5,6 +5,10 @@ from Mafi import Fix32
 from Core.module import DefaultControllers, Module
 
 # File written by Nightinggale
+# Optimized: per-class `_scan(n)` recurses from highest input down, replacing
+# the early-return chains.  Input and field name tables are pre-built once
+# as class-level lists (slot 0 unused so the natural index maps directly) —
+# zero string allocations per tick.
 
 class Runtime_Memory_Selector_1(Module):
     name = "Control: Memory Selector (1 input)"
@@ -16,22 +20,31 @@ class Runtime_Memory_Selector_1(Module):
     outputs = [
         Output("output", "Signal output")
     ]
-    
+
     fields = [
         Int32Field("default", "Default", "Output this when none of the inputs are positive", 0),
         Int32Field("field_1", "1 value", "Output this when input 1 is positive", 1)
     ]
-    
+
     width = 1
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    INPUT_NAMES = ["", "in_1"]
+    FIELD_NAMES = ["", "field_1"]
+
     def action(self):
-        if self.Input.get_bool("in_1", False):
-            self.Output.set("output", self.Field.get("field_1", Fix32.Zero))
-        else:
+        self._scan(1)
+
+    def _scan(self, n):
+        if n <= 0:
             self.Output.set("output", self.Field.get("default", Fix32.Zero))
+            return
+        if self.Input.get_bool(self.INPUT_NAMES[n], False):
+            self.Output.set("output", self.Field.get(self.FIELD_NAMES[n], Fix32.Zero))
+            return
+        self._scan(n - 1)
 
 
 class Runtime_Memory_Selector_2(Module):
@@ -45,28 +58,33 @@ class Runtime_Memory_Selector_2(Module):
     outputs = [
         Output("output", "Signal output")
     ]
-    
+
     fields = [
         Int32Field("default", "Default", "Output this when none of the inputs are positive", 0),
         Int32Field("field_1", "1 value", "Output this when input 1 is positive", 1),
         Int32Field("field_2", "2 value", "Output this when input 2 is positive", 2)
     ]
-    
+
     width = 2
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
-    def action(self):
-        if self.Input.get_bool("in_2", False):
-            self.Output.set("output", self.Field.get("field_2", Fix32.Zero))
-            return
- 
-        if self.Input.get_bool("in_1", False):
-            self.Output.set("output", self.Field.get("field_1", Fix32.Zero))
-            return
+    INPUT_NAMES = ["", "in_1", "in_2"]
+    FIELD_NAMES = ["", "field_1", "field_2"]
 
-        self.Output.set("output", self.Field.get("default", Fix32.Zero))
+    def action(self):
+        self._scan(2)
+
+    def _scan(self, n):
+        if n <= 0:
+            self.Output.set("output", self.Field.get("default", Fix32.Zero))
+            return
+        if self.Input.get_bool(self.INPUT_NAMES[n], False):
+            self.Output.set("output", self.Field.get(self.FIELD_NAMES[n], Fix32.Zero))
+            return
+        self._scan(n - 1)
+
 
 class Runtime_Memory_Selector_4(Module):
     name = "Control: Memory Selector (4 inputs)"
@@ -81,7 +99,7 @@ class Runtime_Memory_Selector_4(Module):
     outputs = [
         Output("output", "Signal output")
     ]
-    
+
     fields = [
         Int32Field("default", "Default", "Output this when none of the inputs are positive", 0),
         Int32Field("field_1", "1 value", "Output this when input 1 is positive", 1),
@@ -89,30 +107,27 @@ class Runtime_Memory_Selector_4(Module):
         Int32Field("field_3", "3 value", "Output this when input 3 is positive", 3),
         Int32Field("field_4", "4 value", "Output this when input 4 is positive", 4)
     ]
-    
+
     width = 4
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    INPUT_NAMES = ["", "in_1", "in_2", "in_3", "in_4"]
+    FIELD_NAMES = ["", "field_1", "field_2", "field_3", "field_4"]
+
     def action(self):
-        if self.Input.get_bool("in_4", False):
-            self.Output.set("output", self.Field.get("field_4", Fix32.Zero))
-            return
+        self._scan(4)
 
-        if self.Input.get_bool("in_3", False):
-            self.Output.set("output", self.Field.get("field_3", Fix32.Zero))
+    def _scan(self, n):
+        if n <= 0:
+            self.Output.set("output", self.Field.get("default", Fix32.Zero))
             return
+        if self.Input.get_bool(self.INPUT_NAMES[n], False):
+            self.Output.set("output", self.Field.get(self.FIELD_NAMES[n], Fix32.Zero))
+            return
+        self._scan(n - 1)
 
-        if self.Input.get_bool("in_2", False):
-            self.Output.set("output", self.Field.get("field_2", Fix32.Zero))
-            return
- 
-        if self.Input.get_bool("in_1", False):
-            self.Output.set("output", self.Field.get("field_1", Fix32.Zero))
-            return
-
-        self.Output.set("output", self.Field.get("default", Fix32.Zero))
 
 class Runtime_Memory_Selector_6(Module):
     name = "Control: Memory Selector (6 inputs)"
@@ -129,7 +144,7 @@ class Runtime_Memory_Selector_6(Module):
     outputs = [
         Output("output", "Signal output")
     ]
-    
+
     fields = [
         Int32Field("default", "Default", "Output this when none of the inputs are positive", 0),
         Int32Field("field_1", "1 value", "Output this when input 1 is positive", 1),
@@ -139,38 +154,27 @@ class Runtime_Memory_Selector_6(Module):
         Int32Field("field_5", "5 value", "Output this when input 5 is positive", 5),
         Int32Field("field_6", "6 value", "Output this when input 6 is positive", 6)
     ]
-    
+
     width = 6
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    INPUT_NAMES = ["", "in_1", "in_2", "in_3", "in_4", "in_5", "in_6"]
+    FIELD_NAMES = ["", "field_1", "field_2", "field_3", "field_4", "field_5", "field_6"]
+
     def action(self):
-        if self.Input.get_bool("in_6", False):
-            self.Output.set("output", self.Field.get("field_6", Fix32.Zero))
-            return
+        self._scan(6)
 
-        if self.Input.get_bool("in_5", False):
-            self.Output.set("output", self.Field.get("field_5", Fix32.Zero))
+    def _scan(self, n):
+        if n <= 0:
+            self.Output.set("output", self.Field.get("default", Fix32.Zero))
             return
+        if self.Input.get_bool(self.INPUT_NAMES[n], False):
+            self.Output.set("output", self.Field.get(self.FIELD_NAMES[n], Fix32.Zero))
+            return
+        self._scan(n - 1)
 
-        if self.Input.get_bool("in_4", False):
-            self.Output.set("output", self.Field.get("field_4", Fix32.Zero))
-            return
-
-        if self.Input.get_bool("in_3", False):
-            self.Output.set("output", self.Field.get("field_3", Fix32.Zero))
-            return
-
-        if self.Input.get_bool("in_2", False):
-            self.Output.set("output", self.Field.get("field_2", Fix32.Zero))
-            return
- 
-        if self.Input.get_bool("in_1", False):
-            self.Output.set("output", self.Field.get("field_1", Fix32.Zero))
-            return
-
-        self.Output.set("output", self.Field.get("default", Fix32.Zero))
 
 class Runtime_Memory_Selector_8(Module):
     name = "Control: Memory Selector (8 inputs)"
@@ -189,7 +193,7 @@ class Runtime_Memory_Selector_8(Module):
     outputs = [
         Output("output", "Signal output")
     ]
-    
+
     fields = [
         Int32Field("default", "Default", "Output this when none of the inputs are positive", 0),
         Int32Field("field_1", "1 value", "Output this when input 1 is positive", 1),
@@ -201,45 +205,23 @@ class Runtime_Memory_Selector_8(Module):
         Int32Field("field_7", "7 value", "Output this when input 7 is positive", 7),
         Int32Field("field_8", "8 value", "Output this when input 8 is positive", 8)
     ]
-    
+
     width = 8
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    INPUT_NAMES = ["", "in_1", "in_2", "in_3", "in_4", "in_5", "in_6", "in_7", "in_8"]
+    FIELD_NAMES = ["", "field_1", "field_2", "field_3", "field_4", "field_5", "field_6", "field_7", "field_8"]
+
     def action(self):
-        if self.Input.get_bool("in_8", False):
-            self.Output.set("output", self.Field.get("field_8", Fix32.Zero))
+        self._scan(8)
+
+    def _scan(self, n):
+        if n <= 0:
+            self.Output.set("output", self.Field.get("default", Fix32.Zero))
             return
-
-        if self.Input.get_bool("in_7", False):
-            self.Output.set("output", self.Field.get("field_7", Fix32.Zero))
+        if self.Input.get_bool(self.INPUT_NAMES[n], False):
+            self.Output.set("output", self.Field.get(self.FIELD_NAMES[n], Fix32.Zero))
             return
-
-        if self.Input.get_bool("in_6", False):
-            self.Output.set("output", self.Field.get("field_6", Fix32.Zero))
-            return
-
-        if self.Input.get_bool("in_5", False):
-            self.Output.set("output", self.Field.get("field_5", Fix32.Zero))
-            return
-
-        if self.Input.get_bool("in_4", False):
-            self.Output.set("output", self.Field.get("field_4", Fix32.Zero))
-            return
-
-        if self.Input.get_bool("in_3", False):
-            self.Output.set("output", self.Field.get("field_3", Fix32.Zero))
-            return
-
-        if self.Input.get_bool("in_2", False):
-            self.Output.set("output", self.Field.get("field_2", Fix32.Zero))
-            return
- 
-        if self.Input.get_bool("in_1", False):
-            self.Output.set("output", self.Field.get("field_1", Fix32.Zero))
-            return
-
-        self.Output.set("output", self.Field.get("default", Fix32.Zero))
-
-
+        self._scan(n - 1)

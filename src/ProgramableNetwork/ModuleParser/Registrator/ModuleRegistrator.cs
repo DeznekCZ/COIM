@@ -104,37 +104,37 @@ namespace ProgramableNetwork.Python
             {
                 if (variable is ModuleEntityFieldProtoDefinition entityField)
                 {
-                    builder.AddEntityField(entityField.type, entityField.id, entityField.name, entityField.desc);
+                    builder.AddEntityField(entityField.type, entityField.id, entityField.name, entityField.desc, showInTooltip: entityField.showInTooltip);
                     continue;
                 }
 
                 if (variable is ModuleInt32FieldProtoDefinition int32Field)
                 {
-                    builder.AddInt32Field(int32Field.id, int32Field.name, int32Field.desc, int32Field.defaultValue, int32Field.overrideInput);
+                    builder.AddInt32Field(int32Field.id, int32Field.name, int32Field.desc, int32Field.defaultValue, int32Field.overrideInput, int32Field.showInTooltip);
                     continue;
                 }
 
                 if (variable is ModuleInt64FieldProtoDefinition int64Field)
                 {
-                    builder.AddInt64Field(int64Field.id, int64Field.name, int64Field.desc, int64Field.defaultValue, int64Field.overrideInput);
+                    builder.AddInt64Field(int64Field.id, int64Field.name, int64Field.desc, int64Field.defaultValue, int64Field.overrideInput, int64Field.showInTooltip);
                     continue;
                 }
 
                 if (variable is ModuleFix32FieldProtoDefinition fix32Field)
                 {
-                    builder.AddFix32Field(fix32Field.id, fix32Field.name, fix32Field.desc, fix32Field.defaultValue, fix32Field.overrideInput);
+                    builder.AddFix32Field(fix32Field.id, fix32Field.name, fix32Field.desc, fix32Field.defaultValue, fix32Field.overrideInput, fix32Field.showInTooltip);
                     continue;
                 }
 
                 if (variable is ModuleStringFieldProtoDefinition stringField)
                 {
-                    builder.AddStringField(stringField.id, stringField.name, stringField.desc, stringField.defaultValue, stringField.overrideInput);
+                    builder.AddStringField(stringField.id, stringField.name, stringField.desc, stringField.defaultValue, stringField.overrideInput, stringField.multilined, stringField.showInTooltip);
                     continue;
                 }
 
                 if (variable is ModuleBooleanFieldProtoDefinition booleanField)
                 {
-                    builder.AddBooleanField(booleanField.id, booleanField.name, booleanField.desc, booleanField.defaultValue, booleanField.overrideInput);
+                    builder.AddBooleanField(booleanField.id, booleanField.name, booleanField.desc, booleanField.defaultValue, booleanField.overrideInput, booleanField.showInTooltip);
                     continue;
                 }
             }

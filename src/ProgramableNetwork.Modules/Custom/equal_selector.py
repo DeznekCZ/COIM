@@ -5,6 +5,9 @@ from Mafi import Fix32
 from Core.module import DefaultControllers, Module
 
 # File written by Nightinggale
+# Optimized: scans descending from the highest-numbered input via recursion.
+# Input names are pre-built once as a class-level list (slot 0 valid here —
+# inputs are indexed in_0..in_6) so there are no per-tick string allocations.
 
 class Runtime_Equal_Selector_7(Module):
     name = "Control: Equal Selector (7 inputs)"
@@ -24,49 +27,24 @@ class Runtime_Equal_Selector_7(Module):
         Output("matching_index", "Index of equal input"),
         Output("output", "Match with any input")
     ]
-    
+
     width = 8
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    INPUT_NAMES = ["in_0", "in_1", "in_2", "in_3", "in_4", "in_5", "in_6"]
+
     def action(self):
-        main = self.Input.get("main", Fix32.Zero)
+        self._scan(self.Input.get("main", Fix32.Zero), 6)
 
-        if main == self.Input.get("in_6", Fix32.Zero):
-            self.Output.set_int("matching_index", 6)
+    def _scan(self, main, n):
+        if n < 0:
+            self.Output.set_int("matching_index", 99)
+            self.Output.set_bool("output", False)
+            return
+        if main == self.Input.get(self.INPUT_NAMES[n], Fix32.Zero):
+            self.Output.set_int("matching_index", n)
             self.Output.set_bool("output", True)
             return
-
-        if main == self.Input.get("in_5", Fix32.Zero):
-            self.Output.set_int("matching_index", 5)
-            self.Output.set_bool("output", True)
-            return
-
-        if main == self.Input.get("in_4", Fix32.Zero):
-            self.Output.set_int("matching_index", 4)
-            self.Output.set_bool("output", True)
-            return
-
-        if main == self.Input.get("in_3", Fix32.Zero):
-            self.Output.set_int("matching_index", 3)
-            self.Output.set_bool("output", True)
-            return
-
-        if main == self.Input.get("in_2", Fix32.Zero):
-            self.Output.set_int("matching_index", 2)
-            self.Output.set_bool("output", True)
-            return
-
-        if main == self.Input.get("in_1", Fix32.Zero):
-            self.Output.set_int("matching_index", 1)
-            self.Output.set_bool("output", True)
-            return
-
-        if main == self.Input.get("in_0", Fix32.Zero):
-            self.Output.set_int("matching_index", 0)
-            self.Output.set_bool("output", True)
-            return
-
-        self.Output.set_int("matching_index", 99)
-        self.Output.set_bool("output", False)
+        self._scan(main, n - 1)

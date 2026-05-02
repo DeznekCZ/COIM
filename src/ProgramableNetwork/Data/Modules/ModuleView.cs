@@ -114,10 +114,27 @@ namespace ProgramableNetwork.Ui
 					this.Observe(() => module.Status)
 						.Observe(() => module.Error)
 						.Observe(() => module.Warning)
-						.Do((status, text, warn) =>
+						.Observe(() => m_controller.m_controller.Mode)
+						.Do((status, text, warn, mode) =>
 						{
 							bool isError = status == ModuleStatus.Error;
-							fieldsPanel.Tooltip(text.AsLoc(), enabled: !string.IsNullOrEmpty(text), isError: isError);
+							// In Edit mode, aggregate the values of fields that opted into the
+							// tooltip via AddXxxField(showInTooltip: true). Lines are appended
+							// after any error/status text so the existing diagnostics stay first.
+							// Move/Add modes intentionally suppress the per-field aggregation —
+							// the user is positioning, not inspecting.
+							string tooltipText = text ?? "";
+							if (mode == ControllerEditMode.Edit)
+							{
+								string aggregated = BuildFieldTooltip(module);
+								if (!string.IsNullOrEmpty(aggregated))
+								{
+									tooltipText = string.IsNullOrEmpty(tooltipText)
+										? aggregated
+										: tooltipText + "\n\n" + aggregated;
+								}
+							}
+							fieldsPanel.Tooltip(tooltipText.AsLoc(), enabled: !string.IsNullOrEmpty(tooltipText), isError: isError);
 
 							if (status == ModuleStatus.Running) {
 								fieldsPanel.Class(Cls.btn_general);
@@ -178,6 +195,36 @@ namespace ProgramableNetwork.Ui
 				AddOutputs(uiContext, outputsPanel, module, preview, refresh);
 
 				BodyAdd(outputsPanel);
+			}
+
+			// Renders the "name: value" line per ShowInTooltip-flagged field, joined by newlines.
+			// Returns empty string when no fields opt in.  Fields with empty value strings are
+			// skipped so we don't show "X:" on its own.
+			private static string BuildFieldTooltip(Module module)
+			{
+				if (module?.Prototype?.Fields == null) {
+					return "";
+				}
+				System.Text.StringBuilder sb = null;
+				foreach (IField field in module.Prototype.Fields)
+				{
+					if (!field.ShowInTooltip) {
+						continue;
+					}
+					string value = field.GetTooltipValue(module);
+					if (string.IsNullOrEmpty(value)) {
+						continue;
+					}
+					if (sb == null) {
+						sb = new System.Text.StringBuilder();
+					} else {
+						sb.Append('\n');
+					}
+					sb.Append(field.Name.TranslatedString);
+					sb.Append(": ");
+					sb.Append(value);
+				}
+				return sb?.ToString() ?? "";
 			}
 
 			private void AddInputs(UiContext uiContext, Row inputsPanel, Module module, bool preview, Action refresh)

@@ -70,6 +70,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 		Display(registrator);
 		RadioAM(registrator);
 		RadioFM(registrator);
+		// Plc lives in Plc.cs as its own ModuleGroup; auto-registered by
+		// ModDefinition's RegisterDataWithInterface<IModuleGroup>().
 
 		// SPECIAL
 		registrator

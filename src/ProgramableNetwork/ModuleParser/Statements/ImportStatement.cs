@@ -48,10 +48,12 @@ namespace ProgramableNetwork.Python
                                                : dist is float f ? f.ToFix32()
                                                : Fix32.FromInt(5);
 
+                                bool showInTooltip = args.Length > 5 && args[5] is OrderedValue o5 ? (bool)o5.Value : false;
+
                                 return new ModuleEntityFieldProtoDefinition(
-                                    type, id, name1, desc, distance
+                                    type, id, name1, desc, distance, showInTooltip
                                 );
-                            }, new string[] { "type", "id", "name", "desc", "defaultValue" }));
+                            }, new string[] { "type", "id", "name", "desc", "defaultValue", "show_in_tooltip" }));
                     }
                     else if (argument.value == "BooleanField")
                     {
@@ -61,10 +63,11 @@ namespace ProgramableNetwork.Python
                                 string name1 = (string)(args[1] is OrderedValue o1 ? o1.Value : null);
                                 string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
                                 bool defaultValue = args.Length > 3 && args[3] is OrderedValue o3 ? (bool)o3.Value : false;
+                                bool showInTooltip = args.Length > 4 && args[4] is OrderedValue o4 ? (bool)o4.Value : false;
                                 return new ModuleBooleanFieldProtoDefinition(
-                                    id, name1, desc, defaultValue
+                                    id, name1, desc, defaultValue, false, showInTooltip
                                 );
-                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                            }, new string[] { "id", "name", "desc", "defaultValue", "show_in_tooltip" }));
                     }
                     else if (argument.value == "Int32Field")
                     {
@@ -74,10 +77,11 @@ namespace ProgramableNetwork.Python
                                 string name1 = (string)(args[1] is OrderedValue o1 ? o1.Value : null);
                                 string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
                                 int defaultValue = args.Length > 3 && args[3] is OrderedValue o3 ? (int)o3.Value : 0;
+                                bool showInTooltip = args.Length > 4 && args[4] is OrderedValue o4 ? (bool)o4.Value : false;
                                 return new ModuleInt32FieldProtoDefinition(
-                                    id, name1, desc, defaultValue
+                                    id, name1, desc, defaultValue, false, showInTooltip
                                 );
-                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                            }, new string[] { "id", "name", "desc", "defaultValue", "show_in_tooltip" }));
                     }
                     else if (argument.value == "Fix32Field")
                     {
@@ -87,10 +91,11 @@ namespace ProgramableNetwork.Python
                                 string name1 = (string)(args[1] is OrderedValue o1 ? o1.Value : null);
                                 string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
                                 Fix32 defaultValue = (Fix32?)(args.Length > 3 && args[3] is OrderedValue o3 ? o3.Value : null) ?? Fix32.Zero;
+                                bool showInTooltip = args.Length > 4 && args[4] is OrderedValue o4 ? (bool)o4.Value : false;
                                 return new ModuleFix32FieldProtoDefinition(
-                                    id, name1, desc, defaultValue
+                                    id, name1, desc, defaultValue, false, showInTooltip
                                 );
-                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                            }, new string[] { "id", "name", "desc", "defaultValue", "show_in_tooltip" }));
                     }
                     else if (argument.value == "Int64Field")
                     {
@@ -100,10 +105,11 @@ namespace ProgramableNetwork.Python
                                 string name1 = (string)(args[1] is OrderedValue o1 ? o1.Value : null);
                                 string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
                                 long defaultValue = (int?)(args[3] is OrderedValue o3 ? o3.Value : null) ?? 0;
+                                bool showInTooltip = args.Length > 4 && args[4] is OrderedValue o4 ? (bool)o4.Value : false;
                                 return new ModuleInt64FieldProtoDefinition(
-                                    id, name1, desc, defaultValue
+                                    id, name1, desc, defaultValue, false, showInTooltip
                                 );
-                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                            }, new string[] { "id", "name", "desc", "defaultValue", "show_in_tooltip" }));
                     }
                     else if (argument.value == "StringField")
                     {
@@ -113,10 +119,12 @@ namespace ProgramableNetwork.Python
                                 string name1 = (string)(args[1] is OrderedValue o1 ? o1.Value : null);
                                 string desc = (string)(args[2] is OrderedValue o2 ? o2.Value : null);
                                 string defaultValue = (string)(args[3] is OrderedValue o3 ? o3.Value : null) ?? "";
+                                bool multilined = args.Length > 4 && args[4] is OrderedValue o4 ? (bool)o4.Value : false;
+                                bool showInTooltip = args.Length > 5 && args[5] is OrderedValue o5 ? (bool)o5.Value : false;
                                 return new ModuleStringFieldProtoDefinition(
-                                    id, name1, desc, defaultValue
+                                    id, name1, desc, defaultValue, false, multilined, showInTooltip
                                 );
-                            }, new string[] { "id", "name", "desc", "defaultValue" }));
+                            }, new string[] { "id", "name", "desc", "defaultValue", "multilined", "show_in_tooltip" }));
                     }
                     else
                     {

@@ -152,11 +152,42 @@ namespace ProgramableNetwork.Python
                     .Where(m => m.Name == this.name)
                     .ToArray();
 
-                var member = instanceMethods.Length > 0 ? MemberCall.Create(value, instanceMethods) :
-                     throw new KeyNotFoundException($"{value.GetType()} has no member with name \"{this.name}\"");
-                return new Reference<object>(
-                    (v) => throw new InvalidOperationException($"{value.GetType()} is sealed, can not set method \"{this.name}\""),
-                    () => member);
+                if (instanceMethods.Length > 0) {
+                    var memberCall = MemberCall.Create(value, instanceMethods);
+                    return new Reference<object>(
+                        (v) => throw new InvalidOperationException($"{value.GetType()} is sealed, can not set method \"{this.name}\""),
+                        () => memberCall);
+                }
+
+                // Python-style __getattr__ / __setattr__ fallback.  Lets a host
+                // type (e.g. ModuleWrapper.InputSetter) opt into dotted access
+                // for arbitrary names — `self.Input.A` resolves through
+                // `InputSetter.__getattr__("A")` and `self.Output.A = X` through
+                // `OutputSetter.__setattr__("A", X)`.  The signature contract:
+                // __getattr__(string) returning the read value, __setattr__
+                // (string, object) accepting the write value.  Either may be
+                // missing — read-only types provide only __getattr__.
+                MethodInfo getattr = value.GetType().GetMethod("__getattr__",
+                    BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(string) }, null);
+                MethodInfo setattr = value.GetType().GetMethod("__setattr__",
+                    BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(string), typeof(object) }, null);
+                if (getattr != null || setattr != null) {
+                    return new Reference<object>(
+                        (v) => {
+                            if (setattr is null) {
+                                throw new InvalidOperationException($"{value.GetType()} is read-only, can not set \"{this.name}\"");
+                            }
+                            setattr.Invoke(value, new object[] { this.name, v });
+                        },
+                        () => {
+                            if (getattr is null) {
+                                throw new InvalidOperationException($"{value.GetType()} is write-only, can not read \"{this.name}\"");
+                            }
+                            return getattr.Invoke(value, new object[] { this.name });
+                        });
+                }
+
+                throw new KeyNotFoundException($"{value.GetType()} has no member with name \"{this.name}\"");
             }
         }
 

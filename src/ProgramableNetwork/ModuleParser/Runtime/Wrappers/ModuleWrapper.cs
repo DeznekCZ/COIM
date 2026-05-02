@@ -46,6 +46,14 @@ namespace ProgramableNetwork.Python
             {
                 return module.FieldOrInput[name, value];
             }
+
+            // Dotted accessor — read-only side of the FieldOrInput coalescer.
+            // Mirrors the existing `get` shape so `self.FieldOrInput.A` is
+            // equivalent to `self.FieldOrInput.get("A", 0)`.
+            public Fix32 __getattr__(string name)
+            {
+                return module.FieldOrInput[name, Fix32.Zero];
+            }
         }
 
         public FieldSetter Field => new FieldSetter(module);
@@ -93,6 +101,22 @@ namespace ProgramableNetwork.Python
             {
                 module.Field[name] = value;
             }
+
+            // Dotted accessor — see InputSetter.__getattr__/__setattr__.
+            public Fix32 __getattr__(string name)
+            {
+                return module.Field[name, Fix32.Zero];
+            }
+
+            public void __setattr__(string name, object value)
+            {
+                if (value is bool b) { module.Field.Bool[name] = b; return; }
+                if (value is int i) { module.Field.Integer[name] = i; return; }
+                if (value is Fix32 f) { module.Field[name] = f; return; }
+                if (value is float fl) { module.Field[name] = fl.ToFix32(); return; }
+                throw new System.InvalidOperationException(
+                    "Cannot assign " + (value?.GetType().Name ?? "null") + " to field '" + name + "'");
+            }
         }
 
         public InputSetter Input => new InputSetter(module);
@@ -134,6 +158,26 @@ namespace ProgramableNetwork.Python
             public void set(string name, Fix32 value)
             {
                 module.Input[name] = value;
+            }
+
+            // Python-style fallback hooks invoked by PropertyExpression when
+            // normal reflection finds no member with the given name.  These
+            // turn `self.Input.A` into `self.Input.get("A", 0)` and
+            // `self.Input.A = X` into a typed write.  Default-on-miss is
+            // Fix32.Zero so unconnected inputs read as 0.
+            public Fix32 __getattr__(string name)
+            {
+                return module.Input[name, Fix32.Zero];
+            }
+
+            public void __setattr__(string name, object value)
+            {
+                if (value is bool b) { module.Input.Bool[name] = b; return; }
+                if (value is int i) { module.Input.Integer[name] = i; return; }
+                if (value is Fix32 f) { module.Input[name] = f; return; }
+                if (value is float fl) { module.Input[name] = fl.ToFix32(); return; }
+                throw new System.InvalidOperationException(
+                    "Cannot assign " + (value?.GetType().Name ?? "null") + " to input '" + name + "'");
             }
         }
 
@@ -178,6 +222,22 @@ namespace ProgramableNetwork.Python
             {
                 module.Output[name] = value;
             }
+
+            // Dotted accessor — see InputSetter.__getattr__/__setattr__.
+            public Fix32 __getattr__(string name)
+            {
+                return module.Output[name, Fix32.Zero];
+            }
+
+            public void __setattr__(string name, object value)
+            {
+                if (value is bool b) { module.Output.Bool[name] = b; return; }
+                if (value is int i) { module.Output.Integer[name] = i; return; }
+                if (value is Fix32 f) { module.Output[name] = f; return; }
+                if (value is float fl) { module.Output[name] = fl.ToFix32(); return; }
+                throw new System.InvalidOperationException(
+                    "Cannot assign " + (value?.GetType().Name ?? "null") + " to output '" + name + "'");
+            }
         }
 
         public DisplaySetter Display => new DisplaySetter(module);
@@ -199,6 +259,19 @@ namespace ProgramableNetwork.Python
             public void set(string name, string value)
             {
                 module.Display[name] = value;
+            }
+
+            // Dotted accessor — Display values are strings, so we coerce any
+            // assigned value via Expressions.__str__ (matches what the
+            // implicit "" + value path would do at parse time).
+            public string __getattr__(string name)
+            {
+                return module.Display[name, ""];
+            }
+
+            public void __setattr__(string name, object value)
+            {
+                module.Display[name] = Expressions.__str__(value);
             }
         }
 
@@ -278,8 +351,72 @@ namespace ProgramableNetwork.Python
             set => module.Warning = value;
         }
 
-        public Dict<string, int> NumberData => module.NumberData;
-        public Dict<string, string> StringData => module.StringData;
+        // Per-module persistent state.  Wrapped so Python can use both
+        // dict-style (`self.NumberData["foo"]`) and attribute-style
+        // (`self.NumberData.foo`) access — both go through the same backing
+        // Dict<string,*> on the underlying Module, so they round-trip the
+        // same data and are safe to mix in the same script.
+        public NumberDataSetter NumberData => new NumberDataSetter(module);
+        public StringDataSetter StringData => new StringDataSetter(module);
+
+        public class NumberDataSetter
+        {
+            private Module module;
+            public NumberDataSetter(Module module) { this.module = module; }
+
+            public int __getattr__(string name) => __getitem__(name);
+            public void __setattr__(string name, object value) => __setitem__(name, value);
+
+            public int __getitem__(object key)
+            {
+                string name = key as string;
+                if (name == null) {
+                    return 0;
+                }
+                return module.NumberData.TryGetValue(name, out int v) ? v : 0;
+            }
+
+            public void __setitem__(object key, object value)
+            {
+                string name = key as string;
+                if (name == null) {
+                    return;
+                }
+                if (value is bool b) { module.NumberData[name] = b ? 1 : 0; return; }
+                if (value is int i) { module.NumberData[name] = i; return; }
+                if (value is Fix32 f) { module.NumberData[name] = f.IntegerPart; return; }
+                if (value is float fl) { module.NumberData[name] = (int)fl; return; }
+                throw new System.InvalidOperationException(
+                    "Cannot store " + (value?.GetType().Name ?? "null") + " in NumberData['" + name + "']");
+            }
+        }
+
+        public class StringDataSetter
+        {
+            private Module module;
+            public StringDataSetter(Module module) { this.module = module; }
+
+            public string __getattr__(string name) => __getitem__(name);
+            public void __setattr__(string name, object value) => __setitem__(name, value);
+
+            public string __getitem__(object key)
+            {
+                string name = key as string;
+                if (name == null) {
+                    return "";
+                }
+                return module.StringData.TryGetValue(name, out string v) ? v : "";
+            }
+
+            public void __setitem__(object key, object value)
+            {
+                string name = key as string;
+                if (name == null) {
+                    return;
+                }
+                module.StringData[name] = Expressions.__str__(value);
+            }
+        }
         public ModuleProto Prototype => module.Prototype;
         public Controller Controller => module.Controller;
 

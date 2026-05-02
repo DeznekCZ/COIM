@@ -9,31 +9,41 @@ class Field:
         self.short_desc = short_desc
 
 class Int32Field(Field):
-    def __init__(self, field_id: str, name: str, short_desc="", default_value=0):
+    def __init__(self, field_id: str, name: str, short_desc="", default_value=0, show_in_tooltip=False):
         super().__init__(field_id, name, short_desc)
         self.default_value = default_value
+        self.show_in_tooltip = show_in_tooltip
 
 class Fix32Field(Field):
-    def __init__(self, field_id: str, name: str, short_desc="", default_value=fix(0)):
+    def __init__(self, field_id: str, name: str, short_desc="", default_value=fix(0), show_in_tooltip=False):
         super().__init__(field_id, name, short_desc)
         self.default_value = default_value
+        self.show_in_tooltip = show_in_tooltip
 
 class StringField(Field):
-    def __init__(self, field_id: str, name: str, short_desc="", default_value=""):
+    # multilined: when True the field's editor in the inspector becomes a multi-line
+    # text area (~4 rows tall) instead of the default single-line input.
+    # show_in_tooltip: when True the module's hover tooltip (only in Edit mode) lists
+    # this field's current value alongside any error/status text.
+    def __init__(self, field_id: str, name: str, short_desc="", default_value="", multilined=False, show_in_tooltip=False):
         super().__init__(field_id, name, short_desc)
         self.default_value = default_value
+        self.multilined = multilined
+        self.show_in_tooltip = show_in_tooltip
 
 class BooleanField(Field):
-    def __init__(self, field_id: str, name: str, short_desc="", default_value=False):
+    def __init__(self, field_id: str, name: str, short_desc="", default_value=False, show_in_tooltip=False):
         super().__init__(field_id, name, short_desc)
         self.default_value = default_value
+        self.show_in_tooltip = show_in_tooltip
 
 class EntityField(Field):
-    def __init__(self, entity_type: type[Entity] | list[type[Entity]], field_id: str, name: str, short_desc: str = None, distance: float = 5, entity_filter=lambda module, entity: True):
+    def __init__(self, entity_type: type[Entity] | list[type[Entity]], field_id: str, name: str, short_desc: str = None, distance: float = 5, entity_filter=lambda module, entity: True, show_in_tooltip=False):
         super().__init__(field_id, name, short_desc)
         self.type = entity_type;
         self.distance = distance
         self.filter = entity_filter
+        self.show_in_tooltip = show_in_tooltip
 
 class FieldValue:
     def __init__(self, module): pass

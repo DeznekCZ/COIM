@@ -42,6 +42,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	private readonly ControllerView m_view;
 	private readonly ButtonIcon m_colorButton;
 	private readonly VariableWindowController m_variableWindowController;
+	private readonly PlcPyCodeEditorWindowController m_plcPyCodeEditorWindowController;
 
 	// TODO
 	public ModuleConnector m_higlightedOutput;
@@ -87,6 +88,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		//TerrainCursor terrainCursor,
 		CameraController cameraController,
 		VariableWindowController variableWindowController,
+		PlcPyCodeEditorWindowController plcPyCodeEditorWindowController,
 		NewInstanceOf<EntityHighlighter> entityHighlighter,
 		NewInstanceOf<EntityHighlighter> entityHighlighterSelectable,
 		LinesFactory linesFactory,
@@ -107,6 +109,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		m_invalidOpSound = context.AudioDb.InvalidOp();
 		m_console = console;
 		m_variableWindowController = variableWindowController;
+		m_plcPyCodeEditorWindowController = plcPyCodeEditorWindowController;
 
 		// Wider than the default 650px inspector so the module grid + cable corridors
 		// + side connections panel all have room without crowding.
@@ -262,6 +265,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	public ModuleConnector OutputConnection { get; internal set; }
 	public CameraController CameraController { get; }
 	public VariableWindowController VariableWindowController => m_variableWindowController;
+	public PlcPyCodeEditorWindowController PlcPyCodeEditorWindowController => m_plcPyCodeEditorWindowController;
 
 	public override bool InputUpdate() {
 		if (EntitySelectionInput != null) {

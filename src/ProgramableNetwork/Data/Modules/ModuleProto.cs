@@ -152,6 +152,13 @@ namespace ProgramableNetwork
         public Electricity UsedPower { get; }
         public int BaseWidth { get; }
         public PartialQuantity UsedComputing { get; }
+        // Optional per-instance computing override.  When set, Controller's
+        // GetRequiredComputation calls this instead of using the static
+        // UsedComputing — used by the PLC module so each instance's cost
+        // scales with its parsed lexer-node count.  Leaving it null keeps
+        // the existing single-value-per-prototype behavior for every other
+        // module.
+        public Func<Module, PartialQuantity> DynamicComputing { get; }
         public Action<Module, UiComponent> DisplayFunction { get; }
         public Func<Module, int> WidthFunction { get; }
 
@@ -196,34 +203,7 @@ namespace ProgramableNetwork
                     .Build();
                 typeof(ModuleProto)
                     .GetField("<WidthFunction>k__BackingField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    .SetValue(Phantom, (Func<Module, int>)((m) =>
-                    {
-                        if (m.NumberData.TryGetValue("phantom__width", out int width))
-                        {
-                            return width;
-                        }
-                        bool rowHit = false;
-                        foreach (var row in m.Controller.Rows)
-                        {
-                            foreach (var column in row)
-                            {
-                                if (column.ModuleId == m.Id)
-                                {
-                                    rowHit = true;
-                                    width++;
-                                    continue;
-                                }
-                                if (rowHit) {
-									break;
-								}
-							}
-                            if (rowHit) {
-								break;
-							}
-						}
-                        m.NumberData["phantom__width"] = width;
-                        return width;
-                    }));
+                    .SetValue(Phantom, (Func<Module, int>)((m) => 1));
 
             }
             catch (Exception e)
@@ -240,7 +220,8 @@ namespace ProgramableNetwork
 			List<ModuleConnectorProto> m_displays, List<IField> m_fields,
 			Action<Module, UiComponent> m_displayFunction, int baseWidth, Func<Module, int> m_widthFunction,
 			string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories,
-            ImmutableArray<ResearchNodeProto> m_research
+            ImmutableArray<ResearchNodeProto> m_research,
+            Func<Module, PartialQuantity> m_dynamicComputing = null
 		) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
@@ -256,6 +237,7 @@ namespace ProgramableNetwork
             Fields = m_fields;
             UsedPower = usedPower;
             UsedComputing = usedComputing;
+            DynamicComputing = m_dynamicComputing;
             Graphics = gfx;
             DisplayFunction = m_displayFunction;
             WidthFunction = m_widthFunction;
@@ -289,6 +271,7 @@ namespace ProgramableNetwork
             private readonly List<ModuleConnectorProto> m_displays = new List<ModuleConnectorProto>();
             private Electricity m_usedPower;
             private PartialQuantity m_usedComputing;
+            private Func<Module, PartialQuantity> m_dynamicComputing;
             private EntityCostsTpl.Builder m_costs;
             private Gfx m_gfx;
             private string m_symbol;
@@ -371,7 +354,8 @@ namespace ProgramableNetwork
                     m_categories,
                     m_researchIds
 						.Select(id => m_registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
-						.ToImmutableArray()
+						.ToImmutableArray(),
+                    m_dynamicComputing
                 );
             }
 
@@ -619,75 +603,75 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddBooleanField(string id, string name, string shortDesc = "", bool defaultValue = false, bool overrideInput = false)
+            public Builder AddBooleanField(string id, string name, string shortDesc = "", bool defaultValue = false, bool overrideInput = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new BooleanField(id, m_id.Field(id, name, shortDesc), defaultValue));
+				m_fields.Add(new BooleanField(id, m_id.Field(id, name, shortDesc), defaultValue, showInTooltip));
                 return this;
             }
 
-            public Builder AddInt32Field(string id, string name, string shortDesc = "", int defaultValue = 0, bool overrideInput = false)
+            public Builder AddInt32Field(string id, string name, string shortDesc = "", int defaultValue = 0, bool overrideInput = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new NumberField<int>(id, m_id.Field(id, name, shortDesc), defaultValue));
+				m_fields.Add(new NumberField<int>(id, m_id.Field(id, name, shortDesc), defaultValue, showInTooltip));
                 return this;
             }
 
-            public Builder AddHexInt32Field(string id, string name, string shortDesc = "", uint defaultValue = 0, bool overrideInput = false)
+            public Builder AddHexInt32Field(string id, string name, string shortDesc = "", uint defaultValue = 0, bool overrideInput = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new NumberField<HexInt32>(id, m_id.Field(id, name, shortDesc), new HexInt32() { Value = (int)defaultValue }));
+				m_fields.Add(new NumberField<HexInt32>(id, m_id.Field(id, name, shortDesc), new HexInt32() { Value = (int)defaultValue }, showInTooltip));
                 return this;
             }
 
-            public Builder AddColorField(string id, string name, string shortDesc = "", int defaultValue = 0, bool overrideInput = false)
+            public Builder AddColorField(string id, string name, string shortDesc = "", int defaultValue = 0, bool overrideInput = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue));
+				m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue, showInTooltip));
                 return this;
             }
 
-            public Builder AddColorField(string id, string name, string shortDesc = "", ColorRgba? defaultValue = null, bool overrideInput = false)
+            public Builder AddColorField(string id, string name, string shortDesc = "", ColorRgba? defaultValue = null, bool overrideInput = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue ?? new ColorRgba()));
+				m_fields.Add(new ColorField(id, m_id.Field(id, name, shortDesc), defaultValue ?? new ColorRgba(), showInTooltip));
                 return this;
             }
 
-            public Builder AddInt64Field(string id, string name, string shortDesc = "", long defaultValue = 0, bool overrideInput = false)
+            public Builder AddInt64Field(string id, string name, string shortDesc = "", long defaultValue = 0, bool overrideInput = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new NumberField<long>(id, m_id.Field(id, name, shortDesc), defaultValue));
+				m_fields.Add(new NumberField<long>(id, m_id.Field(id, name, shortDesc), defaultValue, showInTooltip));
                 return this;
             }
 
-            public Builder AddFix32Field(string id, string name, string shortDesc = "", Fix32? defaultValue = null, bool overrideInput = false)
+            public Builder AddFix32Field(string id, string name, string shortDesc = "", Fix32? defaultValue = null, bool overrideInput = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new NumberField<Fix32>(id, m_id.Field(id, name, shortDesc), defaultValue ?? Fix32.Zero));
+				m_fields.Add(new NumberField<Fix32>(id, m_id.Field(id, name, shortDesc), defaultValue ?? Fix32.Zero, showInTooltip));
                 return this;
             }
 
-            public Builder AddStringField(string id, string name, string shortDesc = "", string defaultValue = "", bool overrideInput = false)
+            public Builder AddStringField(string id, string name, string shortDesc = "", string defaultValue = "", bool overrideInput = false, bool multilined = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new StringField(id, m_id.Field(id, name, shortDesc), defaultValue));
+				m_fields.Add(new StringField(id, m_id.Field(id, name, shortDesc), defaultValue, multilined, showInTooltip));
                 return this;
             }
 
@@ -729,35 +713,35 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddEntityField<T>(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
+            public Builder AddEntityField<T>(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, bool showInTooltip = false)
                 where T : IEntity
             {
                 m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity is T && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
                 return this;
             }
 
-            public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
+            public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, bool showInTooltip = false)
             {
                 m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity?.GetType()?.IsAssignableTo(t) ?? false && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
                 return this;
             }
 
-            public Builder AddEntityTypeField<T>(string id, string name, string shortDesc = null, Func<Module, T, bool> filter = null, bool overrideInput = false)
+            public Builder AddEntityTypeField<T>(string id, string name, string shortDesc = null, Func<Module, T, bool> filter = null, bool overrideInput = false, bool showInTooltip = false)
                 where T : EntityProto, IProtoWithIcon
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new EntityTypeField<T>(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true)));
+				m_fields.Add(new EntityTypeField<T>(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true), showInTooltip));
                 return this;
             }
 
-            public Builder AddProductField(string id, string name, string shortDesc = null, Func<Module, ProductProto, bool> filter = null, bool overrideInput = false)
+            public Builder AddProductField(string id, string name, string shortDesc = null, Func<Module, ProductProto, bool> filter = null, bool overrideInput = false, bool showInTooltip = false)
             {
                 if (overrideInput) {
 					addOverrideToggle(id);
 				}
-				m_fields.Add(new ProductField(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true)));
+				m_fields.Add(new ProductField(id, m_id.Field(id, name, shortDesc ?? ""), filter ?? ((m, proto) => true), showInTooltip));
                 return this;
             }
 
@@ -789,6 +773,24 @@ namespace ProgramableNetwork
             {
                 m_usedComputing = quantity;
                 return this;
+            }
+
+            /// <summary>
+            /// Per-instance computing override.  When set, Controller's
+            /// GetRequiredComputation calls this for each module of this proto
+            /// instead of using the static UsedComputing.  Use for modules
+            /// whose cost depends on per-instance state (e.g. PLC: cost grows
+            /// with the parsed lexer-node count).
+            /// </summary>
+            public Builder UseDynamicComputation(Func<Module, PartialQuantity> calculator)
+            {
+                m_dynamicComputing = calculator;
+                return this;
+            }
+
+            public Builder UseMaintenanceT3(int count = 1)
+            {
+                return UseMaintenance(Ids.Products.MaintenanceT3, count);
             }
         }
 

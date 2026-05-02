@@ -37,10 +37,21 @@ namespace ProgramableNetwork.Ui {
 
 		public LocStr Name => name;
 		public LocStr ShortDesc => shortDesc;
+		public bool ShowInTooltip => false; // shown in connections
 		public Fix32 Distance => distance;
 		public Func<Module, IEntity, bool> EntitySelector => entitySelector;
 
 		public int Size => 40;
+
+		public string GetTooltipValue(Module module) {
+			// Stored entity ref, formatted as "<TypeName> #<id>".  Same shape ModuleConnector
+			// uses elsewhere when describing a target.
+			Fix32 raw = module.Field[id, Fix32.Zero];
+			if (raw == Fix32.Zero) {
+				return "";
+			}
+			return raw.RawValue.ToString();
+		}
 
 		public void Validate(Module module) {
 			EntityInfo entityData = null;

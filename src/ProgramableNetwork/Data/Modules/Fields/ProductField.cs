@@ -16,20 +16,28 @@ namespace ProgramableNetwork.Ui
     {
         private Func<Module, ProductProto, bool> filter;
 
-        public ProductField(string id, Proto.Str strs, Func<Module, ProductProto, bool> filter)
+        public ProductField(string id, Proto.Str strs, Func<Module, ProductProto, bool> filter, bool showInTooltip = false)
         {
             this.Id = id;
             this.Name = strs.Name;
             this.ShortDesc = strs.DescShort;
             this.filter = filter;
+            this.ShowInTooltip = showInTooltip;
         }
 
         public string Id { get; }
 
         public LocStr Name { get; }
         public LocStr ShortDesc { get; }
+        public bool ShowInTooltip { get; }
 
         public int Size => 40;
+
+        public string GetTooltipValue(Module module)
+        {
+            ProductProto product = module.Field.Product(Id);
+            return product?.Strings.Name.TranslatedString ?? "";
+        }
 
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {

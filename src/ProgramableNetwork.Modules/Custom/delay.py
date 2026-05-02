@@ -59,6 +59,11 @@ class Runtime_Delay_1(Module):
         self.Output.set("output", oldest)
 
 
+# The fixed-size delay modules below use a recursive `_shift(n)` helper that
+# walks down from the highest output index, copying slot N-1 into slot N.
+# Output names are pre-built once at class-load time as `OUT_NAMES` so there
+# are no per-tick string allocations.
+
 class Runtime_Delay_2(Module):
     name = "Control: Delay (2 ticks)"
     description = "Two-stage shift register: outputs <b>1</b> and <b>2</b> carry the input from 1 and 2 ticks ago respectively, refreshed each tick from <b>0</b>."
@@ -73,10 +78,19 @@ class Runtime_Delay_2(Module):
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    OUT_NAMES = ["", "1", "2"]
+
     def action(self):
         a = self.Input.get("0", Fix32.Zero)
-        self.Output.set("2", self.Output.get("1", Fix32.Zero))
+        self._shift(2)
         self.Output.set("1", a)
+
+    def _shift(self, n):
+        if n <= 1:
+            return
+        self.Output.set(self.OUT_NAMES[n], self.Output.get(self.OUT_NAMES[n - 1], Fix32.Zero))
+        self._shift(n - 1)
+
 
 class Runtime_Delay_4(Module):
     name = "Control: Delay (4 ticks)"
@@ -94,12 +108,19 @@ class Runtime_Delay_4(Module):
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    OUT_NAMES = ["", "1", "2", "3", "4"]
+
     def action(self):
         a = self.Input.get("0", Fix32.Zero)
-        self.Output.set("4", self.Output.get("3", Fix32.Zero))
-        self.Output.set("3", self.Output.get("2", Fix32.Zero))
-        self.Output.set("2", self.Output.get("1", Fix32.Zero))
+        self._shift(4)
         self.Output.set("1", a)
+
+    def _shift(self, n):
+        if n <= 1:
+            return
+        self.Output.set(self.OUT_NAMES[n], self.Output.get(self.OUT_NAMES[n - 1], Fix32.Zero))
+        self._shift(n - 1)
+
 
 class Runtime_Delay_6(Module):
     name = "Control: Delay (6 ticks)"
@@ -119,14 +140,19 @@ class Runtime_Delay_6(Module):
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    OUT_NAMES = ["", "1", "2", "3", "4", "5", "6"]
+
     def action(self):
         a = self.Input.get("0", Fix32.Zero)
-        self.Output.set("6", self.Output.get("5", Fix32.Zero))
-        self.Output.set("5", self.Output.get("4", Fix32.Zero))
-        self.Output.set("4", self.Output.get("3", Fix32.Zero))
-        self.Output.set("3", self.Output.get("2", Fix32.Zero))
-        self.Output.set("2", self.Output.get("1", Fix32.Zero))
+        self._shift(6)
         self.Output.set("1", a)
+
+    def _shift(self, n):
+        if n <= 1:
+            return
+        self.Output.set(self.OUT_NAMES[n], self.Output.get(self.OUT_NAMES[n - 1], Fix32.Zero))
+        self._shift(n - 1)
+
 
 class Runtime_Delay_8(Module):
     name = "Control: Delay (8 ticks)"
@@ -148,13 +174,15 @@ class Runtime_Delay_8(Module):
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    OUT_NAMES = ["", "1", "2", "3", "4", "5", "6", "7", "8"]
+
     def action(self):
         a = self.Input.get("0", Fix32.Zero)
-        self.Output.set("8", self.Output.get("7", Fix32.Zero))
-        self.Output.set("7", self.Output.get("6", Fix32.Zero))
-        self.Output.set("6", self.Output.get("5", Fix32.Zero))
-        self.Output.set("5", self.Output.get("4", Fix32.Zero))
-        self.Output.set("4", self.Output.get("3", Fix32.Zero))
-        self.Output.set("3", self.Output.get("2", Fix32.Zero))
-        self.Output.set("2", self.Output.get("1", Fix32.Zero))
+        self._shift(8)
         self.Output.set("1", a)
+
+    def _shift(self, n):
+        if n <= 1:
+            return
+        self.Output.set(self.OUT_NAMES[n], self.Output.get(self.OUT_NAMES[n - 1], Fix32.Zero))
+        self._shift(n - 1)

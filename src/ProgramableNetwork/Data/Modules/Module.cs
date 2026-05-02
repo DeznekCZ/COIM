@@ -136,6 +136,10 @@ namespace ProgramableNetwork
 		// substitute a fresh empty container.  Packed into a single byte so most
 		// modules (which use only one or two of these) shrink their on-disk size
 		// from a header-per-empty-dict down to one bit per slot.
+		//
+		// CodeMetadata (bit 7) was added in MODULE_PYTHON_CODE to persist the
+		// PLC module's cached lexer-node count.  Non-PLC modules never set it
+		// and pay nothing for the extension.
 		[Flags]
 		private enum DataFlags : byte
 		{
@@ -147,8 +151,27 @@ namespace ProgramableNetwork
 			StringData       = 1 << 4,
 			InputModules     = 1 << 5,
 			ArrayData        = 1 << 6,
-			// bit 7 reserved for future use
+			CodeMetadata     = 1 << 7,
 		}
+
+		// PLC-only state.  Persisted via DataFlags.CodeMetadata; controls the
+		// dynamic computing cost (1 + 0.05 × count).  Zero for non-PLC modules
+		// and PLC modules whose script hasn't been parsed yet — the next
+		// successful Execute() will populate this and flip the flag bit.
+		[DoNotSave(0, null)]
+		private int m_lexerNodeCount;
+		public int LexerNodeCount {
+			get => m_lexerNodeCount;
+			set => m_lexerNodeCount = value;
+		}
+
+		// Compiled cache for the PLC module's parsed Block.  Non-serialized —
+		// re-parsed on first Execute() after load, or whenever the source's
+		// hash diverges from m_compiledSourceHash.
+		[DoNotSave(0, null)]
+		public object CompiledBlock { get; set; }
+		[DoNotSave(0, null)]
+		public int CompiledSourceHash { get; set; }
 
 		protected void SerializeData(BlobWriter writer)
 		{
@@ -158,7 +181,7 @@ namespace ProgramableNetwork
 
 			writer.WriteLong(Id);
 			writer.WriteString(m_protoId);
-			writer.WriteInt(/*Version*/ Controller.MODULE_COMPACT_DATA);
+			writer.WriteInt(/*Version*/ Controller.MODULE_PYTHON_CODE);
 			writer.WriteBool(IsPaused);
 			writer.WriteInt((int)Status);
 
@@ -170,6 +193,12 @@ namespace ProgramableNetwork
 			if (StringData != null       && StringData.Count       > 0) flags |= DataFlags.StringData;
 			if (InputModules != null     && InputModules.Count     > 0) flags |= DataFlags.InputModules;
 			if (ArrayData != null        && ArrayData.Length       > 0) flags |= DataFlags.ArrayData;
+			// CodeMetadata: cached lexer-node count for PLC modules (drives the
+			// dynamic computing cost without re-tokenizing on load).  Only set
+			// if the value is meaningful — a 0 count means "no script yet" and
+			// can be reconstructed on first execute, so don't burn a flag bit
+			// for it.
+			if (m_lexerNodeCount > 0) flags |= DataFlags.CodeMetadata;
 			writer.WriteByte((byte)flags);
 
 			if ((flags & DataFlags.NumberData)       != 0) Dict<string, int>.Serialize(NumberData, writer);
@@ -182,6 +211,9 @@ namespace ProgramableNetwork
 			writer.WriteInt(Column);
 			if ((flags & DataFlags.ArrayData) != 0) {
 				writer.WriteArray(ArrayData);
+			}
+			if ((flags & DataFlags.CodeMetadata) != 0) {
+				writer.WriteInt(m_lexerNodeCount);
 			}
 		}
 
@@ -199,7 +231,7 @@ namespace ProgramableNetwork
 
 			if (loadedVersion >= Controller.MODULE_COMPACT_DATA)
 			{
-				// v6+: single byte tells us which containers are present.  Absent
+				// v5+: single byte tells us which containers are present.  Absent
 				// flags get a fresh empty container — same shape the constructor sets.
 				DataFlags flags = (DataFlags)reader.ReadByte();
 				NumberData       = (flags & DataFlags.NumberData)       != 0 ? Dict<string, int>.Deserialize(reader)            : new Dict<string, int>();
@@ -213,6 +245,13 @@ namespace ProgramableNetwork
 				ArrayData = (flags & DataFlags.ArrayData) != 0
 					? (reader.ReadArray<Fix32>() ?? System.Array.Empty<Fix32>())
 					: System.Array.Empty<Fix32>();
+				// v6+ (MODULE_PYTHON_CODE): CodeMetadata bit, when set, carries
+				// the PLC's cached lexer-node count.  Older v5 saves never set
+				// the bit and the read is skipped — m_lexerNodeCount stays 0
+				// and the next Execute() will recompute it from the source.
+				m_lexerNodeCount = (loadedVersion >= Controller.MODULE_PYTHON_CODE && (flags & DataFlags.CodeMetadata) != 0)
+					? reader.ReadInt()
+					: 0;
 			}
 			else
 			{
@@ -265,7 +304,12 @@ namespace ProgramableNetwork
 				if (alternative != null) {
 					this.Prototype = Context.ProtosDb.Get<ModuleProto>(alternative ?? new ModuleProto.ID()).ValueOrThrow("Invalid module proto: " + m_protoId);
 				} else {
+					// No proto and no Deprecation replacement — leave a visible tombstone with
+					// a clear error string so the hover tooltip explains *which* prototype is
+					// missing.  Phantom's per-tick Action also reports ModuleStatus.Error.
 					this.Prototype = ModuleProto.Phantom;
+					SetError($"Original module '{m_protoId}' no longer exists. Remove it or install the mod that provides it.");
+					SetStatus(ModuleStatus.Error);
 				}
 			}
 

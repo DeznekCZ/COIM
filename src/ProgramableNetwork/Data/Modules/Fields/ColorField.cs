@@ -12,26 +12,34 @@ namespace ProgramableNetwork.Ui
 {
     public class ColorField : IField
     {
-        public ColorField(string id, Proto.Str strs, int defaultValue)
-			: this(id, strs, new ColorRgba(defaultValue))
+        public ColorField(string id, Proto.Str strs, int defaultValue, bool showInTooltip = false)
+			: this(id, strs, new ColorRgba(defaultValue), showInTooltip)
         {
         }
 
-        public ColorField(string id, Proto.Str strs, ColorRgba defaultValue)
+        public ColorField(string id, Proto.Str strs, ColorRgba defaultValue, bool showInTooltip = false)
         {
             Id = id;
             Name = strs.Name;
             Default = defaultValue;
             ShortDesc = strs.DescShort;
+            ShowInTooltip = showInTooltip;
         }
 
         public string Id { get; }
         public LocStr Name { get; }
         public LocStr ShortDesc { get; }
+        public bool ShowInTooltip { get; }
 
         public int Size => 20;
 
         public ColorRgba Default { get; }
+
+        public string GetTooltipValue(Module module)
+        {
+            ColorRgba c = module.Field[Id, Default.AsFix32].AsColorRgba;
+            return $"#{c.Rgba:X8}";
+        }
 
 		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
         {

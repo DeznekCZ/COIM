@@ -43,6 +43,14 @@ namespace ProgramableNetwork
 		// modules load with an empty array.
 		public const int MODULE_COMPACT_DATA = 5;
 
+		// Serialization version where the PLC (player-authored Python) module
+		// landed.  The DataFlags byte gained a CodeMetadata bit (1 << 7) so PLC
+		// instances can persist their cached lexer-node count alongside the
+		// existing dicts; pre-v6 modules read with that bit absent and a
+		// node count of 0 (re-tokenized on first execute).  Forward-compatible
+		// with non-PLC modules — they simply never set the bit.
+		public const int MODULE_PYTHON_CODE = 6;
+
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 		{
 			((Controller) obj).SerializeData(writer);
@@ -224,18 +232,75 @@ namespace ProgramableNetwork
 			}
 			else
 			{
+				// Resolve prototypes for every module.  Phantom modules (proto removed and
+				// no Deprecation replacement) are KEPT as visible tombstones — the player
+				// sees a "!!" cell with an "Original prototype no longer exists" tooltip
+				// and can decide whether to delete it manually.  We just skip field
+				// validation for them since Phantom carries no fields.
 				foreach (var m in Modules)
 				{
 					m.Controller = this;
 					m.Context = Context;
 					m.initContexts(saveVersion);
+
+					if (m.Prototype == null) {
+						Log.Warning($"Module {m.Id} with null prototype found in controller {Id}");
+						continue;
+					}
+					if (m.Prototype == ModuleProto.Phantom) {
+						Log.Warning($"Module {m.Id} resolved to Phantom in controller {Id}; original prototype no longer exists");
+						continue;
+					}
+
 					foreach (IField field in m.Prototype.Fields)
 					{
 						field.Validate(m);
 					}
+				}
 
+				// Drop input connections whose endpoints can't be resolved anymore.  Without
+				// this, cable rendering tries to look up pin protos on Phantom (no Inputs/
+				// Outputs) or hits stale references when a mod author renamed/removed a pin
+				// in a new version.  All four conditions are treated as "dead":
+				//   - source module no longer exists,
+				//   - source module exists but its prototype has no such output id,
+				//   - this module's prototype has no such input id,
+				//   - either side is a Phantom (no pins by definition).
+				var moduleById = new Dictionary<long, Module>();
+				foreach (var m in Modules) { moduleById[m.Id] = m; }
+				foreach (var m in Modules)
+				{
 					if (m.Prototype == null) {
-						Log.Warning($"Module {m.Id} with null prototype found in controller {Id}, skipping it");
+						continue;
+					}
+					foreach (var kv in m.InputModules.ToList())
+					{
+						if (!moduleById.TryGetValue(kv.Value.ModuleId, out var src))
+						{
+							m.InputModules.Remove(kv.Key);
+							continue;
+						}
+						if (src.Prototype == null || src.Prototype == ModuleProto.Phantom)
+						{
+							m.InputModules.Remove(kv.Key);
+							continue;
+						}
+						if (m.Prototype == ModuleProto.Phantom)
+						{
+							m.InputModules.Remove(kv.Key);
+							continue;
+						}
+						if (!src.Prototype.Outputs.Any(o => o.Id == kv.Value.OutputId))
+						{
+							Log.Warning($"Module {m.Id}: dropping connection for input '{kv.Key}' — source module {src.Id} no longer has output '{kv.Value.OutputId}'");
+							m.InputModules.Remove(kv.Key);
+							continue;
+						}
+						if (!m.Prototype.Inputs.Any(i => i.Id == kv.Key))
+						{
+							Log.Warning($"Module {m.Id}: dropping connection — input '{kv.Key}' no longer exists on this module's prototype");
+							m.InputModules.Remove(kv.Key);
+						}
 					}
 				}
 			}
@@ -535,7 +600,12 @@ namespace ProgramableNetwork
 				if (module.IsPaused) {
 					continue;
 				}
-				sum += module.Prototype.UsedComputing;
+				// DynamicComputing wins over the static UsedComputing when set
+				// (PLC modules: cost = 1 + 0.05 × parsed-node-count).  Falling
+				// back to UsedComputing keeps every other module unchanged.
+				sum += module.Prototype.DynamicComputing != null
+					? module.Prototype.DynamicComputing(module)
+					: module.Prototype.UsedComputing;
 			}
 
 			if (sum == PartialQuantity.Zero) {
@@ -589,7 +659,15 @@ namespace ProgramableNetwork
 						module.SetStatus(ModuleStatus.Skipped);
 						continue;
 					}
-					if (module.Prototype.UsedComputing > PartialQuantity.Zero && !computingConsumed)
+					// Match the GetRequiredComputation path: a module needs computing
+					// if its dynamic-cost callback returns >0 OR (when no callback)
+					// its static UsedComputing is >0.  Without this, PLC modules
+					// (whose cost is always dynamic) would never skip on missing
+					// computing because their UsedComputing stays at zero.
+					PartialQuantity moduleCost = module.Prototype.DynamicComputing != null
+						? module.Prototype.DynamicComputing(module)
+						: module.Prototype.UsedComputing;
+					if (moduleCost > PartialQuantity.Zero && !computingConsumed)
 					{
 						missingComputation = missingComputation || true;
 						module.SetStatus(ModuleStatus.Skipped);

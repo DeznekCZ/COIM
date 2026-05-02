@@ -5,6 +5,9 @@ from Mafi import Fix32
 from Core.module import DefaultControllers, Module
 
 # File written by Nightinggale
+# Optimized: each class extracts a `_latch(in_name, out_name)` and a
+# `_led(out_name, led_name)` helper, plus `_show_write()` for the enable
+# icon.  IO names are literal so no per-tick string allocation is involved.
 
 SAVE_ICON = "Assets/Unity/UserInterface/General/Save.svg"
 WRITE_ICON_ON = "#CAAAA00" + SAVE_ICON
@@ -35,19 +38,26 @@ class Runtime_FlipFlop_1(Module):
     def action(self):
         if not self.Input.get_bool("enable", False):
             return
-
-        self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
+        self._latch("in_1", "out_1")
 
     def Display(self):
+        self._show_write()
+        self._led("out_1", "led_1")
+
+    def _latch(self, in_name, out_name):
+        self.Output.set(out_name, self.Input.get(in_name, Fix32.Zero))
+
+    def _led(self, out_name, led_name):
+        if self.Output.get(out_name, Fix32.Zero) != Fix32.Zero:
+            self.Display.set(led_name, "stored")
+        else:
+            self.Display.set(led_name, "")
+
+    def _show_write(self):
         if self.Input.get_bool("enable", False):
             self.Display.set("write", WRITE_ICON_ON)
         else:
             self.Display.set("write", WRITE_ICON_OFF)
-
-        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_1", "stored")
-        else:
-            self.Display.set("led_1", "")
 
 
 class Runtime_FlipFlop_2(Module):
@@ -77,25 +87,28 @@ class Runtime_FlipFlop_2(Module):
     def Action(self):
         if not self.Input.get_bool("enable", False):
             return
-
-        self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
-        self.Output.set("out_2", self.Input.get("in_2", Fix32.Zero))
+        self._latch("in_1", "out_1")
+        self._latch("in_2", "out_2")
 
     def Display(self):
+        self._show_write()
+        self._led("out_1", "led_1")
+        self._led("out_2", "led_2")
+
+    def _latch(self, in_name, out_name):
+        self.Output.set(out_name, self.Input.get(in_name, Fix32.Zero))
+
+    def _led(self, out_name, led_name):
+        if self.Output.get(out_name, Fix32.Zero) != Fix32.Zero:
+            self.Display.set(led_name, "stored")
+        else:
+            self.Display.set(led_name, "")
+
+    def _show_write(self):
         if self.Input.get_bool("enable", False):
             self.Display.set("write", WRITE_ICON_ON)
         else:
             self.Display.set("write", WRITE_ICON_OFF)
-
-        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_1", "stored")
-        else:
-            self.Display.set("led_1", "")
-
-        if self.Output.get("out_2", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_2", "stored")
-        else:
-            self.Display.set("led_2", "")
 
 
 class Runtime_FlipFlop_3(Module):
@@ -128,31 +141,30 @@ class Runtime_FlipFlop_3(Module):
     def Action(self):
         if not self.Input.get_bool("enable", False):
             return
-
-        self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
-        self.Output.set("out_2", self.Input.get("in_2", Fix32.Zero))
-        self.Output.set("out_3", self.Input.get("in_3", Fix32.Zero))
+        self._latch("in_1", "out_1")
+        self._latch("in_2", "out_2")
+        self._latch("in_3", "out_3")
 
     def Display(self):
+        self._show_write()
+        self._led("out_1", "led_1")
+        self._led("out_2", "led_2")
+        self._led("out_3", "led_3")
+
+    def _latch(self, in_name, out_name):
+        self.Output.set(out_name, self.Input.get(in_name, Fix32.Zero))
+
+    def _led(self, out_name, led_name):
+        if self.Output.get(out_name, Fix32.Zero) != Fix32.Zero:
+            self.Display.set(led_name, "stored")
+        else:
+            self.Display.set(led_name, "")
+
+    def _show_write(self):
         if self.Input.get_bool("enable", False):
             self.Display.set("write", WRITE_ICON_ON)
         else:
             self.Display.set("write", WRITE_ICON_OFF)
-
-        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_1", "stored")
-        else:
-            self.Display.set("led_1", "")
-
-        if self.Output.get("out_2", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_2", "stored")
-        else:
-            self.Display.set("led_2", "")
-
-        if self.Output.get("out_3", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_3", "stored")
-        else:
-            self.Display.set("led_3", "")
 
 
 class Runtime_FlipFlop_4(Module):
@@ -188,37 +200,32 @@ class Runtime_FlipFlop_4(Module):
     def action(self):
         if not self.Input.get_bool("enable", False):
             return
-
-        self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
-        self.Output.set("out_2", self.Input.get("in_2", Fix32.Zero))
-        self.Output.set("out_3", self.Input.get("in_3", Fix32.Zero))
-        self.Output.set("out_4", self.Input.get("in_4", Fix32.Zero))
+        self._latch("in_1", "out_1")
+        self._latch("in_2", "out_2")
+        self._latch("in_3", "out_3")
+        self._latch("in_4", "out_4")
 
     def Display(self):
+        self._show_write()
+        self._led("out_1", "led_1")
+        self._led("out_2", "led_2")
+        self._led("out_3", "led_3")
+        self._led("out_4", "led_4")
+
+    def _latch(self, in_name, out_name):
+        self.Output.set(out_name, self.Input.get(in_name, Fix32.Zero))
+
+    def _led(self, out_name, led_name):
+        if self.Output.get(out_name, Fix32.Zero) != Fix32.Zero:
+            self.Display.set(led_name, "stored")
+        else:
+            self.Display.set(led_name, "")
+
+    def _show_write(self):
         if self.Input.get_bool("enable", False):
             self.Display.set("write", WRITE_ICON_ON)
         else:
             self.Display.set("write", WRITE_ICON_OFF)
-
-        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_1", "stored")
-        else:
-            self.Display.set("led_1", "")
-
-        if self.Output.get("out_2", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_2", "stored")
-        else:
-            self.Display.set("led_2", "")
-
-        if self.Output.get("out_3", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_3", "stored")
-        else:
-            self.Display.set("led_3", "")
-
-        if self.Output.get("out_4", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_4", "stored")
-        else:
-            self.Display.set("led_4", "")
 
 
 class Runtime_FlipFlop_7(Module):
@@ -263,52 +270,35 @@ class Runtime_FlipFlop_7(Module):
     def Action(self):
         if not self.Input.get_bool("enable", False):
             return
-
-        self.Output.set("out_1", self.Input.get("in_1", Fix32.Zero))
-        self.Output.set("out_2", self.Input.get("in_2", Fix32.Zero))
-        self.Output.set("out_3", self.Input.get("in_3", Fix32.Zero))
-        self.Output.set("out_4", self.Input.get("in_4", Fix32.Zero))
-        self.Output.set("out_5", self.Input.get("in_5", Fix32.Zero))
-        self.Output.set("out_6", self.Input.get("in_6", Fix32.Zero))
-        self.Output.set("out_7", self.Input.get("in_7", Fix32.Zero))
+        self._latch("in_1", "out_1")
+        self._latch("in_2", "out_2")
+        self._latch("in_3", "out_3")
+        self._latch("in_4", "out_4")
+        self._latch("in_5", "out_5")
+        self._latch("in_6", "out_6")
+        self._latch("in_7", "out_7")
 
     def Display(self):
+        self._show_write()
+        self._led("out_1", "led_1")
+        self._led("out_2", "led_2")
+        self._led("out_3", "led_3")
+        self._led("out_4", "led_4")
+        self._led("out_5", "led_5")
+        self._led("out_6", "led_6")
+        self._led("out_7", "led_7")
+
+    def _latch(self, in_name, out_name):
+        self.Output.set(out_name, self.Input.get(in_name, Fix32.Zero))
+
+    def _led(self, out_name, led_name):
+        if self.Output.get(out_name, Fix32.Zero) != Fix32.Zero:
+            self.Display.set(led_name, "stored")
+        else:
+            self.Display.set(led_name, "")
+
+    def _show_write(self):
         if self.Input.get_bool("enable", False):
             self.Display.set("write", WRITE_ICON_ON)
         else:
             self.Display.set("write", WRITE_ICON_OFF)
-
-        if self.Output.get("out_1", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_1", "stored")
-        else:
-            self.Display.set("led_1", "")
-
-        if self.Output.get("out_2", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_2", "stored")
-        else:
-            self.Display.set("led_2", "")
-
-        if self.Output.get("out_3", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_3", "stored")
-        else:
-            self.Display.set("led_3", "")
-
-        if self.Output.get("out_4", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_4", "stored")
-        else:
-            self.Display.set("led_4", "")
-
-        if self.Output.get("out_5", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_5", "stored")
-        else:
-            self.Display.set("led_5", "")
-
-        if self.Output.get("out_6", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_6", "stored")
-        else:
-            self.Display.set("led_6", "")
-
-        if self.Output.get("out_7", Fix32.Zero) != Fix32.Zero:
-            self.Display.set("led_7", "stored")
-        else:
-            self.Display.set("led_7", "")

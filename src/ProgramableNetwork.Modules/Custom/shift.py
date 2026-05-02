@@ -5,6 +5,10 @@ from Mafi import Fix32
 from Core.module import DefaultControllers, Module
 
 # File written by Nightinggale
+# Optimized: input/output names are pre-built once as a class-level list
+# (IO_NAMES) and indexed by the loop variable.  This replaces both the
+# 17-line `str()` map and the per-tick string concatenations the original
+# would have done with `"" + n` — zero string allocations per tick.
 
 class Runtime_Shift_2(Module):
     name = "Control: Shift (2 inputs)"
@@ -43,7 +47,6 @@ class Runtime_Shift_2(Module):
             self.Output.set("1", self.Input.get("0", Fix32.Zero))
 
 
-
 class Runtime_Shift_4(Module):
     name = "Control: Shift (4 inputs)"
     description = "Cyclic shifter for 4 channels: <b>index</b> (mod 4) selects how far to rotate inputs <b>0</b>..<b>3</b> onto outputs <b>0</b>..<b>3</b>. Output <b>index</b> echoes the wrapped index."
@@ -68,24 +71,25 @@ class Runtime_Shift_4(Module):
     fields = [
         Int32Field("inputs used", "Number of inputs used", "Select how many inputs should be used. The same amount of outputs will then be used, leaving the rest of the outputs not updating.", 4)
     ]
-   
+
     width = 5
-    
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    # Pre-built name table — one allocation at class-load time, reused every
+    # tick.  Indexed by the input/output number; slot 0 unused so that the
+    # natural numeric index maps directly without subtracting.
+    IO_NAMES = ["0", "1", "2", "3"]
+
     def action(self):
         num_inputs = 4
-
-        # Everything below this line is intentionally set to not be specific to the number of inputs.
-        # This makes it easier to copy paste as well as opening up for some class inheritance reuse of code.
 
         requested_num_inputs = self.Field.get_int("inputs used", num_inputs)
         if requested_num_inputs < 2:
             requested_num_inputs = 2
         if requested_num_inputs < num_inputs:
             num_inputs = requested_num_inputs
-
 
         # set index to the range matching the number of inputs
         shift_offset = self.Input.get_int("index", 0)
@@ -100,40 +104,15 @@ class Runtime_Shift_4(Module):
 
         self.set_output(0, num_inputs, shift_offset)
 
-    def str(self, value, num_inputs):
-        if value >= num_inputs:
-            value = value - num_inputs
-
-        if value == 0:
-            return "0"
-        if value == 1:
-            return "1"
-        if value == 2:
-            return "2"
-        if value == 3:
-            return "3"
-        if value == 4:
-            return "4"
-        if value == 5:
-            return "5"
-        if value == 6:
-            return "6"
-        if value == 7:
-            return "7"
-
-
-    def get_output(self, index, num_inputs):
-        if index >= num_inputs:
-            index = index - num_inputs
-        return index
-
     def set_output(self, index, num_inputs, shift_offset):
-        input = self.str(index, num_inputs)
-        output = self.str(index + shift_offset, num_inputs)
-        self.Output.set(output, self.Input.get(input, Fix32.Zero))
+        out_index = index + shift_offset
+        if out_index >= num_inputs:
+            out_index = out_index - num_inputs
+        self.Output.set(self.IO_NAMES[out_index], self.Input.get(self.IO_NAMES[index], Fix32.Zero))
         index = index + 1
         if index < num_inputs:
             self.set_output(index, num_inputs, shift_offset)
+
 
 class Runtime_Shift_7(Module):
     name = "Control: Shift (7 inputs)"
@@ -171,18 +150,16 @@ class Runtime_Shift_7(Module):
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
+    IO_NAMES = ["0", "1", "2", "3", "4", "5", "6"]
+
     def action(self):
         num_inputs = 7
-
-        # Everything below this line is intentionally set to not be specific to the number of inputs.
-        # This makes it easier to copy paste as well as opening up for some class inheritance reuse of code.
 
         requested_num_inputs = self.Field.get_int("inputs used", num_inputs)
         if requested_num_inputs < 2:
             requested_num_inputs = 2
         if requested_num_inputs < num_inputs:
             num_inputs = requested_num_inputs
-
 
         # set index to the range matching the number of inputs
         shift_offset = self.Input.get_int("index", 0)
@@ -197,37 +174,11 @@ class Runtime_Shift_7(Module):
 
         self.set_output(0, num_inputs, shift_offset)
 
-    def str(self, value, num_inputs):
-        if value >= num_inputs:
-            value = value - num_inputs
-
-        if value == 0:
-            return "0"
-        if value == 1:
-            return "1"
-        if value == 2:
-            return "2"
-        if value == 3:
-            return "3"
-        if value == 4:
-            return "4"
-        if value == 5:
-            return "5"
-        if value == 6:
-            return "6"
-        if value == 7:
-            return "7"
-
-
-    def get_output(self, index, num_inputs):
-        if index >= num_inputs:
-            index = index - num_inputs
-        return index
-
     def set_output(self, index, num_inputs, shift_offset):
-        input = self.str(index, num_inputs)
-        output = self.str(index + shift_offset, num_inputs)
-        self.Output.set(output, self.Input.get(input, Fix32.Zero))
+        out_index = index + shift_offset
+        if out_index >= num_inputs:
+            out_index = out_index - num_inputs
+        self.Output.set(self.IO_NAMES[out_index], self.Input.get(self.IO_NAMES[index], Fix32.Zero))
         index = index + 1
         if index < num_inputs:
             self.set_output(index, num_inputs, shift_offset)

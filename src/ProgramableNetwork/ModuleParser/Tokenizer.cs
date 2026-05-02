@@ -37,6 +37,19 @@ namespace ProgramableNetwork.Python
             return ParseLines(fileInfo, lines);
         }
 
+        // In-memory entry point — used by the PLC module to lex player-authored
+        // scripts that don't live on disk.  `source` is split on \n; \r is
+        // tolerated by trim during lexing.  `displayName` shows up in error
+        // messages (Token.file.Name); pass something meaningful like the module
+        // id so parser exceptions point back to the right script.  Avoid path-
+        // illegal chars (FileInfo construction will throw on `<`, `>`, etc).
+        public static Token[] ParseString(string source, string displayName = "inline.py")
+        {
+            string[] lines = (source ?? string.Empty).Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
+            FileInfo fileInfo = new FileInfo(displayName);
+            return ParseLines(fileInfo, lines);
+        }
+
         public static Token[] ParseLines(FileInfo fileInfo, params string[] lines)
         {
             List<Token> tokens = new List<Token>();

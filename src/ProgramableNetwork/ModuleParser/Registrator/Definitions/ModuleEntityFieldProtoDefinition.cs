@@ -10,8 +10,9 @@ namespace ProgramableNetwork.Python
         public readonly string name;
         public readonly string desc;
         public readonly Fix32 distance;
+        public readonly bool showInTooltip;
 
-        public ModuleEntityFieldProtoDefinition(Type type, string id, string name, string desc, Fix32 distance)
+        public ModuleEntityFieldProtoDefinition(Type type, string id, string name, string desc, Fix32 distance, bool showInTooltip = false)
         {
             if (type is null) {
 				throw new NullReferenceException("Invalid entity type");
@@ -21,6 +22,7 @@ namespace ProgramableNetwork.Python
             this.name = name;
             this.desc = desc;
             this.distance = distance;
+            this.showInTooltip = showInTooltip;
         }
     }
 }

@@ -38,6 +38,13 @@ namespace ProgramableNetwork.Ui
         public LocStr Name => name;
         public LocStr ShortDesc => shortDesc;
 
+        // Custom fields don't have a generic backing value to format, so they never opt
+        // into tooltip aggregation.  Specific custom-field consumers can wrap their data
+        // in a regular field if they need this.
+        public bool ShowInTooltip => false;
+
+        public string GetTooltipValue(Module module) => "";
+
         public int Size => 1;
         public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
         {
