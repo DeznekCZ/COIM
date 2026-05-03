@@ -335,7 +335,7 @@
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(COI_MODS)\$(TargetName)\" />
 		<Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(COI_MODS)\$(TargetName)\" Condition="'$(Configuration)' == 'Debug'" />
 		<!-- TODO add automatically another dll, when needed -->
-		<Copy SourceFiles="@(AssetBundles)" DestinationFolder="$(COI_MODS)\$(TargetName)\AssetBundles" />
+		<Copy SourceFiles="@(AssetBundles)" DestinationFolder="$(COI_MODS)\$(TargetName)\AssetBundles" ContinueOnError="true" />
 		<Copy SourceFiles="@(Assets)" DestinationFolder="$(COI_MODS)\$(TargetName)\Assets\%(RecursiveDir)" />
 		<Copy SourceFiles="@(Modules)" DestinationFolder="$(COI_MODS)\$(TargetName)\Modules\%(RecursiveDir)" />
 		<Copy SourceFiles="@(CoreAPI)" DestinationFolder="$(COI_MODS)\$(TargetName)\Modules\Core\%(RecursiveDir)" />

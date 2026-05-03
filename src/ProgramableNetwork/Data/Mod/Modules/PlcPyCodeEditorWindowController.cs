@@ -36,6 +36,13 @@ public class PlcPyCodeEditorWindowController : WindowController<PlcPyCodeEditorW
 		BlockShortcuts = true,
 		DisableCameraControl = true,
 		BlockCameraControlIfInputWasProcessed = true,
+		// Critical: the game-speed controller (Space toggles pause)
+		// runs INSIDE Mafi's dispatch BEFORE per-controller InputUpdate
+		// gets a chance to swallow keys.  PreventSpeedControl makes the
+		// outer dispatcher skip GameSpeedController.InputUpdate while
+		// this controller is active, so Space can reach the editor as a
+		// regular character.
+		PreventSpeedControl = true,
 	};
 
 	private readonly UiContext m_uiContext;

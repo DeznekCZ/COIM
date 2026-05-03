@@ -50,6 +50,14 @@ namespace ProgramableNetwork.Ui
 			settings?.Invoke();
 
 			controller.SetColor(m_template.color);
+
+			// Auto-populate the description from the template — the player can edit
+			// it later in the inspector.  GetFullDescription will append the live
+			// module list each time it renders.
+			if (!string.IsNullOrEmpty(m_template.description))
+			{
+				controller.CustomDescription = m_template.description.SomeOption();
+			}
 		}
 	}
 }

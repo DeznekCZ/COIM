@@ -10,6 +10,7 @@ using Mafi.Unity.Camera;
 using Mafi.Unity.Entities;
 using Mafi.Unity.InputControl;
 using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Hud;
 using Mafi.Unity.Ui.Library;
 using Mafi.Unity.Ui.Library.Inspectors;
 using Mafi.Unity.UiStatic.Cursors;
@@ -116,47 +117,103 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		WindowSize(750.px(), Px.Auto);
 
 		ProgressBar bar;
-		AddPanelRow(
-				new Label()
-					.LaterText(() => NewTr.Inspector.ComputingSpeed, this)
-					.TextAlign(TextAlignment.LeftMiddle),
-				new UiComponent().Fill(),
-				bar = new ProgressBar()
-					.HeightAuto()
-					.Width(150),
-				new Display()
-					.Value(0)
-					.Width(150)
-					.LaterText<Display>(() => NewTr.Inspector.ComputingSpeedTooltip, this, (d, v) => d.Tooltip(v))
-					.ObserveValue(() => $"{(600 / (1f + Entity.Speed)).ToFix32().ToStringRounded(0)} t/m"),
-				new ButtonText("-".AsLoc())
-					.TextAlign(TextAlignment.CenterMiddle)
-					.Width(50)
-					.OnClick(() => Entity.Speed++)
-					.ObserveEnabled(() => Entity.Speed < 29),
-				new ButtonText("+".AsLoc())
-					.TextAlign(TextAlignment.CenterMiddle)
-					.Width(50)
-					.OnClick(() => Entity.Speed--)
-					.ObserveEnabled(() => Entity.Speed > 0)
-			)
-			.BodyGap(5.px());
+		StatusRow.Clear();
+		StatusRow.Gap(5.px());
 
-		bar.ObserveVisibleForRender(() => Entity.Speed >= 10)
-			.Observe(() => Entity.Speed)
-			.Observe(() => Entity.Clock)
-			.Observe(() => Entity.IsEnabled)
-			.Do((speed, clock, enabled) => {
-				bar.Color(enabled ? ColorRgba.GreenYellow : ColorRgba.DarkYellow);
-				if (speed == clock) {
-					bar.Value(Percent.Hundred);
-				}
-				else {
-					bar.ValueFromRatio(clock, speed);
-				}
-			});
+		// Combined speed widget — Label showing the live tick rate plus compact
+		// -/+ ButtonIcons, all inside a single DisplayRow.  DisplayRow already
+		// provides the display font + glass background, so a plain Label inside
+		// renders in the right style without needing a nested Display.
+		DisplayRow speedControl = new DisplayRow();
+		speedControl.LaterText<DisplayRow>(() => NewTr.Inspector.ComputingSpeedTooltip, this, (d, v) => d.Tooltip(v));
+		Label speedLabel = new Label(LocStrFormatted.Empty)
+			.Width(70.px())
+			.TextAlign(TextAlignment.RightMiddle);
+		speedLabel.Observe(() => Entity?.DelayBetweenTicks ?? 0)
+				  .Do(d => speedLabel.Value(new LocStrFormatted(
+					  $"{(600 / (1f + d)).ToFix32().ToStringRounded(0)} t/m")));
+		ButtonIcon decBtn = new ButtonIcon(Button.IconOnly, UserInterface.General.Minus128_png)
+			.Size(20.px(), 20.px())
+			.IconSize(16.px(), 16.px())
+			.OnClick(() => Entity.DelayBetweenTicks++);
+		decBtn.Icon.AbsolutePositionCenterMiddle();
+		decBtn.ObserveEnabled(() => Entity.DelayBetweenTicks < 29);
+		ButtonIcon incBtn = new ButtonIcon(Button.IconOnly, UserInterface.General.Plus128_png)
+			.Size(20.px(), 20.px())
+			.IconSize(16.px(), 16.px())
+			.OnClick(() => Entity.DelayBetweenTicks--);
+        incBtn.Icon.AbsolutePositionCenterMiddle();
+		incBtn.ObserveEnabled(() => Entity.DelayBetweenTicks > 0);
+		speedControl.Row.Add(speedLabel, decBtn, incBtn);
 
-		Row panels = this.MainBody.AddAndReturn(new Row())
+		StatusRow.Add(
+			Status,
+			new UiComponent().Fill(),
+			new Label()
+				.LaterText(() => NewTr.Inspector.ComputingSpeed, this)
+				.TextAlign(TextAlignment.RightMiddle),
+			// Fixed height — StatusRow constrains its children to a slim strip and
+			// HeightAuto would collapse the bar to ~0 px.  Default invisible because
+			// the observer below only flips it on once the player picks a delay
+			// >= 10 ticks (otherwise the bar would just blink full each tick).
+			(bar = new ProgressBar()
+				.Height(Sizes.BLOCK_SIZE)
+				.Width(150)
+				.Visible(false)),
+			speedControl
+		);
+
+        this.Observe(() => Entity.DelayBetweenTicks)
+            .Observe(() => Entity.Clock)
+            .Observe(() => Entity.IsEnabled)
+            .Do((speed, clock, enabled) => {
+				if (speed < 10)
+				{
+					bar.Visible(false);
+					return;
+                }
+				bar.Visible(true);
+                bar.Color(enabled ? ColorRgba.GreenYellow : ColorRgba.DarkYellow);
+                if (speed == clock)
+                {
+                    bar.Value(Percent.Hundred);
+                }
+                else
+                {
+                    bar.ValueFromRatio(clock, speed);
+                }
+            });
+
+        // Description button + module-count chip live in the inspector's
+        // TopLeftDisplays row (BaseInspector's actual left-side header — Window's
+        // LeftHeaderButtons sit in the title bar and don't render here).
+        // Click on the button opens a fresh FloatingColumn dialog because Mafi's
+        // .Floater()/.FloaterInteractive() are tooltip-based (hover, not click).
+        ButtonIcon descBtn = new ButtonIcon(Button.Header, UserInterface.General.Edit_svg);
+		descBtn.Tooltip("Controller description (also lists modules)".ToDoLoc());
+		descBtn.OnClick(() =>
+		{
+			if (Entity == null) {
+				return;
+			}
+			openDescriptionDialog(descBtn);
+		});
+		TopLeftDisplays.Add(descBtn);
+
+		// At-a-glance module count next to the description button — same pattern as
+		// the VariableHudDisplay (button + Display chip).  Saves a click for the
+		// common "how many modules does this controller have" question without
+		// having to open the dialog.
+		Display moduleCountDisplay = new Display("0".AsLoc()).Width(40.px());
+		moduleCountDisplay.TextCenterMiddle();
+		moduleCountDisplay.Tooltip("Number of modules in this controller".ToDoLoc());
+		moduleCountDisplay.ObserveValue(() => Entity?.Modules?.Count ?? 0);
+		TopLeftDisplays.Add(moduleCountDisplay);
+
+        // Show main body, there is no AddPanel method used, must be set manually
+		this.MainBody.Show();
+
+        Row panels = this.MainBody.AddAndReturn(new Row())
 			.HeightAuto()
 			.Gap(5.px());
 		// align to top so the connections panel doesn't end up in the middle when there are few modules
@@ -212,8 +269,6 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 
 		TopRightButtons.Add(m_colorButton);
 
-		EmbedStatusToTheTop();
-
 		this.Observe(() => Entity)
 			.Observe(() => Entity?.Modules)
 			.Do((entity, modules) => refresh());
@@ -222,6 +277,111 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 			.Do((state) => {
 				Status.As(state ?? Tr.EntityStatus__Working, DisplayState.Positive);
 			});
+	}
+
+	// Opens a fresh FloatingColumn each click anchored to the description button.
+	// Re-creating per-click keeps observer wiring simple — the dialog binds to the
+	// inspector's current Entity at the moment it opens.
+	//
+	// Layout: two stacked PanelRows with PanelStyleHud backgrounds and a small
+	// gap between them — no horizontal divider, the panel borders do the visual
+	// separation.  Each panel has a fixed ~10-line height; overflow scrolls
+	// internally so the dialog stays the same size regardless of how much text
+	// the player wrote or how many modules the controller has.
+	private void openDescriptionDialog(Button anchor)
+	{
+		FloatingColumn dialog = new FloatingColumn(
+			new DropdownPositionPolicy(), false, false, true);
+		dialog.Gap(5.px());
+
+		// Approx 10 lines of text — TextField/Label line-height runs ~18px so we
+		// pick a round 200px (handier than fiddling per-renderer line metrics).
+		const float TEN_LINES_PX = 200f;
+
+		// --- Description editor panel -------------------------------------------------
+		PanelRow descPanel = dialog.AddAndReturn(new PanelRow(noBolts: true).PanelStyleHud());
+		descPanel.Width(420.px());
+		descPanel.Height(Px.Auto);
+
+		TextField descEditor = new TextField()
+			.Width(400.px())
+			.Height(TEN_LINES_PX.px());
+		descEditor.Multiline(true);
+		descEditor.OnValueChanged(text =>
+		{
+			if (Entity == null) {
+				return;
+			}
+			Entity.CustomDescription = string.IsNullOrEmpty(text) ? Option<string>.None : text.SomeOption();
+		});
+		descEditor.Observe(() => Entity)
+				  .Observe(() => Entity?.CustomDescription)
+				  .Do((entity, desc) =>
+				  {
+					  string current = entity?.CustomDescription.HasValue == true
+						  ? entity.CustomDescription.Value
+						  : "";
+					  if (descEditor.GetText() != current)
+					  {
+						  descEditor.Value(new LocStrFormatted(current ?? ""));
+					  }
+				  });
+		descPanel.BodyAdd(c => c.Padding(8), descEditor);
+
+		// --- Module list panel --------------------------------------------------------
+		PanelRow listPanel = dialog.AddAndReturn(new PanelRow(noBolts: true).PanelStyleHud());
+		listPanel.Width(420.px());
+		listPanel.Height(Px.Auto);
+
+		// ScrollColumn holds the module-list Label; overflow scrolls inside the
+		// panel rather than pushing the whole dialog taller.  Width matches the
+		// editor and accounts for the standard 17 px scroll-bar gutter.
+		ScrollColumn listScroll = new ScrollColumn();
+		listScroll.Width(400.px());
+		listScroll.Height(TEN_LINES_PX.px());
+
+		Label moduleListLabel = new Label(LocStrFormatted.Empty)
+			.TextOverflow(TextOverflow.Wrap);
+		moduleListLabel.Observe(() => Entity)
+					   .Observe(() => Entity?.Modules?.Count)
+					   .Do((entity, _count) =>
+					   {
+						   string list = entity == null ? "" : buildModuleListLabel(entity);
+						   moduleListLabel.Value(new LocStrFormatted(list));
+					   });
+		listScroll.Add(moduleListLabel);
+		listPanel.BodyAdd(c => c.Padding(8), listScroll);
+
+		dialog.Width(440.px());
+		dialog.Height(Px.Auto);
+		dialog.Open(anchor);
+	}
+
+	// Renders only the auto-appended "Modules: …" tail used by the description
+	// panel.  Kept symmetric with Controller.GetFullDescription's tail half so
+	// the two stay in lock-step if module display formatting ever changes.
+	private static string buildModuleListLabel(Controller entity)
+	{
+		System.Text.StringBuilder sb = new System.Text.StringBuilder();
+		sb.Append("Modules:");
+		if (entity.Modules == null || entity.Modules.Count == 0)
+		{
+			sb.Append(" (none)");
+		}
+		else
+		{
+			foreach (Module m in entity.Modules)
+			{
+				if (m?.Prototype == null) {
+					continue;
+				}
+				sb.Append("\n  ");
+				sb.Append(m.Prototype.Symbol);
+				sb.Append("  ");
+				sb.Append(m.Prototype.Strings.Name.TranslatedString);
+			}
+		}
+		return sb.ToString();
 	}
 
 	private void refresh() {

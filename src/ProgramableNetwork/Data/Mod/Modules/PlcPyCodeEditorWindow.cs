@@ -9,6 +9,7 @@ using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using ProgramableNetwork.Python;
 using UnityEngine.UIElements;
+using Button = Mafi.Unity.UiToolkit.Library.Button;
 
 // Alias the ambiguous Label so we can write `new Label()` and mean Unity's
 // primitive (which we manipulate via .style / .text directly).  Mafi's
@@ -113,14 +114,31 @@ public class PlcPyCodeEditorWindow : Window {
 		editorBox.style.flexBasis = new StyleLength(new Length(70, LengthUnit.Percent));
 		editorRow.Add(editorBox);
 
-		// Line-numbers gutter — narrow right-aligned label, separated from
-		// the editor by a 1px border so the eye registers the divide
-		// without the gutter blending into the textfield background.
+		// Line-numbers gutter — clipping container with the line-number
+		// label inside as Position.Absolute, so we can translate it
+		// vertically to follow the editor's ScrollView without it
+		// pushing the layout around.  Width is fixed; height matches
+		// the row.  Border-right separates it visually from the editor.
+		VisualElement gutter = new VisualElement();
+		gutter.style.width = 50;
+		gutter.style.flexShrink = 0;
+		gutter.style.overflow = Overflow.Hidden;
+		gutter.style.borderRightWidth = 1;
+		gutter.style.borderRightColor = new StyleColor(new UnityEngine.Color(0.25f, 0.25f, 0.25f, 1f));
+		gutter.pickingMode = PickingMode.Ignore;
+		editorBox.Add(gutter);
+
 		// Monospace font matches the editor side so a single-digit number on
 		// line 1 sits at the same baseline as a triple-digit one on line 999.
+		// Padding-top/left match the editor's m_originX/Y (4 px) so line N
+		// in the gutter sits at the same Y as line N in the editor.
 		m_lineNumbers = new Label("1");
 		m_lineNumbers.AddToClassList(Cls.fontMonospace);
-		m_lineNumbers.style.minWidth = 40;
+		m_lineNumbers.style.position = Position.Absolute;
+		m_lineNumbers.style.left = 0;
+		m_lineNumbers.style.right = 0;
+		m_lineNumbers.style.top = 0;
+		m_lineNumbers.style.fontSize = 14;
 		m_lineNumbers.style.paddingRight = 6;
 		m_lineNumbers.style.paddingLeft = 6;
 		m_lineNumbers.style.paddingTop = 4;
@@ -128,26 +146,39 @@ public class PlcPyCodeEditorWindow : Window {
 		m_lineNumbers.style.unityTextAlign = UnityEngine.TextAnchor.UpperRight;
 		m_lineNumbers.style.whiteSpace = WhiteSpace.Pre;
 		m_lineNumbers.style.color = new StyleColor(new UnityEngine.Color(0.55f, 0.55f, 0.55f, 1f));
-		m_lineNumbers.style.borderRightWidth = 1;
-		m_lineNumbers.style.borderRightColor = new StyleColor(new UnityEngine.Color(0.25f, 0.25f, 0.25f, 1f));
 		m_lineNumbers.pickingMode = PickingMode.Ignore;
-		editorBox.Add(m_lineNumbers);
+		gutter.Add(m_lineNumbers);
 
 		// Editor — fully custom PlcPyTextEditor; owns its own buffer,
 		// caret, selection, undo, mouse + keyboard handling, and
-		// rendering.  Added directly to editorBox (no ScrollView wrapper)
-		// so flexGrow=1 reaches a real height — wrapping in a ScrollView
-		// puts the editor in an auto-sized contentContainer where
-		// flexGrow has nothing to grow into, the editor collapses to 0×0,
-		// and `overflow: hidden` then clips the absolute-positioned text
-		// label out of view.  Long scripts overflow the editor for now;
-		// a content-driven sizing pass + ScrollView re-wrap is the right
-		// follow-up if scripts ever grow past the visible window.
+		// rendering.  Wrapped in a ScrollView with both axes enabled
+		// because the editor now reports a real intrinsic size via its
+		// own UpdateContentSize (minWidth = max-line × charWidth,
+		// minHeight = lineCount × lineHeight).  The earlier "no scroll
+		// wrapper" workaround was needed only because the editor used
+		// to have no intrinsic size — flexGrow=1 in the auto-sized
+		// ScrollView contentContainer collapsed it to 0×0.
+		ScrollView editorScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
+		editorScroll.style.flexGrow = 1;
+		editorScroll.style.flexShrink = 1;
+		editorBox.Add(editorScroll);
+
 		m_codeEditor = new PlcPyTextEditor();
-		m_codeEditor.style.flexGrow = 1;
-		m_codeEditor.style.flexShrink = 1;
 		m_codeEditor.SyntaxHighlighter = PlcPySyntax.ToRichText;
-		editorBox.Add(m_codeEditor);
+		editorScroll.Add(m_codeEditor);
+
+		// Sync the line-numbers gutter to the editor's vertical scroll —
+		// translate the absolutely-positioned label up by scrollOffset.y
+		// so the visible numbers stay aligned with the visible code as
+		// the player scrolls.  Translate doesn't affect layout, only
+		// painting, so the gutter container stays put while its content
+		// shifts.  Horizontal scroll is intentionally NOT mirrored: line
+		// numbers should stay anchored to the left even when the editor
+		// scrolls right past long lines (matches every code editor).
+		editorScroll.verticalScroller.valueChanged += y => {
+			m_lineNumbers.style.translate = new StyleTranslate(
+				new Translate(0, -y, 0));
+		};
 
 		// Floater nav hook — runs as the FIRST step inside the editor's
 		// own OnKeyDown via PlcPyTextEditor.KeyDownInterceptor, so Tab /
@@ -300,40 +331,46 @@ public class PlcPyCodeEditorWindow : Window {
 		body.Add(m_tooltipLabel);
 
 		// ---- Footer ------------------------------------------------------
-		VisualElement footer = new VisualElement();
-		footer.style.flexDirection = FlexDirection.Row;
-		footer.style.paddingTop = 6;
-		footer.style.paddingBottom = 4;
-		footer.style.paddingLeft = 4;
-		footer.style.paddingRight = 4;
-		body.Add(footer);
+		// Mafi's `PanelFooterRow` — a proper Mafi component with the
+		// edge-shadow divider and bolts decoration that matches the rest
+		// of the game's panel footers.  Buttons added via BodyAdd get
+		// the right inner-element padding / sizing without us having to
+		// hand-roll inline styles (the previous custom VisualElement
+		// footer was making the buttons look like cramped chips because
+		// inline padding only grew the outer shadow).
+		//
+		// Save is the Primary (accent) variant; the others are General.
+		// Back is pushed to the right via MarginLeft(Px.Auto) — Mafi's
+		// canonical "fill remaining space" trick (see Save/LoadWindow).
+		ButtonText saveButton = new ButtonText(Button.Primary, "Save".ToDoLoc())
+			.OnClick(() => {
+				if (CompileNow(m_codeEditor.Text)) {
+					m_controller.Save(m_codeEditor.Text);
+					m_controller.Back();
+				}
+			});
+		ButtonText compileButton = new ButtonText(Button.General, "Compile".ToDoLoc())
+			.OnClick(() => CompileNow(m_codeEditor.Text))
+			.MarginLeft(8.px());
+		ButtonText revertButton = new ButtonText(Button.General, "Revert".ToDoLoc())
+			.OnClick(() => LoadFromModule(m_controller.CurrentModule))
+			.MarginLeft(8.px());
+		ButtonText backButton = new ButtonText(Button.General, "Back".ToDoLoc())
+			.OnClick(() => m_controller.Back())
+			.MarginLeft(Px.Auto);
 
-		ButtonText saveButton = new ButtonText("Save".ToDoLoc());
-		saveButton.OnClick(() => m_controller.Save(m_codeEditor.Text));
-		footer.Add(saveButton.RootElement);
-
-		ButtonText compileButton = new ButtonText("Compile".ToDoLoc());
-		compileButton.RootElement.style.marginLeft = 8;
-		compileButton.OnClick(() => CompileNow(m_codeEditor.Text));
-		footer.Add(compileButton.RootElement);
-
-		// Revert pulls the module's persisted code + error state into the
-		// editor.  Counterpart to Save — Save pushes, Revert pulls.  Without
-		// it the editor has no way to discard local edits or to refresh the
-		// runtime error after a Save (since the editor no longer polls the
-		// module live; see the comment on the missing periodic refresher).
-		ButtonText revertButton = new ButtonText("Revert".ToDoLoc());
-		revertButton.RootElement.style.marginLeft = 8;
-		revertButton.OnClick(() => LoadFromModule(m_controller.CurrentModule));
-		footer.Add(revertButton.RootElement);
-
-		VisualElement spacer = new VisualElement();
-		spacer.style.flexGrow = 1;
-		footer.Add(spacer);
-
-		ButtonText backButton = new ButtonText("Back".ToDoLoc());
-		backButton.OnClick(() => m_controller.Back());
-		footer.Add(backButton.RootElement);
+		// `BodyAdd(Action<Row>, ...)` overload lets us style the inner Row
+		// before the buttons land — bumping vertical padding + minHeight
+		// here gives the footer real chrome instead of a strip that's
+		// shorter than the button shadows it contains.  AlignItemsCenter
+		// keeps the buttons vertically centered within the taller row so
+		// they don't stick to the top edge.
+		PanelFooterRow footer = new PanelFooterRow().BodyAdd(
+			row => row.PaddingTopBottom(6.px())
+			          .MinHeight(48.px())
+			          .AlignItemsCenter(),
+			saveButton, compileButton, revertButton, backButton);
+		body.Add(footer.RootElement);
 
 		// No periodic poll of the module's state.  The editor is independent
 		// after opening — its visible code, error strip, and token count
@@ -841,21 +878,26 @@ public class PlcPyCodeEditorWindow : Window {
 	// the per-tick action uses, but discards the parsed Block — the editor
 	// just wants to know if the source is syntactically clean.  Result is
 	// shown via the stats label (token count) and the error strip (if any).
-	private void CompileNow(string source) {
+	// Returns true if the source compiled cleanly so callers (Save) can
+	// chain follow-up actions only when the script is valid.
+	private bool CompileNow(string source) {
 		if (string.IsNullOrWhiteSpace(source)) {
 			ShowError("Compile: empty script");
 			m_statsLabel.text = "Tokens: 0";
-			return;
+			return false;
 		}
 		try {
 			Token[] tokens = Tokenizer.ParseString(source, "PLC_PY.preview");
 			Lexer.Parse(tokens);
 			HideError();
 			m_statsLabel.text = "Tokens: " + tokens.Length + "  (compile OK)";
+			return true;
 		} catch (Exception parseError) {
 			ShowError("Compile: " + parseError.Message);
+			return false;
 		}
 	}
+
 
 	private void ShowError(string text) {
 		m_errorLabel.text = text;
@@ -920,11 +962,53 @@ public class PlcPyCodeEditorWindow : Window {
 			CloseFloater();
 			return true;
 		}
-		if (m_codeEditor != null && m_codeEditor.HasFocus()
-			&& UnityEngine.Input.anyKey
-			&& !UnityEngine.Input.GetKey(UnityEngine.KeyCode.Escape)) {
+		if (m_codeEditor != null && m_codeEditor.HasFocus() && IsEditorOwnedKeyDown()) {
 			return true;
 		}
 		return base.InputUpdate();
+	}
+
+	// Whitelist of keycodes the editor owns while focused — listed
+	// explicitly (rather than `Input.anyKey`) so it's obvious which
+	// game bindings we're stealing and which we leave alone.  Escape
+	// is intentionally absent: we want it to reach Mafi so a player
+	// without an open floater can close the editor with it.  Modifier
+	// keys (Shift / Ctrl / Alt) are also absent because they're not
+	// game bindings on their own — they only matter as part of a
+	// combo, and the combo's other key (a letter, an arrow, etc.) is
+	// what we consume.
+	private static readonly UnityEngine.KeyCode[] EDITOR_OWNED_KEYS = new[] {
+		// Whitespace + control keys the editor uses for editing.
+		UnityEngine.KeyCode.Space,
+		UnityEngine.KeyCode.Tab,
+		UnityEngine.KeyCode.Return,
+		UnityEngine.KeyCode.KeypadEnter,
+		UnityEngine.KeyCode.Backspace,
+		UnityEngine.KeyCode.Delete,
+		// Caret nav.
+		UnityEngine.KeyCode.LeftArrow,
+		UnityEngine.KeyCode.RightArrow,
+		UnityEngine.KeyCode.UpArrow,
+		UnityEngine.KeyCode.DownArrow,
+		UnityEngine.KeyCode.Home,
+		UnityEngine.KeyCode.End,
+		UnityEngine.KeyCode.PageUp,
+		UnityEngine.KeyCode.PageDown,
+	};
+
+	// Returns true if any keycode the editor cares about is currently
+	// pressed.  Cheap (linear scan over ~14 codes); runs once per tick
+	// only while the editor is focused.  Letter / digit / symbol keys
+	// don't need explicit entries because Mafi's toolbar shortcuts only
+	// fire on Input.anyKeyDown (handled in the per-controller dispatch
+	// loop) and BlockShortcuts in EDITOR_CONFIG already prevents that
+	// from looping into our controller.
+	private static bool IsEditorOwnedKeyDown() {
+		for (int i = 0; i < EDITOR_OWNED_KEYS.Length; i++) {
+			if (UnityEngine.Input.GetKey(EDITOR_OWNED_KEYS[i])) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -58,11 +58,22 @@ public class PlcPyTextEditor : VisualElement {
 	// between window sizes / themes.  The measurement label uses the same
 	// value, keeping visible text and metrics in lockstep.
 	private const float FONT_SIZE = 14f;
-	// 20 chars in the measurement string — long enough that the font's
-	// one-time side-bearings amortise into sub-pixel noise when divided
-	// out, short enough that the label's layout pass stays cheap.
-	private const string MEASURE_SAMPLE_TEXT = "MMMMMMMMMMMMMMMMMMMM";
-	private const int MEASURE_SAMPLE_COUNT = 20;
+	// Multi-line measurement block — 5 lines × 20 "M"s.  Width / 20
+	// gives the per-character ADVANCE (one-time side-bearings amortise
+	// to sub-pixel); height / 5 gives the per-line STRIDE (per-line
+	// leading amortises the same way).  Earlier single-line "M"
+	// measurement reported height = glyph ascender + descender, which
+	// is smaller than the stride a real multi-line text run uses, so
+	// the caret + selection rectangles came out a few pixels short
+	// vertically per line.
+	private const string MEASURE_SAMPLE_TEXT =
+		"MMMMMMMMMMMMMMMMMMMM\n" +
+		"MMMMMMMMMMMMMMMMMMMM\n" +
+		"MMMMMMMMMMMMMMMMMMMM\n" +
+		"MMMMMMMMMMMMMMMMMMMM\n" +
+		"MMMMMMMMMMMMMMMMMMMM";
+	private const int MEASURE_CHARS_PER_LINE = 20;
+	private const int MEASURE_LINE_COUNT = 5;
 
 	private string m_text = "";
 	private int m_caretIndex;
@@ -152,10 +163,12 @@ public class PlcPyTextEditor : VisualElement {
 
 	public PlcPyTextEditor() {
 		focusable = true;
-		// tabIndex 0 keeps the editor in the focus ring so the window's
-		// title-row focus chain still works; we just steal Tab keypresses
-		// in OnKeyDown to insert spaces instead of cycling focus.
-		tabIndex = 0;
+		// tabIndex -1 keeps the editor OUT of the focus-traversal ring so
+		// Tab inside the editor inserts spaces (handled in OnKeyDown)
+		// instead of cycling between this and the API panel / footer
+		// buttons.  The editor still receives focus on click via
+		// Focus() in OnMouseDown.
+		tabIndex = -1;
 		pickingMode = PickingMode.Position;
 		style.position = Position.Relative;
 		style.overflow = Overflow.Hidden;
@@ -236,11 +249,10 @@ public class PlcPyTextEditor : VisualElement {
 		m_caret.style.display = DisplayStyle.None;
 		Add(m_caret);
 
-		// TrickleDown phase so we beat any FocusController / parent handler
-		// that might want to claim Tab, arrows, or Enter — those would
-		// cycle focus or trigger Mafi UI defaults before our editor's
-		// own logic runs.  StopPropagation in OnKeyDown then prevents the
-		// bubble pass from delivering the same event to those handlers.
+		// Keyboard at TrickleDown so we beat any FocusController / parent
+		// handler that might claim Tab, arrows, Enter — those would
+		// otherwise cycle focus or trigger Mafi UI defaults before our
+		// editor's own handler runs.
 		RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
 		RegisterCallback<MouseDownEvent>(OnMouseDown);
 		RegisterCallback<MouseMoveEvent>(OnMouseMove);
@@ -257,11 +269,10 @@ public class PlcPyTextEditor : VisualElement {
 
 	// True when this editor element holds keyboard focus.  Used by the
 	// owning window's InputUpdate override to consume Mafi's poll-based
-	// input dispatch while the player is typing — UIElements'
-	// StopPropagation doesn't reach Mafi.Core's `Input.GetKeyDown` poll,
-	// so we have to gate at the controller level too.
+	// input dispatch while the player is typing.
 	public bool HasFocus() {
-		return focusController != null && focusController.focusedElement == this;
+		FocusController fc = focusController;
+		return fc != null && fc.focusedElement == this;
 	}
 
 	// ---- Public programmatic editing -----------------------------------
@@ -315,7 +326,13 @@ public class PlcPyTextEditor : VisualElement {
 			return;
 		}
 
-		bool ctrl = evt.ctrlKey || evt.commandKey;
+		// On Windows / European keyboards, AltGr arrives as Ctrl+Alt
+		// (right-Alt synthesises a Ctrl press).  Treat AltGr-combined
+		// keys as plain typing — without the !altKey guard, every AltGr
+		// character (Czech `@`, German `{`, etc.) gets routed into the
+		// Ctrl-shortcuts switch below, fails to match a binding, and
+		// the character never reaches the editor buffer.
+		bool ctrl = (evt.ctrlKey || evt.commandKey) && !evt.altKey;
 		bool shift = evt.shiftKey;
 
 		// Navigation + editing commands first; character input falls
@@ -677,6 +694,64 @@ public class PlcPyTextEditor : VisualElement {
 	private void Render() {
 		RenderText();
 		RenderCaretAndSelection();
+		UpdateContentSize();
+	}
+
+	// Walk the parent chain to find the enclosing ScrollView (the editor
+	// is added through ScrollView.Add, which actually parents into
+	// contentContainer — so the ScrollView itself is two ancestors up,
+	// not the immediate parent).  Returns null if the editor isn't
+	// inside a ScrollView, in which case scroll-into-view is a no-op.
+	private ScrollView FindAncestorScrollView() {
+		VisualElement v = parent;
+		while (v != null) {
+			if (v is ScrollView sv) {
+				return sv;
+			}
+			v = v.parent;
+		}
+		return null;
+	}
+
+	// Same idea as the IntelliSense floater's ScrollTo on selection
+	// change: after the caret moves, nudge the parent ScrollView only
+	// as far as needed to make the caret visible.  ScrollTo internally
+	// no-ops when the target child is already in the viewport, so this
+	// is safe to call on every caret update without producing jitter.
+	private void ScrollCaretIntoView() {
+		ScrollView scroll = FindAncestorScrollView();
+		if (scroll == null) {
+			return;
+		}
+		scroll.ScrollTo(m_caret);
+	}
+
+	// Set the editor's intrinsic minimum size from the buffer + measured
+	// metrics so a parent ScrollView has something concrete to scroll.
+	// Without this the editor inside a ScrollView's auto-sized content
+	// container collapses to 0×0 (flexGrow has nothing to grow into),
+	// which is why scripts past the visible region just clipped instead
+	// of producing a scrollbar.
+	private void UpdateContentSize() {
+		int lineCount = m_lineStarts.Count;
+		int maxLineChars = 0;
+		for (int i = 0; i < lineCount; i++) {
+			int lineStart = m_lineStarts[i];
+			int lineEnd = (i + 1 < lineCount ? m_lineStarts[i + 1] - 1 : m_text.Length);
+			int chars = lineEnd - lineStart;
+			if (chars > maxLineChars) {
+				maxLineChars = chars;
+			}
+		}
+		// Pad the right edge by a few char widths so the caret at the
+		// end of the longest line doesn't sit flush against the scroll
+		// edge.  Same idea on the bottom — one extra line so the player
+		// can see the line they're typing on instead of it riding the
+		// bottom edge of the viewport.
+		float contentWidth = m_originX + (maxLineChars + 2) * m_charWidth;
+		float contentHeight = m_originY + (lineCount + 1) * m_lineHeight;
+		style.minWidth = contentWidth;
+		style.minHeight = contentHeight;
 	}
 
 	private void RenderText() {
@@ -701,6 +776,7 @@ public class PlcPyTextEditor : VisualElement {
 		m_caret.style.left = px.x;
 		m_caret.style.top = px.y;
 		m_caret.style.height = m_lineHeight;
+		ScrollCaretIntoView();
 
 		// Selection rectangles — clear and rebuild every frame.  At most
 		// one rectangle per line of the selection, so the cost scales
@@ -754,12 +830,15 @@ public class PlcPyTextEditor : VisualElement {
 	// fire GeometryChangedEvent with a real size once the font resolves.
 	private void MeasureMetrics() {
 		UnityEngine.Rect measureLayout = m_measureLabel.layout;
-		// Divide by sample count so per-line side-bearings don't show up
-		// in the per-char advance — measuring a single char would over-
-		// state width by ~1 char's worth across a long line, which is
-		// exactly the "one character off" symptom.
-		float newCharWidth = measureLayout.width / MEASURE_SAMPLE_COUNT;
-		float newLineHeight = measureLayout.height;
+		// Divide width by chars-per-line (per-character advance) and
+		// height by line count (per-line stride).  Both averages
+		// amortise the font's one-time overhead — single-char width
+		// included left/right side-bearings (1-char overshoot per line);
+		// single-line height included only ascender+descender, missing
+		// the inter-line leading that a multi-line text run actually
+		// uses (couple-of-pixel undershoot per line).
+		float newCharWidth = measureLayout.width / MEASURE_CHARS_PER_LINE;
+		float newLineHeight = measureLayout.height / MEASURE_LINE_COUNT;
 		// Bail until the measurement label has actually rendered with
 		// a positive size; defaults stay in place and the next
 		// GeometryChangedEvent re-runs us.
@@ -789,6 +868,11 @@ public class PlcPyTextEditor : VisualElement {
 		m_originX = newOriginX;
 		m_originY = newOriginY;
 		RenderCaretAndSelection();
+		// Recompute the content-size hint so the parent ScrollView gets
+		// updated bounds when the font finally resolves (initial layout
+		// uses the fontSize × ratio defaults; this is the first time
+		// we have real numbers).
+		UpdateContentSize();
 	}
 
 	// ---- Buffer maintenance --------------------------------------------
@@ -808,21 +892,16 @@ public class PlcPyTextEditor : VisualElement {
 		if (m_anchorIndex > m_text.Length) m_anchorIndex = m_text.Length;
 	}
 
-	// Escapes `<` and `&` so a script containing literal angle brackets
-	// (e.g. a string `"<not a tag>"`) doesn't get parsed as a rich-text
-	// tag.  Mirrors the same logic in PlcPySyntax.AppendEscaped used by
-	// the colorizer.
+	// Wraps in `<noparse>...</noparse>` so Unity TMP rich-text won't
+	// interpret literal `<` / `>` as tag boundaries.  Used when no
+	// SyntaxHighlighter is attached (the highlighter does its own
+	// noparse-wrapping per token).  TMP doesn't decode HTML entities
+	// like `&lt;` back to characters, so the older entity-escape
+	// approach made the player see the literal "&lt;" in their text.
 	private static string EscapeRichText(string s) {
 		if (string.IsNullOrEmpty(s)) {
 			return "";
 		}
-		StringBuilder sb = new StringBuilder(s.Length);
-		for (int i = 0; i < s.Length; i++) {
-			char c = s[i];
-			if (c == '<') sb.Append("&lt;");
-			else if (c == '&') sb.Append("&amp;");
-			else sb.Append(c);
-		}
-		return sb.ToString();
+		return "<noparse>" + s + "</noparse>";
 	}
 }

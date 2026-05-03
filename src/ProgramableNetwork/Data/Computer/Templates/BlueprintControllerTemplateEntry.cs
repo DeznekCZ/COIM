@@ -122,7 +122,22 @@ namespace ProgramableNetwork.Ui
 			}
 			int? speed = data.GetInt("controller_speed");
 			if (speed.HasValue) {
-				controller.Speed = speed.Value;
+				controller.DelayBetweenTicks = speed.Value;
+			}
+
+			// Description: prefer the one persisted with the blueprint payload (the
+			// last value the original author set in their inspector), and fall back to
+			// the blueprint's library Desc.  Either way, the auto-appended module list
+			// is produced by GetFullDescription at render time, so we only carry the
+			// user-supplied prefix here.
+			Option<string> savedDescription = data.GetString("controller_description");
+			if (savedDescription.HasValue)
+			{
+				controller.CustomDescription = savedDescription;
+			}
+			else if (!string.IsNullOrEmpty(m_blueprint.Desc))
+			{
+				controller.CustomDescription = m_blueprint.Desc.SomeOption();
 			}
 		}
 	}

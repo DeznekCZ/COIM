@@ -43,6 +43,11 @@ namespace ProgramableNetwork
 		// modules load with an empty array.
 		public const int MODULE_COMPACT_DATA = 5;
 
+		// Controller serialization version where the per-instance CustomDescription
+		// field was added.  Earlier saves load with no description set; a fresh
+		// CustomDescription = None is the safe default.
+		public const int CONTROLLER_DESCRIPTION = 5;
+
 		// Serialization version where the PLC (player-authored Python) module
 		// landed.  The DataFlags byte gained a CodeMetadata bit (1 << 7) so PLC
 		// instances can persist their cached lexer-node count alongside the
@@ -61,6 +66,49 @@ namespace ProgramableNetwork
 		};
 
 		public Option<string> CustomTitle { get; set; }
+
+		// Player-writable free-form description.  Auto-populated when a template/
+		// blueprint is applied via the picker (set to the template's description),
+		// editable in the inspector after that.  The on-screen rendering ALWAYS
+		// has the live module list appended via <see cref="GetFullDescription"/> —
+		// only the user-supplied prefix is persisted here.
+		public Option<string> CustomDescription { get; set; }
+
+		/// <summary>
+		/// Returns the user-supplied description (if any) followed by an auto-generated
+		/// list of every module currently on the controller.  The module-list tail is
+		/// always present so a player browsing the inspector can see what's inside even
+		/// when no description was authored.  Computed on demand — module list reflects
+		/// the live state.
+		/// </summary>
+		public string GetFullDescription()
+		{
+			System.Text.StringBuilder sb = new System.Text.StringBuilder();
+			if (CustomDescription.HasValue && !string.IsNullOrEmpty(CustomDescription.Value))
+			{
+				sb.Append(CustomDescription.Value);
+				sb.Append("\n\n");
+			}
+			sb.Append("Modules:");
+			if (Modules == null || Modules.Count == 0)
+			{
+				sb.Append(" (none)");
+			}
+			else
+			{
+				foreach (Module m in Modules)
+				{
+					if (m?.Prototype == null) {
+						continue;
+					}
+					sb.Append("\n  ");
+					sb.Append(m.Prototype.Symbol);
+					sb.Append("  ");
+					sb.Append(m.Prototype.Strings.Name.TranslatedString);
+				}
+			}
+			return sb.ToString();
+		}
 
 		public Controller(EntityId id, ControllerProto proto, TileTransform transform, EntityContext context,
 			IEntityMaintenanceProvidersFactory maintenanceProvidersFactory, ResearchManager researchManager)
@@ -121,8 +169,14 @@ namespace ProgramableNetwork
 			data.SetArray<Module>("controller_modules", Modules.ToImmutableArray(), Module.Serialize);
 			// Module positions are carried on the modules themselves since MODULE_LAYOUT_INFO,
 			// so no separate "controller_rows" entry is needed.
-			data.SetInt("controller_speed", Speed);
+			data.SetInt("controller_speed", DelayBetweenTicks);
 			data.SetInt("color", (int)Color.Rgba);
+			// Persist the user-supplied description across blueprints/clones.  The
+			// auto-appended module list is recomputed on display from live state, so
+			// we only write the user's prefix here.
+			if (CustomDescription.HasValue) {
+				data.SetString("controller_description", CustomDescription.Value);
+			}
 		}
 
 		public void ApplyConfig(EntityConfigData data)
@@ -161,7 +215,13 @@ namespace ProgramableNetwork
 			var newSpeed = data.GetInt("controller_speed");
 			if (newSpeed != null)
 			{
-				this.Speed = newSpeed.Value;
+				this.DelayBetweenTicks = newSpeed.Value;
+			}
+
+			Option<string> savedDescription = data.GetString("controller_description");
+			if (savedDescription.HasValue)
+			{
+				CustomDescription = savedDescription;
 			}
 
 			int? color = data.GetInt("color");
@@ -338,7 +398,7 @@ namespace ProgramableNetwork
 		{
 			base.SerializeData(writer);
 			writer.WriteString(m_protoId.Value);
-			writer.WriteInt(/*Version*/ MODULE_LAYOUT_INFO);
+			writer.WriteInt(/*Version*/ CONTROLLER_DESCRIPTION);
 
 			writer.WriteString(ErrorMessage ?? "");
 			Option<string>.Serialize(CustomTitle, writer);
@@ -358,6 +418,10 @@ namespace ProgramableNetwork
 
 			Lyst<Module>.Serialize(Modules, writer);
 			// Layout grid (Rows) was dropped at MODULE_LAYOUT_INFO; positions live on each Module now.
+
+			// CONTROLLER_DESCRIPTION (v5+): player-writable description.  Empty Option
+			// is the safe default for old saves loaded back through the v<5 branch.
+			Option<string>.Serialize(CustomDescription, writer);
 		}
 
 		protected override void DeserializeData(BlobReader reader)
@@ -421,6 +485,13 @@ namespace ProgramableNetwork
 				m_legacyRows = Lyst<Lyst<ModulePlacement>>.Deserialize(reader);
 			}
 
+			// CONTROLLER_DESCRIPTION (v5+): player-writable description string.
+			// Pre-v5 saves had no field — leave CustomDescription = None.
+			if (version >= CONTROLLER_DESCRIPTION)
+			{
+				CustomDescription = Option<string>.Deserialize(reader);
+			}
+
 			Log.Info($"Deserialized with {Modules.Count} modules" +
 				(m_legacyRows != null ? $" + {m_legacyRows.Count} legacy rows (will migrate)" : ""));
 			reader.RegisterInitAfterLoad(this, nameof(initContexts), InitPriority.Normal);
@@ -473,10 +544,7 @@ namespace ProgramableNetwork
 		[DoNotSave(0, null)]
 		private bool m_reninitNotification;
 
-		[DoNotSave(0, null)]
 		private int m_clockSpeed;
-
-		[DoNotSave(0, null)]
 		private int m_clock;
 
 		[DoNotSave(0, null)]
@@ -585,11 +653,11 @@ namespace ProgramableNetwork
 				.Select(m => m.Prototype.UsedPower.Value)
 				.Sum();
 
-			if (Speed == 0) {
+			if (DelayBetweenTicks == 0) {
 				return total.Kw();
 			}
 
-			return (total * 1 / (1 + Speed)).Max(1).Kw();
+			return (total * 1 / (1 + DelayBetweenTicks)).Max(1).Kw();
 		}
 
 		private Computing GetRequiredComputation()
@@ -611,7 +679,7 @@ namespace ProgramableNetwork
 			if (sum == PartialQuantity.Zero) {
 				return Computing.Zero;
 			}
-			sum = (sum * 1 / (1 + Speed)).Max(PartialQuantity.One);
+			sum = (sum * 1 / (1 + DelayBetweenTicks)).Max(PartialQuantity.One);
 			return Computing.FromQuantity(sum.IntegerPart.Max(Quantity.One));
 		}
 
@@ -787,7 +855,7 @@ namespace ProgramableNetwork
 		public bool IsCargoAffectedByGeneralPriority => false;
 
 		[DoNotSave()]
-		public int Speed { get => m_clockSpeed; set => m_clockSpeed = value; }
+		public int DelayBetweenTicks { get => m_clockSpeed; set => m_clockSpeed = value; }
 
 		[DoNotSave()]
 		public int Clock { get => m_clock; set => m_clock = value; }

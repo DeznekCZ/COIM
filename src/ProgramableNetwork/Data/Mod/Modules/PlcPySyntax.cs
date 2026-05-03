@@ -206,7 +206,7 @@ public static class PlcPySyntax {
 
 		spans.Sort((a, b) => a.Start.CompareTo(b.Start));
 
-		StringBuilder sb = new StringBuilder(source.Length + spans.Count * 24);
+		StringBuilder sb = new StringBuilder(source.Length + spans.Count * 32);
 		int pos = 0;
 		foreach (ColorSpan span in spans) {
 			// Skip overlapping spans (defensive — shouldn't happen with a
@@ -215,15 +215,15 @@ public static class PlcPySyntax {
 				continue;
 			}
 			if (span.Start > pos) {
-				AppendEscaped(sb, source, pos, span.Start - pos);
+				AppendNoparse(sb, source, pos, span.Start - pos);
 			}
 			sb.Append("<color=").Append(span.Color).Append(">");
-			AppendEscaped(sb, source, span.Start, span.Length);
+			AppendNoparse(sb, source, span.Start, span.Length);
 			sb.Append("</color>");
 			pos = span.Start + span.Length;
 		}
 		if (pos < source.Length) {
-			AppendEscaped(sb, source, pos, source.Length - pos);
+			AppendNoparse(sb, source, pos, source.Length - pos);
 		}
 		return sb.ToString();
 	}
@@ -310,23 +310,33 @@ public static class PlcPySyntax {
 		}
 	}
 
+	// Wraps the segment in `<noparse>...</noparse>` so Unity TMP rich-text
+	// won't interpret literal `<` / `>` as tag boundaries.  Unlike HTML
+	// entities (`&lt;` etc.), TMP doesn't decode entities back to their
+	// characters — emitting `&lt;` made the player see the literal four
+	// characters `&`, `l`, `t`, `;` in their script.  noparse blocks
+	// disable all tag parsing inside, so any `<`/`>`/`&` paint as-is.
 	private static string Escape(string s) {
-		// Rich-text uses `<...>` for tags; escape `<` so the player's literal
-		// angle brackets don't accidentally close our color spans.  `&` is
-		// also a Unity rich-text escape character, so guard it too.
-		return s.Replace("&", "&amp;").Replace("<", "&lt;");
+		if (string.IsNullOrEmpty(s)) {
+			return "";
+		}
+		StringBuilder sb = new StringBuilder(s.Length + 16);
+		AppendNoparse(sb, s, 0, s.Length);
+		return sb.ToString();
 	}
 
-	private static void AppendEscaped(StringBuilder sb, string s, int start, int length) {
-		for (int i = 0; i < length; i++) {
-			char c = s[start + i];
-			if (c == '<') {
-				sb.Append("&lt;");
-			} else if (c == '&') {
-				sb.Append("&amp;");
-			} else {
-				sb.Append(c);
-			}
+	private static void AppendNoparse(StringBuilder sb, string s, int start, int length) {
+		if (length <= 0) {
+			return;
 		}
+		// Splitting on any literal `</noparse>` inside the segment isn't
+		// worth the cost — it'd require a substring scan for every span.
+		// A player who writes the literal string "</noparse>" inside their
+		// PLC code (extraordinarily unlikely) would see broken coloring
+		// for that line; the editor still functions, the next refresh
+		// recovers it.
+		sb.Append("<noparse>");
+		sb.Append(s, start, length);
+		sb.Append("</noparse>");
 	}
 }
