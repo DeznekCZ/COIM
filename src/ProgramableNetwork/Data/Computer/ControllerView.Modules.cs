@@ -86,6 +86,11 @@ namespace ProgramableNetwork.Ui
 		public Controller Entity => m_controller.Entity;
 
 		public Dictionary<long, (int x, int y)> ModulePlacementCache { get; } = new Dictionary<long, (int x, int y)>();
+		// One ModuleView per Module.Id, kept across RedrawComponents calls.  Reusing the
+		// view preserves its Observe subscriptions (status/connections/extension counts)
+		// and avoids the rebuild flicker every time a single property toggles.  Entries
+		// are pruned when the source Module disappears.
+		private readonly Dictionary<long, ModuleView> m_moduleViewCache = new Dictionary<long, ModuleView>();
 		public ControllerInspector Inspector => m_controller;
 
 		public Module LastCreated => m_lastCreated;
@@ -113,9 +118,32 @@ namespace ProgramableNetwork.Ui
 			}
 			foreach (var m in Entity.Modules)
 			{
-				// Encode id+row+col so any change to module set OR positions triggers a redraw.
-				yield return m.Id ^ ((long)m.Row << 40) ^ ((long)m.Column << 24);
+				// Encode id+row+col+ext so any change to module set, positions, OR any of the
+				// three extension dimensions triggers a redraw — adding/removing extensions
+				// changes Layout.GetWidth and the row's free slots have to refold around the
+				// new footprint.  Cached ModuleViews persist across the redraw so the
+				// per-module flicker stays minimal.
+				yield return m.Id
+					^ ((long)m.Row << 40)
+					^ ((long)m.Column << 24)
+					^ ((long)m.InputExtensionCount << 16)
+					^ ((long)m.OutputExtensionCount << 8)
+					^ ((long)m.DisplayExtensionCount);
 			}
+		}
+
+		/// <summary>
+		/// True if the given module can grow by one cell on its right side — the cell at
+		/// (row, currentRightEdge) is in-grid and not occupied by any other module.  Used
+		/// by the inspector and inline edge "+" button to disable Add when there's no room.
+		/// </summary>
+		public bool CanExtendModule(Module module)
+		{
+			if (module == null || Entity?.Prototype == null) {
+				return false;
+			}
+			int rightEdge = module.Column + module.Layout.GetWidth(module);
+			return IsRangeFree(module.Row, rightEdge, 1, ignore: module);
 		}
 
 		public void RedrawComponents()
@@ -177,16 +205,14 @@ namespace ProgramableNetwork.Ui
 						continue;
 					}
 
-					var srcOut = srcMod.Prototype.Outputs.Find(o => o.Id == kv.Value.OutputId);
-					var dstIn  = dstMod.Prototype.Inputs .Find(i => i.Id == kv.Key);
+					var srcOut = srcMod.GetOutputProto(kv.Value.OutputId);
+					var dstIn  = dstMod.GetInputProto(kv.Key);
 					if (srcOut == null || dstIn == null) {
 						continue;
 					}
 
-					int srcOutCol = srcMod.Column + (srcMod.Layout.GetWidth(srcMod) - srcMod.Prototype.Outputs.Count)
-						+ srcMod.Prototype.Outputs.IndexOf(srcOut);
-					int dstInCol  = dstMod.Column + (dstMod.Layout.GetWidth(dstMod) - dstMod.Prototype.Inputs.Count)
-						+ dstMod.Prototype.Inputs .IndexOf(dstIn);
+					int srcOutCol = srcMod.GetPinColumn(kv.Value.OutputId, isOutput: true);
+					int dstInCol  = dstMod.GetPinColumn(kv.Key, isOutput: false);
 
 					// Universal rule: source side ALWAYS uses the channel below src (output is
 					// at the bottom of src, so the cable drops into the channel right below).
@@ -235,7 +261,11 @@ namespace ProgramableNetwork.Ui
 				return a.Dst.Column.CompareTo(b.Dst.Column);
 			});
 
-			ColourPaletteReset();
+			// Palette is NOT reset between redraws — every (sourceModuleId, outputId)
+			// pair gets a stable colour index for the lifetime of this view.  Without
+			// this, removing/re-adding a cable could shuffle indices and the pin dot
+			// (which only re-paints on connect/disconnect transitions) would end up
+			// out of sync with the cable's new colour.
 			foreach (var cable in m_cableSpecs)
 			{
 				cable.ColorIndex = ColourPaletteIndex(cable.Src.Id, cable.OutputId);
@@ -309,7 +339,15 @@ namespace ProgramableNetwork.Ui
 						if (cursor + width > totalCols) {
 							width = totalCols - cursor;
 						}
-						rowElement.Add(new ModuleView(placed, this, m_controller.Context, false, () => RedrawComponents(modules)));
+						// Reuse the cached ModuleView when present so its Observe subscriptions
+						// (status, connections, extension counts) stay live across redraws.  A
+						// fresh view is only created the first time a module appears.
+						if (!m_moduleViewCache.TryGetValue(placed.Id, out ModuleView mv) || mv == null)
+						{
+							mv = new ModuleView(placed, this, m_controller.Context, false, () => RedrawComponents(modules));
+							m_moduleViewCache[placed.Id] = mv;
+						}
+						rowElement.Add(mv);
 						ModulePlacementCache[placed.Id] = (i, cursor);
 						cursor += width;
 					}
@@ -319,6 +357,33 @@ namespace ProgramableNetwork.Ui
 
 				// Channel row below this module row — height already sized to the lane count.
 				Add(new UiComponent().Width(rowW).Height(m_channelHeights[i + 1].px()));
+			}
+
+			// Drop cached views for modules that no longer exist on the controller.
+			// Prevents the cache from holding stale references to removed modules.
+			HashSet<long> liveIds = new HashSet<long>();
+			foreach (var m in Entity.Modules ?? new Lyst<Module>())
+			{
+				if (m != null) {
+					liveIds.Add(m.Id);
+				}
+			}
+			List<long> stale = null;
+			foreach (var kv in m_moduleViewCache)
+			{
+				if (!liveIds.Contains(kv.Key))
+				{
+					if (stale == null) {
+						stale = new List<long>();
+					}
+					stale.Add(kv.Key);
+				}
+			}
+			if (stale != null)
+			{
+				foreach (long id in stale) {
+					m_moduleViewCache.Remove(id);
+				}
 			}
 
 			RepaintLines();
@@ -434,32 +499,14 @@ namespace ProgramableNetwork.Ui
 		}
 		private readonly List<CableSpec> m_cableSpecs = new List<CableSpec>();
 
-		// Looks up the cable colour painting the connection that touches the given
-		// (module, portId).  Returns null when the port is unconnected — callers
-		// (PortPinButton) treat that as "stay transparent".  Reads m_cableSpecs which
-		// is fully populated and coloured by RedrawComponents before any ModuleView /
-		// PortPinButton instances are constructed for the current redraw.
-		public ColorRgba? GetCableColor(Module module, string portId, bool isInput)
+		// Stable per-(source,output) colour pool.  Allocates an index on first lookup
+		// and returns the same colour forever for that pair, even if the cable is
+		// removed and re-added later.  Used by pin dots and cable rendering so all
+		// three views of a connection (output dot, cable, input dot) share one hue.
+		public ColorRgba GetOrCreateCableColor(long sourceModuleId, string outputId)
 		{
-			if (module == null || string.IsNullOrEmpty(portId) || m_cableSpecs.Count == 0) {
-				return null;
-			}
-			foreach (var cable in m_cableSpecs)
-			{
-				if (isInput)
-				{
-					if (cable.Dst.Id == module.Id && cable.InputId == portId) {
-						return cableColorFromIndex(cable.ColorIndex);
-					}
-				}
-				else
-				{
-					if (cable.Src.Id == module.Id && cable.OutputId == portId) {
-						return cableColorFromIndex(cable.ColorIndex);
-					}
-				}
-			}
-			return null;
+			int idx = ColourPaletteIndex(sourceModuleId, outputId ?? "");
+			return cableColorFromIndex(idx);
 		}
 
 		// Converts the Unity Color stored in the palette to an opaque ColorRgba.  The
@@ -484,11 +531,6 @@ namespace ProgramableNetwork.Ui
 			}
 			float needed = laneCount * CHANNEL_LANE_PX + 2f * CHANNEL_PADDING_PX;
 			return Math.Max(MIN_CHANNEL_PX, needed);
-		}
-
-		private void ColourPaletteReset()
-		{
-			m_colorCombinations = [];
 		}
 
 		private int ColourPaletteIndex(long sourceModuleId, string outputId)
@@ -847,16 +889,14 @@ namespace ProgramableNetwork.Ui
 					return;
 				}
 
-				ModuleConnectorProto srcOut = src.Prototype.Outputs.Find(o => o.Id == outputId);
-				ModuleConnectorProto dstIn  = dst.Prototype.Inputs .Find(i => i.Id == inputId);
+				ModuleConnectorProto srcOut = src.GetOutputProto(outputId);
+				ModuleConnectorProto dstIn  = dst.GetInputProto(inputId);
 				if (srcOut == null || dstIn == null) {
 					return;
 				}
 
-				int srcOutCount = src.Prototype.Outputs.Count;
-				int dstInCount  = dst.Prototype.Inputs.Count;
-				int srcOutCol   = src.Column + (src.Layout.GetWidth(src) - srcOutCount) + src.Prototype.Outputs.IndexOf(srcOut);
-				int dstInCol    = dst.Column + (dst.Layout.GetWidth(dst) - dstInCount)  + dst.Prototype.Inputs .IndexOf(dstIn);
+				int srcOutCol = src.GetPinColumn(outputId, isOutput: true);
+				int dstInCol  = dst.GetPinColumn(inputId,  isOutput: false);
 
 				float bs       = (float)Sizes.BLOCK_SIZE.Pixels;
 				int totalCols  = Entity.Prototype.Columns;

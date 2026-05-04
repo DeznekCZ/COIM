@@ -165,6 +165,10 @@ namespace ProgramableNetwork.Ui
 			foreach (var kv in from.NumberData)       { placedModule.NumberData[kv.Key] = kv.Value; }
 			foreach (var kv in from.FieldNumberData)  { placedModule.FieldNumberData[kv.Key] = kv.Value; }
 			foreach (var kv in from.StringData)       { placedModule.StringData[kv.Key] = kv.Value; }
+			// Pin extension counts roundtrip through the blueprint payload — restore
+			// them so a saved A+B with extra inputs places back at the same width.
+			placedModule.SetInputExtensionCount(from.InputExtensionCount);
+			placedModule.SetOutputExtensionCount(from.OutputExtensionCount);
 			// ArrayData is replaced wholesale rather than per-element copied — the
 			// saved buffer is the canonical state for any module that uses Array.
 			if (from.ArrayData != null && from.ArrayData.Length > 0)

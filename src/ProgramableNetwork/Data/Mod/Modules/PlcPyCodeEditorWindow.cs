@@ -621,7 +621,11 @@ public class PlcPyCodeEditorWindow : Window {
 			triggerPos = wordStart;
 		}
 
-		var entries = new System.Collections.Generic.List<PlcPySyntax.Completion>(PlcPySyntax.GetCompletions(parent));
+		// Pass the current module so self.Input/.Output/.Field/.Display
+		// list the actual pin / field / display ids for THIS instance,
+		// including any active right-side input/output extension pins.
+		var entries = new System.Collections.Generic.List<PlcPySyntax.Completion>(
+			PlcPySyntax.GetCompletions(parent, m_controller?.CurrentModule));
 		if (entries.Count == 0) {
 			return;
 		}

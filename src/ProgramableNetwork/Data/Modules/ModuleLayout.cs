@@ -43,17 +43,32 @@ namespace ProgramableNetwork
         public Func<Module, int> DynamicWidth { get; }
 
         /// <summary>
-        /// Returns with in slots
+        /// Width before extension widening — i.e. what <see cref="GetWidth"/> would have
+        /// returned with both extension counts at zero.  Used by the inspector-cell renderer
+        /// to keep the original (baseline) column positions of static pins stable when
+        /// extensions are added on the right side.
         /// </summary>
-        /// <param name="module"></param>
-        /// <returns></returns>
+        public int GetBaseWidth(Module module)
+        {
+            return DynamicWidth != null ? DynamicWidth.Invoke(module) : BaseWidth;
+        }
+
+        /// <summary>
+        /// Returns width in slots.  Width grows by the largest of the three extension
+        /// counts (input pins, output pins, display) so any of them can fit on the right
+        /// side without overlapping siblings.  Static pins keep their original column
+        /// positions.
+        /// </summary>
         public int GetWidth(Module module)
         {
-            if (DynamicWidth != null) {
-				return DynamicWidth.Invoke(module);
-			} else {
-				return BaseWidth;
-			}
+            int baseW = GetBaseWidth(module);
+            if (module == null) {
+                return baseW;
+            }
+            int extraW = System.Math.Max(
+                module.InputExtensionCount,
+                System.Math.Max(module.OutputExtensionCount, module.DisplayExtensionCount));
+            return baseW + extraW;
 		}
     }
 }

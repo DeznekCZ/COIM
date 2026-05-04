@@ -420,6 +420,58 @@ namespace ProgramableNetwork.Python
         public ModuleProto Prototype => module.Prototype;
         public Controller Controller => module.Controller;
 
+        // Extension counts and sized iteration helpers — let a Python action that
+        // declared `input_extensions = N` etc. ask "how many pins do I actually have
+        // right now" and grab pin ids by ordinal without hardcoding the alphabet.
+        public int input_extension_count => module.InputExtensionCount;
+        public int output_extension_count => module.OutputExtensionCount;
+        public int display_extension_count => module.DisplayExtensionCount;
+        public int effective_input_count =>
+            (module.Prototype?.Inputs?.Count ?? 0)
+            + System.Math.Min(module.InputExtensionCount, module.Prototype?.MaxInputExtensions ?? 0);
+        public int effective_output_count =>
+            (module.Prototype?.Outputs?.Count ?? 0)
+            + System.Math.Min(module.OutputExtensionCount, module.Prototype?.MaxOutputExtensions ?? 0);
+
+        /// <summary>
+        /// Returns the input pin id at <paramref name="idx"/> — statics first, then
+        /// active extensions.  Out-of-range returns "" so the caller's recursion can
+        /// terminate without throwing.
+        /// </summary>
+        public string effective_input_id(int idx)
+        {
+            if (idx < 0 || module.Prototype == null) {
+                return "";
+            }
+            int staticCount = module.Prototype.Inputs.Count;
+            if (idx < staticCount) {
+                return module.Prototype.Inputs[idx].Id;
+            }
+            int extIdx = idx - staticCount;
+            int activeExt = System.Math.Min(module.InputExtensionCount, module.Prototype.MaxInputExtensions);
+            if (extIdx >= activeExt) {
+                return "";
+            }
+            return module.Prototype.InputExtensions[extIdx].Id;
+        }
+
+        public string effective_output_id(int idx)
+        {
+            if (idx < 0 || module.Prototype == null) {
+                return "";
+            }
+            int staticCount = module.Prototype.Outputs.Count;
+            if (idx < staticCount) {
+                return module.Prototype.Outputs[idx].Id;
+            }
+            int extIdx = idx - staticCount;
+            int activeExt = System.Math.Min(module.OutputExtensionCount, module.Prototype.MaxOutputExtensions);
+            if (extIdx >= activeExt) {
+                return "";
+            }
+            return module.Prototype.OutputExtensions[extIdx].Id;
+        }
+
         public void __setitem__(object key, object value)
         {
             if (key is string id && value is ModuleConnector connector)

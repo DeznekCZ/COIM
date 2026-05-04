@@ -56,6 +56,22 @@ namespace ProgramableNetwork
 		// with non-PLC modules — they simply never set the bit.
 		public const int MODULE_PYTHON_CODE = 6;
 
+		// Serialization version where Module gained per-instance pin extension
+		// counts (InputExtensionCount / OutputExtensionCount) — extra input and/or
+		// output pins added by the player on the right side of an extensible
+		// prototype.  Pre-v7 saves load with both counts at 0 (no extensions),
+		// matching the original behavior.
+		public const int MODULE_EXTENSIONS = 7;
+
+		// Display extension count was added a step later at the same conceptual
+		// "extensions" feature but a separate version bump is required because
+		// in-progress dev saves at v7 were written with only the two pin counts
+		// (Input + Output) — reading a third int there walks past the end of the
+		// module's data and corrupts the byte stream.  v8+ writes all three; v7
+		// loads just the two and leaves DisplayExtensionCount at 0 so the player
+		// can grow the display from the inspector after load.
+		public const int MODULE_DISPLAY_EXTENSIONS = 8;
+
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 		{
 			((Controller) obj).SerializeData(writer);
@@ -350,13 +366,13 @@ namespace ProgramableNetwork
 							m.InputModules.Remove(kv.Key);
 							continue;
 						}
-						if (!src.Prototype.Outputs.Any(o => o.Id == kv.Value.OutputId))
+						if (!src.HasOutput(kv.Value.OutputId))
 						{
 							Log.Warning($"Module {m.Id}: dropping connection for input '{kv.Key}' — source module {src.Id} no longer has output '{kv.Value.OutputId}'");
 							m.InputModules.Remove(kv.Key);
 							continue;
 						}
-						if (!m.Prototype.Inputs.Any(i => i.Id == kv.Key))
+						if (!m.HasInput(kv.Key))
 						{
 							Log.Warning($"Module {m.Id}: dropping connection — input '{kv.Key}' no longer exists on this module's prototype");
 							m.InputModules.Remove(kv.Key);
@@ -692,7 +708,9 @@ namespace ProgramableNetwork
 			// Copy all outputs to inputs
 			foreach (Module module in Modules)
 			{
-				foreach (var input in module.Prototype.Inputs)
+				// Clear last-tick values across all effective inputs (statics + active
+				// extensions) so unconnected pins evaluate as zero on the next read.
+				foreach (var input in module.EffectiveInputs)
 				{
 					module.InputNumberData.TryRemove(input.Id, out _);
 					// module.StringData.TryRemove("in__" + input.Id, out _);

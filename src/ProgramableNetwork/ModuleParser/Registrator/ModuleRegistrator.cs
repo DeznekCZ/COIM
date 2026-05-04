@@ -64,11 +64,80 @@ namespace ProgramableNetwork.Python
 				if (classEntry.classContext.TryGetValue("width", out object width)) {
 					builder.Width(Expressions.__int__(width));
 				}
+				// Extension declarations — int values on the class control how far the
+				// player can grow the module on each side via the inspector edge buttons.
+				// 0 (or absent) = not extensible.  Naming defaults to the alphabet
+				// generator (single-char ids like "B" → "C", "D" or "1" → "2", "3"); for
+				// modules with multi-char pin ids (e.g. "in_1", "out_1") provide an
+				// explicit list via `input_extension_names` / `output_extension_names`.
+				IList inExtNames = classEntry.classContext.TryGetValue("input_extension_names", out object inNames)
+					? inNames as IList : null;
+				IList outExtNames = classEntry.classContext.TryGetValue("output_extension_names", out object outNames)
+					? outNames as IList : null;
+
+				if (classEntry.classContext.TryGetValue("input_extensions", out object inExt)) {
+					int n = Expressions.__int__(inExt);
+					if (inExtNames != null && inExtNames.Count >= n) {
+						builder.AllowInputExtensions(n, idx => ExtNameAt(inExtNames, idx));
+					} else {
+						builder.AllowInputExtensions(n);
+					}
+				}
+				if (classEntry.classContext.TryGetValue("output_extensions", out object outExt)) {
+					int n = Expressions.__int__(outExt);
+					if (outExtNames != null && outExtNames.Count >= n) {
+						builder.AllowOutputExtensions(n, idx => ExtNameAt(outExtNames, idx));
+					} else {
+						builder.AllowOutputExtensions(n);
+					}
+				}
+				if (classEntry.classContext.TryGetValue("display_extensions", out object dispExt)) {
+					builder.AllowDisplayExtensions(Expressions.__int__(dispExt));
+				}
+
+				// Per-extension display widgets — list of Display constructors that
+				// materialise alongside their matching pin extension on the linked side.
+				// E.g. flip-flop: each new output channel gets a paired LED display.
+				// `extension_displays_link` chooses which pin side they follow ("input" or
+				// "output", default "output").
+				if (classEntry.classContext.TryGetValue("extension_displays", out object extDispRaw))
+				{
+					IList extDispList = extDispRaw as IList;
+					if (extDispList != null && extDispList.Count > 0)
+					{
+						ExtensionSide linkedSide = ExtensionSide.Output;
+						if (classEntry.classContext.TryGetValue("extension_displays_link", out object linkRaw))
+						{
+							string linkStr = (linkRaw as string)?.ToLowerInvariant() ?? "output";
+							if (linkStr == "input") {
+								linkedSide = ExtensionSide.Input;
+							}
+						}
+						List<DisplayConstructorAction> actions = new List<DisplayConstructorAction>();
+						foreach (object entry in extDispList)
+						{
+							if (entry is DisplayConstructorAction displayConstructorAction) {
+								actions.Add(displayConstructorAction);
+							}
+						}
+						builder.AllowExtensionDisplays(linkedSide, actions);
+					}
+				}
 
 				// TODO search for variable of device
                 builder.AddControllerDevice();
 
                 builder.BuildAndAdd();
+
+                // `deprecates` — list of fixed-arity ids this extensible module
+                // supersedes.  Each entry is a tuple/list:
+                //   ("OldModuleId", input_ext, output_ext, display_ext)
+                // Trailing values may be 0/None when not applicable.  The string id
+                // gets the same `.ModuleId()` mangling new modules go through.
+                if (classEntry.classContext.TryGetValue("deprecates", out object dep))
+                {
+                    RegisterDeprecates(classEntry.name, dep as IList);
+                }
             }
 
             templates = context.Values
@@ -178,6 +247,63 @@ namespace ProgramableNetwork.Python
             {
                 builder.AddCategory(item as Category);
             }
+        }
+
+        // Reads each entry from the Python `deprecates = [ ("OldId", inExt, outExt, dispExt), ... ]`
+        // table and pushes a Deprecation.RegisterDeprecation call for it.  Tuples/lists
+        // are accepted; missing trailing items default to null (no extension override).
+        private static void RegisterDeprecates(string newClassName, IList list)
+        {
+            if (list == null) {
+                return;
+            }
+            foreach (object entry in list)
+            {
+                IList tuple = entry as IList;
+                if (tuple == null || tuple.Count == 0) {
+                    continue;
+                }
+                string oldId = tuple[0] as string;
+                if (string.IsNullOrEmpty(oldId)) {
+                    continue;
+                }
+                int? inExt = (tuple.Count > 1) ? ToNullableInt(tuple[1]) : null;
+                int? outExt = (tuple.Count > 2) ? ToNullableInt(tuple[2]) : null;
+                int? dispExt = (tuple.Count > 3) ? ToNullableInt(tuple[3]) : null;
+                Deprecation.RegisterDeprecation(
+                    new ModuleProto.ID(oldId.ModuleId()),
+                    new ModuleProto.ID(newClassName.ModuleId()),
+                    inputExt: inExt, outputExt: outExt, displayExt: dispExt);
+            }
+        }
+
+        private static int? ToNullableInt(object value)
+        {
+            if (value == null) {
+                return null;
+            }
+            try { return Expressions.__int__(value); }
+            catch { return null; }
+        }
+
+        // Pulls the extension id+display-name from a Python `input_extension_names` /
+        // `output_extension_names` list.  Each entry can be either a plain string
+        // (id == display name) or a 2-tuple (id, display).  Out-of-range index falls
+        // back to a numeric placeholder so the proto registration doesn't blow up.
+        private static (string id, string name) ExtNameAt(IList list, int idx)
+        {
+            if (idx < 0 || idx >= list.Count) {
+                string fallback = "ext_" + idx;
+                return (fallback, fallback);
+            }
+            object entry = list[idx];
+            if (entry is IList tuple && tuple.Count >= 2) {
+                string id = tuple[0] as string ?? "";
+                string display = tuple[1] as string ?? id;
+                return (id, display);
+            }
+            string s = entry as string ?? ("ext_" + idx);
+            return (s, s);
         }
     }
 }

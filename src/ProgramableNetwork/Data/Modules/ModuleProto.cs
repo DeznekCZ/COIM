@@ -145,7 +145,31 @@ namespace ProgramableNetwork
         public bool IsOutputModule { get; }
         public List<ModuleConnectorProto> Inputs { get; }
         public List<ModuleConnectorProto> Outputs { get; }
+        // Optional pin extensions appended to the right side of the module when the
+        // player adds them through the inspector.  Pre-materialised at proto
+        // registration so the LocStr table contains every possible extension's
+        // strings up front (Strs cannot be added after registration).  A module
+        // instance carries an InputExtensionCount / OutputExtensionCount that
+        // selects the first N entries of these lists at runtime.
+        public List<ModuleConnectorProto> InputExtensions { get; }
+        public List<ModuleConnectorProto> OutputExtensions { get; }
+        public int MaxInputExtensions => InputExtensions?.Count ?? 0;
+        public int MaxOutputExtensions => OutputExtensions?.Count ?? 0;
+        // Maximum number of cells the LAST display in <see cref="Displays"/> can grow by
+        // when the player adds display extensions through the inspector.  Unlike pin
+        // extensions, display extensions don't add new ModuleConnectorProto entries —
+        // they just grow the rightmost display's rendered width by N cells.  Modules
+        // that opt into this typically have a single value-display (e.g. Display_Int).
+        public int MaxDisplayExtensions { get; }
         public List<ModuleConnectorProto> Displays { get; }
+        // Optional per-output (or per-input) display widgets that materialise
+        // alongside their matching pin extension.  Used by paired pin-and-LED
+        // modules like the flip-flop: declaring `extension_displays` linked to
+        // "output" causes one extra display to be rendered whenever the player
+        // adds an output extension on the right edge.  Indexed in lock-step
+        // with the active linked-side extension count.
+        public List<ModuleConnectorProto> ExtensionDisplays { get; }
+        public ExtensionSide ExtensionDisplaysLinkedSide { get; }
         public Action<Module> DisplayUpdate { get; }
         public ImmutableArray<Category> Categories { get; }
         public List<IField> Fields { get; }
@@ -221,6 +245,11 @@ namespace ProgramableNetwork
 			Action<Module, UiComponent> m_displayFunction, int baseWidth, Func<Module, int> m_widthFunction,
 			string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories,
             ImmutableArray<ResearchNodeProto> m_research,
+            List<ModuleConnectorProto> m_inputExtensions = null,
+            List<ModuleConnectorProto> m_outputExtensions = null,
+            int m_maxDisplayExtensions = 0,
+            List<ModuleConnectorProto> m_extensionDisplays = null,
+            ExtensionSide m_extensionDisplaysLinkedSide = ExtensionSide.Output,
             Func<Module, PartialQuantity> m_dynamicComputing = null
 		) : base(id, strings, costs, gfx, tags)
         {
@@ -232,6 +261,11 @@ namespace ProgramableNetwork
             IsOutputModule = isOutputModule;
             Inputs = m_inputs;
             Outputs = m_outputs;
+            InputExtensions = m_inputExtensions ?? new List<ModuleConnectorProto>();
+            OutputExtensions = m_outputExtensions ?? new List<ModuleConnectorProto>();
+            MaxDisplayExtensions = System.Math.Max(0, m_maxDisplayExtensions);
+            ExtensionDisplays = m_extensionDisplays ?? new List<ModuleConnectorProto>();
+            ExtensionDisplaysLinkedSide = m_extensionDisplaysLinkedSide;
             Displays = m_displays;
             DisplayUpdate = m_display;
             Fields = m_fields;
@@ -268,6 +302,19 @@ namespace ProgramableNetwork
             private bool m_isInputModule = false;
             private readonly List<ModuleConnectorProto> m_inputs = new List<ModuleConnectorProto>();
             private readonly List<ModuleConnectorProto> m_outputs = new List<ModuleConnectorProto>();
+            private readonly List<ModuleConnectorProto> m_inputExtensions = new List<ModuleConnectorProto>();
+            private readonly List<ModuleConnectorProto> m_outputExtensions = new List<ModuleConnectorProto>();
+            private int m_maxDisplayExtensions;
+            // Lock-step display widgets — one per active linked-side extension.
+            // Currently only Output linkage is wired; Input linkage falls through
+            // identically but isn't exercised by any module yet.
+            private readonly List<ModuleConnectorProto> m_extensionDisplays = new List<ModuleConnectorProto>();
+            private ExtensionSide m_extensionDisplaysLinkedSide = ExtensionSide.Output;
+            // When non-null, AddDisplay/AddDisplayFiller/AddDisplaySlider route their
+            // entries here instead of the main Displays list.  Used by
+            // AddExtensionDisplays to capture per-extension display widgets without
+            // duplicating each AddXxx overload.
+            private List<ModuleConnectorProto> m_displaysTargetOverride;
             private readonly List<ModuleConnectorProto> m_displays = new List<ModuleConnectorProto>();
             private Electricity m_usedPower;
             private PartialQuantity m_usedComputing;
@@ -355,6 +402,11 @@ namespace ProgramableNetwork
                     m_researchIds
 						.Select(id => m_registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
 						.ToImmutableArray(),
+                    m_inputExtensions,
+                    m_outputExtensions,
+                    m_maxDisplayExtensions,
+                    m_extensionDisplays,
+                    m_extensionDisplaysLinkedSide,
                     m_dynamicComputing
                 );
             }
@@ -422,6 +474,110 @@ namespace ProgramableNetwork
                 return this;
             }
 
+            /// <summary>
+            /// Declares that this module supports up to <paramref name="max"/> extra input pins
+            /// added by the player from the inspector.  All <paramref name="max"/> Strs are
+            /// pre-registered up front (Strs cannot be added after proto registration); the
+            /// active count per instance is held on the Module.  Default <paramref name="namer"/>
+            /// continues the alphabet sequence of the last static input id (e.g. existing 'a','b'
+            /// → extensions 'c','d','...'); pass a custom namer for ids that don't fit a
+            /// single-letter pattern.
+            /// </summary>
+            public Builder AllowInputExtensions(int max, Func<int, (string id, string name)> namer = null)
+            {
+                if (max <= 0) {
+                    return this;
+                }
+                namer ??= defaultExtensionNamer(m_inputs);
+                for (int i = 0; i < max; i++)
+                {
+                    var (id, name) = namer(i);
+                    m_inputExtensions.Add(new ModuleConnectorProto(id, m_id.Input(id, name), 1));
+                }
+                return this;
+            }
+
+            public Builder AllowOutputExtensions(int max, Func<int, (string id, string name)> namer = null)
+            {
+                if (max <= 0) {
+                    return this;
+                }
+                namer ??= defaultExtensionNamer(m_outputs);
+                for (int i = 0; i < max; i++)
+                {
+                    var (id, name) = namer(i);
+                    m_outputExtensions.Add(new ModuleConnectorProto(id, m_id.Output(id, name), 1));
+                }
+                return this;
+            }
+
+            /// <summary>
+            /// Declares that the LAST display in <see cref="AddDisplay"/> can grow by up to
+            /// <paramref name="max"/> additional cells when the player adds display
+            /// extensions through the inspector.  Unlike pin extensions, no new
+            /// ModuleConnectorProto entries are registered — the existing display widget
+            /// just stretches.  Use this on display-dominant modules where the player
+            /// chooses precision (e.g. number displays growing from 4 to 16 digits).
+            /// </summary>
+            public Builder AllowDisplayExtensions(int max)
+            {
+                m_maxDisplayExtensions = System.Math.Max(0, max);
+                return this;
+            }
+
+            /// <summary>
+            /// Registers per-extension display widgets that follow a pin side.  Each entry
+            /// in <paramref name="extensions"/> becomes a display added to the row at the
+            /// same active count as the linked side's pin extensions — e.g. a flip-flop
+            /// linked to Output, with one LED per channel.  Calls inside the lambdas
+            /// (AddDisplay / Display.LED / etc.) are captured into the extension list
+            /// instead of the main displays list via a thread-unsafe target swap, so
+            /// don't interleave with other Add* calls.
+            /// </summary>
+            public Builder AllowExtensionDisplays(ExtensionSide linkedSide, IEnumerable<DisplayConstructorAction> extensions)
+            {
+                m_extensionDisplaysLinkedSide = linkedSide;
+                m_displaysTargetOverride = m_extensionDisplays;
+                try
+                {
+                    foreach (DisplayConstructorAction ext in extensions)
+                    {
+                        ext(this);
+                    }
+                }
+                finally
+                {
+                    m_displaysTargetOverride = null;
+                }
+                return this;
+            }
+
+            // Default extension namer: continues from the next ASCII character after the
+            // last static pin's id when that id is exactly one alphanumeric character.
+            // So "B" → "C", "D"...; "1" → "2", "3"...; "D" → "E", "F".  Falls back to
+            // 'A'+i if there are no statics or the last id isn't a single alnum char —
+            // modules with multi-char pin ids must pass an explicit namer.
+            private static Func<int, (string id, string name)> defaultExtensionNamer(List<ModuleConnectorProto> existing)
+            {
+                int startCode = 'A';
+                if (existing.Count > 0)
+                {
+                    string lastId = existing[existing.Count - 1].Id;
+                    if (lastId != null && lastId.Length == 1 && (
+                        (lastId[0] >= 'a' && lastId[0] <= 'z') ||
+                        (lastId[0] >= 'A' && lastId[0] <= 'Z') ||
+                        (lastId[0] >= '0' && lastId[0] <= '9')))
+                    {
+                        startCode = lastId[0] + 1;
+                    }
+                }
+                return idx =>
+                {
+                    string id = ((char)(startCode + idx)).ToString();
+                    return (id, id);
+                };
+            }
+
             public Builder AddDevice(StaticEntityProto.ID device)
             {
                 m_allowedDevices.Add(device);
@@ -487,7 +643,7 @@ namespace ProgramableNetwork
             /// <returns></returns>
             public Builder AddDisplay(string id, string name, Fix32 width, string defaultText = null, bool image = false, string[] toggle = null, bool entity = false, bool led = false)
             {
-                m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width,
+                (m_displaysTargetOverride ?? m_displays).Add(new ModuleConnectorProto(id, m_id.Display(id, name), width,
                     defaultText ?? (
                     image ? "[image]" :
                     led ? "[led]":
@@ -498,7 +654,7 @@ namespace ProgramableNetwork
             }
             public Builder AddDisplayFiller(Fix32 width)
             {
-                m_displays.Add(new ModuleConnectorProto("_", Str.Empty, width, "[fill]"));
+                (m_displaysTargetOverride ?? m_displays).Add(new ModuleConnectorProto("_", Str.Empty, width, "[fill]"));
                 return this;
             }
 
@@ -518,7 +674,7 @@ namespace ProgramableNetwork
                     + min.ToString(System.Globalization.CultureInfo.InvariantCulture)
                     + ":"
                     + max.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width, defaultText));
+                (m_displaysTargetOverride ?? m_displays).Add(new ModuleConnectorProto(id, m_id.Display(id, name), width, defaultText));
                 return this;
             }
 

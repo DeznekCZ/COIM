@@ -54,6 +54,11 @@ namespace ProgramableNetwork.Python
         {
             List<Token> tokens = new List<Token>();
             Stack<string> indentaion = new Stack<string>();
+            // Implicit line-joining: when an opening bracket — `(`, `[`, or `{` —
+            // hasn't been closed yet, suppress newline and indent/dedent emission
+            // so multi-line argument lists / list literals / dict literals parse
+            // as a single logical line.  Mirrors the standard CPython rule.
+            int parenDepth = 0;
             for (int i = 0; i < lines.Length; i++)
             {
                 if (string.IsNullOrWhiteSpace(lines[i])) {
@@ -63,15 +68,18 @@ namespace ProgramableNetwork.Python
 				Match indentMatch = Tokenizer.indent.Match(lines[i]);
                 string indent = indentMatch.Groups["block"].Value;
                 string rest = indentMatch.Groups["rest"].Value;
-                while (indentaion.Count > 0 && indentaion.Peek().Length > indent.Length)
+                if (parenDepth == 0)
                 {
-                    tokens.Add(new Token(fileInfo, lines[i], i + 1, 0, indent.Length, PythonTokens.dedent, indent));
-                    indentaion.Pop();
-                }
-                if (indent.Length > 0 && (indentaion.Count == 0 || indentaion.Peek().Length < indent.Length))
-                {
-                    tokens.Add(new Token(fileInfo, lines[i], i + 1, 0, indent.Length, PythonTokens.indent, indent));
-                    indentaion.Push(indent);
+                    while (indentaion.Count > 0 && indentaion.Peek().Length > indent.Length)
+                    {
+                        tokens.Add(new Token(fileInfo, lines[i], i + 1, 0, indent.Length, PythonTokens.dedent, indent));
+                        indentaion.Pop();
+                    }
+                    if (indent.Length > 0 && (indentaion.Count == 0 || indentaion.Peek().Length < indent.Length))
+                    {
+                        tokens.Add(new Token(fileInfo, lines[i], i + 1, 0, indent.Length, PythonTokens.indent, indent));
+                        indentaion.Push(indent);
+                    }
                 }
 
                 MatchCollection matchCollection = combined.Matches(lines[i]);
@@ -107,8 +115,13 @@ namespace ProgramableNetwork.Python
                             // Comments run to end-of-line — emit the newline
                             // immediately after so block/indent dispatch works
                             // the same way it did when comments were folded
-                            // straight into a newline.
-                            tokens.Add(new Token(fileInfo, lines[i], i, end, 1, PythonTokens.newline, "\n"));
+                            // straight into a newline.  Skip when inside an
+                            // open bracket (implicit line-joining suppresses
+                            // logical newlines, including post-comment ones).
+                            if (parenDepth == 0)
+                            {
+                                tokens.Add(new Token(fileInfo, lines[i], i, end, 1, PythonTokens.newline, "\n"));
+                            }
                             end = token.Index + token.Length;
                             break;
                         }
@@ -143,6 +156,19 @@ namespace ProgramableNetwork.Python
                         {
                             found = true;
                             tokens.Add(new Token(fileInfo, lines[i], i + 1, token.Index+1, token.Length, (PythonTokens)Enum.Parse(typeof(PythonTokens), token.Name), token.Value));
+                            // Track bracket nesting for implicit line-joining.
+                            // Three open / three close kinds; the closer can
+                            // never drop depth below zero (a stray ')' is the
+                            // parser's problem to flag, not ours).
+                            if (token.Name == "lparen" || token.Name == "llist" || token.Name == "ldict") {
+                                parenDepth++;
+                            }
+                            else if (token.Name == "rparen" || token.Name == "rlist" || token.Name == "rdict")
+                            {
+                                if (parenDepth > 0) {
+                                    parenDepth--;
+                                }
+                            }
                             end = token.Index + token.Length;
                             break;
                         }
@@ -152,7 +178,7 @@ namespace ProgramableNetwork.Python
                         throw new PythonParseException(new Token(fileInfo, lines[i], i + 1, match.Index, match.Length, PythonTokens.undefined, match.Value), $"Missing type of token: {match.Value}");
                     }
                 }
-                if ((i + 1) < lines.Length) {
+                if ((i + 1) < lines.Length && parenDepth == 0) {
 					tokens.Add(new Token(fileInfo, lines[i], i, end, 1, PythonTokens.newline, "\n"));
 				}
 			}

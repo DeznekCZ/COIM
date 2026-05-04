@@ -45,7 +45,13 @@ public static class PlcPySyntax {
 	// Empty parent ("") → top-level names; "self" → wrapper sub-views; etc.
 	// Returns EMPTY when the parent isn't recognized so the caller can use
 	// the result directly without null-checks.
-	public static IReadOnlyList<Completion> GetCompletions(string parent) {
+	//
+	// `module` is optional: when provided, self.Input/self.Output/self.Field/
+	// self.Display surface that instance's actual pin / field / display ids
+	// (including any active right-side input/output extensions) instead of
+	// the legacy fixed A/B/C/D.  When null, only the get/set helpers are
+	// offered — the floater still works, just without instance-specific names.
+	public static IReadOnlyList<Completion> GetCompletions(string parent, Module module = null) {
 		switch (parent ?? "") {
 			case "":
 				return new[] {
@@ -82,31 +88,15 @@ public static class PlcPySyntax {
 					new Completion("StringData",   "Persistent string dictionary."),
 				};
 			case "self.Input":
+				return BuildPinSide(module, isOutput: false, includeWriters: true);
 			case "self.Output":
+				return BuildPinSide(module, isOutput: true, includeWriters: true);
 			case "self.Field":
-				return new[] {
-					new Completion("A",        "Pin A (dotted access)."),
-					new Completion("B",        "Pin B."),
-					new Completion("C",        "Pin C."),
-					new Completion("D",        "Pin D."),
-					new Completion("get",      "get(name, default) — read as Fix32."),
-					new Completion("set",      "set(name, value) — write Fix32."),
-					new Completion("get_int",  "get_int(name, default) — read as int."),
-					new Completion("set_int",  "set_int(name, value) — write int."),
-					new Completion("get_bool", "get_bool(name, default) — read as bool."),
-					new Completion("set_bool", "set_bool(name, value) — write bool."),
-				};
+				return BuildFieldSide(module, includeWriters: true);
 			case "self.FieldOrInput":
-				return new[] {
-					new Completion("get",      "get(name, default) — read as Fix32."),
-					new Completion("get_int",  "get_int(name, default) — read as int."),
-					new Completion("get_bool", "get_bool(name, default) — read as bool."),
-				};
+				return BuildFieldOrInputSide(module);
 			case "self.Display":
-				return new[] {
-					new Completion("get", "get(name, default) — read string."),
-					new Completion("set", "set(name, value) — write string."),
-				};
+				return BuildDisplaySide(module);
 			case "self.Array":
 				return new[] {
 					new Completion("length",          "Current array length."),
@@ -133,6 +123,134 @@ public static class PlcPySyntax {
 			default:
 				return EMPTY;
 		}
+	}
+
+	// Pin id → completion entry for self.Input / self.Output.  Statics first,
+	// then any active right-side extension pins (first N of Prototype.*Extensions
+	// where N = module.*ExtensionCount, clamped).  When the module is null we
+	// skip the dynamic part — the floater still offers the get/set helpers
+	// so the player isn't left empty-handed if the editor is opened in a
+	// context that can't resolve a current module.
+	private static IReadOnlyList<Completion> BuildPinSide(Module module, bool isOutput, bool includeWriters) {
+		List<Completion> list = new List<Completion>();
+		if (module != null) {
+			IReadOnlyList<ModuleConnectorProto> pins = isOutput ? module.EffectiveOutputs : module.EffectiveInputs;
+			if (pins != null) {
+				foreach (ModuleConnectorProto pin in pins) {
+					if (pin == null || string.IsNullOrEmpty(pin.Id)) {
+						continue;
+					}
+					list.Add(new Completion(pin.Id, BuildPinDoc(pin, isOutput)));
+				}
+			}
+		}
+		list.Add(new Completion("get",      "get(name, default) — read as Fix32."));
+		if (includeWriters) {
+			list.Add(new Completion("set",      "set(name, value) — write Fix32."));
+		}
+		list.Add(new Completion("get_int",  "get_int(name, default) — read as int."));
+		if (includeWriters) {
+			list.Add(new Completion("set_int",  "set_int(name, value) — write int."));
+		}
+		list.Add(new Completion("get_bool", "get_bool(name, default) — read as bool."));
+		if (includeWriters) {
+			list.Add(new Completion("set_bool", "set_bool(name, value) — write bool."));
+		}
+		return list;
+	}
+
+	private static IReadOnlyList<Completion> BuildFieldSide(Module module, bool includeWriters) {
+		List<Completion> list = new List<Completion>();
+		if (module?.Prototype?.Fields != null) {
+			foreach (IField field in module.Prototype.Fields) {
+				if (field == null || string.IsNullOrEmpty(field.Id)) {
+					continue;
+				}
+				list.Add(new Completion(field.Id, BuildFieldDoc(field)));
+			}
+		}
+		list.Add(new Completion("get",      "get(name, default) — read as Fix32."));
+		if (includeWriters) {
+			list.Add(new Completion("set",      "set(name, value) — write Fix32."));
+		}
+		list.Add(new Completion("get_int",  "get_int(name, default) — read as int."));
+		if (includeWriters) {
+			list.Add(new Completion("set_int",  "set_int(name, value) — write int."));
+		}
+		list.Add(new Completion("get_bool", "get_bool(name, default) — read as bool."));
+		if (includeWriters) {
+			list.Add(new Completion("set_bool", "set_bool(name, value) — write bool."));
+		}
+		return list;
+	}
+
+	// FieldOrInput is read-only (override input wins, field falls back), so
+	// the .NAME entries are merged from both sides — the player can read
+	// either by its id.  Duplicates are de-duped on id (input wins on tie,
+	// matching the runtime resolution order).
+	private static IReadOnlyList<Completion> BuildFieldOrInputSide(Module module) {
+		List<Completion> list = new List<Completion>();
+		HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+		if (module != null) {
+			if (module.EffectiveInputs != null) {
+				foreach (ModuleConnectorProto pin in module.EffectiveInputs) {
+					if (pin == null || string.IsNullOrEmpty(pin.Id) || !seen.Add(pin.Id)) {
+						continue;
+					}
+					list.Add(new Completion(pin.Id, BuildPinDoc(pin, isOutput: false)));
+				}
+			}
+			if (module.Prototype?.Fields != null) {
+				foreach (IField field in module.Prototype.Fields) {
+					if (field == null || string.IsNullOrEmpty(field.Id) || !seen.Add(field.Id)) {
+						continue;
+					}
+					list.Add(new Completion(field.Id, BuildFieldDoc(field)));
+				}
+			}
+		}
+		list.Add(new Completion("get",      "get(name, default) — read as Fix32."));
+		list.Add(new Completion("get_int",  "get_int(name, default) — read as int."));
+		list.Add(new Completion("get_bool", "get_bool(name, default) — read as bool."));
+		return list;
+	}
+
+	private static IReadOnlyList<Completion> BuildDisplaySide(Module module) {
+		List<Completion> list = new List<Completion>();
+		if (module?.Prototype?.Displays != null) {
+			foreach (ModuleConnectorProto display in module.Prototype.Displays) {
+				if (display == null || string.IsNullOrEmpty(display.Id)) {
+					continue;
+				}
+				list.Add(new Completion(display.Id, BuildPinDoc(display, isOutput: true)));
+			}
+		}
+		list.Add(new Completion("get", "get(name, default) — read string."));
+		list.Add(new Completion("set", "set(name, value) — write string."));
+		return list;
+	}
+
+	private static string BuildPinDoc(ModuleConnectorProto pin, bool isOutput) {
+		string label = isOutput ? "Output pin" : "Input pin";
+		string translated = TryGetTranslated(pin?.Name);
+		return string.IsNullOrEmpty(translated) || translated == pin.Id
+			? label + " " + pin.Id + "."
+			: label + " " + pin.Id + " — " + translated + ".";
+	}
+
+	private static string BuildFieldDoc(IField field) {
+		string translated = null;
+		try { translated = field.Name.TranslatedString; } catch { }
+		return string.IsNullOrEmpty(translated) || translated == field.Id
+			? "Field " + field.Id + "."
+			: "Field " + field.Id + " — " + translated + ".";
+	}
+
+	// Defensive fetch for Proto.Str.Name.TranslatedString — a partly-built
+	// proto in unusual states (e.g., Phantom replacement) may have a null
+	// Name; swallow the NRE and let the caller fall back to the id.
+	private static string TryGetTranslated(Mafi.Core.Prototypes.Proto.Str? str) {
+		try { return str?.Name.TranslatedString; } catch { return null; }
 	}
 
 	public static readonly IReadOnlyDictionary<string, string> Docs = new Dictionary<string, string> {

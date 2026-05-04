@@ -36,25 +36,47 @@ namespace ProgramableNetwork.Ui
 				this.m_controller = controllerView;
 				string name = "moduleView_" + module.Id;
 				var updater = UpdaterBuilder.Start();
+				int baseWidth = module.Layout.GetBaseWidth(module);
 				int width = module.Layout.GetWidth(module);
 				bool displaysExists = module.Prototype.Displays.Count > 0;
+				bool isExtensible = !preview && (module.Prototype.MaxInputExtensions > 0
+					|| module.Prototype.MaxOutputExtensions > 0
+					|| module.Prototype.MaxDisplayExtensions > 0);
 
 				this.Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 4);
 				this.Class(Cls.panel);
+				// Outer panel resizes when any of the three extension dimensions change —
+				// recomputes off the live layout so dynamic-width prototypes follow along.
+				this.Observe(() => module.InputExtensionCount)
+					.Observe(() => module.OutputExtensionCount)
+					.Observe(() => module.DisplayExtensionCount)
+					.Do((iE, oE, dE) => this.Size(module.Layout.GetWidth(module) * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 4));
 
-				// Add Input panel
+				// Add Input panel — full module width so extension pins land at the right
+				// columns.  Children rebuilt in place when ext counts change so the static
+				// pin objects stay alive (their Observe-driven cable-color subscriptions
+				// keep working) until a redraw replaces them.
 				Row inputsPanel = new Row()
 					.Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
 					.Background(ColorRgba.DarkGreen)
 					.AlignItemsEnd();
 				AddInputs(uiContext, inputsPanel, module, preview, refresh);
 				BodyAdd(inputsPanel);
+				inputsPanel.Observe(() => module.InputExtensionCount)
+						   .Observe(() => module.OutputExtensionCount)
+						   .Observe(() => module.DisplayExtensionCount)
+						   .Do((iE, oE, dE) => {
+							   inputsPanel.Clear();
+							   inputsPanel.Width(module.Layout.GetWidth(module) * Sizes.BLOCK_SIZE);
+							   AddInputs(uiContext, inputsPanel, module, preview, refresh);
+						   });
 
-				// Add Field panel
+				// Full-width config button — spans the entire module including extension
+				// cells; resizes when extensions are added/removed via the fieldsRow
+				// observer below.  Text stays centred in the full-width button.
 				ButtonText fieldsPanel = new ButtonText(module.Prototype.Symbol.AsLoc());
 				fieldsPanel.TextOverflow(TextOverflow.Clip);
 				fieldsPanel.TextAlign(TextAlignment.CenterMiddle);
-				fieldsPanel.Size(width * Sizes.BLOCK_SIZE, displaysExists ? Sizes.BLOCK_SIZE : (Sizes.BLOCK_SIZE * 2));
 				if (!preview)
 				{
 					fieldsPanel.OnMouseEnterLeave(
@@ -170,15 +192,61 @@ namespace ProgramableNetwork.Ui
 							.Do((time) => module.Prototype.DisplayUpdate(module));
 					}
 				}
-				BodyAdd(fieldsPanel);
+				// fieldsPanel spans the full module width (including extension cells) and
+				// resizes dynamically.  No separate filler needed — the button itself is
+				// the full clickable surface.
+				Px fieldsHeight = displaysExists ? Sizes.BLOCK_SIZE : (Sizes.BLOCK_SIZE * 2);
+				fieldsPanel.Size(width * Sizes.BLOCK_SIZE, fieldsHeight);
+				Row fieldsRow = new Row().Size(width * Sizes.BLOCK_SIZE, fieldsHeight);
+				fieldsRow.Add(fieldsPanel);
+				fieldsRow.Observe(() => module.InputExtensionCount)
+						 .Observe(() => module.OutputExtensionCount)
+						 .Observe(() => module.DisplayExtensionCount)
+						 .Do((iE, oE, dE) => {
+							 int newW = module.Layout.GetWidth(module);
+							 fieldsRow.Width(newW * Sizes.BLOCK_SIZE);
+							 fieldsPanel.Width(newW * Sizes.BLOCK_SIZE);
+						 });
+				BodyAdd(fieldsRow);
 
 				if (displaysExists) {
+					// Displays panel grows by:
+					//   - DisplayExtensionCount cells (rightmost display widget stretch), and
+					//   - one cell per per-extension display widget linked to a pin side.
+					// The filler covers any remaining module width claimed by input/output
+					// extensions that aren't already absorbed by display growth.
+					int dispExtNow() => System.Math.Min(module.DisplayExtensionCount, module.Prototype.MaxDisplayExtensions);
+					int linkedActive() => module.Prototype.ExtensionDisplaysLinkedSide switch {
+						ExtensionSide.Input => System.Math.Min(module.InputExtensionCount, module.Prototype.MaxInputExtensions),
+						ExtensionSide.Output => System.Math.Min(module.OutputExtensionCount, module.Prototype.MaxOutputExtensions),
+						_ => 0,
+					};
+					int extDispCount() => System.Math.Min(linkedActive(), module.Prototype.ExtensionDisplays.Count);
+					int displayPanelCells() => baseWidth + dispExtNow() + extDispCount();
+
+					Row displaysRow = new Row().Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
 					Row displaysPanel = new Row()
-						.Size((width * Sizes.BLOCK_SIZE), Sizes.BLOCK_SIZE)
+						.Size(displayPanelCells() * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
 						.Background(ColorRgba.DarkDarkGray);
 					AddDisplays(uiContext, displaysPanel, module, preview, refresh);
-
-					BodyAdd(displaysPanel);
+					displaysRow.Add(displaysPanel);
+					UiComponent displaysFiller = new UiComponent()
+						.Width((width - displayPanelCells()) * Sizes.BLOCK_SIZE)
+						.Height(Sizes.BLOCK_SIZE);
+					displaysRow.Add(displaysFiller);
+					displaysRow.Observe(() => module.InputExtensionCount)
+							   .Observe(() => module.OutputExtensionCount)
+							   .Observe(() => module.DisplayExtensionCount)
+							   .Do((iE, oE, dE) => {
+								   int newW = module.Layout.GetWidth(module);
+								   int panelCells = displayPanelCells();
+								   displaysRow.Width(newW * Sizes.BLOCK_SIZE);
+								   displaysPanel.Clear();
+								   displaysPanel.Width(panelCells * Sizes.BLOCK_SIZE);
+								   AddDisplays(uiContext, displaysPanel, module, preview, refresh);
+								   displaysFiller.Width((newW - panelCells) * Sizes.BLOCK_SIZE);
+							   });
+					BodyAdd(displaysRow);
 
 					// Add display synchronization every 200 ms
 					Element.schedule
@@ -186,15 +254,165 @@ namespace ProgramableNetwork.Ui
 						.Every(100);
 				}
 
-				// Add Ouptut panel
+				// Add Ouptut panel — same observable rebuild as inputs.
 				Row outputsPanel = new Row()
 					.Class(Cls.group)
 					.Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
 					.Background(ColorRgba.DarkRed)
 					.AlignItemsEnd();
 				AddOutputs(uiContext, outputsPanel, module, preview, refresh);
-
 				BodyAdd(outputsPanel);
+				outputsPanel.Observe(() => module.InputExtensionCount)
+							.Observe(() => module.OutputExtensionCount)
+							.Observe(() => module.DisplayExtensionCount)
+							.Do((iE, oE, dE) => {
+								outputsPanel.Clear();
+								outputsPanel.Width(module.Layout.GetWidth(module) * Sizes.BLOCK_SIZE);
+								AddOutputs(uiContext, outputsPanel, module, preview, refresh);
+							});
+
+				// Inline edge "+/-" — extensible modules get a tiny vertical pair of icon
+				// buttons floating at the right edge of the panel so the player can grow /
+				// shrink pin counts without opening the inspector.  Hidden in preview mode
+				// (no controller bound for the cmd to target).  The buttons cover one side
+				// (input or output) per pair; if both sides are extensible, two pairs are
+				// shown stacked.
+				if (isExtensible)
+				{
+					AddEdgeExtensionButtons(uiContext, module);
+				}
+			}
+
+			// "+" sits flush against the right end of the affected row ("pin bar" for
+			// input/output sides, "display row" for display side).  "-" parks directly
+			// adjacent on the main-part side.
+			private void AddEdgeExtensionButtons(UiContext uiContext, Module module)
+			{
+				if (module.Prototype.MaxInputExtensions > 0) {
+					addEdgeButtonPair(uiContext, module, ExtensionSide.Input);
+				}
+				if (module.Prototype.MaxOutputExtensions > 0) {
+					addEdgeButtonPair(uiContext, module, ExtensionSide.Output);
+				}
+				if (module.Prototype.MaxDisplayExtensions > 0) {
+					addEdgeButtonPair(uiContext, module, ExtensionSide.Display);
+				}
+			}
+
+			private void addEdgeButtonPair(UiContext uiContext, Module module, ExtensionSide side)
+			{
+				int max = side switch {
+					ExtensionSide.Input => module.Prototype.MaxInputExtensions,
+					ExtensionSide.Output => module.Prototype.MaxOutputExtensions,
+					ExtensionSide.Display => module.Prototype.MaxDisplayExtensions,
+					_ => 0,
+				};
+				int currentCount() => side switch {
+					ExtensionSide.Input => module.InputExtensionCount,
+					ExtensionSide.Output => module.OutputExtensionCount,
+					ExtensionSide.Display => module.DisplayExtensionCount,
+					_ => 0,
+				};
+				// A side only needs a free grid cell when it is currently THE limiter of
+				// the module's width (i.e., its count is >= the other two sides').  When
+				// another side is already wider, growing this side fits in the existing
+				// footprint and never requires a new cell — so e.g. you can keep adding
+				// outputs after inputs hit max, as long as outputs stay <= inputs.
+				bool sideIsLimiter() => side switch {
+					ExtensionSide.Input   => module.InputExtensionCount   >= System.Math.Max(module.OutputExtensionCount, module.DisplayExtensionCount),
+					ExtensionSide.Output  => module.OutputExtensionCount  >= System.Math.Max(module.InputExtensionCount,  module.DisplayExtensionCount),
+					ExtensionSide.Display => module.DisplayExtensionCount >= System.Math.Max(module.InputExtensionCount,  module.OutputExtensionCount),
+					_ => true,
+				};
+				bool canGrow() => !sideIsLimiter() || m_controller.CanExtendModule(module);
+
+				// Each button 16×16 so the click target is comfortable; the pair sits in
+				// a 32×16 footprint enforced by the wrapper Row below.
+				const int BTN_W = 16;
+				const int BTN_H = 16;
+				// Per-side Y choices:
+				//   Input  → centered on y=BS   (boundary between input bar and main).
+				//   Output → centered on y=3*BS (boundary between main and output bar).
+				//   Display→ just above the display row so it never overlaps the displays.
+				Px pairTop()
+				{
+					return side switch {
+						ExtensionSide.Input => Sizes.BLOCK_SIZE - (BTN_H / 2).px(),
+						ExtensionSide.Output => Sizes.BLOCK_SIZE * 3 - (BTN_H / 2).px(),
+						ExtensionSide.Display => Sizes.BLOCK_SIZE * 2 - BTN_H.px(),
+						_ => 0.px(),
+					};
+				}
+				string addLabel = side switch {
+					ExtensionSide.Input => "Add input pin",
+					ExtensionSide.Output => "Add output pin",
+					ExtensionSide.Display => "Widen display",
+					_ => "Extend",
+				};
+				string removeLabel = side switch {
+					ExtensionSide.Input => "Remove input pin (drops cable)",
+					ExtensionSide.Output => "Remove output pin (drops cable)",
+					ExtensionSide.Display => "Shrink display",
+					_ => "Shrink",
+				};
+
+				// Wrap both buttons in a fixed-width Row so flex layout enforces the
+				// 12-px-each footprint — using AbsolutePosition on each button alone let
+				// ButtonText's intrinsic min-width win, and the two ended up overlapping.
+				Row pairRow = new Row().Size((BTN_W * 2).px(), BTN_H.px());
+				pairRow.AbsolutePosition(top: pairTop(), right: 0.px());
+				this.Add(pairRow);
+
+				// "-" sits on the LEFT half of the pair, "+" on the RIGHT — mirrors the
+				// previous "right=BTN_W / right=0" arrangement.
+				ButtonText decBtn = new ButtonText("-".AsLoc())
+					.Size(BTN_W.px(), BTN_H.px())
+					.MinWidth(BTN_W.px())
+					.MaxWidth(BTN_W.px())
+					.Padding(Px.Zero)
+					.Margin(Px.Zero)
+					.TextAlign(TextAlignment.CenterMiddle)
+					.FontSize(10);
+				decBtn.Tooltip(removeLabel.ToDoLoc());
+				decBtn.OnClick(() =>
+				{
+					int next = currentCount() - 1;
+					if (next < 0) {
+						uiContext.AudioDb.InvalidOp(true).Play();
+						return;
+					}
+					uiContext.InputScheduler.ScheduleInputCmd(
+						new ModuleSetExtensionCountCmd(module.Controller.Id, module.Id, side, next));
+				});
+				decBtn.ObserveEnabled(() => currentCount() > 0);
+				decBtn.VisibleForRender(currentCount() > 0);
+				decBtn.Observe(() => module.InputExtensionCount)
+					  .Observe(() => module.OutputExtensionCount)
+					  .Observe(() => module.DisplayExtensionCount)
+					  .Do((iE, oE, dE) => decBtn.VisibleForRender(currentCount() > 0));
+				pairRow.Add(decBtn);
+
+				ButtonText incBtn = new ButtonText("+".AsLoc())
+					.Size(BTN_W.px(), BTN_H.px())
+					.MinWidth(BTN_W.px())
+					.MaxWidth(BTN_W.px())
+					.Padding(Px.Zero)
+					.Margin(Px.Zero)
+					.TextAlign(TextAlignment.CenterMiddle)
+					.FontSize(10);
+				incBtn.Tooltip(addLabel.ToDoLoc());
+				incBtn.OnClick(() =>
+				{
+					int next = currentCount() + 1;
+					if (next > max || !canGrow()) {
+						uiContext.AudioDb.InvalidOp(true).Play();
+						return;
+					}
+					uiContext.InputScheduler.ScheduleInputCmd(
+						new ModuleSetExtensionCountCmd(module.Controller.Id, module.Id, side, next));
+				});
+				incBtn.ObserveEnabled(() => currentCount() < max && canGrow());
+				pairRow.Add(incBtn);
 			}
 
 			// Renders the "name: value" line per ShowInTooltip-flagged field, joined by newlines.
@@ -229,30 +447,59 @@ namespace ProgramableNetwork.Ui
 
 			private void AddInputs(UiContext uiContext, Row inputsPanel, Module module, bool preview, Action refresh)
 			{
-				var inputs = module.Prototype.Inputs;
-				if (module.Layout.GetWidth(module) - inputs.Count > 0)
+				// Layout: [inner filler ── right-aligns statics in their original baseWidth]
+				//         [static input pins from the prototype]
+				//         [active extension input pins]
+				//         [outer filler ── present when the OTHER row's extensions widen us]
+				// This keeps the static pin columns identical to the pre-extension layout.
+				var staticInputs = module.Prototype.Inputs;
+				int totalWidth = module.Layout.GetWidth(module);
+				int baseWidth = module.Layout.GetBaseWidth(module);
+				int extCount = System.Math.Min(module.InputExtensionCount, module.Prototype.MaxInputExtensions);
+				int innerFiller = System.Math.Max(0, baseWidth - staticInputs.Count);
+				int outerFiller = System.Math.Max(0, totalWidth - baseWidth - extCount);
+
+				if (innerFiller > 0)
 				{
 					inputsPanel.AddAndReturn(new UiComponent())
-						.Width((module.Layout.GetWidth(module) - inputs.Count) * Sizes.BLOCK_SIZE)
+						.Width(innerFiller * Sizes.BLOCK_SIZE)
 						.Height(Sizes.BLOCK_SIZE);
 				}
-				for (int i = 0; i < inputs.Count; i++)
+				int totalPins = staticInputs.Count + extCount;
+				for (int i = 0; i < totalPins; i++)
 				{
-					var input = inputs[i];
+					var input = i < staticInputs.Count
+						? staticInputs[i]
+						: module.Prototype.InputExtensions[i - staticInputs.Count];
 					bool isConnected = module.InputModules.ContainsKey(input.Id);
 
 					PortPinButton btn = new PortPinButton(PortPinButton.PortKind.Input, isConnected)
 						.Tooltip(new LocStrFormatted((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' ')));
-					// Paint the dot with the matching cable's hue so the user can
-					// trace which output this input is wired to at a glance.
-					if (isConnected)
+					// Paint the dot with the matching cable's hue from the persistent
+					// (source, output) colour pool so it stays consistent across redraws.
+					if (isConnected && module.InputModules.TryGetValue(input.Id, out var initConn))
 					{
-						var cableColor = m_controller.GetCableColor(module, input.Id, isInput: true);
-						if (cableColor.HasValue) {
-							btn.DotColor(cableColor.Value);
-						}
+						btn.DotColor(m_controller.GetOrCreateCableColor(initConn.ModuleId, initConn.OutputId));
 					}
 					inputsPanel.Add(btn);
+					// Per-pin reactive: watch the connection's IDENTITY (source mod + output
+					// id), not just its existence — that way a rewire (output replaced
+					// without disconnect) also fires Do.  Colour comes from the persistent
+					// (sourceId, outputId) pool so it stays consistent with the cable's
+					// colour regardless of when the redraw runs.
+					{
+						string capturedId = input.Id;
+						btn.Observe(() => module.InputModules.TryGetValue(capturedId, out var c)
+								? c.ModuleId.ToString() + "." + (c.OutputId ?? "")
+								: "")
+						   .Do(connKey => {
+							   bool connected = connKey.Length > 0;
+							   btn.Connected(connected);
+							   if (connected && module.InputModules.TryGetValue(capturedId, out var c)) {
+								   btn.DotColor(m_controller.GetOrCreateCableColor(c.ModuleId, c.OutputId));
+							   }
+						   });
+					}
 
 					if (!preview)
 					{
@@ -316,64 +563,85 @@ namespace ProgramableNetwork.Ui
 						);
 					}
 				}
+				if (outerFiller > 0)
+				{
+					inputsPanel.AddAndReturn(new UiComponent())
+						.Width(outerFiller * Sizes.BLOCK_SIZE)
+						.Height(Sizes.BLOCK_SIZE);
+				}
 			}
 
 			private void AddOutputs(UiContext uiContext, Row inputsPanel, Module module, bool preview, Action refresh)
 			{
-				var outputs = module.Prototype.Outputs;
-				if (module.Layout.GetWidth(module) - outputs.Count > 0)
+				// Symmetric to AddInputs: inner filler keeps statics right-aligned in their
+				// original baseWidth, then static pins, then active extension pins, then an
+				// outer filler when the input row's extensions widen us beyond our own.
+				var staticOutputs = module.Prototype.Outputs;
+				int totalWidth = module.Layout.GetWidth(module);
+				int baseWidth = module.Layout.GetBaseWidth(module);
+				int extCount = System.Math.Min(module.OutputExtensionCount, module.Prototype.MaxOutputExtensions);
+				int innerFiller = System.Math.Max(0, baseWidth - staticOutputs.Count);
+				int outerFiller = System.Math.Max(0, totalWidth - baseWidth - extCount);
+
+				if (innerFiller > 0)
 				{
 					inputsPanel.AddAndReturn(new UiComponent())
-						.Width((module.Layout.GetWidth(module) - outputs.Count) * Sizes.BLOCK_SIZE)
+						.Width(innerFiller * Sizes.BLOCK_SIZE)
 						.Height(Sizes.BLOCK_SIZE);
 				}
-				for (int i = 0; i < outputs.Count; i++)
+				int totalPins = staticOutputs.Count + extCount;
+				for (int i = 0; i < totalPins; i++)
 				{
-					var output = outputs[i];
-					bool isConnected = module.Controller.Modules
-						.AsEnumerable()
-						.Where(m => m.InputModules.Count > 0)
-						.SelectMany(m => m.InputModules)
-						.Select(p => p.Value)
-						.FirstOrDefault(c => c.ModuleId == module.Id
-										  && c.OutputId == output.Id) != null;
+					var output = i < staticOutputs.Count
+						? staticOutputs[i]
+						: module.Prototype.OutputExtensions[i - staticOutputs.Count];
+					// Live check — used both for the snapshot (initial state) and in event
+					// handlers so the cached ModuleView never acts on a stale bool.
+					string capturedOutId = output.Id;
+					bool isConnected = outputIsConnected(module, capturedOutId);
 
 					PortPinButton btn = new PortPinButton(PortPinButton.PortKind.Output, isConnected)
 						.With(b => b.ObserveEnabled(() => m_controller.m_controller.OutputConnection == null
 													   || (m_controller.m_controller.OutputConnection.ModuleId == module.Id
-														&& m_controller.m_controller.OutputConnection.OutputId == output.Id)))
+														&& m_controller.m_controller.OutputConnection.OutputId == capturedOutId)))
 						.Tooltip(new LocStrFormatted((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' ')));
-					// Same hue as the cable(s) leaving this output — every connection from
-					// one output shares a single palette index, so any one wins the lookup.
+					// Same hue as the cable(s) leaving this output — pulled from the
+					// persistent (sourceId, outputId) colour pool.
 					if (isConnected)
 					{
-						var cableColor = m_controller.GetCableColor(module, output.Id, isInput: false);
-						if (cableColor.HasValue) {
-							btn.DotColor(cableColor.Value);
-						}
+						btn.DotColor(m_controller.GetOrCreateCableColor(module.Id, capturedOutId));
 					}
-
 					inputsPanel.Add(btn);
+					// Per-pin reactive: refresh dot connected/colour when any module's
+					// connection to this output changes.  Colour comes from the persistent
+					// (sourceId, outputId) pool — stable across redraws.
+					btn.Observe(() => outputIsConnected(module, capturedOutId))
+					   .Do(connected => {
+						   btn.Connected(connected);
+						   if (connected) {
+							   btn.DotColor(m_controller.GetOrCreateCableColor(module.Id, capturedOutId));
+						   }
+					   });
 
 					if (!preview)
 					{
 						btn .OnRightClick(() =>
 							{
-								if (!isConnected)
+								if (!outputIsConnected(module, capturedOutId))
 								{
-									// module not found, is not unassignable
 									uiContext.AudioDb.InvalidOp(true).Play();
 									return;
 								}
 
-								// Disconnect the first input that consumes this output. Routed through
-								// a command so multiplayer hosts/clients agree, and refresh waits for
-								// the cmd to actually apply.
+								// Disconnect the first input that consumes THIS specific output.
+								// Previously only checked ModuleId, missing the OutputId filter —
+								// modules with multiple outputs would disconnect the wrong cable.
 								foreach (var target in m_controller.Entity.Modules)
 								{
 									foreach (var connection in target.InputModules)
 									{
-										if (connection.Value.ModuleId == module.Id)
+										if (connection.Value.ModuleId == module.Id
+											&& connection.Value.OutputId == capturedOutId)
 										{
 											uiContext.InputScheduler.ScheduleAndOnApplied(
 												new ModuleSetInputConnectionCmd(
@@ -403,37 +671,93 @@ namespace ProgramableNetwork.Ui
 							);
 					}
 				}
+				if (outerFiller > 0)
+				{
+					inputsPanel.AddAndReturn(new UiComponent())
+						.Width(outerFiller * Sizes.BLOCK_SIZE)
+						.Height(Sizes.BLOCK_SIZE);
+				}
 			}
 
-			private void AddDisplays(UiContext uiContext, Row displaysPanel, Module module, bool preview, Action refresh) {
-				var displays = module.Prototype.Displays;
-				foreach (ModuleConnectorProto display in displays) {
-					if (display.DefaultText.StartsWith("[image]"))
+            private static bool outputIsConnected(Module module, string capturedOutId)
+            {
+				if (module.Controller is null) { return false; }
+				foreach (var inputModule in module.Controller.Modules)
+				{
+					foreach (var connection in inputModule.InputModules)
 					{
-						displaysPanel.Add(ImageDisplay(uiContext, module, display));
-					}
-					else if (display.DefaultText.StartsWith("[toggle]"))
-					{
-						displaysPanel.Add(ToggleDisplay(uiContext, module, display, preview));
-					}
-					else if (display.DefaultText.StartsWith("[led]"))
-					{
-						displaysPanel.Add(ToggleDisplay_LED(uiContext, module, display, preview, click : false));
-					}
-					else if (display.DefaultText.StartsWith("[fill]"))
-					{
-						if (display.Width > 0) {
-							displaysPanel.Add(new Display().StateInactive().Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE));
+						if (connection.Value.ModuleId == module.Id && connection.Value.OutputId == capturedOutId)
+						{
+							return true;
 						}
-					}
-					else if (display.DefaultText.StartsWith("[slider]"))
+                    }
+                }
+                return false;
+            }
+
+            private void AddDisplays(UiContext uiContext, Row displaysPanel, Module module, bool preview, Action refresh) {
+				var displays = module.Prototype.Displays;
+				int extCount = System.Math.Min(module.DisplayExtensionCount, module.Prototype.MaxDisplayExtensions);
+				for (int i = 0; i < displays.Count; i++)
+				{
+					ModuleConnectorProto display = displays[i];
+					// The LAST display absorbs DisplayExtensionCount cells when the prototype
+					// opted into display extensions.  We materialise a thin override of the
+					// proto so existing per-type renderers keep working unchanged.
+					if (extCount > 0 && i == displays.Count - 1)
 					{
-						displaysPanel.Add(SliderDisplay(uiContext, module, display, preview));
+						display = new ModuleConnectorProto(
+							display.Id, display.Name,
+							display.Width + extCount.ToFix32(),
+							display.DefaultText);
 					}
-					else
-					{
-						displaysPanel.Add(TextDisplay(uiContext, module, display, preview));
+					AddSingleDisplay(uiContext, displaysPanel, module, preview, display);
+				}
+
+				// Per-extension display widgets (flip-flop's per-channel LEDs etc.).
+				// The active count comes from whichever pin side this proto is linked to,
+				// clamped to whatever the proto registered.  Each one renders identically
+				// to a static display.
+				int linkedActive = module.Prototype.ExtensionDisplaysLinkedSide switch {
+					ExtensionSide.Input => System.Math.Min(module.InputExtensionCount, module.Prototype.MaxInputExtensions),
+					ExtensionSide.Output => System.Math.Min(module.OutputExtensionCount, module.Prototype.MaxOutputExtensions),
+					_ => 0,
+				};
+				int extDispCount = System.Math.Min(linkedActive, module.Prototype.ExtensionDisplays.Count);
+				for (int i = 0; i < extDispCount; i++) {
+					AddSingleDisplay(uiContext, displaysPanel, module, preview, module.Prototype.ExtensionDisplays[i]);
+				}
+			}
+
+			// Per-display-type dispatch — extracted so both the static loop and the
+			// per-extension loop go through the same renderer choice.
+			private void AddSingleDisplay(UiContext uiContext, Row displaysPanel, Module module, bool preview, ModuleConnectorProto display)
+			{
+				if (display.DefaultText.StartsWith("[image]"))
+				{
+					displaysPanel.Add(ImageDisplay(uiContext, module, display));
+				}
+				else if (display.DefaultText.StartsWith("[toggle]"))
+				{
+					displaysPanel.Add(ToggleDisplay(uiContext, module, display, preview));
+				}
+				else if (display.DefaultText.StartsWith("[led]"))
+				{
+					displaysPanel.Add(ToggleDisplay_LED(uiContext, module, display, preview, click : false));
+				}
+				else if (display.DefaultText.StartsWith("[fill]"))
+				{
+					if (display.Width > 0) {
+						displaysPanel.Add(new Display().StateInactive().Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE));
 					}
+				}
+				else if (display.DefaultText.StartsWith("[slider]"))
+				{
+					displaysPanel.Add(SliderDisplay(uiContext, module, display, preview));
+				}
+				else
+				{
+					displaysPanel.Add(TextDisplay(uiContext, module, display, preview));
 				}
 			}
 

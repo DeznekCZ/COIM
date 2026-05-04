@@ -5,6 +5,7 @@ using Mafi.Core.Entities;
 using Mafi.Localization;
 using Mafi.Serialization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Mafi.Collections.ImmutableCollections;
@@ -90,8 +91,229 @@ namespace ProgramableNetwork
 
 		public ModuleConnector this[string id]
 		{
-			get => Prototype.Outputs.Any(c => c.Id == id) ? new(Id, id) : throw new ArgumentException($"Missing output '{id}' in module '{Prototype.Id}'");
-			set => InputModules[id] = Prototype.Inputs.Any(c => c.Id == id) ? value : throw new ArgumentException($"Missing input '{id}' in module '{Prototype.Id}'");
+			get => HasOutput(id) ? new(Id, id) : throw new ArgumentException($"Missing output '{id}' in module '{Prototype.Id}'");
+			set => InputModules[id] = HasInput(id) ? value : throw new ArgumentException($"Missing input '{id}' in module '{Prototype.Id}'");
+		}
+
+		// Per-instance pin extension counts.  Static pins from the prototype always
+		// come first; extensions [0..InputExtensionCount-1] of Prototype.InputExtensions
+		// are appended on the right side via EffectiveInputs.  Same shape for outputs.
+		// Persisted in MODULE_EXTENSIONS (v7+).  For non-extensible prototypes these
+		// stay 0 and add nothing to width.
+		public int InputExtensionCount { get; set; }
+		public int OutputExtensionCount { get; set; }
+		// Display extension count — grows the rightmost display by N cells when the
+		// prototype opted in via AllowDisplayExtensions.  Value-displays (e.g. the
+		// collapsed Display_Int) use this to choose precision/width without splitting
+		// into separate fixed-arity prototypes.  Persisted in MODULE_DISPLAY_EXTENSIONS
+		// (v8+); v7 saves predate it and load with a count of 0.
+		public int DisplayExtensionCount { get; set; }
+
+		/// <summary>
+		/// Effective input list = prototype's static inputs followed by the first
+		/// <see cref="InputExtensionCount"/> extension entries.  Returns the proto's
+		/// list verbatim when no extensions are active to avoid the per-call alloc.
+		/// </summary>
+		public IReadOnlyList<ModuleConnectorProto> EffectiveInputs
+		{
+			get
+			{
+				int ext = System.Math.Min(InputExtensionCount, Prototype?.MaxInputExtensions ?? 0);
+				if (ext <= 0 || Prototype == null) {
+					return Prototype?.Inputs ?? (IReadOnlyList<ModuleConnectorProto>)System.Array.Empty<ModuleConnectorProto>();
+				}
+				var list = new System.Collections.Generic.List<ModuleConnectorProto>(Prototype.Inputs.Count + ext);
+				list.AddRange(Prototype.Inputs);
+				for (int i = 0; i < ext; i++) {
+					list.Add(Prototype.InputExtensions[i]);
+				}
+				return list;
+			}
+		}
+
+		public IReadOnlyList<ModuleConnectorProto> EffectiveOutputs
+		{
+			get
+			{
+				int ext = System.Math.Min(OutputExtensionCount, Prototype?.MaxOutputExtensions ?? 0);
+				if (ext <= 0 || Prototype == null) {
+					return Prototype?.Outputs ?? (IReadOnlyList<ModuleConnectorProto>)System.Array.Empty<ModuleConnectorProto>();
+				}
+				var list = new System.Collections.Generic.List<ModuleConnectorProto>(Prototype.Outputs.Count + ext);
+				list.AddRange(Prototype.Outputs);
+				for (int i = 0; i < ext; i++) {
+					list.Add(Prototype.OutputExtensions[i]);
+				}
+				return list;
+			}
+		}
+
+		public bool HasInput(string id)
+		{
+			if (Prototype == null) {
+				return false;
+			}
+			foreach (var p in Prototype.Inputs) {
+				if (p.Id == id) {
+					return true;
+				}
+			}
+			int ext = System.Math.Min(InputExtensionCount, Prototype.MaxInputExtensions);
+			for (int i = 0; i < ext; i++) {
+				if (Prototype.InputExtensions[i].Id == id) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool HasOutput(string id)
+		{
+			if (Prototype == null) {
+				return false;
+			}
+			foreach (var p in Prototype.Outputs) {
+				if (p.Id == id) {
+					return true;
+				}
+			}
+			int ext = System.Math.Min(OutputExtensionCount, Prototype.MaxOutputExtensions);
+			for (int i = 0; i < ext; i++) {
+				if (Prototype.OutputExtensions[i].Id == id) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/// <summary>Resolves an input pin by id, searching both static and active extension entries; null when missing.</summary>
+		public ModuleConnectorProto GetInputProto(string id)
+		{
+			if (Prototype == null) {
+				return null;
+			}
+			foreach (var p in Prototype.Inputs) {
+				if (p.Id == id) {
+					return p;
+				}
+			}
+			int ext = System.Math.Min(InputExtensionCount, Prototype.MaxInputExtensions);
+			for (int i = 0; i < ext; i++) {
+				if (Prototype.InputExtensions[i].Id == id) {
+					return Prototype.InputExtensions[i];
+				}
+			}
+			return null;
+		}
+
+		public ModuleConnectorProto GetOutputProto(string id)
+		{
+			if (Prototype == null) {
+				return null;
+			}
+			foreach (var p in Prototype.Outputs) {
+				if (p.Id == id) {
+					return p;
+				}
+			}
+			int ext = System.Math.Min(OutputExtensionCount, Prototype.MaxOutputExtensions);
+			for (int i = 0; i < ext; i++) {
+				if (Prototype.OutputExtensions[i].Id == id) {
+					return Prototype.OutputExtensions[i];
+				}
+			}
+			return null;
+		}
+
+		/// <summary>
+		/// Absolute grid column where the given pin renders.  Mirrors ModuleView.AddInputs/
+		/// AddOutputs: statics are right-aligned within the prototype's baseWidth (so their
+		/// columns stay stable when extensions widen the module), then extensions are
+		/// placed at columns baseWidth, baseWidth+1, ...  Returns -1 when the pin is not
+		/// found among statics or active extensions.
+		/// </summary>
+		public int GetPinColumn(string pinId, bool isOutput)
+		{
+			if (Prototype == null) {
+				return -1;
+			}
+			var statics = isOutput ? Prototype.Outputs : Prototype.Inputs;
+			var exts    = isOutput ? Prototype.OutputExtensions : Prototype.InputExtensions;
+			int extCount = isOutput
+				? System.Math.Min(OutputExtensionCount, Prototype.MaxOutputExtensions)
+				: System.Math.Min(InputExtensionCount, Prototype.MaxInputExtensions);
+			int baseWidth = Layout.GetBaseWidth(this);
+			int innerFiller = System.Math.Max(0, baseWidth - statics.Count);
+
+			for (int i = 0; i < statics.Count; i++) {
+				if (statics[i].Id == pinId) {
+					return Column + innerFiller + i;
+				}
+			}
+			for (int i = 0; i < extCount; i++) {
+				if (exts[i].Id == pinId) {
+					return Column + innerFiller + statics.Count + i;
+				}
+			}
+			return -1;
+		}
+
+		/// <summary>
+		/// Sets the extension count for the input or output side, clamped to
+		/// [0, MaxXxxExtensions].  Returns the actual new count.  Drops any cable
+		/// whose pin id falls outside the new range so the controller stays in a
+		/// consistent state — caller does not need to reconcile InputModules.
+		/// </summary>
+		public int SetInputExtensionCount(int newCount)
+		{
+			int max = Prototype?.MaxInputExtensions ?? 0;
+			newCount = System.Math.Max(0, System.Math.Min(newCount, max));
+			InputExtensionCount = newCount;
+			pruneInvalidInputCables();
+			return newCount;
+		}
+
+		public int SetDisplayExtensionCount(int newCount)
+		{
+			int max = Prototype?.MaxDisplayExtensions ?? 0;
+			newCount = System.Math.Max(0, System.Math.Min(newCount, max));
+			DisplayExtensionCount = newCount;
+			return newCount;
+		}
+
+		public int SetOutputExtensionCount(int newCount)
+		{
+			int max = Prototype?.MaxOutputExtensions ?? 0;
+			newCount = System.Math.Max(0, System.Math.Min(newCount, max));
+			OutputExtensionCount = newCount;
+			// An output going away invalidates inbound cables on OTHER modules — the
+			// controller-wide initContexts pass already strips dangling targets, but
+			// at runtime we need to clean up here too.  Walk every module on this
+			// controller's set and drop connections whose source is this module on a
+			// pin that no longer exists.
+			if (Controller != null)
+			{
+				foreach (Module m in Controller.Modules)
+				{
+					foreach (var kv in m.InputModules.ToList())
+					{
+						if (kv.Value.ModuleId == Id && !HasOutput(kv.Value.OutputId)) {
+							m.InputModules.Remove(kv.Key);
+						}
+					}
+				}
+			}
+			return newCount;
+		}
+
+		private void pruneInvalidInputCables()
+		{
+			foreach (var kv in InputModules.ToList())
+			{
+				if (!HasInput(kv.Key)) {
+					InputModules.Remove(kv.Key);
+				}
+			}
 		}
 
 		public EntityContext Context { get; set; }
@@ -181,7 +403,7 @@ namespace ProgramableNetwork
 
 			writer.WriteLong(Id);
 			writer.WriteString(m_protoId);
-			writer.WriteInt(/*Version*/ Controller.MODULE_PYTHON_CODE);
+			writer.WriteInt(/*Version*/ Controller.MODULE_DISPLAY_EXTENSIONS);
 			writer.WriteBool(IsPaused);
 			writer.WriteInt((int)Status);
 
@@ -215,6 +437,13 @@ namespace ProgramableNetwork
 			if ((flags & DataFlags.CodeMetadata) != 0) {
 				writer.WriteInt(m_lexerNodeCount);
 			}
+			// v7+ MODULE_EXTENSIONS: input + output extension counts.  v8+
+			// MODULE_DISPLAY_EXTENSIONS adds DisplayExtensionCount as a separate
+			// int — kept gated by its own version so v7 in-progress saves
+			// (written when display extensions weren't a feature yet) still load.
+			writer.WriteInt(InputExtensionCount);
+			writer.WriteInt(OutputExtensionCount);
+			writer.WriteInt(DisplayExtensionCount);
 		}
 
 		protected void DeserializeData(BlobReader reader)
@@ -252,6 +481,27 @@ namespace ProgramableNetwork
 				m_lexerNodeCount = (loadedVersion >= Controller.MODULE_PYTHON_CODE && (flags & DataFlags.CodeMetadata) != 0)
 					? reader.ReadInt()
 					: 0;
+				if (loadedVersion >= Controller.MODULE_EXTENSIONS)
+				{
+					InputExtensionCount = reader.ReadInt();
+					OutputExtensionCount = reader.ReadInt();
+				}
+				else
+				{
+					InputExtensionCount = 0;
+					OutputExtensionCount = 0;
+				}
+				// DisplayExtensionCount was added one version later than the pin
+				// counts.  v7 saves don't carry it — leave it at 0 and let the
+				// player grow the display from the inspector if needed.
+				if (loadedVersion >= Controller.MODULE_DISPLAY_EXTENSIONS)
+				{
+					DisplayExtensionCount = reader.ReadInt();
+				}
+				else
+				{
+					DisplayExtensionCount = 0;
+				}
 			}
 			else
 			{
@@ -300,9 +550,23 @@ namespace ProgramableNetwork
 			}
 			else
 			{
-				ModuleProto.ID? alternative = Deprecation.GetAlternative(new ModuleProto.ID(m_protoId));
-				if (alternative != null) {
-					this.Prototype = Context.ProtosDb.Get<ModuleProto>(alternative ?? new ModuleProto.ID()).ValueOrThrow("Invalid module proto: " + m_protoId);
+				Deprecation.Migration? migration = Deprecation.GetMigration(new ModuleProto.ID(m_protoId));
+				if (migration.HasValue) {
+					this.Prototype = Context.ProtosDb.Get<ModuleProto>(migration.Value.Replacement)
+						.ValueOrThrow("Invalid module proto: " + m_protoId);
+					// Apply ext-count migration when the deprecation entry asked for one —
+					// e.g. Sum_4 → Sum sets InputExtensionCount=2 so the migrated module
+					// has the same four input pins as the legacy save.  The clamping in the
+					// post-load pass below caps the value at the new proto's max.
+					if (migration.Value.InputExtensionCount.HasValue) {
+						InputExtensionCount = migration.Value.InputExtensionCount.Value;
+					}
+					if (migration.Value.OutputExtensionCount.HasValue) {
+						OutputExtensionCount = migration.Value.OutputExtensionCount.Value;
+					}
+					if (migration.Value.DisplayExtensionCount.HasValue) {
+						DisplayExtensionCount = migration.Value.DisplayExtensionCount.Value;
+					}
 				} else {
 					// No proto and no Deprecation replacement — leave a visible tombstone with
 					// a clear error string so the hover tooltip explains *which* prototype is
@@ -333,6 +597,22 @@ namespace ProgramableNetwork
 					if (NumberData.TryGetValue("out__" + item.Id, out var value)) {
 						NumberData["out__" + item.Id] = value.ToFix32().RawValue;
 					}
+				}
+			}
+
+			// Clamp extension counts to whatever the prototype now exposes — handles a
+			// save written when the proto allowed N extensions but reloaded after the
+			// proto's max was reduced.  Phantom (proto missing) gets 0.
+			if (this.Prototype != null)
+			{
+				if (InputExtensionCount > this.Prototype.MaxInputExtensions) {
+					InputExtensionCount = this.Prototype.MaxInputExtensions;
+				}
+				if (OutputExtensionCount > this.Prototype.MaxOutputExtensions) {
+					OutputExtensionCount = this.Prototype.MaxOutputExtensions;
+				}
+				if (DisplayExtensionCount > this.Prototype.MaxDisplayExtensions) {
+					DisplayExtensionCount = this.Prototype.MaxDisplayExtensions;
 				}
 			}
 

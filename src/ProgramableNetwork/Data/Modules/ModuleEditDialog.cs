@@ -18,11 +18,7 @@ namespace ProgramableNetwork.Ui
 		public ModuleEditDialog(Module module, ControllerView controllerView, UiContext uiContext, Button button, ControllerInspector controllerInspector)
 			: base(POLICY, false, false, true)
 		{
-			// TODO: copy, paste, template
 			RowContainer row = new PanelRow();
-			//row.Height(Sizes.BLOCK_SIZE);
-			//row.Class(Cls.groupHeader);
-			//row.AlignItemsEnd();
 
 			m_module = module;
 
@@ -34,8 +30,13 @@ namespace ProgramableNetwork.Ui
 			body.Add(row);
 			body.Gap(5.px());
 
-			// add filler
+			// Filler pushes the toolbar buttons to the right edge of the row.
 			row.AddAndReturn(new UiComponent()).Fill();
+
+			// Toolbar order: Copy → Paste → Save → Delete.
+			// Movement is handled by Move mode on the inspector and pin-extension
+			// editing by the inline edge buttons on the module itself, so neither
+			// has a slot in this dialog anymore.
 
 			ButtonIcon copy = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.ExportToString_svg)
 				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
@@ -48,84 +49,11 @@ namespace ProgramableNetwork.Ui
 			copy.OnClick(() => ControllerView.m_lastCreated = m_module);
 			row.Add(copy);
 
-			ButtonIcon remove = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png)
-				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
-				.Margin(Px.Zero)
-				.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
-				.Icon.Padding(Sizes.IMAGE_PADDING)
-					 .Margin(Px.Zero)
-				.Parent.As<ButtonIcon>().Value;
-			remove.Tooltip("Removes current module".ToDoLoc());
-			remove.OnClick(() =>
-			{
-				controllerView.RemoveModule(m_module);
-				Close();
-			});
-			row.Add(remove);
-
-			ButtonText moveLeft = new ButtonText("<".AsLoc())
-				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
-				.TextAlign(TextAlignment.CenterMiddle)
-				.OnClick(() => { if (controllerView.CanMove(m_module, x: -1)) {
-						controllerView.Move(m_module, x: -1);
-					}
-				});
-			moveLeft.ObserveEnabled(() => controllerView.CanMove(m_module, x: -1));
-			moveLeft.Tooltip("Move module left".ToDoLoc());
-			row.Add(moveLeft);
-
-			ButtonText moveUp = new ButtonText("^".AsLoc())
-				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
-				.TextAlign(TextAlignment.CenterMiddle)
-				.OnClick(() => { if (controllerView.CanMove(m_module, y: -1)) {
-						controllerView.Move(m_module, y: -1);
-					}
-				});
-			moveUp.ObserveEnabled(() => controllerView.CanMove(m_module, y: -1));
-			moveUp.Tooltip("Move module up".ToDoLoc());
-			row.Add(moveUp);
-
-			ButtonText moveDown = new ButtonText("v".AsLoc())
-				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
-				.TextAlign(TextAlignment.CenterMiddle)
-				.OnClick(() => { if (controllerView.CanMove(m_module, y: 1)) {
-						controllerView.Move(m_module, y: 1);
-					}
-				});
-			moveDown.ObserveEnabled(() => controllerView.CanMove(m_module, y: 1));
-			moveDown.Tooltip("Move module down".ToDoLoc());
-			row.Add(moveDown);
-
-			ButtonText moveRight = new ButtonText(">".AsLoc())
-				.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE)
-				.TextAlign(TextAlignment.CenterMiddle)
-				.OnClick(() => { if (controllerView.CanMove(m_module, x: 1)) {
-						controllerView.Move(m_module, x: 1);
-					}
-				});
-			moveRight.ObserveEnabled(() => controllerView.CanMove(m_module, x: 1));
-			moveRight.Tooltip("Move module right".ToDoLoc());
-			row.Add(moveRight);
-
-			ButtonIcon saveBp = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg)
-				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
-				.Margin(Px.Zero)
-				.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
-				.Icon.Padding(Sizes.IMAGE_PADDING)
-					 .Margin(Px.Zero)
-				.Parent.As<ButtonIcon>().Value;
-			saveBp.Tooltip("Save this module as a reusable blueprint".ToDoLoc());
-			saveBp.OnClick(() =>
-			{
-				SaveBlueprintDialog.ForModule(m_module, saveBp, uiContext);
-			});
-			row.Add(saveBp);
-
 			ButtonIcon paste = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.ImportFromString_svg)
-				.Size(Sizes.BLOCK_SIZE * 2, Sizes.BLOCK_SIZE)
+				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
 				.Margin(Px.Zero)
-				.IconSize(Sizes.IMAGE_SIZE * 2, Sizes.IMAGE_SIZE)
-				.Icon.Padding(Sizes.IMAGE_PADDING, Sizes.IMAGE_PADDING)
+				.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
+				.Icon.Padding(Sizes.IMAGE_PADDING)
 					 .Margin(Px.Zero)
 				.Parent.As<ButtonIcon>().Value;
 			paste.Tooltip("Copy data from last created or copied module".ToDoLoc());
@@ -144,11 +72,45 @@ namespace ProgramableNetwork.Ui
 				foreach (KeyValuePair<string, string> item in ControllerView.m_lastCreated.StringData) {
 					m_module.StringData[item.Key] = item.Value;
 				}
+				// Carry over pin extension counts so a copy of an extended A+B keeps
+				// the same shape; SetXxx prunes any cables already on m_module that
+				// would land outside the new extension range.
+				m_module.SetInputExtensionCount(ControllerView.m_lastCreated.InputExtensionCount);
+				m_module.SetOutputExtensionCount(ControllerView.m_lastCreated.OutputExtensionCount);
 				m_module.Prototype.ExecuteInit(m_module);
 			});
 			this.Observe(() => ControllerView.m_lastCreated)
 				.Do(m => paste.Enabled(!(m is null) && m.Prototype.Id == m_module.Prototype.Id));
 			row.Add(paste);
+
+			ButtonIcon saveBp = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg)
+				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
+				.Margin(Px.Zero)
+				.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
+				.Icon.Padding(Sizes.IMAGE_PADDING)
+					 .Margin(Px.Zero)
+				.Parent.As<ButtonIcon>().Value;
+			saveBp.Tooltip("Save this module as a reusable blueprint".ToDoLoc());
+			saveBp.OnClick(() =>
+			{
+				SaveBlueprintDialog.ForModule(m_module, saveBp, uiContext);
+			});
+			row.Add(saveBp);
+
+			ButtonIcon remove = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png)
+				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
+				.Margin(Px.Zero)
+				.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
+				.Icon.Padding(Sizes.IMAGE_PADDING)
+					 .Margin(Px.Zero)
+				.Parent.As<ButtonIcon>().Value;
+			remove.Tooltip("Removes current module".ToDoLoc());
+			remove.OnClick(() =>
+			{
+				controllerView.RemoveModule(m_module);
+				Close();
+			});
+			row.Add(remove);
 
 			foreach (IField item in m_module.Prototype.Fields)
 			{

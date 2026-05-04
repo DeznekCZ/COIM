@@ -21,6 +21,7 @@ namespace ProgramableNetwork
 		ICommandProcessor<ModuleSetEntityFieldCmd>,
 		ICommandProcessor<ModuleClearFieldCmd>,
 		ICommandProcessor<ModuleSetInputConnectionCmd>,
+		ICommandProcessor<ModuleSetExtensionCountCmd>,
 		ICommandProcessor<ControllerSetColorCmd>
 	{
 		private readonly IEntitiesManager m_entitiesManager;
@@ -102,6 +103,30 @@ namespace ProgramableNetwork
 				module.InputModules.TryRemove(cmd.InputId, out _);
 			} else {
 				module.InputModules[cmd.InputId] = new ModuleConnector(cmd.SourceModuleId, cmd.SourceOutputId);
+			}
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModuleSetExtensionCountCmd cmd)
+		{
+			if (!tryGetModule(cmd.ControllerId, cmd.ModuleId, out _, out Module module, out string error)) {
+				cmd.SetResultError(error);
+				return;
+			}
+			// Module.SetXxxExtensionCount handles clamping to [0, MaxXxxExtensions]
+			// AND, for pin sides, prunes any cable bound to a pin that the new count
+			// made go away — no separate InputModules reconciliation needed.
+			switch (cmd.Side)
+			{
+				case ExtensionSide.Input:
+					module.SetInputExtensionCount(cmd.NewCount);
+					break;
+				case ExtensionSide.Output:
+					module.SetOutputExtensionCount(cmd.NewCount);
+					break;
+				case ExtensionSide.Display:
+					module.SetDisplayExtensionCount(cmd.NewCount);
+					break;
 			}
 			cmd.SetResultSuccess();
 		}

@@ -57,6 +57,39 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	public override void RegisterData(ProtoRegistrator registrator) {
 
+		// Save-compat redirects for fixed-arity combiners that were superseded by
+		// extensible variants.  Each entry maps the removed id to the surviving
+		// extensible prototype and records the InputExtensionCount that reproduces
+		// the original pin count (e.g. Sum_4 → Sum + 2 ext = 4 inputs).  Module-load
+		// path consults this table when a save references an unregistered proto.
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Sum_4".ModuleId()),
+			new ModuleProto.ID("Sum".ModuleId()), inputExt: 2);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Sum_8".ModuleId()),
+			new ModuleProto.ID("Sum".ModuleId()), inputExt: 6);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Boolean_And_4".ModuleId()),
+			new ModuleProto.ID("Boolean_And_2".ModuleId()), inputExt: 2);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Boolean_Or_4".ModuleId()),
+			new ModuleProto.ID("Boolean_Or_2".ModuleId()), inputExt: 2);
+		// Display_Int_N → Display_Int with display ext count chosen so 2 cells
+		// (static) + ext = N cells (matches the original Display_Int_N width).
+		// Display_Int_2 stays at base width (no ext); _4/_8/_16 grow accordingly.
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Display_Int_2".ModuleId()),
+			new ModuleProto.ID("Display_Int".ModuleId()), displayExt: 0);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Display_Int_4".ModuleId()),
+			new ModuleProto.ID("Display_Int".ModuleId()), displayExt: 2);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Display_Int_8".ModuleId()),
+			new ModuleProto.ID("Display_Int".ModuleId()), displayExt: 6);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Display_Int_16".ModuleId()),
+			new ModuleProto.ID("Display_Int".ModuleId()), displayExt: 14);
+
 		Constants(registrator);
 		Buttons(registrator);
 		Variables(registrator);
@@ -233,41 +266,31 @@ public class Modules : ModuleGroup, IModuleGroup {
 	private void Arithmetic(ProtoRegistrator registrator) {
 		registrator
 			.ModuleBuilderStart("Sum", "C = A + B", "A+B")
-			.SetDescription("Outputs <b>a</b> + <b>b</b> to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is used instead of the input pin (see FieldOrInput).")
+			.SetDescription("Outputs <b>a</b> + <b>b</b> (+ extra inputs) to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is used instead of the input pin (see FieldOrInput). Up to six extra input pins (<b>c</b> through <b>h</b>) can be added on the right via the inspector and are included in the sum.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
 			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("c", "Sum")
-			.Action(m => { m.Output["c"] = m.Input["a", 0] + m.FieldOrInput["b"]; })
+			// Player-extensible: extra inputs default-named c, d, e, ... continuing the
+			// alphabet from the static "b".  Output stays single ("c"); only the sum's
+			// arity grows.  Action below iterates active extensions to include them.
+			.AllowInputExtensions(6)
+			.Action(m => {
+				Fix32 value = m.Input["a", 0] + m.FieldOrInput["b"];
+				int extCount = System.Math.Min(m.InputExtensionCount, m.Prototype.MaxInputExtensions);
+				for (int i = 0; i < extCount; i++) {
+					value += m.Input[m.Prototype.InputExtensions[i].Id, 0];
+				}
+				m.Output["c"] = value;
+			})
 			.AddControllerDevice()
 			.BuildAndAdd();
 
-		Action<Module> SumFor(int i) {
-			return (m) => {
-				Fix32 value = 0;
-				for (int j = 0; j < i; j++) {
-					value += m.Input[NAMES[j], 0];
-				}
-				m.Output["sum"] = value;
-			};
-		}
-		foreach (int i in new int[] { 4, 8 }) {
-			var sum = registrator
-				.ModuleBuilderStart($"Sum_{i}", $"C = A + .. ({i - 1})", $"A+({i - 1})")
-				.SetDescription($"Outputs the sum of {i} numeric inputs (<b>a</b> through <b>{NAMES[i - 1]}</b>) to <b>sum</b>. Unconnected inputs are treated as 0.")
-				.AddCategory(Category.Arithmetic)
-				.AddOutput("sum", "Sum")
-				.Action(m => { m.Output["c"] = m.Input["a"] + m.Input["b", 0]; })
-				.AddControllerDevice();
-
-			for (int j = 0; j < i; j++) {
-				sum.AddInput(NAMES[j], NAMES[j].ToUpper());
-			}
-
-			sum.Action(SumFor(i));
-			sum.BuildAndAdd();
-		}
+		// Sum_4 / Sum_8 were the fixed-arity versions of "Sum" — no longer needed
+		// now that "Sum" itself is extensible up to 8 inputs.  Existing saves are
+		// migrated through Deprecation: Sum_4 → Sum + 2 ext, Sum_8 → Sum + 6 ext.
+		// See Deprecations.cs.
 
 		registrator
 			.ModuleBuilderStart("Sub", "C = A - B", "A-B")
@@ -957,92 +980,70 @@ public class Modules : ModuleGroup, IModuleGroup {
 	}
 
 	private void Booleans(ProtoRegistrator registrator) {
-		Action<Module>[] ands = new Action<Module>[] {
-			(m) =>
-			{
-				m.Output.Bool["a"] =
-					m.Input["a", 0] > 0 &&
-					m.Input["b", 0] > 0;
-				m.Output["b"] = m.Output["a"] > 0 ? 0 : 1;
-			},
-			(m) =>
-			{
-				m.Output.Bool["a"] =
-					m.Input["a", 0] > 0 &&
-					m.Input["b", 0] > 0 &&
-					m.Input["c", 0] > 0 &&
-					m.Input["d", 0] > 0;
-				m.Output.Bool["b"] = !m.Output.Bool["a"];
-			}
-		};
-		foreach (int i in new int[] { 2, 4 }) {
-			var builder = registrator
-				.ModuleBuilderStart($"Boolean_And_{i}", $"Boolean: AND ({i} pins)", $"AND-{i}")
-				.SetDescription($"Outputs <b>a</b> = 1 on <b>c</b> if all {i} inputs (<b>a</b>..<b>{NAMES[i - 1]}</b>) are > 0, else 0; <b>b</b> (<b>not_c</b>) is the inverse.")
-				.AddCategory(Category.Boolean)
-				.AddOutput("b", "not C")
-				.AddOutput("a", "C")
-				.Display(m => {
-					m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
-					m.Display["not_c"] = !m.Output.Bool["a"] ? "1" : "";
-				})
-				.AddDisplayFiller(i - 2)
-				.AddDisplay("not_c", "not C", 1, led: true)
-				.AddDisplay("c", "C", 1, led: true)
-				.AddControllerDevice()
-				// dynamic
-				.Action(ands[(i / 2) - 1]);
+		// Boolean AND — 2 static inputs (a, b) extensible to 8 total via the
+		// inspector.  Action iterates EffectiveInputs so any added pin participates
+		// in the conjunction; an unconnected ext input reads as 0 and short-circuits
+		// the AND to false.  Replaces the legacy Boolean_And_4 (registered as a
+		// deprecation that bumps InputExtensionCount to 2 on load).
+		registrator
+			.ModuleBuilderStart("Boolean_And_2", "Boolean: AND", "AND")
+			.SetDescription("Outputs <b>c</b> = 1 if all connected inputs (<b>a</b>, <b>b</b>, plus any added extensions) are > 0; <b>not_c</b> is the inverse. Add more input pins from the right edge of the module.")
+			.AddCategory(Category.Boolean)
+			.AddInput("a", "A")
+			.AddInput("b", "B")
+			.AddOutput("b", "not C")
+			.AddOutput("a", "C")
+			.AllowInputExtensions(6)
+			.Display(m => {
+				m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
+				m.Display["not_c"] = !m.Output.Bool["a"] ? "1" : "";
+			})
+			.AddDisplay("not_c", "not C", 1, led: true)
+			.AddDisplay("c", "C", 1, led: true)
+			.AddControllerDevice()
+			.Action(m => {
+				bool all = true;
+				foreach (var input in m.EffectiveInputs) {
+					if (!(m.Input[input.Id, 0] > 0)) {
+						all = false;
+						break;
+					}
+				}
+				m.Output.Bool["a"] = all;
+				m.Output.Bool["b"] = !all;
+			})
+			.BuildAndAdd();
 
-			for (int j = 0; j < i; j++) {
-				builder.AddInput(NAMES[j], NAMES[j].ToUpper());
-			}
-
-			builder.BuildAndAdd();
-		}
-		Action<Module>[] ors = new Action<Module>[] {
-			(m) =>
-			{
-				m.Output["a"] = (
-					m.Input["a"] > 0 ||
-					m.Input["b"] > 0
-				) ? 1 : 0;
-				m.Output["b"] = m.Output["a"] > 0 ? 0 : 1;
-			},
-			(m) =>
-			{
-				m.Output["a"] = (
-					m.Input["a", 0] > 0 ||
-					m.Input["b", 0] > 0 ||
-					m.Input["c", 0] > 0 ||
-					m.Input["d", 0] > 0
-				) ? 1 : 0;
-				m.Output["b"] = m.Output["a"] > 0 ? 0 : 1;
-			}
-		};
-		foreach (int i in new int[] { 2, 4 }) {
-			var builder = registrator
-				.ModuleBuilderStart($"Boolean_Or_{i}", $"Boolean: OR ({i} pins)", $"OR-{i}")
-				.SetDescription($"Outputs <b>a</b> = 1 on <b>c</b> if any of the {i} inputs (<b>a</b>..<b>{NAMES[i - 1]}</b>) is > 0, else 0; <b>b</b> (<b>not_c</b>) is the inverse.")
-				.AddCategory(Category.Boolean)
-				.AddOutput("b", "not C")
-				.AddOutput("a", "C")
-				.Display(m => {
-					m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
-					m.Display["not_c"] = !m.Output.Bool["a"] ? "1" : "";
-				})
-				.AddDisplayFiller(i - 2)
-				.AddDisplay("not_c", "not C", 1, led: true)
-				.AddDisplay("c", "C", 1, led: true)
-				.AddControllerDevice()
-				// dynamic
-				.Action(ors[(i / 2) - 1]);
-
-			for (int j = 0; j < i; j++) {
-				builder.AddInput(NAMES[j], NAMES[j].ToUpper());
-			}
-
-			builder.BuildAndAdd();
-		}
+		// Boolean OR — same shape: 2 static + up to 6 extensions.  Action returns
+		// true the moment any effective input is > 0.  Replaces Boolean_Or_4.
+		registrator
+			.ModuleBuilderStart("Boolean_Or_2", "Boolean: OR", "OR")
+			.SetDescription("Outputs <b>c</b> = 1 if any connected input (<b>a</b>, <b>b</b>, or any extension) is > 0; <b>not_c</b> is the inverse. Add more input pins from the right edge of the module.")
+			.AddCategory(Category.Boolean)
+			.AddInput("a", "A")
+			.AddInput("b", "B")
+			.AddOutput("b", "not C")
+			.AddOutput("a", "C")
+			.AllowInputExtensions(6)
+			.Display(m => {
+				m.Display["c"] = m.Output.Bool["a"] ? "1" : "";
+				m.Display["not_c"] = !m.Output.Bool["a"] ? "1" : "";
+			})
+			.AddDisplay("not_c", "not C", 1, led: true)
+			.AddDisplay("c", "C", 1, led: true)
+			.AddControllerDevice()
+			.Action(m => {
+				bool any = false;
+				foreach (var input in m.EffectiveInputs) {
+					if (m.Input[input.Id, 0] > 0) {
+						any = true;
+						break;
+					}
+				}
+				m.Output.Bool["a"] = any;
+				m.Output.Bool["b"] = !any;
+			})
+			.BuildAndAdd();
 		registrator
 			.ModuleBuilderStart($"Boolean_Xor", $"Boolean: XOR", $"XOR")
 			.SetDescription("Outputs <b>a</b> = 1 on <b>c</b> if exactly one of <b>a</b>, <b>b</b> is > 0 (logical XOR); otherwise 0. <b>b</b> (<b>not_c</b>) is the inverse.")
@@ -1135,53 +1136,54 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Connections(ProtoRegistrator registrator) {
 		registrator
-			.ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (4 pin, input)", "C-IN")
-			.SetDescription("Reads 4 pins from a paired <b>Connection_Controller_Output</b> module on a remote Controller, matched by the <b>name</b> field. Outputs the remote inputs <b>a</b>, <b>b</b>, <b>c</b>, <b>d</b>; outputs 0 when no matching module is found.")
+			.ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (input)", "C-IN")
+			.SetDescription("Reads pins from a paired <b>Connection_Controller_Output</b> module on a remote Controller, matched by the <b>name</b> field. Outputs the remote inputs through <b>a</b>, <b>b</b>, <b>c</b>, <b>d</b>, plus any extension pins added on the right edge; outputs 0 when no matching module is found or the matching pin is missing on the remote side.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("a", "A")
 			.AddOutput("b", "B")
 			.AddOutput("c", "C")
 			.AddOutput("d", "D")
+			// Mirror the Output module's input extensions: outputs grow on this side as
+			// the player adds matching pins on the remote Output endpoint.  Pin ids stay
+			// the same (default alphabet continuation E, F, G, ...).
+			.AllowOutputExtensions(8)
 			.AddEntityField<Controller>("controller", "Connection device", "Name of output module, which must exist in target Controller")
 			.AddStringField("name", "Output Name", defaultValue: "C")
 			.Display(m => m.Display["name"] = m.Field["name", "C"])
 			.AddDisplay("name", "Connection name", 4, defaultText: "C")
 			.Action(m => {
-				//Mafi.Log.Info("Update of input");
 				Controller controller = m.Field.Entity<Controller>("controller");
 				string moduleType = "Connection_Controller_Output".ModuleId();
 				string noduleName = m.Field["name", "C"];
+				Module targetModule = null;
 				if (noduleName.Length > 0 && controller != null) {
-					//Mafi.Log.Info("Target entity found");
-					Module targetModule = controller.Modules.AsEnumerable()
+					targetModule = controller.Modules.AsEnumerable()
 						.FirstOrDefault(mod => mod.Prototype.Id.Value == moduleType
 											&& mod.Field["name", ""] == noduleName);
-					if (targetModule != null) {
-						m.Output["a"] = targetModule.Input["a", 0];
-						m.Output["b"] = targetModule.Input["b", 0];
-						m.Output["c"] = targetModule.Input["c", 0];
-						m.Output["d"] = targetModule.Input["d", 0];
-						return;
-					}
 				}
-				m.Output["a"] = 0;
-				m.Output["b"] = 0;
-				m.Output["c"] = 0;
-				m.Output["d"] = 0;
+				// Iterate effective outputs so any extension added on this module also
+				// gets bridged from the remote Output module.  Reading by id means a pin
+				// missing on the remote side reads 0 — same fallback as before.
+				foreach (var output in m.EffectiveOutputs) {
+					m.Output[output.Id] = targetModule != null
+						? targetModule.Input[output.Id, 0]
+						: 0;
+				}
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
 
 		registrator
-			.ModuleBuilderStart("Connection_Controller_Output", "Connection: Controller (4 pin, output)", "C-OUT")
-			.SetDescription("Exposes 4 inputs (<b>a</b>, <b>b</b>, <b>c</b>, <b>d</b>) under the name set in the <b>name</b> field so a remote <b>Connection_Controller_Input</b> module can read them. Acts as a passive endpoint - it does not drive any entity.")
+			.ModuleBuilderStart("Connection_Controller_Output", "Connection: Controller (output)", "C-OUT")
+			.SetDescription("Exposes inputs (<b>a</b>, <b>b</b>, <b>c</b>, <b>d</b>, plus any extensions) under the name set in the <b>name</b> field so a remote <b>Connection_Controller_Input</b> module can read them. Acts as a passive endpoint - it does not drive any entity. Add more input pins from the right edge of the module to bridge more values.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionWrite)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
 			.AddInput("c", "C")
 			.AddInput("d", "D")
+			.AllowInputExtensions(8)
 			.AddDisplay("name", "Connection name", 4, defaultText: "C")
 			.Display(m => m.Display["name"] = m.Field["name", "C"])
 			.AddStringField("name", "Name", "Name of output module, which must be selected in target Controller", defaultValue: "C")
@@ -2488,33 +2490,39 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 	private void Display(ProtoRegistrator registrator) {
 		// TODO add display
-		// display float values
-		Action<Module> ModuleFunction(int digits) {
-			return (Module m) => {
-				Fix32 value = m.Input["a"];
-				int floating = Math.Min(m.Field.Integer["float"], digits);
-				int inting = Math.Max(Math.Min(digits - floating, digits), 0);
+		// Display_Int — single extensible number display.  Static width 2 cells (4
+		// digits); display extension grows the widget by 1 cell per step (2 more
+		// digits each), up to a 16-cell / 32-digit maximum.  Replaces the legacy
+		// fixed-width Display_Int_2/4/8/16 set; existing saves migrate via Deprecation.
+		Action<Module> formatDigits = (Module m) => {
+			// Effective digit count = 2 cells per cell of display width.  Base width
+			// (2) + DisplayExtensionCount, both clamped to the proto's max via the
+			// SetXxx clamp on assignment.
+			int extCells = m.DisplayExtensionCount;
+			int totalCells = 2 + extCells;
+			int digits = totalCells * 2;
 
-				string full = inting > 0 ? value.IntegerPart.ToString($"D{inting}") : "";
-				string fract = floating > 0 ? (value.FractionalPartNonNegative * Math.Pow(10, floating).ToFix32())
-										.IntegerPart.ToString($"D{floating}") : "";
+			Fix32 value = m.Input["a"];
+			int floating = Math.Min(m.Field.Integer["float"], digits);
+			int inting = Math.Max(Math.Min(digits - floating, digits), 0);
 
-				m.Display["a"] = $"{full},{fract}";
-			};
-		}
-		foreach (int i in new int[] { 2, 4, 8, 16 }) {
-			registrator
-				.ModuleBuilderStart($"Display_Int_{i}", $"Display: {i * 2} digits", $"F-{i}")
-				.SetDescription($"Formats input <b>a</b> as a {i * 2}-digit decimal display, splitting integer and fractional parts based on the <b>float</b> field (clamped to {i * 2}).")
-				.AddCategory(Category.Display)
-				.AddInput("a", "A")
-				.AddDisplay("a", "A", i)
-				.AddInt32Field("float", "Floating numbers", "Ammount of numbers displayed from fractional part", defaultValue: 0)
-				.AddControllerDevice()
-				// dynamic
-				.Display(ModuleFunction(i * 2))
-				.BuildAndAdd();
-		}
+			string full = inting > 0 ? value.IntegerPart.ToString($"D{inting}") : "";
+			string fract = floating > 0 ? (value.FractionalPartNonNegative * Math.Pow(10, floating).ToFix32())
+									.IntegerPart.ToString($"D{floating}") : "";
+
+			m.Display["a"] = $"{full},{fract}";
+		};
+		registrator
+			.ModuleBuilderStart("Display_Int", "Display: number", "F#")
+			.SetDescription("Formats input <b>a</b> as a decimal number display.  Use the <b>+</b> / <b>-</b> buttons in the display row to grow the digit count (4 digits at minimum, up to 32 by adding cells); the <b>float</b> field picks how many of those digits are fractional.")
+			.AddCategory(Category.Display)
+			.AddInput("a", "A")
+			.AddDisplay("a", "A", 2)
+			.AddInt32Field("float", "Floating numbers", "Ammount of numbers displayed from fractional part", defaultValue: 0)
+			.AllowDisplayExtensions(14)        // 2 + 14 = 16 cells = 32 digits
+			.AddControllerDevice()
+			.Display(formatDigits)
+			.BuildAndAdd();
 
 		registrator
 			.ModuleBuilderStart($"Display_Product", $"Display: product", $"F-P")

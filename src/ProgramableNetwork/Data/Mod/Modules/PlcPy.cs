@@ -129,6 +129,12 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 			.AddOutput("B", "B")
 			.AddOutput("C", "C")
 			.AddOutput("D", "D")
+			// Player-extensible on both sides — extra pins default-named E, F, G, ...
+			// continuing the alphabet from the static D, addable via the inspector
+			// and accessible from the PLC script through self.Input["E"] /
+			// self.Output["E"] (no script-side bindings change; pin lookup is by id).
+			.AllowInputExtensions(8)
+			.AllowOutputExtensions(8)
 			.AddStringField("name", "Name", "Label shown on the module's display row.", defaultValue: "PLC-PY")
 			// `code` stays a real StringField so the standard ModuleSetStringFieldCmd
 			// pipeline routes saves through the same path everywhere else uses

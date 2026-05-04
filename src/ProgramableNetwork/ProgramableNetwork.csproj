@@ -307,7 +307,7 @@
 
 	<ItemGroup Condition=" '$(ProjectDir)' != '*Undefined*' ">
 		<AssetBundles Include="$(ProjectDir)..\$(UnityProjectName)\AssetBundles\**\*" Exclude="**\AssetBundles;**\AssetBundles.manifest" />
-		<Assets Include="$(ProjectDir)Assets\**\*" />
+		<Assets Include="$(ProjectDir)Assets\**\*" Exclude="$(ProjectDir)Assets\**\*.pdn" />
 		<Modules Include="$(ProjectDir)..\ProgramableNetwork.Modules\Custom\**\*" />
 		<CoreAPI Include="$(ProjectDir)..\ProgramableNetwork.Modules\Core\**\*" />
 		<Translations Include="$(ProjectDir)Translations\**\*" />
@@ -331,6 +331,7 @@
 	<!-- Coppies data to mod release folder. For skipping the part, comment out the full target element -->
 	<Target Name="DeployToModsFolder" AfterTargets="PostBuildEvent" Condition=" '$(ProjectDir)' != '*Undefined*' ">
 		<Copy SourceFiles="$(ProjectDir)\manifest.json" DestinationFolder="$(COI_MODS)\$(TargetName)\" />
+		<Copy SourceFiles="$(ProjectDir)\thumbnail.png" DestinationFolder="$(COI_MODS)\$(TargetName)\" ContinueOnError="true" />
 		<Copy SourceFiles="$(ProjectDir)\config.json" DestinationFolder="$(COI_MODS)\$(TargetName)" ContinueOnError="true" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(COI_MODS)\$(TargetName)\" />
 		<Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(COI_MODS)\$(TargetName)\" Condition="'$(Configuration)' == 'Debug'" />

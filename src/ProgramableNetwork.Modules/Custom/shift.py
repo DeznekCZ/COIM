@@ -5,14 +5,19 @@ from Mafi import Fix32
 from Core.module import DefaultControllers, Module
 
 # File written by Nightinggale
-# Optimized: input/output names are pre-built once as a class-level list
-# (IO_NAMES) and indexed by the loop variable.  This replaces both the
-# 17-line `str()` map and the per-tick string concatenations the original
-# would have done with `"" + n` — zero string allocations per tick.
+# Refactored to a single extensible Runtime_Shift — base 2 channels (0, 1)
+# plus up to 6 player-added extension pin pairs (channels 2..7) on the right
+# edge of the module.  Both input and output sides extend in lock-step so
+# every channel always has a matching destination.  Legacy saves Shift_2/4/7
+# migrate through the `deprecates` table.
+#
+# Channel iteration uses recursion (no for-loops in the custom parser); the
+# pin id at ordinal i comes from `effective_input_id(i)` so the function
+# works for any extension count without hardcoding a name table.
 
-class Runtime_Shift_2(Module):
-    name = "Control: Shift (2 inputs)"
-    description = "Cyclic shifter for 2 channels: <b>index</b> (mod 2) selects how far to rotate inputs <b>0</b>, <b>1</b> onto outputs <b>0</b>, <b>1</b>. Output <b>index</b> echoes the wrapped index."
+class Runtime_Shift(Module):
+    name = "Control: Shift"
+    description = "Cyclic shifter: <b>index</b> picks how far to rotate the channel inputs (<b>0</b>, <b>1</b>, plus any added extensions) onto the matching outputs.  Output <b>index</b> echoes the wrapped index.  Add more channel pin pairs from the right edge of the module."
     symbol = "SHIFT"
 
     inputs = [
@@ -29,156 +34,52 @@ class Runtime_Shift_2(Module):
 
     width = 3
 
-    categories = [DefaultCategories.Control]
-    controllers = [DefaultControllers.Controller]
+    # 2 static channels + up to 6 ext = 8 channels total.  Both sides paired.
+    input_extensions = 6
+    output_extensions = 6
 
-    def action(self):
-        # the action isn't copy paste like in the other sizes
-        # the reason being that this is so simple that writing each case is reasonable and it executes faster.
-        index = self.Input.get_int("index", 0)
-        index = index % 2
-        self.Output.set_int("index", index)
-
-        if index == 0:
-            self.Output.set("0", self.Input.get("0", Fix32.Zero))
-            self.Output.set("1", self.Input.get("1", Fix32.Zero))
-        else:
-            self.Output.set("0", self.Input.get("1", Fix32.Zero))
-            self.Output.set("1", self.Input.get("0", Fix32.Zero))
-
-
-class Runtime_Shift_4(Module):
-    name = "Control: Shift (4 inputs)"
-    description = "Cyclic shifter for 4 channels: <b>index</b> (mod 4) selects how far to rotate inputs <b>0</b>..<b>3</b> onto outputs <b>0</b>..<b>3</b>. Output <b>index</b> echoes the wrapped index."
-    symbol = "SHIFT"
-
-    inputs = [
-        Input("index", "Index"),
-        Input("0", "Input 0"),
-        Input("1", "Input 1"),
-        Input("2", "Input 2"),
-        Input("3", "Input 3")
+    # Save-compat: each removed fixed-arity proto maps to this one with the
+    # paired extension counts that reproduce its channel count.
+    #   Shift_2 → 0 ext (2 channels)
+    #   Shift_4 → 2 ext (4 channels)
+    #   Shift_7 → 5 ext (7 channels)
+    deprecates = [
+        ["Runtime_Shift_2", 0, 0],
+        ["Runtime_Shift_4", 2, 2],
+        ["Runtime_Shift_7", 5, 5]
     ]
-
-    outputs = [
-        Output("index", "Index"),
-        Output("0", "Output 0"),
-        Output("1", "Output 1"),
-        Output("2", "Output 2"),
-        Output("3", "Output 3")
-    ]
-
-    fields = [
-        Int32Field("inputs used", "Number of inputs used", "Select how many inputs should be used. The same amount of outputs will then be used, leaving the rest of the outputs not updating.", 4)
-    ]
-
-    width = 5
 
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
-    # Pre-built name table — one allocation at class-load time, reused every
-    # tick.  Indexed by the input/output number; slot 0 unused so that the
-    # natural numeric index maps directly without subtracting.
-    IO_NAMES = ["0", "1", "2", "3"]
-
     def action(self):
-        num_inputs = 4
+        # Channel count = total effective inputs minus the static "index" pin.
+        # `effective_input_id(0)` is "index"; channels start at ordinal 1.
+        num_inputs = self.effective_input_count - 1
+        if num_inputs < 1:
+            return
 
-        requested_num_inputs = self.Field.get_int("inputs used", num_inputs)
-        if requested_num_inputs < 2:
-            requested_num_inputs = 2
-        if requested_num_inputs < num_inputs:
-            num_inputs = requested_num_inputs
-
-        # set index to the range matching the number of inputs
         shift_offset = self.Input.get_int("index", 0)
-        if shift_offset < 0:
-            # negative numbers are shifted to positive.
-            # multiplying with num_inputs will ensure the post modulo number won't be affected by this offset.
-            temp = shift_offset * num_inputs
-            shift_count = shift_offset - temp
+        # Same as the original Shift_4/_7: wrap into the channel range with
+        # `%` for non-negative indices.  Negative indices land in
+        # implementation-defined territory (the legacy module had dead code
+        # for them too) — fall through and let it modulo as-is; out-of-range
+        # outputs simply get "" and the Output.set call no-ops.
         if shift_offset >= num_inputs:
             shift_offset = shift_offset % num_inputs
         self.Output.set_int("index", shift_offset)
 
-        self.set_output(0, num_inputs, shift_offset)
+        self._set_output(0, num_inputs, shift_offset)
 
-    def set_output(self, index, num_inputs, shift_offset):
+    def _set_output(self, index, num_inputs, shift_offset):
         out_index = index + shift_offset
         if out_index >= num_inputs:
             out_index = out_index - num_inputs
-        self.Output.set(self.IO_NAMES[out_index], self.Input.get(self.IO_NAMES[index], Fix32.Zero))
+        # Channel ordinals are 1..num_inputs (slot 0 is the "index" pin),
+        # so add 1 when looking up effective ids.
+        self.Output.set(
+            self.effective_output_id(out_index + 1),
+            self.Input.get(self.effective_input_id(index + 1), Fix32.Zero))
         index = index + 1
         if index < num_inputs:
-            self.set_output(index, num_inputs, shift_offset)
-
-
-class Runtime_Shift_7(Module):
-    name = "Control: Shift (7 inputs)"
-    description = "Cyclic shifter for 7 channels: <b>index</b> (mod 7) selects how far to rotate inputs <b>0</b>..<b>6</b> onto outputs <b>0</b>..<b>6</b>. Output <b>index</b> echoes the wrapped index."
-    symbol = "SHIFT"
-
-    inputs = [
-        Input("index", "Index"),
-        Input("0", "Input 0"),
-        Input("1", "Input 1"),
-        Input("2", "Input 2"),
-        Input("3", "Input 3"),
-        Input("4", "Input 4"),
-        Input("5", "Input 5"),
-        Input("6", "Input 6")
-    ]
-
-    outputs = [
-        Output("index", "Index"),
-        Output("0", "Output 0"),
-        Output("1", "Output 1"),
-        Output("2", "Output 2"),
-        Output("3", "Output 3"),
-        Output("4", "Output 4"),
-        Output("5", "Output 5"),
-        Output("6", "Output 6")
-    ]
-
-    fields = [
-        Int32Field("inputs used", "Number of inputs used", "Select how many inputs should be used. The same amount of outputs will then be used, leaving the rest of the outputs not updating.", 7)
-    ]
-
-    width = 8
-
-    categories = [ DefaultCategories.Control ]
-    controllers = [ DefaultControllers.Controller ]
-
-    IO_NAMES = ["0", "1", "2", "3", "4", "5", "6"]
-
-    def action(self):
-        num_inputs = 7
-
-        requested_num_inputs = self.Field.get_int("inputs used", num_inputs)
-        if requested_num_inputs < 2:
-            requested_num_inputs = 2
-        if requested_num_inputs < num_inputs:
-            num_inputs = requested_num_inputs
-
-        # set index to the range matching the number of inputs
-        shift_offset = self.Input.get_int("index", 0)
-        if shift_offset < 0:
-            # negative numbers are shifted to positive.
-            # multiplying with num_inputs will ensure the post modulo number won't be affected by this offset.
-            temp = shift_offset * num_inputs
-            shift_count = shift_offset - temp
-        if shift_offset >= num_inputs:
-            shift_offset = shift_offset % num_inputs
-        self.Output.set_int("index", shift_offset)
-
-        self.set_output(0, num_inputs, shift_offset)
-
-    def set_output(self, index, num_inputs, shift_offset):
-        out_index = index + shift_offset
-        if out_index >= num_inputs:
-            out_index = out_index - num_inputs
-        self.Output.set(self.IO_NAMES[out_index], self.Input.get(self.IO_NAMES[index], Fix32.Zero))
-        index = index + 1
-        if index < num_inputs:
-            self.set_output(index, num_inputs, shift_offset)
+            self._set_output(index, num_inputs, shift_offset)

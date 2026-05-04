@@ -59,130 +59,59 @@ class Runtime_Delay_1(Module):
         self.Output.set("output", oldest)
 
 
-# The fixed-size delay modules below use a recursive `_shift(n)` helper that
-# walks down from the highest output index, copying slot N-1 into slot N.
-# Output names are pre-built once at class-load time as `OUT_NAMES` so there
-# are no per-tick string allocations.
-
-class Runtime_Delay_2(Module):
-    name = "Control: Delay (2 ticks)"
-    description = "Two-stage shift register: outputs <b>1</b> and <b>2</b> carry the input from 1 and 2 ticks ago respectively, refreshed each tick from <b>0</b>."
+# Multi-tap shift register: outputs <b>1</b>..<b>N</b> carry the input from 1
+# to N ticks ago.  Refactored from the legacy Delay_2/4/6/8 set into a single
+# extensible Runtime_Delay_Tap — base 1 output ("1") plus up to 7 player-
+# added taps ("2"..."8") on the right edge of the module.  Default extension
+# namer continues digit pin ids (so "1" → "2", "3", ...).  The shift uses the
+# Output cache from the previous tick: slot[N] = old slot[N-1], cascaded down.
+class Runtime_Delay_Tap(Module):
+    name = "Control: Delay (taps)"
+    description = "Multi-stage shift register: each output tap holds the input from N ticks ago, where N matches the tap label.  Add more taps from the right edge of the module."
     symbol = "DLY"
     inputs = [
         Input("0", "Signal input")
     ]
     outputs = [
-        Output("1", "Delay by 1 tick"),
-        Output("2", "Delay by 2 ticks")
+        Output("1", "Delay by 1 tick")
     ]
+
+    width = 2
+
+    # 1 static tap + up to 7 ext = 8 taps total — covers Delay_8.
+    output_extensions = 7
+
+    # Each entry is [old_id, input_ext, output_ext, display_ext].  The custom
+    # parser only supports list literals (no tuples, no None), so we use 0 to
+    # mean "leave at default".  Delay_Tap has no input extensions, so
+    # input_ext=0 is the right default.
+    deprecates = [
+        ["Runtime_Delay_2", 0, 1],
+        ["Runtime_Delay_4", 0, 3],
+        ["Runtime_Delay_6", 0, 5],
+        ["Runtime_Delay_8", 0, 7]
+    ]
+
     categories = [ DefaultCategories.Control ]
     controllers = [ DefaultControllers.Controller ]
 
-    OUT_NAMES = ["", "1", "2"]
-
     def action(self):
         a = self.Input.get("0", Fix32.Zero)
-        self._shift(2)
+        # effective_output_count = 1 + active output extensions; cascade from
+        # the highest tap down so each slot reads the *previous* tick's value
+        # of the slot one to its left before being overwritten this tick.
+        n = self.effective_output_count
+        if n > 1:
+            self._shift(n - 1)
         self.Output.set("1", a)
 
-    def _shift(self, n):
-        if n <= 1:
+    def _shift(self, slot):
+        # `slot` is the ordinal index in EffectiveOutputs (0-based).  Slot 0
+        # is "1", slot 1 is "2", and so on.  Cascade ends when slot is 1
+        # (output "2" reads from output "1", which gets refreshed below).
+        if slot <= 0:
             return
-        self.Output.set(self.OUT_NAMES[n], self.Output.get(self.OUT_NAMES[n - 1], Fix32.Zero))
-        self._shift(n - 1)
-
-
-class Runtime_Delay_4(Module):
-    name = "Control: Delay (4 ticks)"
-    description = "Four-stage shift register: outputs <b>1</b>..<b>4</b> carry the input from 1 to 4 ticks ago respectively, refreshed each tick from <b>0</b>."
-    symbol = "DELAY"
-    inputs = [
-        Input("0", "Signal input")
-    ]
-    outputs = [
-        Output("1", "Delay by 1 tick"),
-        Output("2", "Delay by 2 ticks"),
-        Output("3", "Delay by 3 ticks"),
-        Output("4", "Delay by 4 ticks")
-    ]
-    categories = [ DefaultCategories.Control ]
-    controllers = [ DefaultControllers.Controller ]
-
-    OUT_NAMES = ["", "1", "2", "3", "4"]
-
-    def action(self):
-        a = self.Input.get("0", Fix32.Zero)
-        self._shift(4)
-        self.Output.set("1", a)
-
-    def _shift(self, n):
-        if n <= 1:
-            return
-        self.Output.set(self.OUT_NAMES[n], self.Output.get(self.OUT_NAMES[n - 1], Fix32.Zero))
-        self._shift(n - 1)
-
-
-class Runtime_Delay_6(Module):
-    name = "Control: Delay (6 ticks)"
-    description = "Six-stage shift register: outputs <b>1</b>..<b>6</b> carry the input from 1 to 6 ticks ago respectively, refreshed each tick from <b>0</b>."
-    symbol = "DELAY"
-    inputs = [
-        Input("0", "Signal input")
-    ]
-    outputs = [
-        Output("1", "Delay by 1 tick"),
-        Output("2", "Delay by 2 ticks"),
-        Output("3", "Delay by 3 ticks"),
-        Output("4", "Delay by 4 ticks"),
-        Output("5", "Delay by 5 ticks"),
-        Output("6", "Delay by 6 ticks")
-    ]
-    categories = [ DefaultCategories.Control ]
-    controllers = [ DefaultControllers.Controller ]
-
-    OUT_NAMES = ["", "1", "2", "3", "4", "5", "6"]
-
-    def action(self):
-        a = self.Input.get("0", Fix32.Zero)
-        self._shift(6)
-        self.Output.set("1", a)
-
-    def _shift(self, n):
-        if n <= 1:
-            return
-        self.Output.set(self.OUT_NAMES[n], self.Output.get(self.OUT_NAMES[n - 1], Fix32.Zero))
-        self._shift(n - 1)
-
-
-class Runtime_Delay_8(Module):
-    name = "Control: Delay (8 ticks)"
-    description = "Eight-stage shift register: outputs <b>1</b>..<b>8</b> carry the input from 1 to 8 ticks ago respectively, refreshed each tick from <b>0</b>."
-    symbol = "DELAY"
-    inputs = [
-        Input("0", "Signal input")
-    ]
-    outputs = [
-        Output("1", "Delay by 1 tick"),
-        Output("2", "Delay by 2 ticks"),
-        Output("3", "Delay by 3 ticks"),
-        Output("4", "Delay by 4 ticks"),
-        Output("5", "Delay by 5 ticks"),
-        Output("6", "Delay by 6 ticks"),
-        Output("7", "Delay by 7 ticks"),
-        Output("8", "Delay by 8 ticks")
-    ]
-    categories = [ DefaultCategories.Control ]
-    controllers = [ DefaultControllers.Controller ]
-
-    OUT_NAMES = ["", "1", "2", "3", "4", "5", "6", "7", "8"]
-
-    def action(self):
-        a = self.Input.get("0", Fix32.Zero)
-        self._shift(8)
-        self.Output.set("1", a)
-
-    def _shift(self, n):
-        if n <= 1:
-            return
-        self.Output.set(self.OUT_NAMES[n], self.Output.get(self.OUT_NAMES[n - 1], Fix32.Zero))
-        self._shift(n - 1)
+        dst = self.effective_output_id(slot)
+        src = self.effective_output_id(slot - 1)
+        self.Output.set(dst, self.Output.get(src, Fix32.Zero))
+        self._shift(slot - 1)
