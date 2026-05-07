@@ -332,6 +332,7 @@
 	<Target Name="DeployToModsFolder" AfterTargets="PostBuildEvent" Condition=" '$(ProjectDir)' != '*Undefined*' ">
 		<Copy SourceFiles="$(ProjectDir)\manifest.json" DestinationFolder="$(COI_MODS)\$(TargetName)\" />
 		<Copy SourceFiles="$(ProjectDir)\thumbnail.png" DestinationFolder="$(COI_MODS)\$(TargetName)\" ContinueOnError="true" />
+		<Copy SourceFiles="$(ProjectDir)\changelog.txt" DestinationFolder="$(COI_MODS)\$(TargetName)\" ContinueOnError="true" />
 		<Copy SourceFiles="$(ProjectDir)\config.json" DestinationFolder="$(COI_MODS)\$(TargetName)" ContinueOnError="true" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(COI_MODS)\$(TargetName)\" />
 		<Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(COI_MODS)\$(TargetName)\" Condition="'$(Configuration)' == 'Debug'" />
@@ -343,6 +344,6 @@
 		<Copy SourceFiles="@(Translations)" DestinationFolder="$(COI_MODS)\$(TargetName)\Translations\%(RecursiveDir)" />
 
 		<!-- Compress-Archive on a directory path (without \*) includes the directory name as root in the zip. -->
-		<Exec Command="powershell -NoProfile -Command &quot;Compress-Archive -Path '$(COI_MODS)\$(TargetName)' -DestinationPath '$(COI_MODS)\$(TargetName)_$(ManifestVersion).zip' -Force&quot;" />
+		<Exec Command="pwsh -NoProfile -Command &quot;Compress-Archive -Path '$(COI_MODS)\$(TargetName)' -DestinationPath '$(COI_MODS)\$(TargetName)_$(ManifestVersion).zip' -Force&quot;" />
 	</Target>
 </Project>

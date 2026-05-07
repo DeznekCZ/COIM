@@ -207,7 +207,8 @@ The controller can use maintenance from T1 to T3 base on layout of the modules:
         private static Module AddToController(ProtoRegistrator registrator, Controller controller, int row, ref int column, string moduleProto)
         {
             ModuleProto storageProto = registrator.PrototypesDb.Get<ModuleProto>(new Proto.ID(moduleProto.ModuleId())).Value;
-            Module module = new Module(storageProto, controller.Context, controller);
+            ModuleIdManager idGenerator = controller.Resolver.Resolve<ModuleIdManager>();
+			Module module = new Module(storageProto, controller.Context, controller, idGenerator.Allocate());
 
             // Position is owned by the module itself since Controller.MODULE_LAYOUT_INFO.
             module.Row = row;
@@ -216,7 +217,6 @@ The controller can use maintenance from T1 to T3 base on layout of the modules:
             int width = module.Layout.GetWidth(module);
             column += width;
 
-            Thread.Sleep(1); // increment module id, because is based on time
             return module;
         }
 

@@ -299,6 +299,26 @@ namespace ProgramableNetwork.Python
                 module.Array[idx] = value;
             }
 
+            // Indexer plumbing so the player can write `self.Array[i]` /
+            // `self.Array[i] = v` instead of the .get(i, default) / .set(i, v)
+            // pair.  Mirrors NumberDataSetter / StringDataSetter, which already
+            // expose this pattern; without it, IndexExpression on self.Array
+            // falls through to Expressions.__getitem__ and lands in the
+            // "NotImplementedException" branch even though the underlying
+            // Module.Array supports indexed access perfectly well.  Reads
+            // out-of-range return Fix32.Zero (same default the existing .get
+            // overload uses when the player doesn't pass one); writes route
+            // through the Module.Array setter which already handles auto-grow.
+            public Fix32 __getitem__(object key)
+            {
+                return module.Array[Expressions.__int__(key), Fix32.Zero];
+            }
+
+            public void __setitem__(object key, object value)
+            {
+                module.Array[Expressions.__int__(key)] = Expressions.__fix__(value);
+            }
+
             public void resize(int size)
             {
                 module.Array.Resize(size);

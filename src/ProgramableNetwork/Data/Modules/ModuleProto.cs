@@ -170,6 +170,15 @@ namespace ProgramableNetwork
         // with the active linked-side extension count.
         public List<ModuleConnectorProto> ExtensionDisplays { get; }
         public ExtensionSide ExtensionDisplaysLinkedSide { get; }
+
+        /// <summary>
+        /// When true, growing/shrinking the input pin extensions also moves the
+        /// output extensions in lock-step (and vice versa) — used by paired-channel
+        /// modules like flip-flop where every <c>in_N</c> must always have a
+        /// matching <c>out_N</c>.  Enforced in the command executor: a single
+        /// <c>SetExtensionCount</c> call mirrors the count to the linked side.
+        /// </summary>
+        public bool LinkInputOutputExtensions { get; }
         public Action<Module> DisplayUpdate { get; }
         public ImmutableArray<Category> Categories { get; }
         public List<IField> Fields { get; }
@@ -250,7 +259,8 @@ namespace ProgramableNetwork
             int m_maxDisplayExtensions = 0,
             List<ModuleConnectorProto> m_extensionDisplays = null,
             ExtensionSide m_extensionDisplaysLinkedSide = ExtensionSide.Output,
-            Func<Module, PartialQuantity> m_dynamicComputing = null
+            Func<Module, PartialQuantity> m_dynamicComputing = null,
+            bool m_linkInputOutputExtensions = false
 		) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
@@ -266,6 +276,7 @@ namespace ProgramableNetwork
             MaxDisplayExtensions = System.Math.Max(0, m_maxDisplayExtensions);
             ExtensionDisplays = m_extensionDisplays ?? new List<ModuleConnectorProto>();
             ExtensionDisplaysLinkedSide = m_extensionDisplaysLinkedSide;
+            LinkInputOutputExtensions = m_linkInputOutputExtensions;
             Displays = m_displays;
             DisplayUpdate = m_display;
             Fields = m_fields;
@@ -310,6 +321,7 @@ namespace ProgramableNetwork
             // identically but isn't exercised by any module yet.
             private readonly List<ModuleConnectorProto> m_extensionDisplays = new List<ModuleConnectorProto>();
             private ExtensionSide m_extensionDisplaysLinkedSide = ExtensionSide.Output;
+            private bool m_linkInputOutputExtensions;
             // When non-null, AddDisplay/AddDisplayFiller/AddDisplaySlider route their
             // entries here instead of the main Displays list.  Used by
             // AddExtensionDisplays to capture per-extension display widgets without
@@ -407,7 +419,8 @@ namespace ProgramableNetwork
                     m_maxDisplayExtensions,
                     m_extensionDisplays,
                     m_extensionDisplaysLinkedSide,
-                    m_dynamicComputing
+                    m_dynamicComputing,
+                    m_linkInputOutputExtensions
                 );
             }
 
@@ -468,9 +481,31 @@ namespace ProgramableNetwork
                 return this;
             }
 
+            /// <summary>
+            /// Shared variant — the label is registered ONCE under
+            /// <c>ProgramableNetwork_PinOrField_&lt;name&gt;</c> and reused across every
+            /// module that calls <c>.Shared()</c> with the same string. Mints no
+            /// per-module key, so translation files don't accumulate one entry per
+            /// module per duplicated label.
+            /// </summary>
+            public Builder AddInput(string id, SharedLabel shared)
+            {
+                m_inputs.Add(new ModuleConnectorProto(id, shared.Resolve(), 1));
+                return this;
+            }
+
             public Builder AddOutput(string id, string name)
             {
                 m_outputs.Add(new ModuleConnectorProto(id, m_id.Output(id, name), 1));
+                return this;
+            }
+
+            /// <summary>
+            /// Shared variant — see <see cref="AddInput(string, SharedLabel)"/>.
+            /// </summary>
+            public Builder AddOutput(string id, SharedLabel shared)
+            {
+                m_outputs.Add(new ModuleConnectorProto(id, shared.Resolve(), 1));
                 return this;
             }
 
@@ -497,6 +532,25 @@ namespace ProgramableNetwork
                 return this;
             }
 
+            /// <summary>
+            /// Shared variant of <see cref="AllowInputExtensions"/> — every extension
+            /// pin's display label resolves through the shared registry rather than
+            /// being minted per-module. Use when extensions reuse common labels
+            /// like single letters that other modules also expose.
+            /// </summary>
+            public Builder AllowInputExtensionsShared(int max, Func<int, (string id, SharedLabel shared)> namer)
+            {
+                if (max <= 0 || namer == null) {
+                    return this;
+                }
+                for (int i = 0; i < max; i++)
+                {
+                    var (id, shared) = namer(i);
+                    m_inputExtensions.Add(new ModuleConnectorProto(id, shared.Resolve(), 1));
+                }
+                return this;
+            }
+
             public Builder AllowOutputExtensions(int max, Func<int, (string id, string name)> namer = null)
             {
                 if (max <= 0) {
@@ -508,6 +562,37 @@ namespace ProgramableNetwork
                     var (id, name) = namer(i);
                     m_outputExtensions.Add(new ModuleConnectorProto(id, m_id.Output(id, name), 1));
                 }
+                return this;
+            }
+
+            /// <summary>
+            /// Shared variant of <see cref="AllowOutputExtensions"/> — see
+            /// <see cref="AllowInputExtensionsShared"/>.
+            /// </summary>
+            public Builder AllowOutputExtensionsShared(int max, Func<int, (string id, SharedLabel shared)> namer)
+            {
+                if (max <= 0 || namer == null) {
+                    return this;
+                }
+                for (int i = 0; i < max; i++)
+                {
+                    var (id, shared) = namer(i);
+                    m_outputExtensions.Add(new ModuleConnectorProto(id, shared.Resolve(), 1));
+                }
+                return this;
+            }
+
+            /// <summary>
+            /// Lock-step input and output pin extensions: a single
+            /// <see cref="Module.SetExtensionCountLinked"/> call mirrors the new count
+            /// to whichever side wasn't asked, so a player adding an input pin to a
+            /// flip-flop also gets the matching output pin (and vice versa).
+            /// Caller is expected to register the same <c>AllowInputExtensions</c> and
+            /// <c>AllowOutputExtensions</c> max so the linked sides can keep up.
+            /// </summary>
+            public Builder LinkInputOutputExtensions()
+            {
+                m_linkInputOutputExtensions = true;
                 return this;
             }
 
@@ -574,7 +659,13 @@ namespace ProgramableNetwork
                 return idx =>
                 {
                     string id = ((char)(startCode + idx)).ToString();
-                    return (id, id);
+                    // Display label uppercases the id so an extension following
+                    // lowercase static pins ("a","b") still shows as "C","D" in
+                    // the inspector. Translation files (legacy Boolean_And_4 etc.)
+                    // already use uppercase labels — this keeps the auto-namer
+                    // consistent with that intent.
+                    string name = id.ToUpperInvariant();
+                    return (id, name);
                 };
             }
 

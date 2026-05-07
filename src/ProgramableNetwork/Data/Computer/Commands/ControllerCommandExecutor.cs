@@ -113,21 +113,12 @@ namespace ProgramableNetwork
 				cmd.SetResultError(error);
 				return;
 			}
-			// Module.SetXxxExtensionCount handles clamping to [0, MaxXxxExtensions]
-			// AND, for pin sides, prunes any cable bound to a pin that the new count
-			// made go away — no separate InputModules reconciliation needed.
-			switch (cmd.Side)
-			{
-				case ExtensionSide.Input:
-					module.SetInputExtensionCount(cmd.NewCount);
-					break;
-				case ExtensionSide.Output:
-					module.SetOutputExtensionCount(cmd.NewCount);
-					break;
-				case ExtensionSide.Display:
-					module.SetDisplayExtensionCount(cmd.NewCount);
-					break;
-			}
+			// SetExtensionCountLinked clamps to [0, MaxXxxExtensions], prunes any cables
+			// bound to a pin that disappeared, AND mirrors the count to the linked
+			// side when the prototype opted into input↔output lock-step (e.g. flip-
+			// flop).  No separate InputModules reconciliation needed — the side
+			// setters already handle it.
+			module.SetExtensionCountLinked(cmd.Side, cmd.NewCount);
 			cmd.SetResultSuccess();
 		}
 

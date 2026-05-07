@@ -11,11 +11,15 @@ namespace ProgramableNetwork.Ui
 	/// Custom <see cref="UiComponent"/> on purpose so it does NOT inherit any of the base
 	/// game's button classes — visual state (idle / hover / disabled) is controlled here
 	/// via Background + Border + Label colour, and click routing goes through a single
-	/// MouseUpEvent so left/right/shift+left are handled uniformly without polling Input.
+	/// MouseUpEvent so left/right + Shift / Alt are read uniformly without polling Input.
 	///
-	/// All click-time decisions (which mode is active, what to do with the click) live
-	/// in this class; the consumer only hands over (view, row, column) and the button
-	/// dispatches into <see cref="ControllerView"/>'s public slot helpers.
+	/// Click semantics (modes were retired):
+	///   - LMB           → open Add picker
+	///   - SHIFT + LMB   → paste from clipboard (last-created module)
+	///   - ALT + LMB     → drop the picked-up module here (if any, and slot fits)
+	///   - RMB           → open Templates picker
+	/// "Disabled" visual is reserved for the case where a module is picked up and this
+	/// slot wouldn't fit it — every other state is interactable.
 	/// </summary>
 	public class ModuleSlotButton : UiComponent
 	{
@@ -61,31 +65,20 @@ namespace ProgramableNetwork.Ui
 
 			this.RegisterCallback<UnityEngine.UIElements.MouseUpEvent>(handleMouseUp);
 
-			// Slot lock-down per current mode, observed live:
-			//  - Edit: never interactable.
-			//  - Add: always interactable (open picker / shift-paste / right-click templates).
-			//  - Move + nothing picked up: locked, nothing to drop here.
-			//  - Move + picked-up: only if the picked module would actually fit here.
-			this.Observe(() => view.Inspector.Mode)
-				.Observe(() => view.Inspector.PickedUpModule)
-				.Do((mode, picked) =>
+			// Slot interactability follows the pickup state:
+			//  - Nothing picked up → always interactable (LMB picker, Shift+LMB paste, RMB templates).
+			//  - Picked up + slot fits → still interactable (Alt+LMB drop, plus the
+			//    other actions remain so the player can paste or pick from a slot
+			//    even mid-move).  We just dim slots that wouldn't accept the
+			//    drop so the visual cue points at valid drop targets.
+			this.Observe(() => view.Inspector.PickedUpModule)
+				.Do(picked =>
 				{
-					m_enabled = computeEnabled(mode, picked);
+					m_enabled = picked == null || m_view.IsValidDropAt(m_row, m_col, picked);
 					applyVisual();
 				});
 
 			applyVisual();
-		}
-
-		private bool computeEnabled(ControllerEditMode mode, Module picked)
-		{
-			switch (mode)
-			{
-				case ControllerEditMode.Add:  return true;
-				case ControllerEditMode.Move: return picked != null && m_view.IsValidDropAt(m_row, m_col, picked);
-				case ControllerEditMode.Edit:
-				default: return false;
-			}
 		}
 
 		private void handleMouseUp(UnityEngine.UIElements.MouseUpEvent evt)
@@ -101,37 +94,38 @@ namespace ProgramableNetwork.Ui
 						evt.StopPropagation();
 						return;
 					}
-					if (inspector.Mode == ControllerEditMode.Move)
+					if (inspector.PickedUpModule != null)
 					{
+						// Drop the picked-up module on this slot — Alt+LMB picked it up
+						// from the placed module's symbol button; plain LMB on the
+						// destination slot completes the move.  Slots that don't fit
+						// are already greyed out via m_enabled (see Observe in the
+						// ctor that combines PickedUpModule + IsValidDropAt), so we
+						// only get here when the drop is valid.  No modifier required.
 						if (!m_view.TryDropPickedAt(m_row, m_col))
 						{
 							inspector.Context.AudioDb.InvalidOp(true).Play();
 						}
 					}
-					else // Add mode (Edit is already filtered out by m_enabled)
+					else if (evt.shiftKey)
 					{
-						if (evt.shiftKey)
+						// Paste from the "last created" clipboard at this slot.
+						if (!m_view.TryShiftAddAt(m_row, m_col))
 						{
-							if (!m_view.TryShiftAddAt(m_row, m_col))
-							{
-								inspector.Context.AudioDb.InvalidOp(true).Play();
-							}
+							inspector.Context.AudioDb.InvalidOp(true).Play();
 						}
-						else
-						{
-							m_view.OpenAddPickerAt(m_row, m_col, this);
-						}
+					}
+					else
+					{
+						m_view.OpenAddPickerAt(m_row, m_col, this);
 					}
 					evt.StopPropagation();
 					break;
 				}
-				case 1: // right click — templates (Add mode only)
+				case 1: // right click — open templates picker
 				{
-					if (inspector.Mode == ControllerEditMode.Add)
-					{
-						m_view.OpenTemplatePickerAt(m_row, m_col, this);
-						evt.StopPropagation();
-					}
+					m_view.OpenTemplatePickerAt(m_row, m_col, this);
+					evt.StopPropagation();
 					break;
 				}
 			}

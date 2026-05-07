@@ -58,7 +58,7 @@ namespace ProgramableNetwork.Ui {
 
 			buttonRow.Add(
 				panel,
-				new ModuleView(new Module(item, m_controllerView.Entity.Context, m_controllerView.Entity), m_controllerView, m_controllerView.Inspector.Context, true, () => { })
+				new ModuleView(new Module(item, m_controllerView.Entity.Context, m_controllerView.Entity, 0), m_controllerView, m_controllerView.Inspector.Context, true, () => { })
 					.With(mv => {
 						mv.Module.Prototype.ExecuteInit(mv.Module, log: false);
 						mv.Module.Prototype.DisplayUpdate(mv.Module);

@@ -105,14 +105,14 @@ namespace ProgramableNetwork.Ui
 				}
 				else
 				{
-					preview = new Module(m_proto, m_controllerView.Entity.Context, m_controllerView.Entity);
+					preview = new Module(m_proto, m_controllerView.Entity.Context, m_controllerView.Entity, 0);
 					preview.Prototype.ExecuteInit(preview, log: false);
 				}
 			}
 			catch (Exception e)
 			{
 				Log.Exception(e);
-				preview = new Module(m_proto, m_controllerView.Entity.Context, m_controllerView.Entity);
+				preview = new Module(m_proto, m_controllerView.Entity.Context, m_controllerView.Entity, 0);
 				preview.Prototype.ExecuteInit(preview, log: false);
 			}
 

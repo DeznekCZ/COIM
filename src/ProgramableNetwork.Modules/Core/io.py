@@ -3,14 +3,26 @@ from email.policy import default
 from Mafi import Fix32
 
 class Output:
-    def __init__(self, output_id: str, name: str):
+    def __init__(self, output_id: str, name: str, shared: bool = False):
+        """ Declares a module output pin.  When `shared=True`, the display
+            `name` is registered ONCE under the shared translation key
+            `ProgramableNetwork_PinOrField_<name>` and reused by every other
+            module that opts in with the same label — translation files no
+            longer accumulate one entry per module per duplicated label. """
         self.id = output_id
         self.name = name
+        self.shared = shared
 
 class Input:
-    def __init__(self, input_id: str, name: str):
+    def __init__(self, input_id: str, name: str, shared: bool = False):
+        """ Declares a module input pin.  When `shared=True`, the display
+            `name` is registered ONCE under the shared translation key
+            `ProgramableNetwork_PinOrField_<name>` and reused by every other
+            module that opts in with the same label — translation files no
+            longer accumulate one entry per module per duplicated label. """
         self.id = input_id
         self.name = name
+        self.shared = shared
 
 class DisplayDefinition:
     pass

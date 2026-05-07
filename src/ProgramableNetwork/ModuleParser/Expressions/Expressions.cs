@@ -567,10 +567,73 @@ namespace ProgramableNetwork.Python
                 dict[__str__(index)] = value;
                 return;
             }
+            // Wrappers (ArraySetter, NumberDataSetter, ...) declare their
+            // own __setitem__ — pick that up via reflection BEFORE the
+            // generic IList path so the wrapper's coercion / clamping
+            // logic still runs (an ArraySetter is not an IList itself,
+            // but its `set` writes through Module.Array which has its
+            // own resize semantics).
             if (target?.GetType().GetMethod("__setitem__") is MethodInfo methodInfo)
             {
                 methodInfo.Invoke(target, [index, value]);
                 return;
+            }
+            // Generic IList covers List<int>, List<Fix32>, T[], anything
+            // range() / list literals / pin enumeration produces.  Index
+            // is coerced through __int__ so a Fix32 / float index resolves
+            // to int the same way IList expects; the value is coerced to
+            // the list's element type when knowable (generic List<T> and
+            // arrays expose it cheaply).
+            if (target is System.Collections.IList ilist)
+            {
+                ilist[__int__(index)] = CoerceToElementType(target, value);
+                return;
+            }
+            // Generic IList<T> — Mafi.Collections.Lyst<T>, ReadWriteSwapLyst<T>,
+            // and any other type that implements only the generic interface
+            // (List<T> / T[] implement BOTH IList<T> AND non-generic IList, so
+            // they're caught by the branch above; this catches the strictly-
+            // generic case).  Routes through the IList<T> indexer property
+            // (resolved against the interface, not the concrete type) so an
+            // explicit interface implementation that hides "Item" under a
+            // different name still works.
+            {
+                System.Reflection.PropertyInfo genericIndexer = TryGetGenericIListIndexer(target);
+                if (genericIndexer != null && genericIndexer.CanWrite)
+                {
+                    genericIndexer.SetValue(target, CoerceToElementType(target, value),
+                        new object[] { __int__(index) });
+                    return;
+                }
+            }
+            // System.Array fallback for multi-dim arrays (which DON'T implement
+            // IList).  Single-dim T[] arrives via the IList branch above; this
+            // is here so a 2D array (rare but possible from a Mafi API) still
+            // works rather than throwing NotImplementedException.
+            if (target is System.Array arr)
+            {
+                arr.SetValue(CoerceToElementType(target, value), __int__(index));
+                return;
+            }
+            // Last resort — types that don't implement any of the standard
+            // collection interfaces but do expose a `this[int]` indexer.
+            // Mafi.ImmutableArray<T> is read-only (getter only) so this
+            // path is a no-op for it; it would already have thrown via the
+            // GetProperty lookup returning a get-only property and CanWrite
+            // being false.  We leave the error message as
+            // NotImplementedException rather than synthesize a custom one
+            // because the player's runtime catch in PlcPy.Action surfaces
+            // the message directly to the error strip.
+            if (target != null)
+            {
+                Type t = target.GetType();
+                var prop = t.GetProperty("Item", new[] { typeof(int) });
+                if (prop != null && prop.CanWrite)
+                {
+                    prop.SetValue(target, CoerceToElementType(target, value),
+                        new object[] { __int__(index) });
+                    return;
+                }
             }
             throw new NotImplementedException("__setitem__");
         }
@@ -585,11 +648,133 @@ namespace ProgramableNetwork.Python
             {
                 return dict.TryGetValue(__str__(index), out object value) ? value : null;
             }
+            // Reflection-bound __getitem__ wins over the generic IList path
+            // for the same reason as __setitem__ above (wrapper semantics).
             if (target?.GetType().GetMethod("__getitem__") is MethodInfo methodInfo)
             {
                 return methodInfo.Invoke(target, [index]);
             }
+            // Strings index by character so `"abc"[1]` works; without this
+            // the player would get the "__getitem__ not implemented" error
+            // for the most common indexable type.
+            if (target is string s)
+            {
+                int si = __int__(index);
+                if (si < 0 || si >= s.Length) {
+                    throw new System.ArgumentOutOfRangeException(
+                        $"string index {si} out of range [0,{s.Length})");
+                }
+                return s[si].ToString();
+            }
+            if (target is System.Collections.IList ilist)
+            {
+                return ilist[__int__(index)];
+            }
+            // Generic IList<T> — Mafi.Lyst<T> / ReadWriteSwapLyst<T>, anything
+            // that implements only the BCL generic interface.  See the matching
+            // comment in __setitem__ for why this is a separate branch from the
+            // non-generic IList check above.
+            {
+                System.Reflection.PropertyInfo genericIndexer = TryGetGenericIListIndexer(target);
+                if (genericIndexer != null && genericIndexer.CanRead)
+                {
+                    return genericIndexer.GetValue(target, new object[] { __int__(index) });
+                }
+            }
+            // Multi-dim arrays (T[,], T[,,]) don't implement IList but do
+            // support index access through Array.GetValue.  Single-dim T[]
+            // is caught by the IList branch above.
+            if (target is System.Array arr)
+            {
+                return arr.GetValue(__int__(index));
+            }
+            // Mafi.ImmutableArray<T> / ReadOnlyArray<T> / LystStruct<T> /
+            // SmallImmutableArray<T> — none of these implement IList, but
+            // they all expose a `T this[int]` indexer.  Reflect once and
+            // route through it so the player can index any Mafi-style
+            // collection a wrapper might surface (e.g. an ImmutableArray of
+            // recipe ids exposed via self.Prototype.Recipes).
+            if (target != null)
+            {
+                Type t = target.GetType();
+                var prop = t.GetProperty("Item", new[] { typeof(int) });
+                if (prop != null && prop.CanRead)
+                {
+                    return prop.GetValue(target, new object[] { __int__(index) });
+                }
+            }
             throw new NotImplementedException("__getitem__");
+        }
+
+        // Returns the IList<T> indexer property for the most-derived `IList<T>`
+        // interface `target` implements, or null when the target doesn't
+        // implement the generic IList<T>.  Used so we can route through the
+        // standard generic indexer for types like Mafi.Collections.Lyst<T>
+        // that implement only IList<T> and not the non-generic IList — those
+        // would otherwise fall through to the property-reflection fallback,
+        // which works but is less semantic and would also pick up unrelated
+        // `this[int]` indexers (e.g. an int-keyed lookup that happens to live
+        // on a non-list type).  GetInterfaces() is a one-time call per
+        // __getitem__/__setitem__ — for sealed Mafi collection types this
+        // is a small fixed set, and the runtime caches interface metadata
+        // internally so repeat lookups stay cheap.
+        private static System.Reflection.PropertyInfo TryGetGenericIListIndexer(object target)
+        {
+            if (target == null) {
+                return null;
+            }
+            foreach (Type i in target.GetType().GetInterfaces())
+            {
+                if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IList<>))
+                {
+                    // IList<T>.Item — single int parameter, both get and set.
+                    // GetProperty against the interface (not the concrete type)
+                    // so an explicit-interface impl that hides "Item" still
+                    // resolves cleanly.
+                    return i.GetProperty("Item");
+                }
+            }
+            return null;
+        }
+
+        // Helper for IList __setitem__: cast `value` to the list's element
+        // type when we can derive it (generic List<T> or an array).  Used to
+        // route an int from `range()` into a List<Fix32> (and vice versa)
+        // without making the player wrap every assignment in fix(...).
+        // Returns the value unchanged if the element type is unknown or the
+        // value is already assignable — IList will throw a clear cast error
+        // in that case, which is what we want for a genuine type mismatch.
+        private static object CoerceToElementType(object target, object value)
+        {
+            Type elementType = null;
+            Type targetType = target.GetType();
+            if (targetType.IsArray)
+            {
+                elementType = targetType.GetElementType();
+            }
+            else if (targetType.IsGenericType)
+            {
+                Type[] args = targetType.GetGenericArguments();
+                if (args.Length == 1) {
+                    elementType = args[0];
+                }
+            }
+            if (elementType == null || value == null) {
+                return value;
+            }
+            if (elementType.IsInstanceOfType(value)) {
+                return value;
+            }
+            if (elementType == typeof(int)) {
+                return __int__(value);
+            }
+            if (elementType == typeof(Fix32)) {
+                return __fix__(value);
+            }
+            if (elementType == typeof(string)) {
+                return __str__(value);
+            }
+            return value;
         }
 
         public static bool __contains__(object target, object key)

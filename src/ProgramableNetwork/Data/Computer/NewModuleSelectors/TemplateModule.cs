@@ -58,7 +58,7 @@ namespace ProgramableNetwork.Ui
 							.TextAlign(TextAlignment.LeftTop)
 							.AlignSelf(Align.Stretch)
 					}.FlexGrow(1).AlignSelf(Align.Stretch)),
-				new ModuleView(new Module(item.Value.ModuleProto, m_controllerView.Entity.Context, m_controllerView.Entity), m_controllerView, m_controllerView.Inspector.Context, true, () => { })
+				new ModuleView(new Module(item.Value.ModuleProto, m_controllerView.Entity.Context, m_controllerView.Entity, 0), m_controllerView, m_controllerView.Inspector.Context, true, () => { })
 					.With(mv => {
 						mv.Module.Prototype.ExecuteInit(mv.Module, log: false);
 						item.Value.Setting(mv.Module);

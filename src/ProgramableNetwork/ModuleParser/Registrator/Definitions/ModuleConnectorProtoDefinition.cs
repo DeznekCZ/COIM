@@ -12,13 +12,18 @@ namespace ProgramableNetwork.Python
         public readonly string name;
         public readonly int width;
         public readonly string defaultText;
+        // When true, the registrator routes this entry through SharedFieldLabels so
+        // its display label is registered ONCE under ProgramableNetwork_PinOrField_<name>
+        // instead of being minted per-module.
+        public readonly bool shared;
 
-        public ModuleConnectorProtoDefinition(string id, string name)
+        public ModuleConnectorProtoDefinition(string id, string name, bool shared = false)
         {
             this.id = id;
             this.name = name;
             this.width = 1;
             this.defaultText = "";
+            this.shared = shared;
         }
 
         public ModuleConnectorProtoDefinition(string id, string name, int width, string defaultText)
@@ -27,6 +32,7 @@ namespace ProgramableNetwork.Python
             this.name = name;
             this.width = width;
             this.defaultText = defaultText ?? "";
+            this.shared = false;
         }
     }
 }

@@ -104,27 +104,30 @@ namespace ProgramableNetwork.Ui
 		/// Backwards-compatible shorthand for the module-save flow used by
 		/// <see cref="ModuleEditDialog"/>.
 		/// </summary>
-		public static SaveBlueprintDialog ForModule(Module module, Button anchor, UiContext uiContext)
+		public static SaveBlueprintDialog ForModule(Module module, Button anchor, UiContext uiContext,
+			DependencyResolver resolver)
 		{
-			BlueprintsLibrary library = GlobalDependencyResolver.Get<BlueprintsLibrary>();
-			ConfigSerializationContext context = GlobalDependencyResolver.Get<ConfigSerializationContext>();
+			BlueprintsLibrary library = resolver.GetResolvedInstance<BlueprintsLibrary>().Value;
+			ConfigSerializationContext context = resolver.GetResolvedInstance<ConfigSerializationContext>().Value;
+			EntitiesCloneConfigHelper entitiesCloneConfigHelper = resolver.GetResolvedInstance<EntitiesCloneConfigHelper>().Value;
 			return new SaveBlueprintDialog(
 				title: "Save module as blueprint",
 				defaultName: module.Prototype.Strings.Name.TranslatedString,
 				prefixHint: ModuleBlueprints.TitlePrefix,
 				anchor: anchor,
 				uiContext: uiContext,
-				onSave: name => ModuleBlueprints.Save(library, context, module, name));
+				onSave: name => ModuleBlueprints.Save(library, context, entitiesCloneConfigHelper, module, name));
 		}
 
 		/// <summary>
 		/// Companion factory for the controller-save flow used by
 		/// <see cref="ControllerInspector"/>.
 		/// </summary>
-		public static SaveBlueprintDialog ForController(Controller controller, Button anchor, UiContext uiContext)
+		public static SaveBlueprintDialog ForController(Controller controller, Button anchor, UiContext uiContext, DependencyResolver resolver)
 		{
-			BlueprintsLibrary library = GlobalDependencyResolver.Get<BlueprintsLibrary>();
-			ConfigSerializationContext context = GlobalDependencyResolver.Get<ConfigSerializationContext>();
+			BlueprintsLibrary library = resolver.GetResolvedInstance<BlueprintsLibrary>().Value;
+			ConfigSerializationContext context = resolver.GetResolvedInstance<ConfigSerializationContext>().Value;
+			EntitiesCloneConfigHelper entitiesCloneConfigHelper = resolver.GetResolvedInstance<EntitiesCloneConfigHelper>().Value;
 			string defaultName = controller.CustomTitle.HasValue
 				? controller.CustomTitle.Value
 				: controller.Prototype.Strings.Name.TranslatedString;
@@ -134,7 +137,9 @@ namespace ProgramableNetwork.Ui
 				prefixHint: ControllerBlueprints.TitlePrefix,
 				anchor: anchor,
 				uiContext: uiContext,
-				onSave: name => ControllerBlueprints.Save(library, context, controller, name));
+				onSave: name => {
+					return ControllerBlueprints.Save(library, context, controller, entitiesCloneConfigHelper, name);
+				});
 		}
 	}
 }

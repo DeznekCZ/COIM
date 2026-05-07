@@ -245,12 +245,18 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 					Dictionary<string, object> context = new Dictionary<string, object> {
 						["self"] = new ModuleWrapper(m, plcClass),
 						["Fix32"] = typeof(Fix32),
-						["fix"] = new Constructor(fixCtor, new[] { "value" }),
+						["fix"] = new Constructor(fixCtor, ["value"]),
+						// Status enum — bound by name so the player can write
+						// `return ModuleStatus.Error` / `Paused` / `Running`.
+						// Mirrors the bindings ImportStatement uses for Custom/*.py
+						// scripts so an inline PLC script and an imported module see
+						// the same name for the same enum.
+						["ModuleStatus"] = typeof(ModuleStatus),
 						// Loop helpers — variadic args, so the parameter-name list
 						// is set to the maximum the player can pass; Constructor
 						// hands extra slots through args[i] indexing in the lambda.
-						["range"] = new Constructor(rangeCtor, new[] { "start", "stop", "step" }),
-						["len"] = new Constructor(lenCtor, new[] { "value" }),
+						["range"] = new Constructor(rangeCtor, ["start", "stop", "step"]),
+						["len"] = new Constructor(lenCtor, ["value"]),
 					};
 					foreach (IStatement stmt in block.statements) {
 						stmt.Execute(context);
@@ -258,6 +264,30 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 					m.StringData.TryRemove("__run_error", out _);
 					m.Display["status"] = ledPhase == 0 ? LED_GREEN_HI : LED_GREEN_LO;
 					return ModuleStatus.Running;
+				} catch (ReturnException returnData) {
+					switch (returnData.Value) {
+					case string returnMessage:
+						m.Display["status"] = LED_RED;
+						m.SetError(returnMessage);
+						return ModuleStatus.Running;
+					case ModuleStatus status:
+						switch (status) {
+						case ModuleStatus.Running:
+							m.Display["status"] = ledPhase == 0 ? LED_GREEN_HI : LED_GREEN_LO;
+							break;
+						case ModuleStatus.Paused:
+							m.Display["status"] = LED_YELLOW;
+							break;
+						case ModuleStatus.Error:
+							m.Display["status"] = LED_RED;
+							m.SetError("Unexpected return: " + status);
+							break;
+						}
+						return status;
+					default:
+						m.Display["status"] = ledPhase == 0 ? LED_GREEN_HI : LED_GREEN_LO;
+						return ModuleStatus.Running;
+					}
 				} catch (Exception runError) {
 					m.StringData["__run_error"] = runError.Message;
 					m.Display["status"] = LED_RED;

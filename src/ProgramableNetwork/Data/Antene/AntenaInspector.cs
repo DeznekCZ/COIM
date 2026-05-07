@@ -210,7 +210,9 @@ namespace ProgramableNetwork.Ui
 							}
 						} else if (m_fmSignalList.ChildrenCount < entries.Count) {
 							for (int i = m_fmSignalList.ChildrenCount; i < entries.Count; i++) {
-								m_fmSignalList.AddCached<FMDataBandChannelEntry>();
+								m_fmSignalList.AddCached<FMDataBandChannelEntry>()
+									.SetCameraController(Context.CameraController)
+									.SetHightligter(EntityHighlighter);
 							}
 						}
 					}
@@ -339,12 +341,10 @@ namespace ProgramableNetwork.Ui
 		private readonly Display m_dataCount;
 		private readonly ButtonIcon m_gotoButton;
 
-		private readonly EntityHighlighter m_highlighter;
-		private readonly CameraController m_cameraController;
+		private CameraController m_cameraController;
+		private EntityHighlighter m_highlighter;
 
 		public FMDataBandChannelEntry() {
-			m_cameraController = GlobalDependencyResolver.Get<CameraController>();
-			m_highlighter = GlobalDependencyResolver.Instantiate<EntityHighlighter>();
 
 			this.Height(24.px());
 			m_strength = AddAndReturn(new Display(".....".AsLoc())).Width(48.px());
@@ -363,8 +363,18 @@ namespace ProgramableNetwork.Ui
 			m_gotoButton.OnMouseEnterLeave(highlight, clearHighlight);
 		}
 
+		public FMDataBandChannelEntry SetCameraController(CameraController cameraController) {
+			m_cameraController = cameraController;
+			return this;
+		}
+
 		private void panToSourceAntenna() {
 			m_cameraController.PanTo(m_dataBandChannel.Antena.Position2f);
+		}
+
+		public FMDataBandChannelEntry SetHightligter(EntityHighlighter highlighter) {
+			m_highlighter = highlighter;
+			return this;
 		}
 
 		private void highlight() {

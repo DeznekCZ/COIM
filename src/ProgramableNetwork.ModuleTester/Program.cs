@@ -130,8 +130,8 @@ namespace ProgramableNetwork.ModuleTester
                         new TileTransform(),
                         entityContext,
                         new TestFactory(),
-                        new ResearchManager(null, null, null, null, null, null, null, null, null, null)
-                    );
+                        DependencyResolver.CreateEmpty()
+					);
                 }
                 catch (Exception e)
                 {

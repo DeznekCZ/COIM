@@ -15,7 +15,8 @@ namespace ProgramableNetwork.Ui
 		private static readonly DropdownPositionPolicy POLICY = new DropdownPositionPolicy();
 		private readonly Module m_module;
 
-		public ModuleEditDialog(Module module, ControllerView controllerView, UiContext uiContext, Button button, ControllerInspector controllerInspector)
+		public ModuleEditDialog(Module module, ControllerView controllerView, UiContext uiContext,
+			ControllerInspector controllerInspector, DependencyResolver resolver)
 			: base(POLICY, false, false, true)
 		{
 			RowContainer row = new PanelRow();
@@ -93,7 +94,7 @@ namespace ProgramableNetwork.Ui
 			saveBp.Tooltip("Save this module as a reusable blueprint".ToDoLoc());
 			saveBp.OnClick(() =>
 			{
-				SaveBlueprintDialog.ForModule(m_module, saveBp, uiContext);
+				SaveBlueprintDialog.ForModule(m_module, saveBp, uiContext, resolver);
 			});
 			row.Add(saveBp);
 
@@ -122,8 +123,6 @@ namespace ProgramableNetwork.Ui
 			//this.MaxHeight(450.px());
 			this.Height(Px.Auto);
 			this.Width(420.px());
-
-			Open(button);
 		}
 	}
 }

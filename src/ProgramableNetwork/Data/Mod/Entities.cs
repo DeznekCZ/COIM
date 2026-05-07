@@ -101,7 +101,7 @@ namespace ProgramableNetwork
                     customIconPath: NewAssets.Computers.Icons.Antena,
                     categories: registrator.GetCategoriesProtos(NewIds.Controllers.Category)
                 ),
-                distanceBoost: ((float)m_config.GetDouble("antena_t2_boost", 2.0)).ToFix32()
+                distanceBoost: m_config.GetDouble("antena_t2_boost", 2.0).ToFix32()
             ));
 
             antenaT1.SetNextTierIndirect(antenaT2);

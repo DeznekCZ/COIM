@@ -1,28 +1,30 @@
 ﻿using Mafi;
+using Mafi.Base;
+using Mafi.Collections;
+using Mafi.Collections.ImmutableCollections;
 using Mafi.Core;
 using Mafi.Core.Entities;
-using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Ports.Io;
-using System;
-using Mafi.Serialization;
-using System.Collections.Generic;
-using Mafi.Core.Population;
-using Mafi.Core.Prototypes;
-using Mafi.Base;
-using Mafi.Core.Factory.ElectricPower;
-using System.Linq;
-using Mafi.Collections;
-using Mafi.Core.Factory.ComputingPower;
-using Mafi.Core.Maintenance;
-using Mafi.Core.Products;
 using Mafi.Core.Entities.Static;
-using Mafi.Core.Notifications;
-using ProgramableNetwork.Data.Mod;
-using System.Reflection;
-using Mafi.Collections.ImmutableCollections;
-using Mafi.Localization;
+using Mafi.Core.Entities.Static.Layout;
+using Mafi.Core.Factory.ComputingPower;
+using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.Transports;
+using Mafi.Core.Maintenance;
+using Mafi.Core.Notifications;
+using Mafi.Core.Population;
+using Mafi.Core.Ports.Io;
+using Mafi.Core.Products;
+using Mafi.Core.Prototypes;
 using Mafi.Core.Research;
+using Mafi.Core.Trains;
+using Mafi.Core.Vehicles;
+using Mafi.Localization;
+using Mafi.Serialization;
+using ProgramableNetwork.Data.Mod;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace ProgramableNetwork
 {
@@ -72,6 +74,15 @@ namespace ProgramableNetwork
 		// can grow the display from the inspector after load.
 		public const int MODULE_DISPLAY_EXTENSIONS = 8;
 
+		// Controller serialization version where module ids switched from a
+		// time-based source (DateTime.UtcNow.Ticks + Thread.Sleep(1)) to a
+		// per-controller pool counter persisted on the controller itself.
+		// Pre-v6 saves don't carry the counter; on load, initContexts seeds
+		// m_nextModuleId from <c>max(existing module ids)</c> so subsequent
+		// allocations stay unique within the controller.  Existing modules
+		// keep their original time-based ids — the migration is additive.
+		public const int CONTROLLER_MODULE_ID_POOL = 6;
+
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 		{
 			((Controller) obj).SerializeData(writer);
@@ -82,6 +93,26 @@ namespace ProgramableNetwork
 		};
 
 		public Option<string> CustomTitle { get; set; }
+
+		// Legacy field kept on disk so old saves can still round-trip — for v6+ saves
+		// it gets read/written but is no longer consulted at allocation time.  IDs
+		// now come from <see cref="ModuleIdManager"/> which holds a single monotonic
+		// counter and is serialized with the save; access is via the static
+		// <see cref="ModuleIdManager.Instance"/> resolver variable rather than
+		// GlobalDependencyResolver.Get<>().  The previous per-controller pool was
+		// the source of cable-colour and entity-field collisions: every fresh
+		// controller restarted at 1, so two pasted modules from different
+		// blueprints could end up with identical ids on a single controller and
+		// share their colour-palette / field-data lookups.
+		private long m_nextModuleId;
+
+		/// <summary>
+		/// Hands out a fresh module id from the serialized global pool so values
+		/// never collide across controllers, blueprint pastes, or template
+		/// applications.  The legacy per-controller pool name is preserved to keep
+		/// callers (BlueprintControllerTemplateEntry, etc.) source-compatible.
+		/// </summary>
+		public long AllocateModuleId() => Resolver.Resolve<ModuleIdManager>().Allocate();
 
 		// Player-writable free-form description.  Auto-populated when a template/
 		// blueprint is applied via the picker (set to the template's description),
@@ -127,9 +158,17 @@ namespace ProgramableNetwork
 		}
 
 		public Controller(EntityId id, ControllerProto proto, TileTransform transform, EntityContext context,
-			IEntityMaintenanceProvidersFactory maintenanceProvidersFactory, ResearchManager researchManager)
+			IEntityMaintenanceProvidersFactory maintenanceProvidersFactory,
+			DependencyResolver resolver)
 			: base(id, proto, transform, context)
 		{
+			// Mafi's [InitAfterLoad] hook only fires on deserialize, so brand-new
+			// controllers (just placed by the player) don't go through initContexts
+			// and would have Resolver = null.  Taking it as a ctor arg fixes that —
+			// the entity factory passes the live DependencyResolver so module-add,
+			// blueprint-save, and every other Resolver.Resolve<>() call site work
+			// from the moment the controller exists in the world.
+			Resolver = resolver;
 			Prototype = proto.BasedOn ?? proto;
 			ErrorMessage = "";
 			Color = proto.DefaultColor;
@@ -140,7 +179,6 @@ namespace ProgramableNetwork
 			m_notificationInfoManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.InfoNotification);
 			m_notificationWarningManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.WarningNotification);
 			m_notificationErrorManager = Context.NotificationsManager.CreateNotificatorFor(ControllerNotification.ErrorNotification);
-			ResearchManager = researchManager;
 			Modules = new Lyst<Module>();
 
 			Action initSettings = proto.InitModules(this);
@@ -291,12 +329,12 @@ namespace ProgramableNetwork
 		[OnlyForSaveCompatibility(null)]
 		private void initContexts(int saveVersion, DependencyResolver resolver)
 		{
+			Resolver = resolver;
 			Log.Info($"Initialize context after load");
 
 			Prototype = Context.ProtosDb.Get<ControllerProto>(m_protoId).ValueOrThrow("Invalid controller proto: " + m_protoId);
 			m_electricConsumer = m_electricConsumer ?? Context.ElectricityConsumerFactory.CreateConsumer(this);
 			m_computingConsumer = m_computingConsumer ?? Context.ComputingConsumerFactory.CreateConsumer(this);
-			ResearchManager = resolver.Resolve<ResearchManager>();
 
 			m_notificationInfoManager = WithId(ControllerNotification.InfoNotification, m_notificationInfoManager);
 			m_notificationWarningManager = WithId(ControllerNotification.WarningNotification, m_notificationWarningManager);
@@ -308,6 +346,36 @@ namespace ProgramableNetwork
 			}
 			else
 			{
+				// Pre-v6 saves had no persisted module-id pool counter.  Seed the legacy
+				// per-controller field from the highest existing module id (kept on
+				// disk for round-trip compatibility).
+				if (m_nextModuleId == 0)
+				{
+					long maxId = 0;
+					foreach (var m in Modules)
+					{
+						if (m.Id > maxId) {
+							maxId = m.Id;
+						}
+					}
+					m_nextModuleId = maxId;
+				}
+
+				// Seed the live ModuleIdManager from every module loaded on this
+				// controller.  Saves predating the manager have m_nextId = 0 in
+				// its blob, so the very first Allocate would otherwise return 1
+				// — colliding with every legacy module that already has id 1 from
+				// the pre-manager per-controller pool.  Instance is lazy-initialized
+				// so it's guaranteed non-null, and reaching the manager through it
+				// avoids the GlobalDependencyResolver.Get<>() failure mode that
+				// previously aborted the whole load and left modules with null
+				// Prototype.
+				ModuleIdManager idManager = resolver.Resolve<ModuleIdManager>();
+				foreach (var m in Modules)
+				{
+					idManager.EnsureAtLeast(m.Id);
+				}
+
 				// Resolve prototypes for every module.  Phantom modules (proto removed and
 				// no Deprecation replacement) are KEPT as visible tombstones — the player
 				// sees a "!!" cell with an "Original prototype no longer exists" tooltip
@@ -334,16 +402,30 @@ namespace ProgramableNetwork
 					}
 				}
 
-				// Drop input connections whose endpoints can't be resolved anymore.  Without
-				// this, cable rendering tries to look up pin protos on Phantom (no Inputs/
-				// Outputs) or hits stale references when a mod author renamed/removed a pin
-				// in a new version.  All four conditions are treated as "dead":
+				// Reattach connections whose endpoints renamed pins in a Deprecation
+				// entry, then drop the ones that are still unresolvable.  Without this,
+				// cable rendering tries to look up pin protos on Phantom (no Inputs/
+				// Outputs) or hits stale references when a mod author renamed/removed a
+				// pin in a new version.  Death conditions:
 				//   - source module no longer exists,
-				//   - source module exists but its prototype has no such output id,
+				//   - source module exists but its prototype has no such output id (after remap),
 				//   - this module's prototype has no such input id,
 				//   - either side is a Phantom (no pins by definition).
 				var moduleById = new Dictionary<long, Module>();
 				foreach (var m in Modules) { moduleById[m.Id] = m; }
+
+				// Cache the OutputIdMap for each module that was migrated and carries one,
+				// so we don't re-resolve the migration entry per consumer connection.
+				var outputRemapBySource = new Dictionary<long, IReadOnlyDictionary<string, string>>();
+				foreach (var m in Modules)
+				{
+					var mig = Deprecation.GetMigration(new ModuleProto.ID(m.OriginalProtoId));
+					if (mig.HasValue && mig.Value.AppliesAt(m.LoadedVersion) && mig.Value.OutputIdMap != null)
+					{
+						outputRemapBySource[m.Id] = mig.Value.OutputIdMap;
+					}
+				}
+
 				foreach (var m in Modules)
 				{
 					if (m.Prototype == null) {
@@ -366,9 +448,24 @@ namespace ProgramableNetwork
 							m.InputModules.Remove(kv.Key);
 							continue;
 						}
-						if (!src.HasOutput(kv.Value.OutputId))
+
+						// Apply the source's output rename before validating, so cables
+						// drawn from a renamed output pin reattach to the new id instead
+						// of being dropped as orphans.  Only the OutputId on the connector
+						// changes; ModuleId stays the same.
+						var connector = kv.Value;
+						if (outputRemapBySource.TryGetValue(src.Id, out var outMap)
+							&& outMap.TryGetValue(connector.OutputId, out string newOutputId)
+							&& !string.Equals(connector.OutputId, newOutputId, StringComparison.Ordinal))
 						{
-							Log.Warning($"Module {m.Id}: dropping connection for input '{kv.Key}' — source module {src.Id} no longer has output '{kv.Value.OutputId}'");
+							connector = new ModuleConnector(connector.ModuleId, newOutputId);
+							m.InputModules[kv.Key] = connector;
+							Log.Info($"Module {m.Id}: output pin remapped on connection '{kv.Key}' — source {src.Id} '{kv.Value.OutputId}' -> '{newOutputId}' via Deprecation");
+						}
+
+						if (!src.HasOutput(connector.OutputId))
+						{
+							Log.Warning($"Module {m.Id}: dropping connection for input '{kv.Key}' — source module {src.Id} no longer has output '{connector.OutputId}'");
 							m.InputModules.Remove(kv.Key);
 							continue;
 						}
@@ -414,7 +511,7 @@ namespace ProgramableNetwork
 		{
 			base.SerializeData(writer);
 			writer.WriteString(m_protoId.Value);
-			writer.WriteInt(/*Version*/ CONTROLLER_DESCRIPTION);
+			writer.WriteInt(/*Version*/ CONTROLLER_MODULE_ID_POOL);
 
 			writer.WriteString(ErrorMessage ?? "");
 			Option<string>.Serialize(CustomTitle, writer);
@@ -438,6 +535,11 @@ namespace ProgramableNetwork
 			// CONTROLLER_DESCRIPTION (v5+): player-writable description.  Empty Option
 			// is the safe default for old saves loaded back through the v<5 branch.
 			Option<string>.Serialize(CustomDescription, writer);
+
+			// CONTROLLER_MODULE_ID_POOL (v6+): per-controller monotonic module-id
+			// counter.  Old saves load with 0 here and the post-load init seeds it
+			// from max(existing module ids) before any AllocateModuleId call.
+			writer.WriteLong(m_nextModuleId);
 		}
 
 		protected override void DeserializeData(BlobReader reader)
@@ -506,6 +608,19 @@ namespace ProgramableNetwork
 			if (version >= CONTROLLER_DESCRIPTION)
 			{
 				CustomDescription = Option<string>.Deserialize(reader);
+			}
+
+			// CONTROLLER_MODULE_ID_POOL (v6+): persisted module-id pool counter.
+			// Pre-v6 saves don't carry it; initContexts seeds it from max(existing
+			// module ids) so the next AllocateModuleId can't collide with legacy
+			// time-based ids that came along for the ride.
+			if (version >= CONTROLLER_MODULE_ID_POOL)
+			{
+				m_nextModuleId = reader.ReadLong();
+			}
+			else
+			{
+				m_nextModuleId = 0;
 			}
 
 			Log.Info($"Deserialized with {Modules.Count} modules" +
@@ -880,8 +995,8 @@ namespace ProgramableNetwork
 		public LocStrFormatted State { get; private set; }
 		public ColorRgba Color { get; private set; }
 
-		[DoNotSave(resolveAfterLoad: typeof(ResearchManager))]
-		public ResearchManager ResearchManager { get; private set; }
+		[DoNotSave(resolveAfterLoad: typeof(DependencyResolver))]
+		public DependencyResolver Resolver { get; set; }
 		public void SetColor(ColorRgba color)
 		{
 			Color = color;

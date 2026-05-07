@@ -93,6 +93,7 @@ namespace ProgramableNetwork
 		public static Option<IBlueprint> Save(
 			BlueprintsLibrary library,
 			ConfigSerializationContext context,
+			EntitiesCloneConfigHelper entitiesCloneConfigHelper,
 			Module module,
 			string userGivenName)
 		{
@@ -113,8 +114,7 @@ namespace ProgramableNetwork
 			// to save.  A short save/restore dance around the picked module's Row,
 			// Column, and InputModules keeps the snapshot clean of cable connections
 			// (stale refs to other modules) and re-anchors it to (0, 0).
-			EntitiesCloneConfigHelper helper = GlobalDependencyResolver.Get<EntitiesCloneConfigHelper>();
-			EntityConfigData data = helper.CreateConfigFrom(src);
+			EntityConfigData data = entitiesCloneConfigHelper.CreateConfigFrom(src);
 
 			int origRow = module.Row;
 			int origCol = module.Column;
@@ -148,19 +148,17 @@ namespace ProgramableNetwork
 					.SetValue(module, origInputs);
 			}
 
-			Option<IBlueprint> created = library.AddBlueprint(
-				library.Root,
+			// Bypass library.AddBlueprint's position normalize — see the comment in
+			// ControllerBlueprints.saveWithoutNormalize for why (the placer's
+			// GetEstPlacementHeight reads Position.Z and would put the controller in
+			// mid-air when world (0, 0) is below sea level).  Module blueprints are
+			// stored as controller-shaped EntityConfigData and can also be placed via
+			// the base game's blueprint browser, so the same fix applies.
+			return ControllerBlueprints.saveWithoutNormalize(
+				library,
 				ImmutableArray.Create(data),
-				ImmutableArray<TileSurfaceCopyPasteData>.Empty,
-				ImmutableArray<TileSurfaceCopyPasteData>.Empty);
-
-			if (created.HasValue)
-			{
-				library.RenameItem(created.Value, MakeTitle(userGivenName));
-				library.SetDescription(created.Value,
-					$"{module.Prototype.Symbol}  {module.Prototype.Strings.Name.TranslatedString}");
-			}
-			return created;
+				MakeTitle(userGivenName),
+				$"{module.Prototype.Symbol}  {module.Prototype.Strings.Name.TranslatedString}");
 		}
 
 		/// <summary>
@@ -242,13 +240,11 @@ namespace ProgramableNetwork
 			if (raw.Prototype == null || raw.Prototype == ModuleProto.Phantom) {
 				return Option<Module>.None;
 			}
-			// Give it a fresh module Id so it doesn't collide with the saved one if the
-			// player imports the same blueprint twice.  Mirrors the Module ctor approach.
-			System.Reflection.PropertyInfo idProp = typeof(Module).GetProperty(
-				nameof(Module.Id),
-				System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-			idProp?.SetValue(raw, DateTime.UtcNow.Ticks);
-			System.Threading.Thread.Sleep(1);
+			// Give it a fresh module Id from the destination controller's pool so it
+			// doesn't collide with the saved one if the player imports the same blueprint
+			// twice.  Single-module blueprint, so no second-pass cable remap is needed —
+			// blueprint Save already scrubs InputModules clean before serialising.
+			raw.Id = dst.AllocateModuleId();
 
 			foreach (IField field in raw.Prototype.Fields)
 			{

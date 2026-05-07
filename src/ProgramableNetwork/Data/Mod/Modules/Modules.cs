@@ -62,12 +62,20 @@ public class Modules : ModuleGroup, IModuleGroup {
 		// extensible prototype and records the InputExtensionCount that reproduces
 		// the original pin count (e.g. Sum_4 → Sum + 2 ext = 4 inputs).  Module-load
 		// path consults this table when a save references an unregistered proto.
+		// Sum_N also remap their output pin id "sum" -> "c" — the legacy modules
+		// declared their output as ("sum", "Sum") whereas the surviving Sum proto
+		// uses "c", so consumers' connectors carry "sum" and would be dropped
+		// without an explicit OutputIdMap.  Inputs match (a, b, c, d, ...) so no
+		// InputIdMap is needed.
+		Dictionary<string, string> sumOutputRemap = new Dictionary<string, string> { { "sum", "c" } };
 		Deprecation.RegisterDeprecation(
 			new ModuleProto.ID("Sum_4".ModuleId()),
-			new ModuleProto.ID("Sum".ModuleId()), inputExt: 2);
+			new ModuleProto.ID("Sum".ModuleId()),
+			inputExt: 2, outputIdMap: sumOutputRemap);
 		Deprecation.RegisterDeprecation(
 			new ModuleProto.ID("Sum_8".ModuleId()),
-			new ModuleProto.ID("Sum".ModuleId()), inputExt: 6);
+			new ModuleProto.ID("Sum".ModuleId()),
+			inputExt: 6, outputIdMap: sumOutputRemap);
 		Deprecation.RegisterDeprecation(
 			new ModuleProto.ID("Boolean_And_4".ModuleId()),
 			new ModuleProto.ID("Boolean_And_2".ModuleId()), inputExt: 2);
@@ -115,7 +123,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.Action(m => {
 				m.Info = false;
 				if (m.Input["pause", 0] > Fix32.Zero) {
-					GlobalDependencyResolver.Get<GameSpeedController>().RequestPause();
+					m.Controller.Resolver.Resolve<GameSpeedController>().RequestPause();
 					m.Info = true;
 				} else {
 					m.Info = false;
@@ -460,6 +468,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddControllerDevice()
 			.BuildAndAdd();
 
+		FieldInfo electricityManager = null;
 		registrator
 			.ModuleBuilderStart("Stats_Electricity", "Statistic: Electricity", "PWR")
 			.SetDescription("Reads global ElectricityManager metrics for the current tick. Outputs <b>consumption</b> (DemandedThisTick), <b>production</b> (GeneratedThisTick), <b>capacity</b> (GenerationCapacityThisTick) in kW, and <b>usage</b> as percentage 0-100 of consumption / capacity.")
@@ -467,33 +476,40 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddOutput("consumption", "Consumption")
 			.AddOutput("production", "Production")
 			.AddOutput("capacity", "Power capacity")
-			.AddOutput("usage", "Power usage (0-100)")
+			.AddOutput("demand", "Power demand")
 			.Width(4)
 			.Action(m => {
-				ElectricityManager electricity = m.Controller.ElectricityConsumer.Value.GetType()
-					.GetField("m_electricityManager", BindingFlags.Instance | BindingFlags.NonPublic)
-					.GetValue(m.Controller.ElectricityConsumer.Value) as ElectricityManager;
+				electricityManager ??= m.Controller.ElectricityConsumer.Value.GetType()
+					.GetField("m_electricityManager", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+				// Accessing the ElectricityManager through the ElectricityConsumer's private field is admittedly
+				// a bit hacky, but it avoids adding a new global dependency just for this module and keeps
+				// the electricity stats accurate to the current tick without needing to subscribe to updates or cache values.
+				ElectricityManager electricity = (ElectricityManager)electricityManager
+					.GetValue(m.Controller.ElectricityConsumer.Value);
 
 				Electricity consumption = electricity.DemandedThisTick;
 				Electricity production = electricity.GeneratedThisTick;
 				Electricity capacity = electricity.GenerationCapacityThisTick;
+				Electricity demand = electricity.DemandedThisTick;
 
 				m.Output["consumption"] = consumption.Value.ToFix32();
 				m.Output["production"] = production.Value.ToFix32();
 				m.Output["capacity"] = capacity.Value.ToFix32();
-				m.Output["usage"] = 100.ToFix32() * (consumption.Value.ToFix32() / capacity.Value.ToFix32());
+				m.Output["demand"] = demand.Value.ToFix32();
 			})
 			.AddDisplay("consumption", "Consumption", 1.2f.ToFix32())
 			.AddDisplay("production", "Production", 1.8f.ToFix32())
 			.AddDisplay("power", "Power", 1, image: true)
 			.Display(m => {
-				var stage = new[] { "kW", "MW", "GW", "TW" };
-				var cons = m.Output["consumption"];
-				var prod = m.Output["production"];
-				var cap = m.Output["capacity"];
-				var consUnit = 0;
-				var state = "";
-				if (prod == 0 || cons > prod) {
+				string[] stage = ["kW", "MW", "GW", "TW"];
+				Fix32 cons = m.Output["consumption"];
+				Fix32 prod = m.Output["production"];
+				Fix32 cap = m.Output["capacity"];
+				Fix32 dem = m.Output["demand"];
+				int consUnit = 0;
+				string state = "";
+				if (prod == 0 || cons > prod || dem > cap) {
 					state = "#E";
 				} else if (cons < (prod * 0.75f.ToFix32())) {
 					state = "#P";
@@ -596,13 +612,13 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 
 				if (m.FieldOrInput.EntityProtoIconified("vehicle") is DynamicEntityProto drivingEntity) {
-					var stats = GlobalDependencyResolver.Get<IVehiclesManager>().GetStats(drivingEntity, 0xFFFFFFFFFFFFFFFF);
+					var stats = m.Controller.Resolver.Resolve<IVehiclesManager>().GetStats(drivingEntity, 0xFFFFFFFFFFFFFFFF);
 					m.Output.Integer["count"] = stats.Owned;
 					m.Output.Integer["assignable"] = stats.Assignable;
 					return ModuleStatus.Running;
 				}
 
-				m.Output.Integer["count"] = GlobalDependencyResolver.Get<IVehiclesManager>().AllVehicles.Count;
+				m.Output.Integer["count"] = m.Controller.Resolver.Resolve<IVehiclesManager>().AllVehicles.Count;
 				m.Output.Integer["assignable"] = 0;
 				return ModuleStatus.Running;
 			})
@@ -1801,7 +1817,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					ulong zones = m.Field["zone", null] is { } zone
 						? ulong.Parse(zone)
 						: m.Controller.Context.LogisticsZonesManager.DefaultZone.Mask;
-					Option<Vehicle> v = GlobalDependencyResolver.Get<IVehiclesManager>()
+					Option<Vehicle> v = m.Controller.Resolver.Resolve<IVehiclesManager>()
 						.GetFreeVehicle<Vehicle>(drivingEntity, logistic.Position2f, zones);
 					if (v.HasValue) {
 						logistic.AssignVehicle(v.Value, doNotCancelJobs: true);
@@ -2143,7 +2159,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					return ModuleStatus.Error;
 				}
 
-				TrainsManager trainsManager = GlobalDependencyResolver.Get<TrainsManager>();
+				TrainsManager trainsManager = m.Controller.Resolver.Resolve<TrainsManager>();
 
 				var isGroup = trainsManager.TrainStationManager
 					.TrainStationEntities.TryGetValue(stationBase, out var group);
@@ -2569,7 +2585,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		Action<Module> ReadSignals(int digits) {
 			return (Module m) => {
-				FMManager fmManager = GlobalDependencyResolver.Get<FMManager>();
+				FMManager fmManager = m.Controller.Resolver.Resolve<FMManager>();
 
 				bool logging = m.Field.Bool["logging"];
 				if (logging) {
@@ -2821,9 +2837,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					return ModuleStatus.Error;
 				}
 
-				m.Output["value"] = GlobalDependencyResolver
-					.Get<VariableManager>()
-					.GetVariable(name);
+				m.Output["value"] = m.Controller.Resolver.Resolve<VariableManager>().GetVariable(name);
 				return ModuleStatus.Running;
 			})
 			.AddControllerDevice()
@@ -2856,8 +2870,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					return ModuleStatus.Error;
 				}
 
-				GlobalDependencyResolver
-					.Get<VariableManager>()
+				m.Controller.Resolver.Resolve<VariableManager>()
 					.SetVariable(name, m.FieldOrInput["value", Fix32.Zero]);
 				return ModuleStatus.Running;
 			})

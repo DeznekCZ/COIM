@@ -36,10 +36,10 @@ namespace ProgramableNetwork.Python
 					builder.SetHint(hint as string);
 				}
 				if (classEntry.classContext.TryGetValue("inputs", out object inputs)) {
-					AddIO(inputs as IList, builder.AddInput);
+					AddIO(inputs as IList, builder.AddInput, builder.AddInput);
 				}
 				if (classEntry.classContext.TryGetValue("outputs", out object outputs)) {
-					AddIO(outputs as IList, builder.AddOutput);
+					AddIO(outputs as IList, builder.AddOutput, builder.AddOutput);
 				}
 				if (classEntry.classContext.TryGetValue("displays", out object displays)) {
 					AddIO(displays as IList, builder.AddDisplayFromPython);
@@ -74,10 +74,21 @@ namespace ProgramableNetwork.Python
 					? inNames as IList : null;
 				IList outExtNames = classEntry.classContext.TryGetValue("output_extension_names", out object outNames)
 					? outNames as IList : null;
+				// Class-level opt-in: route every extension pin's display label through
+				// the shared registry instead of minting a per-module key. Requires an
+				// explicit *_extension_names list — no shared variant of the alphabet
+				// auto-namer (the auto-named ids would themselves be unique per module
+				// and there'd be no point sharing them).
+				bool inExtShared = classEntry.classContext.TryGetValue("input_extensions_shared", out object inSharedRaw)
+								   && inSharedRaw != null && Expressions.__bool__(inSharedRaw);
+				bool outExtShared = classEntry.classContext.TryGetValue("output_extensions_shared", out object outSharedRaw)
+									&& outSharedRaw != null && Expressions.__bool__(outSharedRaw);
 
 				if (classEntry.classContext.TryGetValue("input_extensions", out object inExt)) {
 					int n = Expressions.__int__(inExt);
-					if (inExtNames != null && inExtNames.Count >= n) {
+					if (inExtShared && inExtNames != null && inExtNames.Count >= n) {
+						builder.AllowInputExtensionsShared(n, idx => ExtSharedNameAt(inExtNames, idx));
+					} else if (inExtNames != null && inExtNames.Count >= n) {
 						builder.AllowInputExtensions(n, idx => ExtNameAt(inExtNames, idx));
 					} else {
 						builder.AllowInputExtensions(n);
@@ -85,7 +96,9 @@ namespace ProgramableNetwork.Python
 				}
 				if (classEntry.classContext.TryGetValue("output_extensions", out object outExt)) {
 					int n = Expressions.__int__(outExt);
-					if (outExtNames != null && outExtNames.Count >= n) {
+					if (outExtShared && outExtNames != null && outExtNames.Count >= n) {
+						builder.AllowOutputExtensionsShared(n, idx => ExtSharedNameAt(outExtNames, idx));
+					} else if (outExtNames != null && outExtNames.Count >= n) {
 						builder.AllowOutputExtensions(n, idx => ExtNameAt(outExtNames, idx));
 					} else {
 						builder.AllowOutputExtensions(n);
@@ -93,6 +106,19 @@ namespace ProgramableNetwork.Python
 				}
 				if (classEntry.classContext.TryGetValue("display_extensions", out object dispExt)) {
 					builder.AllowDisplayExtensions(Expressions.__int__(dispExt));
+				}
+
+				// `link_input_output_extensions` — when truthy, growing/shrinking either
+				// pin side's extension count is mirrored to the other side too.  Used by
+				// paired-channel modules like flip-flop where every in_N must always
+				// have its matching out_N.  Caller is expected to declare the same
+				// `input_extensions` and `output_extensions` cap so the linked sides
+				// can keep up without clamping.
+				if (classEntry.classContext.TryGetValue("link_input_output_extensions", out object linkIoRaw)
+					&& linkIoRaw != null
+					&& Expressions.__bool__(linkIoRaw))
+				{
+					builder.LinkInputOutputExtensions();
 				}
 
 				// Per-extension display widgets — list of Display constructors that
@@ -151,11 +177,18 @@ namespace ProgramableNetwork.Python
                 .ToList();
         }
 
-        private static void AddIO(IList modules, Func<string, string, ModuleProto.Builder> add)
+        private static void AddIO(
+            IList modules,
+            Func<string, string, ModuleProto.Builder> addPerModule,
+            Func<string, SharedLabel, ModuleProto.Builder> addShared)
         {
             foreach (ModuleConnectorProtoDefinition variable in modules ?? new List<ModuleConnectorProtoDefinition>())
             {
-                add(variable.id, variable.name);
+                if (variable.shared) {
+                    addShared(variable.id, variable.name.Shared());
+                } else {
+                    addPerModule(variable.id, variable.name);
+                }
             }
         }
 
@@ -304,6 +337,15 @@ namespace ProgramableNetwork.Python
             }
             string s = entry as string ?? ("ext_" + idx);
             return (s, s);
+        }
+
+        // Same as ExtNameAt but wraps the display label in a SharedLabel so the
+        // Builder routes it through SharedFieldLabels.Resolve. Used when the module
+        // class declares `input_extensions_shared = True` (or the output flavor).
+        private static (string id, SharedLabel shared) ExtSharedNameAt(IList list, int idx)
+        {
+            var (id, name) = ExtNameAt(list, idx);
+            return (id, name.Shared());
         }
     }
 }

@@ -67,7 +67,8 @@ public static class PlcPySyntax {
 					new Completion("and",   "Boolean and."),
 					new Completion("or",    "Boolean or."),
 					new Completion("not",   "Boolean not."),
-					new Completion("return","Exit current call with a value."),
+					new Completion("return","return STR sets an error message (stays Running). return ModuleStatus.X switches status."),
+					new Completion("ModuleStatus", "ModuleStatus.Running / .Paused / .Error — value to return from the script."),
 					new Completion("for",      "for VAR in EXPR: — iterate over a list/range."),
 					new Completion("while",    "while EXPR: — loop while expression is truthy."),
 					new Completion("break",    "Exit the innermost for/while immediately."),
@@ -119,6 +120,12 @@ public static class PlcPySyntax {
 					new Completion("One",      "Fix32 one."),
 					new Completion("Half",     "Fix32 0.5."),
 					new Completion("FromInt",  "Fix32.FromInt(i) — int → Fix32."),
+				};
+			case "ModuleStatus":
+				return new[] {
+					new Completion("Running", "Module is running normally — green LED."),
+					new Completion("Paused",  "Module is paused — yellow LED."),
+					new Completion("Error",   "Module is in an error state — red LED."),
 				};
 			default:
 				return EMPTY;
@@ -268,6 +275,11 @@ public static class PlcPySyntax {
 		{ "True",          "Boolean true." },
 		{ "False",         "Boolean false." },
 		{ "None",          "Null / not-connected sentinel." },
+		{ "return",        "return STR — sets the module error to STR and keeps it Running (red LED). return ModuleStatus.Running/.Paused/.Error — explicit status switch. Bare return (or no return) keeps the module Running with no error." },
+		{ "ModuleStatus",  "ModuleStatus enum: .Running (green LED), .Paused (yellow LED), .Error (red LED). Returnable from the script body." },
+		{ "ModuleStatus.Running", "Module is running normally — green LED." },
+		{ "ModuleStatus.Paused",  "Module is paused — yellow LED." },
+		{ "ModuleStatus.Error",   "Module is in an error state — red LED." },
 		{ "for",           "for VAR in EXPR: — iterate over a list, string, or range. break/continue allowed." },
 		{ "while",         "while EXPR: — loop while expression is truthy. Per-tick cap of 100k iterations." },
 		{ "break",         "Exit the innermost enclosing for/while immediately." },

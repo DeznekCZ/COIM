@@ -57,14 +57,14 @@ namespace ProgramableNetwork.Ui
 			}
 
 			// Replace existing modules wholesale with the saved set.  Two passes:
-			// (1) attach + assign fresh ids while remembering oldId → newId, then
+			// (1) attach + assign fresh ids from the destination controller's pool
+			// (Controller.AllocateModuleId), remembering oldId → newId, then
 			// (2) rewrite InputModules so cables that pointed within the template
 			// are preserved across the id rewrite.  Connections that pointed
 			// outside the template (shouldn't happen — Save scrubs externals — but
 			// guard anyway) get dropped because their old id isn't in the map.
 			controller.Modules.Clear();
 			Mafi.Collections.Dict<long, long> oldToNew = new Mafi.Collections.Dict<long, long>();
-			System.Reflection.PropertyInfo idProp = typeof(Module).GetProperty(nameof(Module.Id));
 			foreach (Module raw in modules.Value.AsEnumerable())
 			{
 				if (raw == null) {
@@ -85,9 +85,8 @@ namespace ProgramableNetwork.Ui
 					continue;
 				}
 				long oldId = raw.Id;
-				long newId = DateTime.UtcNow.Ticks;
-				idProp.SetValue(raw, newId);
-				System.Threading.Thread.Sleep(1);
+				long newId = controller.AllocateModuleId();
+				raw.Id = newId;
 				oldToNew[oldId] = newId;
 
 				foreach (IField field in raw.Prototype.Fields)

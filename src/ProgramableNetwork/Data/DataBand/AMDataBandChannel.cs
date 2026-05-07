@@ -46,8 +46,6 @@ namespace ProgramableNetwork
             }
         }
 
-        public Vector2i HomeLocation => GlobalDependencyResolver.Get<WorldMapManager>().Map.HomeLocation.Position;
-
         public AMDataBand OriginalDataBand { get; set; }
 
         public AMOperation Operation { get => m_operation; set => m_operation = value; }
@@ -223,7 +221,7 @@ namespace ProgramableNetwork
             if (!(WorldMapMine is null))
             {
                 if (random == null) {
-					random = GlobalDependencyResolver.Get<RandomProvider>().GetSimRandomFor(this);
+					random = OriginalDataBand.Antena.RandomProvider.GetSimRandomFor(this);
 				}
 
 				if (random.NextPercent() < ErrorPossibility(WorldMapMine))
@@ -276,7 +274,8 @@ namespace ProgramableNetwork
 
         public Fix32 Distance(WorldMapMine mine)
         {
-            return mine?.Location.Position.DistanceTo(HomeLocation) ?? Fix32.MaxValue;
+            return mine?.Location.Position
+				.DistanceTo(OriginalDataBand.Antena.WorldMapManager.Map.HomeLocation.Position) ?? Fix32.MaxValue;
         }
 
         public UiComponent CreateUI(Ui.AntenaInspector antenaInspector, IDataBandChannel channel)

@@ -129,9 +129,8 @@ namespace ProgramableNetwork.Ui
                     .OnClick(() => m_UiContext.CameraController.PanTo(controller.Position2f))
                     .OnDoubleClick(() =>
                     {
-                        UiContext UiContext = GlobalDependencyResolver.Get<UiContext>();
-                        if (UiContext.InspectorsManager.TryActivateFor(controller, out var inspectorController)) {
-							UiContext.InputMgr.ActivateNewController(inspectorController);
+                        if (m_UiContext.InspectorsManager.TryActivateFor(controller, out var inspectorController)) {
+							m_UiContext.InputMgr.ActivateNewController(inspectorController);
 						} else {
 							m_invalidOpSound.Play();
 						}
@@ -184,9 +183,8 @@ namespace ProgramableNetwork.Ui
                                             ? position : controller.Position2f))
                         .OnDoubleClick(() =>
                         {
-                            UiContext UiContext = GlobalDependencyResolver.Get<UiContext>();
-                            if (UiContext.InspectorsManager.TryActivateFor(entity, out var inspector)) {
-								UiContext.InputMgr.ActivateNewController(inspector);
+                            if (m_UiContext.InspectorsManager.TryActivateFor(entity, out var inspector)) {
+								m_UiContext.InputMgr.ActivateNewController(inspector);
 							} else {
 								m_invalidOpSound.Play();
 							}

@@ -12,6 +12,7 @@ using ProgramableNetwork.Data.Mod;
 using ProgramableNetwork.Python;
 using System;
 using System.Collections.Generic;
+using Mafi.Core.Entities.Blueprints;
 
 namespace ProgramableNetwork.Ui
 {
@@ -28,10 +29,13 @@ namespace ProgramableNetwork.Ui
 	{
 		private static readonly DropdownPositionPolicy POLICY = new DropdownPositionPolicy();
 		private string m_searchText = "";
+		private readonly BlueprintsLibrary m_blueprintsLibrary;
 
-		public PickControllerTemplate(Controller controller)
+		public PickControllerTemplate(Controller controller, BlueprintsLibrary blueprintsLibrary)
 			: base(POLICY, false, false, true)
 		{
+			m_blueprintsLibrary = blueprintsLibrary;
+
 			PanelWithHeader panel = AddAndReturn(new PanelWithHeader("Pick controller template".AsLoc()));
 			panel.Height(Px.Auto);
 
@@ -96,7 +100,7 @@ namespace ProgramableNetwork.Ui
 			this.Height(Px.Auto);
 		}
 
-		private static IEnumerable<AControllerTemplateEntry> CollectEntries(Controller controller)
+		private IEnumerable<AControllerTemplateEntry> CollectEntries(Controller controller)
 		{
 			// Python-defined templates first — these are the curated/built-in
 			// entries.  Read from the cache populated at RegisterDataInternal time
@@ -111,32 +115,20 @@ namespace ProgramableNetwork.Ui
 			// Then user-saved [PN-Controller]- blueprints, sorted by their library
 			// title so the alphabetical order in this picker matches the base
 			// blueprint browser.
-			Mafi.Core.Entities.Blueprints.BlueprintsLibrary library = null;
-			try
+			Lyst<IBlueprint> all = new Lyst<IBlueprint>();
+			foreach (var bp in EnumerateControllerBlueprints(m_blueprintsLibrary))
 			{
-				library = GlobalDependencyResolver.Get<Mafi.Core.Entities.Blueprints.BlueprintsLibrary>();
+				all.Add(bp);
 			}
-			catch (Exception e)
+			all.Sort((a, b) => string.CompareOrdinal(a.Name ?? "", b.Name ?? ""));
+			foreach (var bp in all)
 			{
-				Log.Exception(e);
-			}
-			if (library != null)
-			{
-				Lyst<Mafi.Core.Entities.Blueprints.IBlueprint> all = new Lyst<Mafi.Core.Entities.Blueprints.IBlueprint>();
-				foreach (var bp in EnumerateControllerBlueprints(library))
-				{
-					all.Add(bp);
-				}
-				all.Sort((a, b) => string.CompareOrdinal(a.Name ?? "", b.Name ?? ""));
-				foreach (var bp in all)
-				{
-					yield return new BlueprintControllerTemplateEntry(bp);
-				}
+				yield return new BlueprintControllerTemplateEntry(bp);
 			}
 		}
 
-		private static IEnumerable<Mafi.Core.Entities.Blueprints.IBlueprint> EnumerateControllerBlueprints(
-			Mafi.Core.Entities.Blueprints.BlueprintsLibrary library)
+		private static IEnumerable<IBlueprint> EnumerateControllerBlueprints(
+			BlueprintsLibrary library)
 		{
 			if (library?.Root == null) {
 				yield break;
@@ -146,8 +138,8 @@ namespace ProgramableNetwork.Ui
 			}
 		}
 
-		private static IEnumerable<Mafi.Core.Entities.Blueprints.IBlueprint> walk(
-			Mafi.Core.Entities.Blueprints.IBlueprintsFolder folder)
+		private static IEnumerable<IBlueprint> walk(
+			IBlueprintsFolder folder)
 		{
 			if (folder == null) {
 				yield break;

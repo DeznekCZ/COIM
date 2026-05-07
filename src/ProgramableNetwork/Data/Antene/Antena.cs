@@ -11,6 +11,7 @@ using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.ComputingPower;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Entities.Static;
+using Mafi.Core.World;
 using static ProgramableNetwork.DataBands;
 
 namespace ProgramableNetwork
@@ -31,7 +32,9 @@ namespace ProgramableNetwork
         public Option<string> CustomTitle { get; set; }
         public IDataBand DataBand { get; set; }
 
-        public Antena(EntityId id, AntenaProto proto, TileTransform transform, EntityContext context, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
+        public Antena(EntityId id, AntenaProto proto, TileTransform transform, EntityContext context,
+			IEntityMaintenanceProvidersFactory maintenanceProvidersFactory, RandomProvider randomProvider,
+			IWorldMapManager worldMapManager)
             : base(id, proto, transform, context)
         {
             Prototype = proto;
@@ -40,6 +43,8 @@ namespace ProgramableNetwork
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
             m_maintenanceConsumer = maintenanceProvidersFactory.CreateFor(this);
+			WorldMapManager = worldMapManager;
+			RandomProvider = randomProvider;
 
             DataBand = new UnkownnDataBandType(Context, Context.ProtosDb.Get<DataBandProto>(DataBand_Unknown).ValueOrThrow("Unknown signal not found"), this);
         }
@@ -99,11 +104,14 @@ namespace ProgramableNetwork
 
         [InitAfterLoad(InitPriority.Normal)]
         [OnlyForSaveCompatibility(null)]
-        private void initContexts(int saveVersion)
+        private void initContexts(int saveVersion, DependencyResolver resolver)
         {
             Log.Info($"Initialize context after load");
 
-            Prototype = Context.ProtosDb.Get<AntenaProto>(m_protoId).ValueOrThrow("Invalid antene proto: " + m_protoId);
+            WorldMapManager = resolver.Resolve<IWorldMapManager>();
+            RandomProvider = resolver.Resolve<RandomProvider>();
+
+			Prototype = Context.ProtosDb.Get<AntenaProto>(m_protoId).ValueOrThrow("Invalid antene proto: " + m_protoId);
             m_electricConsumer = m_electricConsumer ?? Context.ElectricityConsumerFactory.CreateConsumer(this);
             m_computingConsumer = m_computingConsumer ?? Context.ComputingConsumerFactory.CreateConsumer(this);
 
@@ -258,5 +266,9 @@ namespace ProgramableNetwork
 
         [DoNotSave()]
         public bool IsCargoAffectedByGeneralPriority => false;
-    }
+		[DoNotSave(resolveAfterLoad:typeof(IWorldMapManager))]
+		public IWorldMapManager WorldMapManager { get; private set; }
+		[DoNotSave(resolveAfterLoad:typeof(RandomProvider))]
+		public RandomProvider RandomProvider { get; private set; }
+	}
 }
