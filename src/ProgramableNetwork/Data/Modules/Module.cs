@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core.Research;
+using ProgramableNetwork.Python;
 using UnityEngine;
 
 namespace ProgramableNetwork
@@ -442,8 +443,48 @@ namespace ProgramableNetwork
 		// hash diverges from m_compiledSourceHash.
 		[DoNotSave(0, null)]
 		public object CompiledBlock { get; set; }
+		// Compiled cache for the PLC's init: section.  Same lifetime as
+		// CompiledBlock — recreated whenever the source hash diverges, never
+		// persisted (the Block AST itself isn't serializable; we re-tokenize
+		// + re-parse on first execute after load).
+		[DoNotSave(0, null)]
+		public object CompiledInitBlock { get; set; }
+		// Preamble — top-level code outside init: / main:.  Holds player-
+		// authored helper `def` / `class` definitions that should be
+		// callable from both sections.  Compiled once per source change;
+		// runs once per compile to register its functions into PlcContext
+		// so init / main pick them up via the persistent-vars overlay.
+		[DoNotSave(0, null)]
+		public object CompiledPreambleBlock { get; set; }
 		[DoNotSave(0, null)]
 		public int CompiledSourceHash { get; set; }
+
+		// Per-tick "live" runtime context — set by PlcPy.RunBlock at the
+		// start of each tick (preamble / init / main) to the dict the
+		// statements are actually executing against.  Preamble-registered
+		// Methods read this when invoked so their ChildContext parent is
+		// the *current* tick's scope (with init's freshly-set vars and
+		// main's running mutations) instead of the stale snapshot the
+		// preamble captured when it first registered them.  Cleared in
+		// the finally so a method called outside an active tick falls
+		// back to the captured preamble scope.
+		[DoNotSave(0, null)]
+		public System.Collections.Generic.IDictionary<string, object> CurrentPlcRuntime { get; set; }
+
+		// Player-defined variables that survive between init and run, and
+		// across run ticks.  Populated by PlcPy's init dispatch, mutated by
+		// each run tick, and serialised on save.  Stays null for non-PLC
+		// modules and lazy-allocated by the PLC code path so non-PLC
+		// instances pay nothing for the field.
+		//
+		// Only the subset of types PlcPy can serialise
+		// is round-tripped to the save (primitives + Fix32 + null);
+		// non-serialisable values (Constructor, Type, wrappers, generic
+		// collections) are dropped on save and won't reappear after load.
+		// The init: block re-runs after any non-Running result anyway, so
+		// dropping non-serialisable scratch values is recoverable.
+		[DoNotSave(0, null)]
+		public Dict<string, object> PlcContext { get; set; }
 
 		protected void SerializeData(BlobWriter writer)
 		{
@@ -453,7 +494,7 @@ namespace ProgramableNetwork
 
 			writer.WriteLong(Id);
 			writer.WriteString(m_protoId);
-			writer.WriteInt(/*Version*/ Controller.MODULE_DISPLAY_EXTENSIONS);
+			writer.WriteInt(/*Version*/ Controller.MODULE_PLC_CONTEXT);
 			writer.WriteBool(IsPaused);
 			writer.WriteInt((int)Status);
 
@@ -494,6 +535,15 @@ namespace ProgramableNetwork
 			writer.WriteInt(InputExtensionCount);
 			writer.WriteInt(OutputExtensionCount);
 			writer.WriteInt(DisplayExtensionCount);
+
+			// v9+ MODULE_PLC_CONTEXT: PLC-PY persistent scratch dict.  Always
+			// written (count int + entries) — empty/missing context produces
+			// `0` for the count and zero entry bytes, so non-PLC modules pay
+			// 4 bytes per save, which is negligible and avoids burning a flag
+			// bit on it.  Whitelisted types only; non-serialisable values
+			// (Constructors, Type, wrappers) are dropped on save.  See
+			// PlcContextSerializer.IsSerialisable for the supported set.
+			PlcContextSerializer.Serialize(PlcContext, writer);
 		}
 
 		protected void DeserializeData(BlobReader reader)
@@ -557,6 +607,21 @@ namespace ProgramableNetwork
 				{
 					DisplayExtensionCount = 0;
 				}
+
+				// v9+ MODULE_PLC_CONTEXT: PLC-PY scratch dict (player vars
+				// from init/run).  Pre-v9 saves don't carry it — start with
+				// a fresh empty dict so the next Action can run init: from
+				// a clean slate.  Same shape on read regardless of whether
+				// the module is a PLC instance or not (non-PLC modules
+				// simply leave the dict alone).
+				if (loadedVersion >= Controller.MODULE_PLC_CONTEXT)
+				{
+					PlcContext = PlcContextSerializer.Deserialize(reader);
+				}
+				else
+				{
+					PlcContext = new Dict<string, object>();
+				}
 			}
 			else
 			{
@@ -587,6 +652,9 @@ namespace ProgramableNetwork
 				// else: position is back-filled by Controller from its legacy Rows table.
 
 				ArrayData = System.Array.Empty<Fix32>();
+				// Pre-v5 (and pre-v9) saves never wrote a PLC context — start
+				// the dict empty so the next Action can populate it from init.
+				PlcContext = new Dict<string, object>();
 			}
 
 			Log.Info($"[Programable Network] Instance (deserialization): {GetHashCode()}({Id}), version: {loadedVersion}");

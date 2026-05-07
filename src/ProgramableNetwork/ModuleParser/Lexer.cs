@@ -99,6 +99,22 @@ namespace ProgramableNetwork.Python
                         break;
 
                     case PythonTokens.name:
+                        // PLC-PY section header: `init:` and `main:` only at
+                        // the script's TOP level (parentTree is null).  Same
+                        // shape as ParseIf / ParseFor / ParseWhile — a name
+                        // token followed by `:` introduces an indented body.
+                        // Restricting to top level keeps `init = 1` / `main
+                        // = foo()` working as ordinary assignments anywhere
+                        // a section can't legally appear (inside a def, an
+                        // if branch, a for body, etc.).
+                        if (parentTree == null
+                            && (token.value == "init" || token.value == "main")
+                            && enumerator.Count > 0
+                            && enumerator.First.Value.type == PythonTokens.block)
+                        {
+                            ParseSection(tree, token.value);
+                            break;
+                        }
                         // Assignment
                         Revert(token);
                         IExpression leftExpression = ParseExpression();

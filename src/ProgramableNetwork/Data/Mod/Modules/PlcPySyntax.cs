@@ -28,6 +28,11 @@ public static class PlcPySyntax {
 	// glance — it's the only player-visible variable that's pre-bound by
 	// the runtime, which is worth signalling differently from `if`/`def`.
 	private const string COLOR_SELF     = "#c586c0";  // violet — the implicit `self` binding
+	// Function / method names — both at definition (`def NAME(`) and at
+	// call sites (`NAME(`).  Same yellow VS Code Dark+ uses for callables;
+	// makes the script's "what gets invoked" visually pop against the
+	// surrounding identifiers and keywords.
+	private const string COLOR_METHOD   = "#dcdcaa";  // yellow — function / method names
 
 	// Identifier docs displayed when the player hovers a known name in
 	// the editor.  Keep entries short — these render in a tooltip strip.
@@ -76,6 +81,8 @@ public static class PlcPySyntax {
 					new Completion("in",       "Loop binder (for x in xs:) and membership test."),
 					new Completion("range",    "range(stop) / (start, stop) / (start, stop, step) — int sequence."),
 					new Completion("len",      "len(value) — string/list/dict size."),
+					new Completion("init",     "init: section — runs once after compile or after any non-Running result. Seeds variables that main: reuses each tick."),
+					new Completion("main",     "main: section — body executed every tick. Default when no init:/main: split is given."),
 				};
 			case "self":
 				return new[] {
@@ -287,6 +294,9 @@ public static class PlcPySyntax {
 		{ "in",            "Inside `for VAR in EXPR:` introduces the iteration; elsewhere it's a membership test (`x in xs`)." },
 		{ "range",         "range(stop) / range(start, stop) / range(start, stop, step) — returns a list of ints to iterate." },
 		{ "len",           "len(value) — length of a string, list, dict, or any iterable." },
+		{ "init",          "init: section header at column 0. Body runs once after the script compiles, and again after any tick that returns a non-Running ModuleStatus. Use it to seed scratch variables and per-instance state. Variables you assign here survive into main: and across main: ticks; they're saved with the world (whitelisted types only — primitives, strings, Fix32)." },
+		{ "main",          "main: section header at column 0. Body runs every tick against the same scope as init: and the preamble. If the script has no `init:` / `main:` headers at all, the entire source is treated as main:." },
+		{ "def",           "def NAME(args): … — top-level function definition. Place it OUTSIDE any init: / main: section (the preamble) to make it callable from both. The function survives across ticks within a session; saves drop it (Methods aren't serialisable) but the preamble re-runs on load to recreate it." },
 	};
 
 	// Walks the tokens once, building a colored rich-text version of the
@@ -311,8 +321,29 @@ public static class PlcPySyntax {
 
 		List<int> lineOffsets = ComputeLineOffsets(source);
 		List<ColorSpan> spans = new List<ColorSpan>(tokens.Length);
-		foreach (Token token in tokens) {
+		for (int ti = 0; ti < tokens.Length; ti++) {
+			Token token = tokens[ti];
 			string color = ColorFor(token);
+			// Method coloring — applied as a post-pass on `name` tokens so
+			// the existing keyword / `self` / `init`/`main` checks in
+			// ColorFor stay first.  Two heuristics matching VS Code's
+			// "callable" yellow:
+			//   1. Definition site: previous non-trivial token is `def`,
+			//      so the next `name` is the function being defined.
+			//   2. Call site: next non-trivial token is `lparen`, so the
+			//      `name` is being invoked.  Catches both `helper(...)`
+			//      and dotted calls (`obj.method(...)` — the `method` name
+			//      is followed by `lparen`).
+			// "Non-trivial" means we skip newline tokens when peeking, so
+			// a `def\n NAME` (rare but legal) still highlights NAME.
+			if (color == null && token.type == PythonTokens.name) {
+				Token prev = PrevNonTrivial(tokens, ti);
+				Token next = NextNonTrivial(tokens, ti);
+				if ((prev != null && prev.type == PythonTokens.def)
+					|| (next != null && next.type == PythonTokens.lparen)) {
+					color = COLOR_METHOD;
+				}
+			}
 			if (color == null) {
 				continue;
 			}
@@ -364,6 +395,41 @@ public static class PlcPySyntax {
 		public string Color;
 	}
 
+	// Walk forward / backward through the token stream skipping the
+	// trivial tokens that don't affect the keyword-vs-callable
+	// classification.  Newlines + comments would otherwise hide a
+	// `def\n NAME` definition or a `NAME\n(` call from the lookahead /
+	// lookbehind, even though both are syntactically equivalent to the
+	// adjacent forms.  `indent` / `dedent` are also skipped because the
+	// section split for `init:` / `main:` introduces them between the
+	// def and its body.
+	private static Token NextNonTrivial(Token[] tokens, int from) {
+		for (int i = from + 1; i < tokens.Length; i++) {
+			if (IsTriviaForCallableLookup(tokens[i])) {
+				continue;
+			}
+			return tokens[i];
+		}
+		return null;
+	}
+
+	private static Token PrevNonTrivial(Token[] tokens, int from) {
+		for (int i = from - 1; i >= 0; i--) {
+			if (IsTriviaForCallableLookup(tokens[i])) {
+				continue;
+			}
+			return tokens[i];
+		}
+		return null;
+	}
+
+	private static bool IsTriviaForCallableLookup(Token t) {
+		return t.type == PythonTokens.newline
+			|| t.type == PythonTokens.comment
+			|| t.type == PythonTokens.indent
+			|| t.type == PythonTokens.dedent;
+	}
+
 	private static List<int> ComputeLineOffsets(string source) {
 		List<int> offsets = new List<int> { 0 };
 		for (int i = 0; i < source.Length; i++) {
@@ -381,6 +447,19 @@ public static class PlcPySyntax {
 		// new keyword that the lexer would then need to special-case.
 		if (token.type == PythonTokens.name && token.value == "self") {
 			return COLOR_SELF;
+		}
+		// `init:` and `main:` are also plain `name` tokens — the section
+		// split runs at the text level before the tokenizer, so the lexer
+		// never sees them as keywords.  Color them as keywords *only* when
+		// the token sits at column 1 (the section-split rule), so a player
+		// who happens to use `init` / `main` as a regular variable name
+		// inside a body keeps the default color.  We don't lookahead for
+		// the trailing `:` because that'd require buffering — column 1 is
+		// the cheaper proxy and matches the actual split semantics.
+		if (token.type == PythonTokens.name
+			&& token.column == 1
+			&& (token.value == "init" || token.value == "main")) {
+			return COLOR_KEYWORD;
 		}
 		switch (token.type) {
 			case PythonTokens.ifp:

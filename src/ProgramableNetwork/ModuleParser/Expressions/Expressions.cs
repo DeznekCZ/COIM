@@ -180,14 +180,26 @@ namespace ProgramableNetwork.Python
             }
             if (executable is Method function)
             {
-                return function.Invoke(
-                    new IArgumentValue[] {
-                        new OrderedValue(function.Self)
-                    }.Concat(arguments.Select(a =>
-                        a.name == null
-                            ? (IArgumentValue)new OrderedValue(a.value)
-                            : (IArgumentValue)new NamedValue(a.name, a.value))
-                    ).ToArray());
+                // Class-method dotted access (`obj.foo(arg)`) sets
+                // function.Self to the receiver in PropertyExpression.GetReference,
+                // and the declared signature includes the conventional
+                // `self` first parameter — so we prepend Self here to bind
+                // it.  Free functions registered by RegisterPreamble never
+                // set Self (their declared parameters don't include it),
+                // so prepending a null would shift every player-supplied
+                // arg one slot to the right and bind null to the first
+                // declared name — which surfaces as a downstream
+                // "Cannot add null values" / null-deref the moment the
+                // body uses that parameter.  Skipping the prepend when
+                // Self is null keeps both shapes working.
+                IEnumerable<IArgumentValue> mapped = arguments.Select(a =>
+                    a.name == null
+                        ? (IArgumentValue)new OrderedValue(a.value)
+                        : (IArgumentValue)new NamedValue(a.name, a.value));
+                IArgumentValue[] callArgs = function.Self != null
+                    ? new IArgumentValue[] { new OrderedValue(function.Self) }.Concat(mapped).ToArray()
+                    : mapped.ToArray();
+                return function.Invoke(callArgs);
             }
             if (executable is Type type)
             {
@@ -911,7 +923,7 @@ namespace ProgramableNetwork.Python
         public static object __add__(object left, object right)
         {
             if (left is null || right is null) {
-				throw new NotImplementedException($"Cannot divide null values");
+				throw new NotImplementedException($"Cannot add null values");
 			}
 			if (left is string ls) {
 				return ls + (right is string rs ? rs : right?.ToString());

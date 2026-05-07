@@ -963,7 +963,17 @@ public class PlcPyCodeEditorWindow : Window {
 			return;
 		}
 
-		m_statsLabel.text = "Tokens: " + module.LexerNodeCount;
+		RefreshStatsLabel(module);
+		// Schedule a periodic refresh of the stats label (only) so the
+		// player sees live timing while tuning the script — every 500 ms
+		// is well below the perceptual threshold and reads two int dict
+		// entries per fire.  Doesn't touch the editor / floater / error
+		// strip, so it doesn't fight the "editor is independent of the
+		// module after open" behaviour the rest of LoadFromModule
+		// preserves.
+		m_statsLabel.schedule
+			.Execute(() => RefreshStatsLabel(module))
+			.Every(500);
 		string compileError = module.StringData.TryGetValue("__compile_error", out string ce) ? ce : null;
 		string runError = module.StringData.TryGetValue("__run_error", out string re) ? re : null;
 		if (!string.IsNullOrEmpty(compileError)) {
@@ -973,6 +983,29 @@ public class PlcPyCodeEditorWindow : Window {
 		} else {
 			HideError();
 		}
+	}
+
+	// Renders the live timing snapshot ("Tokens: T  |  S stmts, C calls,
+	// U µs / B budget") into the stats label.  Pulls everything from
+	// NumberData so the values survive saves and reloads — the runtime
+	// updates them on every tick via PlcPy.RecordTiming.  Falls back to
+	// a tokens-only line for fresh modules that haven't ticked yet.
+	private void RefreshStatsLabel(Module module) {
+		if (module == null) {
+			m_statsLabel.text = "(no module bound)";
+			return;
+		}
+		System.Text.StringBuilder sb = new System.Text.StringBuilder();
+		sb.Append("Tokens: ").Append(module.LexerNodeCount);
+		// Wall-clock cost of the last tick — written by PlcPy.RecordTiming
+		// and persisted via NumberData so the value survives saves and is
+		// the same number the inspector / runtime sees.  Absent on fresh
+		// modules that haven't ticked yet; we leave the line off in that
+		// case rather than show "0 µs" that misleads the player.
+		if (module.NumberData.TryGetValue("__last_us", out int us)) {
+			sb.Append("  |  ").Append(us).Append(" µs");
+		}
+		m_statsLabel.text = sb.ToString();
 	}
 
 	// Intercept Escape + swallow Mafi's poll-based input dispatch while

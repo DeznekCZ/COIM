@@ -74,6 +74,16 @@ namespace ProgramableNetwork
 		// can grow the display from the inspector after load.
 		public const int MODULE_DISPLAY_EXTENSIONS = 8;
 
+		// PLC-PY persistent context — Dict<string, object> of player-defined
+		// variables that survive the init: → run: handoff and round-trip
+		// through saves.  Stored at the very end of the module's data block
+		// as `WriteInt(count) + entries`, so v8 saves (which lack it) can be
+		// loaded by reading the rest of the module's fields and skipping the
+		// context read.  PlcContextSerializer's whitelist drops non-
+		// serialisable values silently; init: re-runs after any non-Running
+		// result anyway, so dropped scratch values are recoverable.
+		public const int MODULE_PLC_CONTEXT = 9;
+
 		// Controller serialization version where module ids switched from a
 		// time-based source (DateTime.UtcNow.Ticks + Thread.Sleep(1)) to a
 		// per-controller pool counter persisted on the controller itself.

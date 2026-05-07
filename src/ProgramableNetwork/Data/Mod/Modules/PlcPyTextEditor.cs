@@ -309,6 +309,124 @@ public class PlcPyTextEditor : VisualElement {
 		}
 	}
 
+	// Inserts a newline plus the leading whitespace (spaces / tabs) of
+	// the line the caret is currently on — auto-indent.  After hitting
+	// Enter inside a `for ... :` body, the next line lands at the same
+	// column as the previous one instead of at column 0.  When a
+	// selection is active we treat it like `Insert("\n" + indent)` —
+	// the selection is replaced with the newline + indent, matching
+	// what the player typed.
+	public void InsertNewlineWithIndent() {
+		// Indent comes from the BEGIN of the current line, before any
+		// pending replacement clobbers the caret position.  When a
+		// selection straddles multiple lines we use the line containing
+		// SelectionStart so the inserted indent matches what's visually
+		// to the left of the new caret.
+		int basisCaret = HasSelection ? SelectionStart : m_caretIndex;
+		int lineStart = basisCaret;
+		while (lineStart > 0 && m_text[lineStart - 1] != '\n') {
+			lineStart--;
+		}
+		int indentEnd = lineStart;
+		while (indentEnd < m_text.Length
+			&& (m_text[indentEnd] == ' ' || m_text[indentEnd] == '\t')) {
+			indentEnd++;
+		}
+		// Cap the copied indent at the basis caret — if the player hit
+		// Enter MID-indent (e.g., between two leading spaces), copy only
+		// the indent up to the caret rather than the full leading run.
+		if (indentEnd > basisCaret) {
+			indentEnd = basisCaret;
+		}
+		string indent = m_text.Substring(lineStart, indentEnd - lineStart);
+		Insert("\n" + indent);
+	}
+
+	// Strips up to 4 leading whitespace characters from the line the
+	// caret is on (or every line touched by the selection) — Shift+Tab.
+	// Spaces and tabs are treated equivalently for the strip; we don't
+	// translate tabs to spaces because the editor uses spaces by default
+	// and the tab path would only fire if the player pasted tab-indented
+	// code, which they probably want to keep tab-indented.
+	//
+	// Caret tracking: the dedent shrinks the line by N characters at the
+	// line start, so the caret + selection move left by N if they were
+	// at or past the strip's end.  Without this adjustment the caret
+	// would jump backwards by N characters per dedented line, which
+	// reads as the editor "swallowing" the keystroke's text.
+	public void DedentCurrentLine() {
+		const int DEDENT_STEP = 4;
+		int rangeStart = HasSelection ? SelectionStart : m_caretIndex;
+		int rangeEnd = HasSelection ? SelectionEnd : m_caretIndex;
+
+		// Walk back to the start of the first affected line and forward
+		// to the end of the last affected line so we dedent every line
+		// the selection touches, even partial ones.
+		int firstLineStart = rangeStart;
+		while (firstLineStart > 0 && m_text[firstLineStart - 1] != '\n') {
+			firstLineStart--;
+		}
+
+		System.Text.StringBuilder sb = new System.Text.StringBuilder();
+		int cursor = firstLineStart;
+		int totalRemoved = 0;
+		// Adjustments applied to the caret + anchor at the end so they
+		// end up at the right offsets in the rebuilt text.
+		int caretAdjust = 0;
+		int anchorAdjust = 0;
+		while (cursor < m_text.Length)
+		{
+			int lineStart = cursor;
+			int lineEnd = lineStart;
+			while (lineEnd < m_text.Length && m_text[lineEnd] != '\n') {
+				lineEnd++;
+			}
+			// Stop after the line containing the selection's end.
+			bool pastLastLine = lineStart > rangeEnd;
+			if (pastLastLine) {
+				break;
+			}
+			int strip = 0;
+			while (strip < DEDENT_STEP
+				&& lineStart + strip < lineEnd
+				&& (m_text[lineStart + strip] == ' ' || m_text[lineStart + strip] == '\t')) {
+				strip++;
+			}
+			// Caret / anchor adjustments — push left by `strip` for any
+			// position past the line's strip boundary on this line.
+			int stripBoundary = lineStart + strip;
+			if (m_caretIndex >= stripBoundary) {
+				caretAdjust -= System.Math.Min(strip, m_caretIndex - lineStart);
+			}
+			if (m_anchorIndex >= stripBoundary) {
+				anchorAdjust -= System.Math.Min(strip, m_anchorIndex - lineStart);
+			}
+			totalRemoved += strip;
+			sb.Append(m_text, lineStart + strip, lineEnd - lineStart - strip);
+			if (lineEnd < m_text.Length) {
+				sb.Append('\n');
+			}
+			cursor = lineEnd + 1;
+		}
+
+		if (totalRemoved == 0) {
+			return; // Nothing to dedent — leave caret + text untouched.
+		}
+
+		// Splice the rebuilt segment back into the full text and apply
+		// caret / anchor adjustments.  ReplaceRange is half-open
+		// [start, end), so we need `cursor` (one past the last processed
+		// line's '\n') as the end — using `cursor - 1` would leave the
+		// original '\n' in place and `sb`'s appended '\n' would double
+		// it.  Clamp to text length for the trailing-line-without-'\n'
+		// case where cursor = text.Length + 1.
+		int replaceEnd = System.Math.Min(cursor, m_text.Length);
+		ReplaceRange(firstLineStart, replaceEnd, sb.ToString());
+		m_caretIndex = System.Math.Max(0, m_caretIndex + caretAdjust);
+		m_anchorIndex = System.Math.Max(0, m_anchorIndex + anchorAdjust);
+		RenderCaretAndSelection();
+	}
+
 	public void SelectAll() {
 		m_anchorIndex = 0;
 		m_caretIndex = m_text.Length;
@@ -389,18 +507,22 @@ public class PlcPyTextEditor : VisualElement {
 				evt.StopPropagation(); evt.PreventDefault(); return;
 			case UnityEngine.KeyCode.Return:
 			case UnityEngine.KeyCode.KeypadEnter:
-				Insert("\n");
+				InsertNewlineWithIndent();
 				evt.StopPropagation(); evt.PreventDefault(); return;
 			case UnityEngine.KeyCode.Tab:
-				// Four-space indent — the default Tab focus-cycle would be
-				// useless mid-code.  Shift+Tab is intentionally NOT handled
-				// here so the player can still tab out of the editor when
-				// they really want to (matches existing behavior).
-				if (!shift) {
+				// Tab — insert a 4-space indent at the caret.  Shift+Tab —
+				// dedent the current line by up to 4 leading spaces.  Both
+				// are scoped to the editor; we used to let Shift+Tab fall
+				// through to the focus-cycle so the player could escape the
+				// editor, but that's now handled by the Back / X / Escape
+				// paths and Shift+Tab is more useful as a code-editing
+				// primitive.
+				if (shift) {
+					DedentCurrentLine();
+				} else {
 					Insert("    ");
-					evt.StopPropagation(); evt.PreventDefault(); return;
 				}
-				return;
+				evt.StopPropagation(); evt.PreventDefault(); return;
 		}
 
 		if (ctrl) {

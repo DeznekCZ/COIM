@@ -41,6 +41,7 @@ using System.Linq;
 using System.Reflection;
 using Mafi.Base.Prototypes.Machines.PowerGenerators;
 using Mafi.Core.Factory.MechanicalPower;
+using Mafi.Core.Prototypes;
 using Mafi.Localization;
 using Mafi.Unity.Ui.Library;
 using static Mafi.Unity.Assets.Unity;
@@ -1232,9 +1233,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddControllerDevice()
 			.BuildAndAdd();
 
+		SettlementsManager settlementsManager = null; // lazy init in action to avoid circular dependency
+		Fix32 neg1 = (-1).ToFix32();
+		Fix32 neg2 = (-2).ToFix32();
 		registrator
 			.ModuleBuilderStart("Connection_Storage", "Connection: Storage", "STOCK")
-			.SetDescription("Reads the linked storage <b>entity</b> (storages, in/out buffers, virtual miners, FlyWheels, ThermalStorage). Outputs <b>quantity</b>, <b>capacity</b>, <b>fullness</b> (%), and stored <b>product</b> slim-id. With <b>field_product</b> set, filters buffers by the chosen <b>product</b>.")
+			.SetDescription("Reads the linked storage <b>entity</b> (storages, in/out buffers, virtual miners, FlyWheels, ThermalStorage, Settlements, or Captain Office). Outputs <b>quantity</b>, <b>capacity</b>, <b>fullness</b> (%), and stored <b>product</b> slim-id. With <b>field_product</b> set, filters buffers by the chosen <b>product</b>.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddInput("product", "Product")
@@ -1244,7 +1248,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddOutput("product", "Product in #")
 			.AddEntityField<LayoutEntity>("entity", "Connected storage", "Storage connectable by cable 40m from"
 					+ " controller\nCan read everything with buffer information including Thermal Storage and"
-					+ " shaft of generators in single row.",
+					+ " shaft of generators in single row, and also Settlements and Captain Office (for population)",
 				filter: (m, e) => e
 					is IEntityWithStoredProductForUi
 					or IEntityWithInputBuffersForUi
@@ -1252,6 +1256,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 					or IVirtualResourceMiningEntity
 					or FlyWheelEntity
 					or ThermalStorage
+					or SettlementHousingModule
+					or CaptainOffice
 				)
 			.AddProductField("product", "Product", "Select filter for product", overrideInput: true)
 			.Width(4)
@@ -1315,7 +1321,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 						m.Output["quantity"] = 0;
 						m.Output["capacity"] = 0;
 						m.Output["fullness"] = 100;
-						m.Output["product"] = -1;
+						m.Output["product"] = neg1;
 						return ModuleStatus.Running;
 					}
 
@@ -1326,19 +1332,46 @@ public class Modules : ModuleGroup, IModuleGroup {
 					return ModuleStatus.Running;
 				}
 
+				if (entity is SettlementHousingModule housing) {
+					int valuePopulation = housing.Settlement.Value.Population;
+					int valueTotalHousingCapacity = housing.Settlement.Value.TotalHousingCapacity;
+					m.Output["quantity"] = valuePopulation;
+					m.Output["capacity"] = valueTotalHousingCapacity;
+					m.Output["fullness"] = (int)(100f * valuePopulation / valueTotalHousingCapacity);
+					m.Output["product"] = neg2;
+					return ModuleStatus.Running;
+				}
+
+				if (entity is CaptainOffice office) {
+					settlementsManager ??= m.Controller.Resolver.Resolve<SettlementsManager>();
+					int valuePopulation = settlementsManager.GetTotalPopulation();
+					int valueTotalHousingCapacity = settlementsManager.TotalHousingCapacity;
+					m.Output["quantity"] = valuePopulation;
+					m.Output["capacity"] = valueTotalHousingCapacity;
+					m.Output["fullness"] = (int)(100f * valuePopulation / valueTotalHousingCapacity);
+					m.Output["product"] = neg2;
+					return ModuleStatus.Running;
+				}
+
 				m.Output["quantity"] = 0;
 				m.Output["capacity"] = 0;
 				m.Output["fullness"] = 100;
-				m.Output["product"] = -1;
+				m.Output["product"] = neg1;
 				return ModuleStatus.Error;
 			})
 			.AddDisplay("quantity", "Quantity", 1.5f.ToFix32())
 			.AddDisplay("fullness", "Fullness", 1.5f.ToFix32())
 			.AddDisplay("product", "Product", 1, image: true)
 			.Display((m) => {
-				m.Display["product"] = m.Output.Product("product")?.IconPath;
 				m.Display["quantity"] = Thousands(m.Output.Integer["quantity"]);
 				m.Display["fullness"] = $"{m.Output.Integer["fullness"]}%";
+				if (m.Output["product", 0] == neg1) {
+					m.Display["product"] = null;
+				} else if (m.Output["product", 0] == neg2) {
+					m.Display["product"] = UserInterface.General.Population_svg;
+				} else {
+					m.Display["product"] = m.Output.Product("product")?.IconPath;
+				}
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
@@ -2281,20 +2314,55 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 	}
 
-	private string Thousands(int v) {
-		if (v > 1100000) {
-			return (v / 1000000).ToString();
+	// Caps the numeric portion at <paramref name="maxDigits"/> characters (digits +
+	// optional decimal dot) then appends a magnitude suffix.  Default budget is 4.
+	// Examples at maxDigits=4: 9999 → "9999", 10000 → "10.0k", 123456 → "123k",
+	// 1234567 → "1.23M", 1234567890 → "1.23B".  At maxDigits=3: 999 → "999",
+	// 1234 → "1.2k", 12345 → "12k", 1234567 → "1.2M".  At maxDigits=5: 12345 → "12345",
+	// 123456 → "123.4k", 1234567 → "1.234M".
+	private string Thousands(int v, int maxDigits = 4) {
+		if (v < 0) {
+			// Guard against int.MinValue: -int.MinValue overflows back to itself.
+			return "-" + Thousands(v == int.MinValue ? int.MaxValue : -v, maxDigits);
 		}
-		if (v > 900000) {
-			return $"{(v.ToFix32() / 100000).ToStringRounded(1)}M";
+		// Below 3 we can't represent the smallest k value ("1.0k" is 3 chars + k);
+		// silently clamp instead of throwing — caller likely just wants "as small as
+		// reasonable" and 3 is the floor.
+		if (maxDigits < 3) {
+			maxDigits = 3;
 		}
-		if (v > 1100) {
-			return (v / 1000000).ToString();
+
+		long limit = 1;
+		for (int i = 0; i < maxDigits; i++) {
+			limit *= 10;
 		}
-		if (v > 900) {
-			return $"{(v.ToFix32() / 100).ToStringRounded(1)}k";
+
+		// Integer tier — value already fits in the budget without a suffix.
+		if (v < limit) {
+			return v.ToString();
 		}
-		return v.ToString();
+
+		// Pick the smallest of k/M/B where the integer part of v/divisor fits.
+		int divisor;
+		string suffix;
+		if (v < limit * 1000L) {
+			divisor = 1000;
+			suffix = "k";
+		} else if (v < limit * 1000000L) {
+			divisor = 1000000;
+			suffix = "M";
+		} else {
+			divisor = 1000000000;
+			suffix = "B";
+		}
+
+		int integerPart = v / divisor;
+		int intDigits = (integerPart == 0) ? 1 : 1 + (int)System.Math.Log10(integerPart);
+		int decimals = System.Math.Max(0, maxDigits - intDigits - 1);  // -1 reserves the dot
+		if (decimals == 0) {
+			return $"{integerPart}{suffix}";
+		}
+		return $"{(v.ToFix32() / divisor).ToStringRounded(decimals)}{suffix}";
 	}
 
 	private ModuleStatus GetValueFromBuffers(Module m, ProductProto product, IEnumerable<IProductBufferReadOnly> buffers) {

@@ -39,6 +39,19 @@ namespace ProgramableNetwork.Python
                 return;
             }
 
+            // Fast path for the lazy range iterable produced by PlcPy's
+            // range(...) — drives the loop straight off the int triple
+            // (Start / Stop / Step) so we skip both the IEnumerator state
+            // machine allocation and the int→object boxing the generic
+            // foreach below would do for every iteration.  The body
+            // dispatch and break/continue handling are identical to the
+            // generic path; only the iteration source differs.
+            if (source is RangeIterable r)
+            {
+                ExecuteRange(r, context);
+                return;
+            }
+
             IEnumerable enumerable = source as IEnumerable;
             if (enumerable is null)
             {
@@ -69,6 +82,64 @@ namespace ProgramableNetwork.Python
                 catch (BreakException)
                 {
                     return;
+                }
+            }
+        }
+
+        // Allocation-free RangeIterable fast path.  Boxes each int once
+        // (when storing into context[variable]), but skips the per-call
+        // IEnumerator + the Length-of-N backing array the old List<int>
+        // path required.  For range(10000) that drops the per-tick
+        // allocation from 40 KB + iterator-state to just 10000 boxed
+        // ints (and the Dict reuses its bucket so allocation cost is
+        // O(items) not O(items × headers)).
+        private void ExecuteRange(RangeIterable r, IDictionary<string, object> context)
+        {
+            int start = r.Start;
+            int stop = r.Stop;
+            int step = r.Step;
+            int count = 0;
+
+            if (step > 0)
+            {
+                for (int i = start; i < stop; i += step)
+                {
+                    if (count++ >= MAX_ITERATIONS)
+                    {
+                        throw new PythonRuntimeException(
+                            $"`for {variable}`: exceeded {MAX_ITERATIONS} iterations in a single tick");
+                    }
+                    context[variable] = i;
+                    try
+                    {
+                        foreach (IStatement statement in body.statements)
+                        {
+                            statement.Execute(context);
+                        }
+                    }
+                    catch (ContinueException) { continue; }
+                    catch (BreakException) { return; }
+                }
+            }
+            else
+            {
+                for (int i = start; i > stop; i += step)
+                {
+                    if (count++ >= MAX_ITERATIONS)
+                    {
+                        throw new PythonRuntimeException(
+                            $"`for {variable}`: exceeded {MAX_ITERATIONS} iterations in a single tick");
+                    }
+                    context[variable] = i;
+                    try
+                    {
+                        foreach (IStatement statement in body.statements)
+                        {
+                            statement.Execute(context);
+                        }
+                    }
+                    catch (ContinueException) { continue; }
+                    catch (BreakException) { return; }
                 }
             }
         }

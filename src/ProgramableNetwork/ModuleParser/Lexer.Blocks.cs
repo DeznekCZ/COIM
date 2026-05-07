@@ -118,6 +118,28 @@ namespace ProgramableNetwork.Python
             }
         }
 
+        // PLC-PY section block: `init:` or `main:` at the script's top
+        // level.  `name` argument is the section keyword (already consumed
+        // by the caller).  Mirrors ParseFor / ParseWhile's shape — colon,
+        // newline, indent, body, dedent — except there's no condition or
+        // iterable to evaluate; the section is a pure container.
+        //
+        // Bodies are required to be multi-line (inline `init: x = 1` would
+        // be ambiguous because the player's actual `init` variable
+        // assignment uses `=` not `:`, and we don't want to invent a
+        // single-line section sugar that diverges from Python).
+        private void ParseSection(Block tree, string name)
+        {
+            RequireNext(PythonTokens.block);
+            RequireNext(PythonTokens.newline);
+            RequireNext(PythonTokens.indent);
+
+            Block body = ParseBlock(tree, PythonTokens.dedent);
+            tree.Add(new SectionStatement(name, body));
+
+            RequireNext(PythonTokens.dedent);
+        }
+
         // `while EXPR:` block; same dual form as ParseFor / ParseIf.
         private void ParseWhile(Block tree)
         {
