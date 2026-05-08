@@ -1,0 +1,16 @@
+{
+  "id": "CustomAssets_AirFiltering",
+  "display_name": "Air filtering tweaks [CAL]",
+  "version": "0.0.1",
+  "description_short": "More efficient filter media variant from iron ore + limestone.",
+  "description_long": "Adds a new 'Iron-Limestone Filter Media' loose product, produced by mixing 3 iron ore + 1 limestone in the Industrial Mixer to yield 4 units. Useful when you have surplus iron ore and want a cheaper alternative to the vanilla filter media production chain.",
+  "authors": [ "DeznekCZ" ],
+  "mod_dependencies": [
+    "CustomAssets>=0.1.9"
+  ],
+  "can_add_to_saved_game": true,
+  "can_remove_from_saved_game": true,
+  "non_locking_dll_load": true,
+  "min_game_version": "0.8.4",
+  "primary_dlls": [ "CustomAssets_AirFiltering.dll" ]
+}

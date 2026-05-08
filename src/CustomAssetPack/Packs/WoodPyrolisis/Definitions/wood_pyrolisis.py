@@ -63,6 +63,23 @@ woodGasRefiningGas = build_recipe(
     research = researchWoodgass
 )
 
+if product_exist("Product_FilterMediaIronLime"):
+    build_recipe(
+        recipeId = "CustomRecipe_WoodGasPurification_IronLime",
+        name = "Wood gas purifying",
+        machine = Ids.Machines.BasicDieselDistiller,
+        ingredients = [
+            Product("Product_WoodGasImpure", 10),
+            Product("Product_FilterMediaIronLime", 1)
+        ],
+        products = [
+            Product(Ids.Products.FuelGas, 12, "Z"),
+            Product(Ids.Products.CarbonDioxide, 6, "S")
+        ],
+        duration = Duration.FromSec(20),
+        research = researchWoodgass
+    )
+
 build_recipe(
     recipeId = "CustomRecipe_WoodGasBurning",
     name = "Wood gas burning",

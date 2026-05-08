@@ -37,8 +37,99 @@ public class CustomAssetRegistrator : IModData {
 
 	private string m_modBasePath = ""; // SET IN RUNTIME, because of mod loading order
 
+	private Dictionary<string, object> m_configValues = new Dictionary<string, object>();
+
+	// Load a Texture2D from a mod-relative path, caching results in CustomAssetManager.Alternations.
+	// mipChain:true is required because pile albedos get copied into a Texture2DArray slice that
+	// has a full mip chain (without it the pile flickers as the camera moves).
+	private Texture2D LoadModTexture(string texPath) {
+		if (string.IsNullOrEmpty(texPath)) return null;
+		if (CustomAssetManager.Alternations.TryGetValue(texPath, out UnityEngine.Object cached)) {
+			if (cached is Texture2D cachedTex) return cachedTex;
+			throw new ArgumentException($"Cached asset '{texPath}' is not a Texture2D.");
+		}
+		string filePath = Path.Combine(m_modBasePath, texPath);
+		if (!File.Exists(filePath)) {
+			Log.Warning($"LoadModTexture: file not found '{filePath}'");
+			return null;
+		}
+		Texture2D tex = new Texture2D(2, 2, TextureFormat.ARGB32, mipChain: true);
+		if (!tex.LoadImage(File.ReadAllBytes(filePath))) {
+			Log.Warning($"LoadModTexture: could not decode '{texPath}'");
+			return null;
+		}
+		tex.Apply(updateMipmaps: true, makeNoLongerReadable: false);
+		CustomAssetManager.Alternations[texPath] = tex;
+		tex.name = texPath;
+		return tex;
+	}
+
+	// Resolve a single Tex/string OR a list of them into List<Texture2D>. Returns null when the
+	// argument is absent and not required. Used by add_loose_product_material and add_unit_prefab.
+	private List<Texture2D> ResolveTextureList(Constructor.CallArguments args, string argName, bool required) {
+		if (args.GetArgument<List<object>>(argName).WhenExists(out var rawList)) {
+			var result = new List<Texture2D>();
+			foreach (var item in rawList) {
+				switch (item) {
+					case Tex t: result.Add(LoadModTexture(t.path)); break;
+					case string s: result.Add(LoadModTexture(s)); break;
+					case Texture2D t2d: result.Add(t2d); break;
+					case null: result.Add(null); break;
+					default: throw new ArgumentException(
+						$"'{argName}' list item must be Tex or str, got {item.GetType()}");
+				}
+			}
+			return result;
+		}
+		if (args.GetArgument<Tex>(argName)
+			.When<string>(s => new Tex { path = s })
+			.WhenExists(out Tex single)) {
+			return new List<Texture2D> { LoadModTexture(single.path) };
+		}
+		if (required) {
+			throw new ArgumentException($"'{argName}' is required.");
+		}
+		return null;
+	}
+
+	// Replicate single normals/metallic to match albedo count, or validate matching count.
+	private static List<Texture2D> MatchTextureCount(List<Texture2D> list, int targetCount, string name) {
+		if (list == null || list.Count == targetCount) return list;
+		if (list.Count == 1) return Enumerable.Repeat(list[0], targetCount).ToList();
+		throw new ArgumentException(
+			$"'{name}' count ({list.Count}) must match albedo count ({targetCount}) or be a single texture.");
+	}
+
+	// Box mesh shared by add_prefab_box and add_unit_prefab's default geometry. Origin is at
+	// the bottom-center (x in [-w/2, w/2], y in [0, h], z in [-d/2, d/2]) so a unit-product
+	// prefab sits on the conveyor surface naturally.
+	private static Mesh BuildBoxMesh(float width, float height, float depth) {
+		float x = width * 0.5f, y = height, z = depth * 0.5f;
+		var mesh = new Mesh();
+		mesh.vertices = new[] {
+			new Vector3(-x, 0, -z), new Vector3(x, 0, z), new Vector3(x, 0, -z), new Vector3(-x, 0, z),
+			new Vector3(-x, y, -z), new Vector3(x, y, z), new Vector3(x, y, -z), new Vector3(-x, y, z),
+		};
+		mesh.triangles = new[] {
+			0, 2, 1,  0, 3, 2,   // bottom
+			4, 5, 6,  4, 6, 7,   // top
+			0, 7, 3,  0, 4, 7,   // left
+			1, 2, 6,  1, 6, 5,   // right
+			3, 7, 6,  3, 6, 2,   // back
+			0, 1, 5,  0, 5, 4,   // front
+		};
+		mesh.uv = new[] {
+			new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
+			new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1)
+		};
+		mesh.RecalculateNormals();
+		mesh.RecalculateBounds();
+		return mesh;
+	}
+
 	public void RegisterData(ProtoRegistrator registrator) {
 		m_modBasePath = registrator.ActiveMod.Manifest.RootDirectoryPath;
+		m_configValues = ConfigLoader.Load(m_modBasePath);
 
 		DirectoryInfo modules = new DirectoryInfo($"{m_modBasePath}/Definitions");
 		Log.Info("Location of modules: " + modules.FullName);
@@ -72,6 +163,12 @@ public class CustomAssetRegistrator : IModData {
 			throw new CheckException("Modules was not loaded, see log (maybe is wrong order load only): " + failed.Count
 				+ "\n" + failedLog);
 		}
+
+		// Note: we do NOT call CustomAssetManager.Instance.RunInjection() here. CAM may not yet
+		// be constructed (it's lazy DI), and even if it were, it can't run before LPMM/
+		// ProductsRenderer ctors anyway. Late injection for unit prefabs is handled by
+		// CustomUnitPrefabHook, which depends on ProductsRenderer + CAM and patches the
+		// renderer's cached CommonDataMutable for our products after both have constructed.
 	}
 
 	private void register(Set<string> loaded, Set<string> failed, ProtoRegistrator registrator, FileInfo file,
@@ -124,6 +221,12 @@ public class CustomAssetRegistrator : IModData {
 	private Dictionary<string, object> resolvers(ProtoRegistrator registrator) {
 		Dictionary<string, object> context = new Dictionary<string, object> {
 
+			#region Mod config (config.json defaults — exposed as `config.<field>` to .py)
+
+			["config"] = m_configValues,
+
+			#endregion
+
 			#region Types
 
 			["RecipeProto"] = typeof(RecipeProto),
@@ -167,40 +270,201 @@ public class CustomAssetRegistrator : IModData {
 
 			#region Texture_Material
 
-			["add_texture_material"] = new Constructor(["path", "texture"], (args) => {
-				Tex texture = args.GetArgument<Tex>("texture")
+			["add_texture_material"] = new Constructor(["path", "texture", "reference", "shader"], (args) => {
+				// Texture is optional when a reference material is provided: missing texture
+				// means "clone the reference unchanged" so modders can iterate visuals later.
+				Texture2D texture2D = null;
+				if (args.GetArgument<Tex>("texture")
 					.When<string>(pathTex => new Tex { path = pathTex })
-					.ElseRequiredThrow();
-
-				Texture2D texture2D;
-				if (CustomAssetManager.Alternations.TryGetValue(texture.path, out UnityEngine.Object data)) {
-					if (data is Texture2D t2d) {
-						texture2D = t2d;
+					.WhenExists(out Tex texture)) {
+					if (CustomAssetManager.Alternations.TryGetValue(texture.path, out UnityEngine.Object data)) {
+						if (data is Texture2D t2d) {
+							texture2D = t2d;
+						} else {
+							throw new ArgumentException($"Given prefab is not a Texture: {texture.path}");
+						}
 					} else {
-						throw new ArgumentException($"Given prefab is not a Texture: {texture.path}");
+						string filePath = Path.Combine(m_modBasePath, texture.path);
+						if (File.Exists(filePath)) {
+							// mipChain: true so Apply() below generates mipmaps. This is required
+							// when the texture is later copied into a Texture2DArray slice that has
+							// mips (e.g. LooseProductMaterialManager.AlbedoTexArray). Without mip-
+							// maps the pile flickers as the camera moves and Unity samples missing
+							// mip levels.
+							texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, mipChain: true);
+							byte[] image = File.ReadAllBytes(filePath);
+							if (!texture2D.LoadImage(image)) {
+								Log.Warning($"add_texture_material: could not decode image '{texture.path}' " +
+									"in mod folder; material will use the reference's original albedo.");
+								texture2D = null;
+							} else {
+								texture2D.Apply(updateMipmaps: true, makeNoLongerReadable: false);
+								CustomAssetManager.Alternations.Add(texture.path, texture2D);
+								texture2D.name = texture.path;
+							}
+						} else {
+							Log.Warning($"add_texture_material: texture file '{filePath}' not found; " +
+								"material will use the reference's original albedo (drop in the file later).");
+						}
 					}
-				} else {
-					texture2D = new Texture2D(2, 2, TextureFormat.ARGB32, false);
-					string assetPath = texture.path;
-					byte[] image = File.ReadAllBytes(Path.Combine(m_modBasePath, assetPath));
-
-					if (!texture2D.LoadImage(image)) {
-						throw new ArgumentException($"Could not load an image: {assetPath}");
-					}
-
-					CustomAssetManager.Alternations.Add(assetPath, texture2D);
-					texture2D.name = texture.path;
 				}
 
 				string path = args.GetArgument<string>("path").ElseRequiredThrow();
-				Material material = new Material(Shader.Find("Standard"));
-				material.CopyPropertiesFromMaterial(new AssetsDb().DefaultMaterial);
-				material.mainTexture = texture2D;
-				material.SetTexture(Shader.PropertyToID("_AlbedoTex"), texture2D);
-				material.color = Color.white;
-				CustomAssetManager.Alternations.Add(path, material);
+
+				// Optional reference material to clone (matches its shader + all properties),
+				// and/or an explicit shader name. If either is set, defer construction so we can
+				// resolve the reference through AssetsDb at injection time. Otherwise keep the
+				// legacy Standard-shader path for back-compat.
+				string referencePath = null;
+				if (args.GetArgument<Mat>("reference")
+					.When<string>(s => new Mat { path = s })
+					.WhenExists(out Mat refMat)) {
+					referencePath = refMat?.path;
+				}
+				string shaderName = args.GetArgument<string>("shader").ElseDefault(null);
+
+				if (!string.IsNullOrEmpty(referencePath) || !string.IsNullOrEmpty(shaderName)) {
+					CustomAssetManager.PendingMaterials.Add(new DeferredMaterial {
+						OutputPath = path,
+						NewTexture = texture2D,
+						ReferencePath = referencePath,
+						ShaderName = shaderName,
+					});
+				} else {
+					if (texture2D == null) {
+						throw new ArgumentException(
+							"add_texture_material with no 'reference' or 'shader' requires a 'texture' argument; " +
+							"the legacy Standard-shader path needs an albedo texture.");
+					}
+					Material material = new Material(Shader.Find("Standard"));
+					material.CopyPropertiesFromMaterial(new AssetsDb().DefaultMaterial);
+					material.mainTexture = texture2D;
+					material.SetTexture(Shader.PropertyToID("_AlbedoTex"), texture2D);
+					material.color = Color.white;
+					CustomAssetManager.Alternations.Add(path, material);
+				}
 				return new Mat { path = path };
 			}),
+
+			#endregion
+
+			#region Loose_Product_Material
+
+			["add_loose_product_material"] = new Constructor(
+				["path", "albedo", "normals", "metallic", "reference", "tiling"],
+				(args) => {
+					string path = args.GetArgument<string>("path").ElseRequiredThrow();
+
+					List<Texture2D> albedos = ResolveTextureList(args, "albedo", required: true);
+					List<Texture2D> normals = ResolveTextureList(args, "normals", required: false);
+					List<Texture2D> metallics = ResolveTextureList(args, "metallic", required: false);
+					normals = MatchTextureCount(normals, albedos.Count, "normals");
+					metallics = MatchTextureCount(metallics, albedos.Count, "metallic");
+
+					// Reference is optional. When omitted, fall back to a known vanilla pile material
+					// so the cloned Material carries the right shader + property layout (Mafi's pile
+					// shader is bundled, not Shader.Find-able). Normals/metallic that the user didn't
+					// override are then "copied from reference" via the Material clone.
+					string referencePath = null;
+					if (args.GetArgument<Mat>("reference")
+						.When<string>(s => new Mat { path = s })
+						.WhenExists(out Mat refMat)) {
+						referencePath = refMat?.path;
+					}
+					if (string.IsNullOrEmpty(referencePath)) {
+						// NOTE: actual asset path uses ".mat" extension, NOT a "_mat" suffix.
+						// The C# constant in Mafi.Base is *named* FilterMedia_mat but its value
+						// is "Assets/Base/Products/Loose/FilterMedia.mat" — easy to confuse.
+						referencePath = Mafi.Base.Assets.Base.Products.Loose.FilterMedia_mat;
+					}
+
+					float tiling = args.GetNumberArgument<float>("tiling")
+						.ElseDefault(1f);
+
+					CustomAssetManager.PendingMaterials.Add(new DeferredMaterial {
+						OutputPath = path,
+						AlbedoArray = albedos,
+						NormalsArray = normals,
+						SmoothMetalArray = metallics,
+						ReferencePath = referencePath,
+						Tiling = tiling,
+					});
+					return new Mat { path = path };
+				}),
+
+			#endregion
+
+			#region Unit_Product_Prefab
+
+			["add_unit_prefab"] = new Constructor(
+				["path", "albedo", "normals", "metallic", "reference",
+				 "width", "height", "depth", "mesh"],
+				(args) => {
+					string path = args.GetArgument<string>("path").ElseRequiredThrow();
+
+					// Reuse the loose-material plumbing for textures: a unit-product material
+					// is conceptually identical (one albedo + optional normal/metallic clone).
+					List<Texture2D> albedos = ResolveTextureList(args, "albedo", required: true);
+					List<Texture2D> normals = ResolveTextureList(args, "normals", required: false);
+					List<Texture2D> metallics = ResolveTextureList(args, "metallic", required: false);
+					normals = MatchTextureCount(normals, albedos.Count, "normals");
+					metallics = MatchTextureCount(metallics, albedos.Count, "metallic");
+
+					string referencePath = null;
+					if (args.GetArgument<Mat>("reference")
+						.When<string>(s => new Mat { path = s })
+						.WhenExists(out Mat refMat)) {
+						referencePath = refMat?.path;
+					}
+					// Unit prefabs default to the Standard shader when no reference is given —
+					// unlike pile materials, the unit-product render path doesn't need a Mafi-
+					// specific shader. add_prefab_box has been doing this since day one.
+
+					// Mesh: load .obj if `mesh` was given, otherwise generate a box from
+					// width/height/depth. .obj wins if both are present. The .obj path doubles
+					// as a cache key — multiple add_unit_prefab calls with the same `mesh` share
+					// a single Mesh instance (matches Unity's bundle-asset sharing behaviour).
+					Mesh mesh = null;
+					if (args.GetArgument<string>("mesh").WhenExists(out string objRel)) {
+						if (!CustomAssetManager.Meshes.TryGetValue(objRel, out mesh)) {
+							string objFull = Path.Combine(m_modBasePath, objRel);
+							mesh = ObjLoader.LoadFromFile(objFull);
+							if (mesh != null) {
+								mesh.name = objRel;
+								CustomAssetManager.Meshes[objRel] = mesh;
+							}
+						}
+						if (mesh == null) {
+							Log.Warning($"add_unit_prefab: failed to load mesh '{objRel}'; falling back to default box.");
+						}
+					}
+					if (mesh == null) {
+						float w = args.GetNumberArgument<float>("width").ElseDefault(0.5f);
+						float h = args.GetNumberArgument<float>("height").ElseDefault(0.2f);
+						float d = args.GetNumberArgument<float>("depth").ElseDefault(0.5f);
+						mesh = BuildBoxMesh(w, h, d);
+						mesh.name = path + "__mesh";
+					}
+
+					// Build the deferred material at <path>__material so it doesn't collide with
+					// the prefab path. The prefab references this material by path; both end up
+					// in LoadedAssets at injection time.
+					string materialPath = path + "__material";
+					CustomAssetManager.PendingMaterials.Add(new DeferredMaterial {
+						OutputPath = materialPath,
+						AlbedoArray = albedos,
+						NormalsArray = normals,
+						SmoothMetalArray = metallics,
+						ReferencePath = referencePath,
+					});
+
+					CustomAssetManager.PendingPrefabs.Add(new DeferredPrefab {
+						OutputPath = path,
+						Mesh = mesh,
+						MaterialPath = materialPath,
+					});
+					return new Prefab { path = path };
+				}),
 
 			#endregion
 
@@ -334,6 +598,25 @@ public class CustomAssetRegistrator : IModData {
 
 					return builder.BuildAndAdd();
 				}),
+
+			#endregion
+
+			#region Existence checkers
+
+			// Returns true if a ProductProto with the given id is registered. Useful for
+			// gating optional recipes on the presence of products from other mods or game
+			// versions, e.g.:
+			//     if product_exist("Product_FilterMediaIronLime"):
+			//         build_recipe(...)
+			["product_exist"] = new Constructor(["product"], (args) => {
+				return (object)args.GetArgument<bool>("product")
+					.When<ProductProto>(p => p != null)
+					.When<ProductProto.ID>(pid =>
+						registrator.PrototypesDb.TryGetProto<ProductProto>((Proto.ID)pid, out _))
+					.When<string>(s =>
+						registrator.PrototypesDb.TryGetProto<ProductProto>((Proto.ID)new ProductProto.ID(s), out _))
+					.ElseRequiredThrow();
+			}),
 
 			#endregion
 
@@ -735,8 +1018,9 @@ public class CustomAssetRegistrator : IModData {
 			#region Build product
 
 			["build_product_loose"] = new Constructor([
-				"productId", "name", "description", "icon", "color", "isDumped", "isStorable", "isRecyclable",
-				"isWaste", "isRough", "isLocked"
+				"productId", "name", "description", "icon", "color", "particleColor", "isDumped",
+				"isStorable", "isRecyclable", "material", "isWaste", "isRough", "isLocked",
+				"pinToHomeScreen", "maxTransport", "prefabPath", "dumpsAs"
 			], (args) => {
 				var id = args.GetArgument<ProductProto.ID>("productId")
 					.When<string>(ids => new ProductProto.ID(ids))
@@ -746,7 +1030,8 @@ public class CustomAssetRegistrator : IModData {
 					.When<string>(s => new Tex { path = s })
 					.ElseRequiredThrow()
 					.path;
-				var material = args.GetArgument<Mat>("material").When<string>(s => new Mat { path = s })
+				var material = args.GetArgument<Mat>("material")
+					.When<string>(s => new Mat { path = s })
 					.ElseRequiredThrow();
 				var desc = args.GetArgument<string>("description").ElseDefault("");
 				var isDumped = args.GetArgument<bool>("isDumped").ElseDefault(false);
@@ -754,34 +1039,71 @@ public class CustomAssetRegistrator : IModData {
 				var isRecyclable = args.GetArgument<bool>("isRecyclable").ElseDefault(false);
 				var isWaste = args.GetArgument<bool>("isWaste").ElseDefault(false);
 				var isRough = args.GetArgument<bool>("isRough").ElseDefault(false);
+				var pinToHome = args.GetArgument<bool>("pinToHomeScreen").ElseDefault(false);
+				// Optional. Only used as resourcesVizColor (resource overlay). Pile appearance
+				// itself comes from the material/texture, so a missing color is fine.
 				var color = args.GetArgument<ColorRgba>("color")
 					.When<(int r, int g, int b)>(t => new ColorRgba((byte)t.r, (byte)t.g, (byte)t.b))
-					.ElseRequiredThrow();
+					.ElseDefault(ColorRgba.White);
+				// Optional. When omitted, LooseProductMaterialManager auto-derives the particle
+				// color from the average of the pile's albedo texture. Pass this to override that
+				// (useful when our custom albedo's average doesn't match the desired particle hue).
+				ColorRgba? particleColor = null;
+				if (args.GetArgument<ColorRgba>("particleColor")
+					.When<(int r, int g, int b)>(t => new ColorRgba((byte)t.r, (byte)t.g, (byte)t.b))
+					.WhenExists(out ColorRgba particleColorVal)) {
+					particleColor = particleColorVal;
+				}
+				// Optional. Override the pile prefab path. Default picks rough/smooth based on isRough.
+				string prefabPath = args.GetArgument<string>("prefabPath").ElseDefault(
+					isRough
+						? "Assets/Base/Transports/ConveyorLoose/PileRough.prefab"
+						: "Assets/Base/Transports/ConveyorLoose/PileSmooth.prefab");
+				// Optional. Default of 5 inherited from LooseProductProto when omitted.
+				Quantity? maxTransport = null;
+				if (args.GetArgument<Quantity>("maxTransport")
+					.When<int>(i => new Quantity(i))
+					.WhenExists(out Quantity mt)) {
+					maxTransport = mt;
+				}
 
 				var product = new LooseProductProto(
 						id: id,
 						strings: Proto.CreateStr(id, name, desc),
 						graphics: new LooseProductProto.Gfx(
-								prefabPath: isRough
-									? "Assets/Base/Transports/ConveyorLoose/PileRough.prefab"
-									: "Assets/Base/Transports/ConveyorLoose/PileSmooth.prefab",
-								pileMaterialAssetPath: /*Mafi.Base.Assets.Base.Products.Loose.Coal_mat*/
-								material.path,
+								prefabPath: prefabPath,
+								pileMaterialAssetPath: material.path,
 								useRoughPileMeshes: isRough,
 								resourcesVizColor: color,
+								particleColor: particleColor,
 								customIconPath: icon
 							),
 						isDumpedOnTerrainByDefault: isDumped,
 						isStorable: isStorable,
 						isRecyclable: isRecyclable,
-						isWaste: isWaste
+						isWaste: isWaste,
+						pinToHomeScreenByDefault: pinToHome,
+						maxQuantityPerTransportedProduct: maxTransport
 					);
+
+				// Optional terrain-dump wiring. `LooseProductProto.IsDumpedOnTerrainByDefault`
+				// alone is NOT enough — the engine also requires a `LooseProductParam` proto-param
+				// pointing at a `TerrainMaterialProto` so it knows what terrain to transform the
+				// dumped pile into. Without it, `CanBeOnTerrain` stays false and the in-game dump
+				// option is missing. dumpsAs = Ids.TerrainMaterials.Slag etc., or a string id.
+				if (args.GetArgument<Mafi.Core.Prototypes.Proto.ID>("dumpsAs")
+					.When<string>(s => new Mafi.Core.Prototypes.Proto.ID(s))
+					.WhenExists(out Mafi.Core.Prototypes.Proto.ID dumpsAsId)) {
+					product.AddParam(new Mafi.Core.Buildings.Farms.LooseProductParam(dumpsAsId));
+				}
+
 				registrator.PrototypesDb.Add(product, args.GetArgument<bool>("isLocked").ElseDefault(false));
 				return product;
 			}),
 
 			["build_product_unit"] = new Constructor([
-				"productId", "name", "icon", "prefab", "maxTransport", "packingMode", "allowPackingNoise",
+				"productId", "name", "icon", "prefab", "maxTransport", "packingMode",
+				"allowPackingNoise", "rotateSecondPackedItem90Degs",
 				"description", "isStorable", "isWaste", "isLocked"
 			], (args) => {
 				var id = args.GetArgument<ProductProto.ID>("productId")
@@ -800,8 +1122,10 @@ public class CustomAssetRegistrator : IModData {
 					.When<int>(i => new Quantity(i))
 					.ElseDefault(new Quantity(3));
 				var packing = args.GetArgument<CountableProductStackingMode>("packingMode")
+					.When<string>(s => (CountableProductStackingMode)Enum.Parse(typeof(CountableProductStackingMode), s, ignoreCase: true))
 					.ElseDefault(CountableProductStackingMode.Auto);
 				var allowPackingNoise = args.GetArgument<bool>("allowPackingNoise").ElseDefault(false);
+				var rotateSecondPacked = args.GetArgument<bool>("rotateSecondPackedItem90Degs").ElseDefault(false);
 				var isStorable = args.GetArgument<bool>("isStorable").ElseDefault(false);
 				var isWaste = args.GetArgument<bool>("isWaste").ElseDefault(false);
 
@@ -814,7 +1138,8 @@ public class CustomAssetRegistrator : IModData {
 								prefabPath: prefab,
 								customIconPath: icon,
 								packingMode: packing,
-								allowPackingNoise: allowPackingNoise
+								allowPackingNoise: allowPackingNoise,
+								rotateSecondPackedItem90Degs: rotateSecondPacked
 							),
 						isWaste: isWaste
 					);

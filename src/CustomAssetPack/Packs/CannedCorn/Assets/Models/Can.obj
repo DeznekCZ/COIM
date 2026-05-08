@@ -1,0 +1,78 @@
+# Empty can / canned corn — 8-segment cylinder. radius 0.15, height 0.4,
+# origin at the base center. Both EmptyCansBox and CannedCornBox prefabs
+# share this mesh; only the albedo texture differs.
+#
+# Authored by hand. UVs wrap once around the side (front-seam at u=0/1)
+# and the caps sample from texture center.
+
+# Positions: 1..8 bottom rim (CCW from +X around +Y), 9..16 top rim,
+# 17 bottom center, 18 top center.
+v  0.150 0.000  0.000
+v  0.106 0.000  0.106
+v  0.000 0.000  0.150
+v -0.106 0.000  0.106
+v -0.150 0.000  0.000
+v -0.106 0.000 -0.106
+v  0.000 0.000 -0.150
+v  0.106 0.000 -0.106
+v  0.150 0.400  0.000
+v  0.106 0.400  0.106
+v  0.000 0.400  0.150
+v -0.106 0.400  0.106
+v -0.150 0.400  0.000
+v -0.106 0.400 -0.106
+v  0.000 0.400 -0.150
+v  0.106 0.400 -0.106
+v  0.000 0.000  0.000
+v  0.000 0.400  0.000
+
+# UVs: 1..9 bottom row (u 0..1), 10..18 top row (u 0..1), 19 cap-center.
+vt 0.000 0.000
+vt 0.125 0.000
+vt 0.250 0.000
+vt 0.375 0.000
+vt 0.500 0.000
+vt 0.625 0.000
+vt 0.750 0.000
+vt 0.875 0.000
+vt 1.000 0.000
+vt 0.000 1.000
+vt 0.125 1.000
+vt 0.250 1.000
+vt 0.375 1.000
+vt 0.500 1.000
+vt 0.625 1.000
+vt 0.750 1.000
+vt 0.875 1.000
+vt 1.000 1.000
+vt 0.500 0.500
+
+# Side faces (8 quads, fan-triangulated by the loader)
+f  1/1   2/2  10/11   9/10
+f  2/2   3/3  11/12  10/11
+f  3/3   4/4  12/13  11/12
+f  4/4   5/5  13/14  12/13
+f  5/5   6/6  14/15  13/14
+f  6/6   7/7  15/16  14/15
+f  7/7   8/8  16/17  15/16
+f  8/8   1/9   9/18  16/17
+
+# Top cap (fan from top center, normal +Y after loader's winding reversal)
+f 18/19  9/10 10/11
+f 18/19 10/11 11/12
+f 18/19 11/12 12/13
+f 18/19 12/13 13/14
+f 18/19 13/14 14/15
+f 18/19 14/15 15/16
+f 18/19 15/16 16/17
+f 18/19 16/17  9/18
+
+# Bottom cap (fan from bottom center, normal -Y after loader's winding reversal)
+f 17/19   2/2  1/1
+f 17/19   3/3  2/2
+f 17/19   4/4  3/3
+f 17/19   5/5  4/4
+f 17/19   6/6  5/5
+f 17/19   7/7  6/6
+f 17/19   8/8  7/7
+f 17/19   1/9  8/8

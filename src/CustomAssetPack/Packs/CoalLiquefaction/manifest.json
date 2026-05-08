@@ -8,9 +8,12 @@
   "mod_dependencies": [
     "CustomAssets>=0.1.8"
   ],
+  "optional_mod_dependencies": [
+    "AirFiltering"
+  ],
   "can_add_to_saved_game": true,
   "can_remove_from_saved_game": true,
   "non_locking_dll_load": true,
-  "min_game_version": "0.8.1b",
+  "min_game_version": "0.8.4",
   "primary_dlls": [ "CustomAssets_LiquifiedCoal.dll" ]
 }

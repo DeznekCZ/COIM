@@ -1,0 +1,11 @@
+using Mafi.Core.Mods;
+using CustomAssets.Data.Mod;
+
+namespace CustomAssetPack;
+
+public class {{ID}} : DataOnlyMod {
+    public {{ID}}(ModManifest manifest) : base(manifest) { }
+    public override void RegisterPrototypes(ProtoRegistrator registrator) {
+        new CustomAssetRegistrator().RegisterData(registrator);
+    }
+}

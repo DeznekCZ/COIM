@@ -6,7 +6,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <Version>0.1.8</Version> <!-- Update the project definition to standard from Mafi project. -->
+    <Version>0.1.9</Version> <!-- Update the project definition to standard from Mafi project. -->
     <LangVersion>latest</LangVersion>
       
     <!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->
@@ -176,10 +176,6 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\PythonAPI\PythonAPI.csproj" />
-  </ItemGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Debug_Pack'">
     <Exec Command="mkdir &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
@@ -188,6 +184,17 @@
     <Exec Command="robocopy .\AssetBundles &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" ContinueOnError="true" />
     <Exec Command="robocopy .\..\Recipes\Mafi &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\API\Mafi&quot; /S | echo" ContinueOnError="true" />
     <Exec Command="robocopy .\..\Recipes\CustomAssets &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\API\CustomAssets&quot; /S | echo" ContinueOnError="true" />
-    <ZipDirectory SourceDirectory="$(COI_APPDATA)\Mods\$(MSBuildProjectName)" DestinationFile="$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(Version).zip" Overwrite="true" />
+    <!-- Stage the deployed mod into a temp folder so the zip wraps everything in a single
+         "$(MSBuildProjectName)/" subfolder (the convention COI's mod manager and most game-mod
+         distribution tools expect). MSBuild's ZipDirectory zips a directory's contents at the
+         zip root with no wrapping; staging in IntermediateOutputPath/zip-stage/<id>/ achieves
+         that wrapping by feeding the parent (zip-stage) into ZipDirectory. -->
+    <RemoveDir Directories="$(IntermediateOutputPath)zip-stage" Condition="Exists('$(IntermediateOutputPath)zip-stage')" />
+    <ItemGroup>
+      <_ZipStageFiles Include="$(COI_APPDATA)\Mods\$(MSBuildProjectName)\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_ZipStageFiles)" DestinationFolder="$(IntermediateOutputPath)zip-stage\$(MSBuildProjectName)\%(RecursiveDir)" />
+    <ZipDirectory SourceDirectory="$(IntermediateOutputPath)zip-stage" DestinationFile="$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(Version).zip" Overwrite="true" />
+    <RemoveDir Directories="$(IntermediateOutputPath)zip-stage" />
   </Target>
 </Project>

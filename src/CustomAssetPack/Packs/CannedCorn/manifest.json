@@ -1,0 +1,16 @@
+{
+  "id": "CustomAssets_CannedCorn",
+  "display_name": "Canned corn (example) [CAL]",
+  "version": "0.0.1",
+  "description_short": "Example pack showcasing add_unit_prefab: canned corn from empty cans + corn.",
+  "description_long": "Example for the unit-product prefab API. Adds 'Empty cans' (made from iron, steel or aluminum in the basic Assembler) and 'Canned corn' (made from empty cans + corn in the Chemical Plant). Both unit products use the SAME prefab mesh, distinguished only by their albedo textures.",
+  "authors": [ "DeznekCZ" ],
+  "mod_dependencies": [
+    "CustomAssets>=0.1.9"
+  ],
+  "can_add_to_saved_game": true,
+  "can_remove_from_saved_game": true,
+  "non_locking_dll_load": true,
+  "min_game_version": "0.8.4",
+  "primary_dlls": [ "CustomAssets_CannedCorn.dll" ]
+}

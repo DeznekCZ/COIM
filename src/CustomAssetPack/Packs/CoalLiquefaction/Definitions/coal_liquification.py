@@ -80,9 +80,25 @@ coalGasRefiningGas = build_recipe(
     research = research
 )
 
+if product_exist("Product_FilterMediaIronLime"):
+    coalGasRefiningGas = build_recipe(
+        recipeId = "CustomRecipe_CoalLiquification_IronLime",
+        name = "Coal gas purifying",
+        machine = Ids.Machines.BasicDieselDistiller,
+        ingredients = [
+            Product("Product_CoalGasImpure", 20),
+            Product("Product_FilterMediaIronLime", 1)
+        ],
+        products = [
+            Product(Ids.Products.FuelGas, 24, "Z")
+        ],
+        duration = Duration.FromSec(20),
+        research = research
+    )
+
 build_recipe(
     recipeId = "CustomRecipe_CoalGasBurning",
-    name = "Wood gas burning",
+    name = "Coal gas burning",
     machine = Ids.Machines.Flare,
     ingredients = [
         Product("Product_CoalGasImpure", 24)

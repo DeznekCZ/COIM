@@ -182,8 +182,17 @@
     <Compile Include="Mafi\Vornoi\__init__.py" />
     <Compile Include="Mafi\__init__.py" />
   </ItemGroup>
+  <!-- Auto-generated stubs from StubBuilder: per-pack IDs/assets and (later) external mods. -->
   <ItemGroup>
+    <Compile Include="Generated\**\*.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Generated\" />
     <Folder Include="CustomAssets\" />
+    <Folder Include="Generated\CustomAssets_IronPlateRecyclation\" />
+    <Folder Include="Generated\CustomAssets_LiquifiedCoal\" />
+    <Folder Include="Generated\CustomAssets_SteamHeating\" />
+    <Folder Include="Generated\CustomAssets_WoodPyrolisis\" />
     <Folder Include="Mafi\" />
     <Folder Include="Mafi\Base\" />
     <Folder Include="Mafi\Base\Ai\" />

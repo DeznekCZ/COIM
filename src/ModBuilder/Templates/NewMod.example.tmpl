@@ -1,0 +1,27 @@
+# Example recipe for {{ID}}.
+# Uncomment and edit, or replace with your own definitions.
+#
+# Useful imports:
+#   from Mafi import Duration, Quantity, Vector2i
+#   from Mafi.Base import Ids
+#   from CustomAssets import build_recipe, build_research, add_unlock_recipe, Product
+#
+# Run StubBuilder pack-stubs against this folder to generate IntelliSense
+# constants for any IDs you declare here (recipeId, researchId, productId, ...).
+
+from Mafi import Duration, Quantity
+from Mafi.Base import Ids
+from CustomAssets import build_recipe, Product
+
+# NOTE: this PythonAPI dialect does NOT accept trailing commas in argument or list
+# literals. The last argument / list element must NOT be followed by a comma.
+#
+# example = build_recipe(
+#     recipeId    = "Custom_{{ID}}_Example",
+#     name        = "Example recipe",
+#     description = "Replace this with what your recipe does.",
+#     machine     = Ids.Machines.Shredder,
+#     ingredients = [ Product(Ids.Products.Iron, Quantity(1)) ],
+#     products    = [ Product(Ids.Products.IronScrap, Quantity(1)) ],
+#     duration    = Duration.FromSec(10)
+# )

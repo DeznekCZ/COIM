@@ -40,9 +40,22 @@ namespace CustomAssets.Python {
 				case PythonTokens.from:
 					IExpression p = primary();
 					RequireNext(PythonTokens.import);
-					ImportStatement import =
-						new ImportStatement(p, NextList(PythonTokens.name, next: PythonTokens.next));
+					// Two accepted shapes:
+					//   from X import a, b, c
+					//   from X import (a, b, c)   ← parenthesized, may span multiple lines
+					// In the parenthesized form, newlines inside the parens are ignored, and
+					// the closing rparen takes the place of the newline-terminator.
+					bool parenthesized = IsNext(PythonTokens.lparen, out Token _);
+					List<Token> names = parenthesized
+						? NextList(PythonTokens.name, next: PythonTokens.next,
+							ignore: new[] { PythonTokens.newline, PythonTokens.indent, PythonTokens.dedent })
+						: NextList(PythonTokens.name, next: PythonTokens.next);
+					ImportStatement import = new ImportStatement(p, names);
 					tree.Add(import);
+					if (parenthesized) {
+						RequireNext(PythonTokens.rparen,
+							ignore: new[] { PythonTokens.newline, PythonTokens.indent, PythonTokens.dedent });
+					}
 					RequireNext(PythonTokens.newline);
 					break;
 
