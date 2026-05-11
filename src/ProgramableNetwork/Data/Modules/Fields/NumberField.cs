@@ -11,19 +11,21 @@ namespace ProgramableNetwork.Ui
 {
     public class NumberField<T> : IField
     {
-        public NumberField(string id, Proto.Str strs, T defaultValue, bool showInTooltip = false)
+        public NumberField(string id, Proto.Str strs, T defaultValue, bool showInTooltip = false, string linkedInputPinId = null)
         {
             Id = id;
             Name = strs.Name;
             Default = defaultValue;
             ShortDesc = strs.DescShort;
             ShowInTooltip = showInTooltip;
+            LinkedInputPinId = linkedInputPinId;
         }
 
         public string Id { get; }
         public LocStr Name { get; }
         public LocStr ShortDesc { get; }
         public bool ShowInTooltip { get; }
+        public string LinkedInputPinId { get; }
 
         public int Size => 20;
 
@@ -39,72 +41,95 @@ namespace ProgramableNetwork.Ui
         }
 
         private Action setter;
-        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog, bool directEdit = false)
         {
-            RowContainer row = fieldContainer.Row(this, module, uiContext, out _);
+            RowContainer row = fieldContainer.Row(this, module, uiContext, out _, directEdit: directEdit);
 
             var numberEditor = new TextField();
             numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
-            numberEditor.Width(200 - Sizes.BLOCK_SIZE * 1.5f);
+            // Direct-edit mode has no save button, so the editor gets the full row.
+            numberEditor.Width(directEdit ? 200.px() : (200 - Sizes.BLOCK_SIZE * 1.5f));
             numberEditor.Height(Sizes.BLOCK_SIZE);
             row.Add(numberEditor);
 
-            var setButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg);
-            setButton.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);
-            setButton.Width(Sizes.BLOCK_SIZE * 1.5f);
-            setButton.Height(Sizes.BLOCK_SIZE);
-            setButton.Enabled(false);
-            row.Add(setButton);
-
-            setButton.OnClick(() =>
+            ButtonIcon setButton = null;
+            if (!directEdit)
             {
-                string changeValue = numberEditor.GetText();
-                uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
-                    module.Controller.Id, module.Id, Id, changeValue));
+                setButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg);
+                setButton.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);
+                setButton.Width(Sizes.BLOCK_SIZE * 1.5f);
+                setButton.Height(Sizes.BLOCK_SIZE);
                 setButton.Enabled(false);
-            });
+                row.Add(setButton);
 
-            setButton.OnClick(() =>
-            {
-                setter?.Invoke();
-                setButton.Enabled(false);
-            });
+                setButton.OnClick(() =>
+                {
+                    setter?.Invoke();
+                    setButton.Enabled(false);
+                });
+            }
 
             numberEditor.OnValueChanged((e) =>
             {
                 setter = null;
+                // Directly mirror the dual-write the save button used to do: raw
+                // string goes into StringData (so re-render shows what the user
+                // typed) AND the parsed typed value goes into FieldNumberData
+                // (consumed by module Actions).  The non-directEdit path schedules
+                // the equivalent ModuleSetXxxFieldCmd pair via `setter` + the
+                // command-executor's dual write.
+                string raw = numberEditor.GetText();
                 if (typeof(T) == typeof(Fix32))
                 {
-                    if (double.TryParse(numberEditor.GetText(), NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+                    if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
                     {
-                        setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-                            module.Controller.Id, module.Id, Id, value.ToFix32()));
+                        if (directEdit) {
+                            module.Field[Id, false] = raw;
+                            module.Field[Id] = value.ToFix32();
+                        } else {
+                            setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                                module.Controller.Id, module.Id, Id, value.ToFix32()));
+                        }
                     }
                 }
                 else if (typeof(T) == typeof(int))
                 {
-                    if (int.TryParse(numberEditor.GetText(), out int value))
+                    if (int.TryParse(raw, out int value))
                     {
-                        setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-                            module.Controller.Id, module.Id, Id, Fix32.FromInt(value)));
+                        if (directEdit) {
+                            module.Field[Id, false] = raw;
+                            module.Field[Id] = Fix32.FromInt(value);
+                        } else {
+                            setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                                module.Controller.Id, module.Id, Id, Fix32.FromInt(value)));
+                        }
                     }
                 }
                 else if (typeof(T) == typeof(long))
                 {
-                    if (long.TryParse(numberEditor.GetText(), out long value))
+                    if (long.TryParse(raw, out long value))
                     {
-                        setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
-                            module.Controller.Id, module.Id, Id, value.ToString()));
+                        if (directEdit) {
+                            module.Field[Id, false] = value.ToString();
+                        } else {
+                            setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+                                module.Controller.Id, module.Id, Id, value.ToString()));
+                        }
                     }
                 }
                 else if (typeof(T) == typeof(HexInt32)) {
-					if (uint.TryParse(numberEditor.GetText(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint value))
+					if (uint.TryParse(raw, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint value))
 					{
-						setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-							module.Controller.Id, module.Id, Id, Fix32.FromRaw((int)value)));
+                        if (directEdit) {
+                            module.Field[Id, false] = raw;
+                            module.Field[Id] = Fix32.FromRaw((int)value);
+                        } else {
+                            setter = () => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                                module.Controller.Id, module.Id, Id, Fix32.FromRaw((int)value)));
+                        }
 					}
 				}
-                setButton.Enabled(true);
+                setButton?.Enabled(true);
             });
 
             if (Default is Fix32)

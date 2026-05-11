@@ -46,14 +46,26 @@ namespace ProgramableNetwork.Ui
         public string GetTooltipValue(Module module) => "";
 
         public int Size => 1;
-        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog, bool directEdit = false)
         {
             ui.Invoke(inspector, fieldContainer, module, updateDialog, new Reference(
-				(v) => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-					module.Controller.Id, module.Id, id, v)),
+				(v) => {
+					if (directEdit) {
+						module.Field[id] = v;
+					} else {
+						uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+							module.Controller.Id, module.Id, id, v));
+					}
+				},
 				() => module.Field[id, Fix32.Zero],
-				(v) => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
-					module.Controller.Id, module.Id, id, v)),
+				(v) => {
+					if (directEdit) {
+						module.Field[id, false] = v;
+					} else {
+						uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+							module.Controller.Id, module.Id, id, v));
+					}
+				},
 				() => module.Field[id, null]
 			));
         }

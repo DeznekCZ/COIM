@@ -36,7 +36,7 @@ LED_NAMES = ["", "led_1", "led_2", "led_3", "led_4", "led_5", "led_6", "led_7"]
 class Runtime_FlipFlop(Module):
     name = "Control: Flip-Flop"
     description = "When <b>enable</b> is on, copies each connected channel input to the matching output and remembers it; while <b>enable</b> is off, outputs keep their last stored values. Add more channel pin pairs from the right edge of the module."
-    symbol = "FLIP-FLOP"
+    symbol = "FF"
 
     inputs = [
         Input("enable", "Enable"),

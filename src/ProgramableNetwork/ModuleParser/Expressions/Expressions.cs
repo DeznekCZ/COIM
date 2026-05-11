@@ -64,6 +64,21 @@ namespace ProgramableNetwork.Python
                 : throw new NotImplementedException("Can not convert to __fix__");
         }
 
+        // Raw fixed-point representation of a Fix32 (the underlying int the
+        // type stores internally).  Inverse of Fix32.FromRaw — pairs with it
+        // for save/load or precise arithmetic that needs to bypass Fix32's
+        // normal scaling.  Other numeric types pass through their integer
+        // value so `raw(5)` doesn't surprise a player who expected a number.
+        public static int __raw__(object v)
+        {
+            return v is Fix32 fix ? fix.RawValue
+                : v is int i ? i
+                : v is bool b ? (b ? 1 : 0)
+                : v is byte by ? by
+                : v is short sh ? sh
+                : throw new NotImplementedException("Can not convert to __raw__");
+        }
+
         public static string __str__(object v)
         {
             if (v is null) {

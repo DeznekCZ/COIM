@@ -128,22 +128,30 @@ namespace ProgramableNetwork
 		public int DisplayExtensionCount { get; set; }
 
 		/// <summary>
-		/// Effective input list = prototype's static inputs followed by the first
-		/// <see cref="InputExtensionCount"/> extension entries.  Returns the proto's
-		/// list verbatim when no extensions are active to avoid the per-call alloc.
+		/// Effective input list = prototype's static inputs, followed by the first
+		/// <see cref="InputExtensionCount"/> extension entries, followed by any
+		/// trailing inputs.  Returns the proto's static list verbatim when nothing
+		/// else is active and there are no trailings, to avoid the per-call alloc.
 		/// </summary>
 		public IReadOnlyList<ModuleConnectorProto> EffectiveInputs
 		{
 			get
 			{
-				int ext = System.Math.Min(InputExtensionCount, Prototype?.MaxInputExtensions ?? 0);
-				if (ext <= 0 || Prototype == null) {
-					return Prototype?.Inputs ?? (IReadOnlyList<ModuleConnectorProto>)System.Array.Empty<ModuleConnectorProto>();
+				if (Prototype == null) {
+					return (IReadOnlyList<ModuleConnectorProto>)System.Array.Empty<ModuleConnectorProto>();
 				}
-				var list = new System.Collections.Generic.List<ModuleConnectorProto>(Prototype.Inputs.Count + ext);
+				int ext = System.Math.Min(InputExtensionCount, Prototype.MaxInputExtensions);
+				int trail = Prototype.InputsTrailing?.Count ?? 0;
+				if (ext <= 0 && trail == 0) {
+					return Prototype.Inputs;
+				}
+				var list = new System.Collections.Generic.List<ModuleConnectorProto>(Prototype.Inputs.Count + ext + trail);
 				list.AddRange(Prototype.Inputs);
 				for (int i = 0; i < ext; i++) {
 					list.Add(Prototype.InputExtensions[i]);
+				}
+				for (int i = 0; i < trail; i++) {
+					list.Add(Prototype.InputsTrailing[i]);
 				}
 				return list;
 			}
@@ -182,6 +190,13 @@ namespace ProgramableNetwork
 					return true;
 				}
 			}
+			if (Prototype.InputsTrailing != null) {
+				foreach (var p in Prototype.InputsTrailing) {
+					if (p.Id == id) {
+						return true;
+					}
+				}
+			}
 			return false;
 		}
 
@@ -204,7 +219,7 @@ namespace ProgramableNetwork
 			return false;
 		}
 
-		/// <summary>Resolves an input pin by id, searching both static and active extension entries; null when missing.</summary>
+		/// <summary>Resolves an input pin by id, searching static, active extension, and trailing entries; null when missing.</summary>
 		public ModuleConnectorProto GetInputProto(string id)
 		{
 			if (Prototype == null) {
@@ -219,6 +234,13 @@ namespace ProgramableNetwork
 			for (int i = 0; i < ext; i++) {
 				if (Prototype.InputExtensions[i].Id == id) {
 					return Prototype.InputExtensions[i];
+				}
+			}
+			if (Prototype.InputsTrailing != null) {
+				foreach (var p in Prototype.InputsTrailing) {
+					if (p.Id == id) {
+						return p;
+					}
 				}
 			}
 			return null;
@@ -257,11 +279,18 @@ namespace ProgramableNetwork
 			}
 			var statics = isOutput ? Prototype.Outputs : Prototype.Inputs;
 			var exts    = isOutput ? Prototype.OutputExtensions : Prototype.InputExtensions;
+			// Trailings only exist on the input side currently.  When pinning an
+			// output, treat the trailing list as empty.
+			var trailings = isOutput
+				? (System.Collections.Generic.IReadOnlyList<ModuleConnectorProto>)System.Array.Empty<ModuleConnectorProto>()
+				: (Prototype.InputsTrailing ?? (System.Collections.Generic.IReadOnlyList<ModuleConnectorProto>)System.Array.Empty<ModuleConnectorProto>());
 			int extCount = isOutput
 				? System.Math.Min(OutputExtensionCount, Prototype.MaxOutputExtensions)
 				: System.Math.Min(InputExtensionCount, Prototype.MaxInputExtensions);
 			int baseWidth = Layout.GetBaseWidth(this);
-			int innerFiller = System.Math.Max(0, baseWidth - statics.Count);
+			// innerFiller right-aligns the static block within whatever baseWidth
+			// claims after trailings reserve their own cells at the far right.
+			int innerFiller = System.Math.Max(0, baseWidth - statics.Count - trailings.Count);
 
 			for (int i = 0; i < statics.Count; i++) {
 				if (statics[i].Id == pinId) {
@@ -271,6 +300,16 @@ namespace ProgramableNetwork
 			for (int i = 0; i < extCount; i++) {
 				if (exts[i].Id == pinId) {
 					return Column + innerFiller + statics.Count + i;
+				}
+			}
+			// Trailing pin position depends only on THIS row's own extension count
+			// (statics + extensions), not on the module's total width.  Display or
+			// output extensions can widen the module past the active input cells,
+			// but the trailing input must stay glued to the end of the active
+			// input area — extra width is absorbed by outerFiller to its right.
+			for (int i = 0; i < trailings.Count; i++) {
+				if (trailings[i].Id == pinId) {
+					return Column + innerFiller + statics.Count + extCount + i;
 				}
 			}
 			return -1;
@@ -870,6 +909,27 @@ namespace ProgramableNetwork
 		public void SetError(string message)
 		{
 			Error = message;
+		}
+
+		public void CopyFrom(Module other)
+		{
+			// Copying over the entire state, including volatile runtime data.  Used by
+			// the controller's CloneModule command to duplicate an existing module along
+			// with its current values and connections.
+			InputExtensionCount = other.InputExtensionCount;
+			OutputExtensionCount = other.OutputExtensionCount;
+			DisplayExtensionCount = other.DisplayExtensionCount;
+			Error = other.Error;
+			Status = other.Status;
+			IsPaused = other.IsPaused;
+			IsDebugging = other.IsDebugging;
+			NumberData = new Dict<string, int>(other.NumberData);
+			InputNumberData = new Dict<string, Fix32>(other.InputNumberData);
+			OutputNumberData = new Dict<string, Fix32>(other.OutputNumberData);
+			FieldNumberData = new Dict<string, Fix32>(other.FieldNumberData);
+			StringData = new Dict<string, string>(other.StringData);
+			ArrayData = (Fix32[])other.ArrayData.Clone();
+			InputModules = new Dict<string, ModuleConnector>(other.InputModules);
 		}
 
 		[DoNotSave(0, null)]

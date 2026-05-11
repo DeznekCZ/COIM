@@ -61,7 +61,10 @@ public static class PlcPySyntax {
 			case "":
 				return new[] {
 					new Completion("self",  "Module wrapper bound to this PLC instance."),
-					new Completion("fix",   "fix(value) — convert int/float to Fix32."),
+					new Completion("fix",   "fix(value) — convert int/float to Fix32 (value-preserving)."),
+					new Completion("int",   "int(value) — Fix32 → int (truncates), inverse of fix(...)."),
+					new Completion("raw",   "raw(value) — Fix32 → underlying raw int (Fix32.RawValue)."),
+					new Completion("hex",   "hex(value) — int → Fix32 from raw bits (Fix32.FromRaw), inverse of raw(...)."),
 					new Completion("Fix32", "Fix32 type. Common: Fix32.Zero, Fix32.One, Fix32.Half."),
 					new Completion("True",  "Boolean true."),
 					new Completion("False", "Boolean false."),
@@ -277,7 +280,10 @@ public static class PlcPySyntax {
 		{ "self.Array",    "Persistent Fix32[] scratch buffer. .get(i, default), .set(i, v), .resize(n), .shift_left_with(v)." },
 		{ "self.NumberData", "Persistent int dictionary. ['key'] / .key indexer + dotted access." },
 		{ "self.StringData", "Persistent string dictionary. Same shape as NumberData." },
-		{ "fix",           "fix(value) — convert int/float to Fix32." },
+		{ "fix",           "fix(value) — convert int/float to Fix32 (value-preserving). Inverse of int(...)." },
+		{ "int",           "int(value) — Fix32 → int (truncates toward zero via Fix32.IntegerPart). Inverse of fix(...)." },
+		{ "raw",           "raw(value) — Fix32 → underlying raw int (Fix32.RawValue). Inverse of hex(...). Use for save round-trips or bit-level inspection." },
+		{ "hex",           "hex(value) — int → Fix32 from raw bits (Fix32.FromRaw). Inverse of raw(...). Reconstructs a Fix32 from a previously stored raw int." },
 		{ "Fix32",         "Fix32 type. Common: Fix32.Zero, Fix32.One, Fix32.Half." },
 		{ "True",          "Boolean true." },
 		{ "False",         "Boolean false." },
@@ -500,6 +506,12 @@ public static class PlcPySyntax {
 			case PythonTokens.lr:
 			case PythonTokens.gr:
 			case PythonTokens.set:
+			case PythonTokens.setplus:
+			case PythonTokens.setminus:
+			case PythonTokens.setmul:
+			case PythonTokens.setdiv:
+			case PythonTokens.setshl:
+			case PythonTokens.setshr:
 			case PythonTokens.plus:
 			case PythonTokens.minus:
 			case PythonTokens.mul:

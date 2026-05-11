@@ -44,6 +44,27 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 		// the context is fresh per tick.
 		Func<IArgumentValue[], object> fixCtor = args => Expressions.__fix__(args[0].Value);
 
+		// `int(value)` — value-preserving Fix32 → int (truncates toward zero
+		// via Fix32.IntegerPart).  Inverse of `fix(...)` for the natural
+		// reading of the number.  Mirrors the existing __int__ helper so all
+		// numeric types Expressions already understands route through one
+		// path: `int(fix(2.7))` → 2, `int(2.7)` → 2, `int(True)` → 1.
+		Func<IArgumentValue[], object> intCtor = args => Expressions.__int__(args[0].Value);
+
+		// `raw(value)` — Fix32 → its underlying fixed-point int (Fix32.RawValue).
+		// Inverse of `hex(...)`.  Use it when a script needs to inspect or
+		// store the exact bit pattern (NumberData, save round-trips) rather
+		// than a value-preserving int.  Other numeric types pass through
+		// their integer value so `raw(5)` doesn't blow up.
+		Func<IArgumentValue[], object> rawCtor = args => Expressions.__raw__(args[0].Value);
+
+		// `hex(value)` — int → Fix32.FromRaw, the inverse of `raw(...)`.
+		// Lets a script reconstruct a Fix32 from a stored raw int (e.g. a
+		// value previously squirreled away in NumberData via raw()).  Named
+		// `hex` to evoke the "raw bit pattern" reading the player would see
+		// when debugging a fixed-point dump.
+		Func<IArgumentValue[], object> hexCtor = args => Fix32.FromRaw(Expressions.__int__(args[0].Value));
+
 		// `range(...)` — produces a lazy RangeIterable so `for i in range(N):`
 		// doesn't materialise an N-int list every tick.  Mirrors Python's
 		// three forms (range(stop), range(start, stop), range(start, stop,
@@ -336,13 +357,13 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 
 				try {
 					if (needPreamble) {
-						RegisterPreamble(preambleBody, m, plcClass, fixCtor, rangeCtor, lenCtor);
+						RegisterPreamble(preambleBody, m, plcClass, fixCtor, intCtor, rawCtor, hexCtor, rangeCtor, lenCtor);
 					}
 					if (needInit) {
-						RunBlock(initBody, m, plcClass, fixCtor, rangeCtor, lenCtor);
+						RunBlock(initBody, m, plcClass, fixCtor, intCtor, rawCtor, hexCtor, rangeCtor, lenCtor);
 					}
 					if (mainBody != null) {
-						RunBlock(mainBody, m, plcClass, fixCtor, rangeCtor, lenCtor);
+						RunBlock(mainBody, m, plcClass, fixCtor, intCtor, rawCtor, hexCtor, rangeCtor, lenCtor);
 					}
 					m.StringData.TryRemove("__run_error", out _);
 					m.Display["status"] = ledPhase == 0 ? LED_GREEN_HI : LED_GREEN_LO;
@@ -397,7 +418,7 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 	// shadowed it.
 	private static readonly HashSet<string> SYSTEM_CONTEXT_KEYS = new HashSet<string>
 	{
-		"self", "Fix32", "fix", "ModuleStatus", "range", "len",
+		"self", "Fix32", "fix", "int", "raw", "hex", "ModuleStatus", "range", "len",
 	};
 
 	// True when at least one preamble-level definition (function OR class)
@@ -449,6 +470,9 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 		Module m,
 		Class plcClass,
 		Func<IArgumentValue[], object> fixCtor,
+		Func<IArgumentValue[], object> intCtor,
+		Func<IArgumentValue[], object> rawCtor,
+		Func<IArgumentValue[], object> hexCtor,
 		Func<IArgumentValue[], object> rangeCtor,
 		Func<IArgumentValue[], object> lenCtor)
 	{
@@ -460,6 +484,9 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 			["self"] = new ModuleWrapper(m, plcClass),
 			["Fix32"] = typeof(Fix32),
 			["fix"] = new Constructor(fixCtor, ["value"]),
+			["int"] = new Constructor(intCtor, ["value"]),
+			["raw"] = new Constructor(rawCtor, ["value"]),
+			["hex"] = new Constructor(hexCtor, ["value"]),
 			["ModuleStatus"] = typeof(ModuleStatus),
 			["range"] = new Constructor(rangeCtor, ["start", "stop", "step"]),
 			["len"] = new Constructor(lenCtor, ["value"]),
@@ -582,6 +609,9 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 		Module m,
 		Class plcClass,
 		Func<IArgumentValue[], object> fixCtor,
+		Func<IArgumentValue[], object> intCtor,
+		Func<IArgumentValue[], object> rawCtor,
+		Func<IArgumentValue[], object> hexCtor,
 		Func<IArgumentValue[], object> rangeCtor,
 		Func<IArgumentValue[], object> lenCtor)
 	{
@@ -590,6 +620,9 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 			["self"] = new ModuleWrapper(m, plcClass),
 			["Fix32"] = typeof(Fix32),
 			["fix"] = new Constructor(fixCtor, ["value"]),
+			["int"] = new Constructor(intCtor, ["value"]),
+			["raw"] = new Constructor(rawCtor, ["value"]),
+			["hex"] = new Constructor(hexCtor, ["value"]),
 			["ModuleStatus"] = typeof(ModuleStatus),
 			["range"] = new Constructor(rangeCtor, ["start", "stop", "step"]),
 			["len"] = new Constructor(lenCtor, ["value"]),

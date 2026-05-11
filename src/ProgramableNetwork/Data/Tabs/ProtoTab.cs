@@ -36,8 +36,10 @@ namespace ProgramableNetwork.Ui
         private ButtonIcon m_btnClear;
         private FloatingColumn m_protoPicker;
 
+        private readonly bool m_directEdit;
+
         public ProtoTab(UiContext uiContext, Module module, string fieldId, Func<Module, T, bool> filter,
-            Action refresh, Window parentWindow, ControllerInspector inspector)
+            Action refresh, Window parentWindow, ControllerInspector inspector, bool directEdit = false)
             : base()
         {
             m_fieldId = fieldId;
@@ -46,6 +48,7 @@ namespace ProgramableNetwork.Ui
             m_refresh = refresh;
             m_window = parentWindow;
             m_UiContext = uiContext;
+            m_directEdit = directEdit;
             parentWindow.OnCloseStart += ParentWindow_OnCloseStart;
 
             m_btnPreview = new DisplayWithIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Empty128_png);
@@ -64,8 +67,13 @@ namespace ProgramableNetwork.Ui
             m_btnClear = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png);
             m_btnClear.Height(Sizes.BLOCK_SIZE * 1.5f);
             m_btnClear.OnClick(() => {
-                m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleClearFieldCmd(
-                    m_module.Controller.Id, m_module.Id, m_fieldId));
+                if (m_directEdit) {
+                    m_module.FieldNumberData.TryRemove(m_fieldId, out _);
+                    m_module.StringData.TryRemove("field__" + m_fieldId, out _);
+                } else {
+                    m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleClearFieldCmd(
+                        m_module.Controller.Id, m_module.Id, m_fieldId));
+                }
                 m_refresh();
             });
             m_btnClear.Visible(false);
@@ -89,10 +97,7 @@ namespace ProgramableNetwork.Ui
                     optionViewFactory: ProtoPickerFactories.VehicleFactory,
                     onOptionSelected: (DrivingEntityProto product) =>
                     {
-                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-                            m_module.Controller.Id, m_module.Id, m_fieldId, FixSavedGames.GetPrototypeString(product.Id.Value)));
-                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
-                            m_module.Controller.Id, m_module.Id, m_fieldId, product.Id.Value));
+                        applyProtoSelection(product.Id.Value);
                         m_refresh();
                     },
                     button: selectionButton,
@@ -108,10 +113,7 @@ namespace ProgramableNetwork.Ui
                     optionViewFactory: ProtoPickerFactories.ProductFactory,
                     onOptionSelected: (ProductProto product) =>
                     {
-                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-                            m_module.Controller.Id, m_module.Id, m_fieldId, FixSavedGames.GetPrototypeString(product.Id.Value)));
-                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
-                            m_module.Controller.Id, m_module.Id, m_fieldId, product.Id.Value));
+                        applyProtoSelection(product.Id.Value);
                         m_refresh();
                     },
                     button:  selectionButton,
@@ -129,10 +131,7 @@ namespace ProgramableNetwork.Ui
                         .AsProtoPickerOptionButton(),
                     onOptionSelected: (product) =>
                     {
-                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-                            m_module.Controller.Id, m_module.Id, m_fieldId, FixSavedGames.GetPrototypeString(product.Id.Value)));
-                        m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
-                            m_module.Controller.Id, m_module.Id, m_fieldId, product.Id.Value));
+                        applyProtoSelection(product.Id.Value);
                         m_refresh();
                     },
                     button: selectionButton,
@@ -166,6 +165,24 @@ namespace ProgramableNetwork.Ui
                 .All<T>()
                 .Where(p => p.IsAvailable)
                 .Where(m_filter);
+        }
+
+        // Mirror of the ControllerCommandExecutor's dual-write path for
+        // ModuleSetFix32FieldCmd + ModuleSetStringFieldCmd applied to the same
+        // field — used by every onOptionSelected branch.  When directEdit, write
+        // straight to the data dicts (the module isn't owned by a Controller yet
+        // so the cmd targeting Controller.Id would no-op).
+        private void applyProtoSelection(string protoIdValue)
+        {
+            if (m_directEdit) {
+                m_module.Field[m_fieldId] = FixSavedGames.GetPrototypeString(protoIdValue);
+                m_module.Field[m_fieldId, false] = protoIdValue;
+            } else {
+                m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                    m_module.Controller.Id, m_module.Id, m_fieldId, FixSavedGames.GetPrototypeString(protoIdValue)));
+                m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetStringFieldCmd(
+                    m_module.Controller.Id, m_module.Id, m_fieldId, protoIdValue));
+            }
         }
 
         private void FindProduct()

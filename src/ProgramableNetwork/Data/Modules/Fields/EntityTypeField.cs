@@ -35,9 +35,9 @@ namespace ProgramableNetwork.Ui {
 			return "";
 		}
 
-		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog) {
-			ProtoTab<T> protoTab = new ProtoTab<T>(uiContext, module, Id, Filter, updateDialog, parentWindow, inspector);
-			fieldContainer.Row(this, module, uiContext, out _).Add(protoTab);
+		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog, bool directEdit = false) {
+			ProtoTab<T> protoTab = new ProtoTab<T>(uiContext, module, Id, Filter, updateDialog, parentWindow, inspector, directEdit);
+			fieldContainer.Row(this, module, uiContext, out _, directEdit: directEdit).Add(protoTab);
 		}
 
 		public void InitData(Module module) {

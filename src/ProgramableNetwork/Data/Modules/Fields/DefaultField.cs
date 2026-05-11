@@ -15,7 +15,7 @@ namespace ProgramableNetwork.Ui
 	public static class IFieldExtensions
 	{
 		public static RowContainer Row(this UiComponent fieldContainer, IField entityField, Module module,
-			UiContext uiContext, Px height, out bool draw, bool useFiller = true)
+			UiContext uiContext, Px height, out bool draw, bool useFiller = true, bool directEdit = false)
 		{
 			// input field definition
 			if (module.Prototype.Fields.Exists(i => i.Id == $"field_{entityField.Id}" && !(entityField is BooleanField)))
@@ -35,8 +35,14 @@ namespace ProgramableNetwork.Ui
 
 				Toggle enabled = new Toggle();
 				enabled.Value(module.Field.Bool[$"field_{entityField.Id}"]);
-				enabled.OnValueChanged(v => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-					module.Controller.Id, module.Id, $"field_{entityField.Id}", v ? Fix32.One : Fix32.Zero)));
+				enabled.OnValueChanged(v => {
+					if (directEdit) {
+						module.Field[$"field_{entityField.Id}"] = v ? Fix32.One : Fix32.Zero;
+					} else {
+						uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+							module.Controller.Id, module.Id, $"field_{entityField.Id}", v ? Fix32.One : Fix32.Zero));
+					}
+				});
 				rowBool.Add(enabled);
 
 				Display rowDisplay = new Display(NewTr.FieldStatus.None);
@@ -84,8 +90,14 @@ namespace ProgramableNetwork.Ui
 
 				Toggle enabled = new Toggle();
 				enabled.Value(module.Field.Bool[$"field_{entityField.Id}"]);
-				enabled.OnValueChanged(v => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-					module.Controller.Id, module.Id, $"field_{entityField.Id}", v ? Fix32.One : Fix32.Zero)));
+				enabled.OnValueChanged(v => {
+					if (directEdit) {
+						module.Field[$"field_{entityField.Id}"] = v ? Fix32.One : Fix32.Zero;
+					} else {
+						uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+							module.Controller.Id, module.Id, $"field_{entityField.Id}", v ? Fix32.One : Fix32.Zero));
+					}
+				});
 				rowBool.Add(enabled);
 
 				Display rowDisplay = new Display(NewTr.FieldStatus.None);
@@ -105,8 +117,14 @@ namespace ProgramableNetwork.Ui
 				Toggle active = new Toggle();
 				active.Value(module.Field.Bool[entityField.Id]);
 				active.ObserveEnabled(() => module.Field.Bool[$"field_{entityField.Id}"]);
-				active.OnValueChanged(v => uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-					module.Controller.Id, module.Id, entityField.Id, v ? Fix32.One : Fix32.Zero)));
+				active.OnValueChanged(v => {
+					if (directEdit) {
+						module.Field[entityField.Id] = v ? Fix32.One : Fix32.Zero;
+					} else {
+						uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+							module.Controller.Id, module.Id, entityField.Id, v ? Fix32.One : Fix32.Zero));
+					}
+				});
 				rowBool.Add(active);
 
 				Display activeDisplay = new Display(NewTr.FieldStatus.None);
@@ -136,6 +154,17 @@ namespace ProgramableNetwork.Ui
 				label.Width(180);
 				row.BodyAdd(label);
 
+				// Hide the entire row when the field is paired with an input pin
+				// that isn't currently active — keeps the settings panel free of
+				// orphan threshold fields whose matching extension pin hasn't
+				// been added yet.  fieldContainer is always-visible so it can act
+				// as the event runner (Mafi updaters don't fire on hidden nodes).
+				if (entityField.LinkedInputPinId != null)
+				{
+					string linkedId = entityField.LinkedInputPinId;
+					row.ObserveVisible(fieldContainer, () => module.HasInput(linkedId));
+				}
+
 				draw = true;
 				return row;
 			}
@@ -147,9 +176,9 @@ namespace ProgramableNetwork.Ui
 		/// <param name="fieldContainer"></param>
 		/// <param name="entityField"></param>
 		/// <returns></returns>
-		public static RowContainer Row(this UiComponent fieldContainer, IField entityField, Module module, UiContext uiContext, out bool draw, bool useFiller = true)
+		public static RowContainer Row(this UiComponent fieldContainer, IField entityField, Module module, UiContext uiContext, out bool draw, bool useFiller = true, bool directEdit = false)
 		{
-			return fieldContainer.Row(entityField, module, uiContext, Sizes.BLOCK_SIZE, out draw);
+			return fieldContainer.Row(entityField, module, uiContext, Sizes.BLOCK_SIZE, out draw, useFiller, directEdit);
 		}
 	}
 }

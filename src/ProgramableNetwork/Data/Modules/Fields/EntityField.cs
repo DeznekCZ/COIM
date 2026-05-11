@@ -87,9 +87,9 @@ namespace ProgramableNetwork.Ui {
 			}
 		}
 
-		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog) {
-			Picker picker = new Picker(module, id, entitySelector, distance, updateDialog, parentWindow, inspector);
-			fieldContainer.Row(this, module, uiContext, out _).Add(picker);
+		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog, bool directEdit = false) {
+			Picker picker = new Picker(module, id, entitySelector, distance, updateDialog, parentWindow, inspector, directEdit);
+			fieldContainer.Row(this, module, uiContext, out _, directEdit: directEdit).Add(picker);
 		}
 
 		public void InitData(Module module) {
@@ -107,10 +107,12 @@ namespace ProgramableNetwork.Ui {
 			private readonly Fix32 m_distance;
 			private readonly ButtonIcon m_selectionButton;
 			private readonly DisplayWithIcon m_btnPreview;
+			private readonly bool m_directEdit;
 
-			public Picker(Module module, string dataName, Func<Module, IEntity, bool> filter, Fix32 distance, Action refresh, Window parentWindow, ControllerInspector inspector)
+			public Picker(Module module, string dataName, Func<Module, IEntity, bool> filter, Fix32 distance, Action refresh, Window parentWindow, ControllerInspector inspector, bool directEdit = false)
 				: base() {
 				m_filter = filter;
+				m_directEdit = directEdit;
 				m_refresh = refresh;
 				m_window = parentWindow;
 				m_inspector = inspector;
@@ -194,8 +196,16 @@ namespace ProgramableNetwork.Ui {
 				m_inspector.EntitySelectionInput = new EntitySelector(m_module, m_distance, m_refresh, m_filter,
 					(entity) => {
 						m_selectionButton.ClassRemove(Cls.selected);
-						m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetEntityFieldCmd(
-							m_module.Controller.Id, m_module.Id, m_dataName, entity?.Id));
+						if (m_directEdit) {
+							if (entity != null) {
+								m_module.Field.Entity(m_dataName, entity);
+							} else {
+								m_module.Field.Entity<IEntity>(m_dataName, null);
+							}
+						} else {
+							m_UiContext.InputScheduler.ScheduleInputCmd(new ModuleSetEntityFieldCmd(
+								m_module.Controller.Id, m_module.Id, m_dataName, entity?.Id));
+						}
 						m_refresh();
 					});
 			}

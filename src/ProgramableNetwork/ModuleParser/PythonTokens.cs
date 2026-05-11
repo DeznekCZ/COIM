@@ -37,6 +37,17 @@
         dot,
         next,
         set,
+        // Augmented assignment operators — `x OP= y` desugars at parse time
+        // into `x = x OP y` so the runtime keeps a single AssignmentStatement
+        // shape.  Only the six the editor / runtime expose are tokenised;
+        // others (`%=`, `**=`, `//=`, `&=`, `|=`, `^=`) would just need new
+        // entries here plus matching tokenizer/lexer wiring.
+        setplus,
+        setminus,
+        setmul,
+        setdiv,
+        setshl,
+        setshr,
         and,
         or,
         str,

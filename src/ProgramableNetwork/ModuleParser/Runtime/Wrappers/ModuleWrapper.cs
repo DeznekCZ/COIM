@@ -448,7 +448,8 @@ namespace ProgramableNetwork.Python
         public int display_extension_count => module.DisplayExtensionCount;
         public int effective_input_count =>
             (module.Prototype?.Inputs?.Count ?? 0)
-            + System.Math.Min(module.InputExtensionCount, module.Prototype?.MaxInputExtensions ?? 0);
+            + System.Math.Min(module.InputExtensionCount, module.Prototype?.MaxInputExtensions ?? 0)
+            + (module.Prototype?.InputsTrailing?.Count ?? 0);
         public int effective_output_count =>
             (module.Prototype?.Outputs?.Count ?? 0)
             + System.Math.Min(module.OutputExtensionCount, module.Prototype?.MaxOutputExtensions ?? 0);
@@ -469,10 +470,18 @@ namespace ProgramableNetwork.Python
             }
             int extIdx = idx - staticCount;
             int activeExt = System.Math.Min(module.InputExtensionCount, module.Prototype.MaxInputExtensions);
-            if (extIdx >= activeExt) {
-                return "";
+            if (extIdx < activeExt) {
+                return module.Prototype.InputExtensions[extIdx].Id;
             }
-            return module.Prototype.InputExtensions[extIdx].Id;
+            // Trailing pins are appended after the active extensions so Python
+            // code iterating effective_input_id sees them at the far end —
+            // matches the visual pin order.
+            int trailIdx = extIdx - activeExt;
+            var trailings = module.Prototype.InputsTrailing;
+            if (trailings != null && trailIdx < trailings.Count) {
+                return trailings[trailIdx].Id;
+            }
+            return "";
         }
 
         public string effective_output_id(int idx)

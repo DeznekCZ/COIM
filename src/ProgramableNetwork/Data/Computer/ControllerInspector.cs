@@ -49,6 +49,12 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	public ModuleConnector m_higlightedOutput;
 	public ModuleConnector m_higlightedInput;
 	public bool m_showsLinks;
+	// Per-inspector toggle for the click-action hint floaters: the "+ click to add"
+	// helper on empty slots and the LMB/Alt+LMB/Shift+LMB/RMB/Shift+RMB tooltip on
+	// placed modules.  Default on so first-time users still discover the keybinds;
+	// flips to off via the checkbox in the modules-panel header so power users can
+	// quiet the inspector once they know the shortcuts.
+	public bool m_showHints = true;
 	public IGameConsole m_console;
 
 	/// <summary>
@@ -222,6 +228,18 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 				.FlexGrow(1)
 				.TextAlign(TextAlignment.CenterMiddle)
 			);
+		// "Show hints" checkbox sits flush at the right end of the header.  Both
+		// floaters (slot "+ click to add" helper and per-module keybind tooltip)
+		// observe m_showHints and return Option<UiComponent>.None when off, so a
+		// single bool flip silences every hint at once.
+		Toggle hintsToggle = new Toggle();
+		hintsToggle.Value(m_showHints);
+		hintsToggle.LaterText<Toggle>(() => NewTr.Inspector.ShowHints, this, (t, v) => t.Tooltip(v));
+		hintsToggle.OnValueChanged(v => m_showHints = v);
+		m_modulesPanel.Header.Add(
+			new Label().LaterText(() => NewTr.Inspector.ShowHints, this).TinyFontSize().TextAlign(TextAlignment.RightMiddle),
+			hintsToggle
+		);
 		m_modulesPanel.BodyAdd(m_view = new ControllerView(this, refresh));
 
 		PanelWithHeader connectionsPanel = panels.AddAndReturn(new PanelWithHeader().Fill().HeightAuto());

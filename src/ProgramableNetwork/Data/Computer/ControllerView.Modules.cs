@@ -1028,9 +1028,10 @@ namespace ProgramableNetwork.Ui
 			AddHelper addHelperUI = new AddHelper(() => this);
 			ModuleSlotButton button = column.AddAndReturn(new ModuleSlotButton(this, targetRow, targetColumn));
 			button.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 2);
-			// Hint floater (the "+ click to add" helper) is now always available since
-			// the editor mode toggles were retired in favour of modifier-key dispatch.
-			button.Floater(addHelperUI.Display);
+			// Hint floater (the "+ click to add" helper).  Gated on the inspector's
+			// m_showHints checkbox in the modules panel header so power users can
+			// silence every slot's hover hint at once without losing the click flow.
+			button.Floater(() => m_controller.m_showHints ? addHelperUI.Display() : Option<UiComponent>.None);
 
 			// bottom filler
 			column.AddAndReturn(new UiComponent())
@@ -1121,6 +1122,12 @@ namespace ProgramableNetwork.Ui
 				return;
 			}
 			m_pickNewModuleInAction = true;
+			// Cache the picker — building the full module list is expensive
+			// (one PanelWithHeader + ModuleView per ModuleProto).  Per-row
+			// template chips refresh themselves on every show via OnShow in
+			// NewModule, so saved blueprints and reloaded Python templates
+			// surface on the next open without reconstructing the whole
+			// picker.
 			m_pickNewModule ??= new PickNewModule(NewTr.Inspector.PickModule, NewModules());
 			m_pickNewModuleInAction = false;
 			m_targetRow = row;

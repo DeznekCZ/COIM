@@ -13,9 +13,17 @@ namespace ProgramableNetwork.Python
         //lang=regex
         private const string paren = @"(?<lparen>\()|(?<rparen>\))|(?<llist>\[)|(?<rlist>\])|(?<ldict>{)|(?<rdict>})";
         //lang=regex
-        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre>>=)|(?<shiftl><<)|(?<shiftr>>>)|(?<lr><)|(?<gr>>)|(?<isp>is)|(?<not>not)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
+        // Compound shifts (`<<=`, `>>=`) MUST come before `<<` / `>>` and
+        // `<=` / `>=` — alternation matches left-to-right, so leaving them
+        // after `<<` would tokenise `x <<= 1` as `<<` + `=` (shift then
+        // bare assignment) instead of a single setshl token.
+        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre>>=)|(?<setshl><<=)|(?<setshr>>>=)|(?<shiftl><<)|(?<shiftr>>>)|(?<lr><)|(?<gr>>)|(?<isp>is)|(?<not>not)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
         //lang=regex
-        private const string oper = @"(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>//)|(?<div>/)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<invert>~)|(?<semicolon>;)";
+        // Compound arithmetic (`+=`, `-=`, `*=`, `/=`) before their base
+        // operators.  `*=` must sit after `**` (so `**` keeps winning for
+        // power) but before `*` so `x *= 2` doesn't lex as `*` + `=`.
+        // Same idea for `/=` between `//` (floor div) and `/`.
+        private const string oper = @"(?<setplus>\+=)|(?<plus>\+)|(?<setminus>-=)|(?<minus>-)|(?<power>\*\*)|(?<setmul>\*=)|(?<mul>\*)|(?<divint>//)|(?<setdiv>/=)|(?<div>/)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<invert>~)|(?<semicolon>;)";
         //lang=regex
         private const string data = @"(?<str>""[^""]*""|'[^']*')|(?<number>\d+(?:\.\d+)?)|(?<name>[a-zA-Z_]\w*)";
         //lang=regex

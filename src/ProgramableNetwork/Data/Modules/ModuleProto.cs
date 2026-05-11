@@ -155,6 +155,12 @@ namespace ProgramableNetwork
         public List<ModuleConnectorProto> OutputExtensions { get; }
         public int MaxInputExtensions => InputExtensions?.Count ?? 0;
         public int MaxOutputExtensions => OutputExtensions?.Count ?? 0;
+        // Trailing input pins are rendered at the RIGHT edge after any active
+        // extensions — used for fallback/else-style pins that should stay
+        // visually anchored to the far end regardless of how many extensions
+        // the player has added.  Layout: [statics] [extensions] [trailings].
+        // Trailings are always present (not gated by an extension counter).
+        public List<ModuleConnectorProto> InputsTrailing { get; }
         // Maximum number of cells the LAST display in <see cref="Displays"/> can grow by
         // when the player adds display extensions through the inspector.  Unlike pin
         // extensions, display extensions don't add new ModuleConnectorProto entries —
@@ -260,7 +266,8 @@ namespace ProgramableNetwork
             List<ModuleConnectorProto> m_extensionDisplays = null,
             ExtensionSide m_extensionDisplaysLinkedSide = ExtensionSide.Output,
             Func<Module, PartialQuantity> m_dynamicComputing = null,
-            bool m_linkInputOutputExtensions = false
+            bool m_linkInputOutputExtensions = false,
+            List<ModuleConnectorProto> m_inputsTrailing = null
 		) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
@@ -273,6 +280,7 @@ namespace ProgramableNetwork
             Outputs = m_outputs;
             InputExtensions = m_inputExtensions ?? new List<ModuleConnectorProto>();
             OutputExtensions = m_outputExtensions ?? new List<ModuleConnectorProto>();
+            InputsTrailing = m_inputsTrailing ?? new List<ModuleConnectorProto>();
             MaxDisplayExtensions = System.Math.Max(0, m_maxDisplayExtensions);
             ExtensionDisplays = m_extensionDisplays ?? new List<ModuleConnectorProto>();
             ExtensionDisplaysLinkedSide = m_extensionDisplaysLinkedSide;
@@ -286,8 +294,10 @@ namespace ProgramableNetwork
             Graphics = gfx;
             DisplayFunction = m_displayFunction;
             WidthFunction = m_widthFunction;
+            // Auto-width includes trailing inputs since they reserve a cell each
+            // even without extensions (they always render at the right edge).
             BaseWidth = baseWidth > 0 ? baseWidth
-                :    Inputs.Count
+                :    (Inputs.Count + InputsTrailing.Count)
                 .Max(Outputs.Count)
                 .Max(Fields.Count)
                 .Max(Displays.Select(d => d.Width).Sum(d => d.ToFloat()).RoundToInt())
@@ -315,6 +325,9 @@ namespace ProgramableNetwork
             private readonly List<ModuleConnectorProto> m_outputs = new List<ModuleConnectorProto>();
             private readonly List<ModuleConnectorProto> m_inputExtensions = new List<ModuleConnectorProto>();
             private readonly List<ModuleConnectorProto> m_outputExtensions = new List<ModuleConnectorProto>();
+            // Trailing inputs rendered at the right edge after any extensions —
+            // intended for fallback/else-style pins. See ModuleProto.InputsTrailing.
+            private readonly List<ModuleConnectorProto> m_inputsTrailing = new List<ModuleConnectorProto>();
             private int m_maxDisplayExtensions;
             // Lock-step display widgets — one per active linked-side extension.
             // Currently only Output linkage is wired; Input linkage falls through
@@ -420,7 +433,8 @@ namespace ProgramableNetwork
                     m_extensionDisplays,
                     m_extensionDisplaysLinkedSide,
                     m_dynamicComputing,
-                    m_linkInputOutputExtensions
+                    m_linkInputOutputExtensions,
+                    m_inputsTrailing
                 );
             }
 
@@ -491,6 +505,28 @@ namespace ProgramableNetwork
             public Builder AddInput(string id, SharedLabel shared)
             {
                 m_inputs.Add(new ModuleConnectorProto(id, shared.Resolve(), 1));
+                return this;
+            }
+
+            /// <summary>
+            /// Adds an input pin that renders at the right edge of the module
+            /// AFTER any active extensions — intended for fallback/else-style
+            /// pins that should stay visually anchored at the far end.
+            /// Trailing pins are always present (no extension counter) but their
+            /// column shifts right as the player adds extensions, so a wire to
+            /// the trailing pin keeps landing on the same logical role no matter
+            /// how the module grows.
+            /// </summary>
+            public Builder AddInputTrailing(string id, string name)
+            {
+                m_inputsTrailing.Add(new ModuleConnectorProto(id, m_id.Input(id, name), 1));
+                return this;
+            }
+
+            /// <summary>Shared-label variant of <see cref="AddInputTrailing(string, string)"/>.</summary>
+            public Builder AddInputTrailing(string id, SharedLabel shared)
+            {
+                m_inputsTrailing.Add(new ModuleConnectorProto(id, shared.Resolve(), 1));
                 return this;
             }
 
@@ -865,6 +901,40 @@ namespace ProgramableNetwork
 					addOverrideToggle(id);
 				}
 				m_fields.Add(new NumberField<int>(id, m_id.Field(id, name, shortDesc), defaultValue, showInTooltip));
+                return this;
+            }
+
+            /// <summary>
+            /// Shared-label variant: field name comes from the shared registry
+            /// (<see cref="SharedFieldLabels.Shared(string)"/>) so its translation
+            /// key is reused across every module that calls <c>.Shared()</c> with
+            /// the same string. ShortDesc is intentionally empty — pair with an
+            /// <see cref="AddInfoField(string, string)"/> entry above the field
+            /// group when the semantics need a one-line explanation.
+            /// <paramref name="linkedToInput"/> ties the row's visibility to an
+            /// input pin id — the row hides when the matching extension pin is
+            /// not currently active. Useful for threshold/companion fields that
+            /// should track their paired extension pin.
+            /// </summary>
+            public Builder AddInt32Field(string id, SharedLabel shared, int defaultValue = 0, bool overrideInput = false, bool showInTooltip = false, string linkedToInput = null)
+            {
+                if (overrideInput) {
+					addOverrideToggle(id);
+				}
+				m_fields.Add(new NumberField<int>(id, shared.Resolve(), defaultValue, showInTooltip, linkedToInput));
+                return this;
+            }
+
+            /// <summary>
+            /// Read-only paragraph rendered inline with the rest of the module's
+            /// fields. Used to introduce a block of related fields ("the values
+            /// below are thresholds, …") so the per-field labels can stay short
+            /// (typically just a shared single letter). Holds no data and is
+            /// skipped by Validate / InitData.
+            /// </summary>
+            public Builder AddInfoField(string id, string text)
+            {
+                m_fields.Add(new InfoField(id, m_id.Field(id, text, "")));
                 return this;
             }
 

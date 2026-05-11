@@ -39,7 +39,7 @@ namespace ProgramableNetwork.Ui
             return product?.Strings.Name.TranslatedString ?? "";
         }
 
-        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog, bool directEdit = false)
         {
             SingleProductPickerUi productPicker = new SingleProductPickerUi(
                 allAvailableProducts: () => uiContext.ProtosDb
@@ -48,14 +48,18 @@ namespace ProgramableNetwork.Ui
                         .Where(p => filter.Invoke(module, p)),
                 onProductSelected: (product) =>
                 {
-                    uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-                        module.Controller.Id, module.Id, Id, Fix32.FromRaw(product.SlimId.Value)));
+                    if (directEdit) {
+                        module.Field[Id] = Fix32.FromRaw(product.SlimId.Value);
+                    } else {
+                        uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                            module.Controller.Id, module.Id, Id, Fix32.FromRaw(product.SlimId.Value)));
+                    }
                     updateDialog();
                 },
                 selectedProduct: () => module.Field.Product(Id).CreateOption()
             );
 
-            fieldContainer.Row(this, module, uiContext, out _).Add(productPicker);
+            fieldContainer.Row(this, module, uiContext, out _, directEdit: directEdit).Add(productPicker);
         }
 
         public void InitData(Module module)

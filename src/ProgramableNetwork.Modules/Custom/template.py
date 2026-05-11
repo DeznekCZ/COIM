@@ -1,7 +1,7 @@
 
 from Core.template import Template
 from Core.mafi import fix
-from Core.ids import Compare_Int_Greater, Compare_Int_Equal, Connection_Storage, Display_Int, Constant
+from Core.ids import Compare_Int_Greater, Compare_Int_Equal, Compare_Int_LessGreater, Connection_Storage, Display_Int, Constant
 
 # How to get IDS, see Core.ids
 # Even is not Id defined inside Core.ids, will be correctly displayed
@@ -41,3 +41,31 @@ class Display100dot0(Template, Display_Int):
     name = "[100|0]"
     def settings(self):
         self.Field.set_int("float", 1)
+
+# Mode variants of Compare_Int_LessGreater — `picker = True` opts each one
+# into the regular module picker so the player picks a configured shape
+# (binary / positive / sumup encoding) directly without dropping the
+# unconfigured module first and editing the mode field.  The shared
+# ModuleProto means every variant uses the same A / B inputs and L / G
+# outputs; only the encoding of those outputs differs.
+
+class CompareLessGreater_Binary(Template, Compare_Int_LessGreater):
+    # Short bracket-style names match the existing template convention
+    # (Const1 = "[1]", GreateThan99 = "[A>99]", etc.) and keep chip width
+    # small inside the NewModule entry's body.
+    name = "[0/1]"
+    picker = True
+    def settings(self):
+        self.Field.set_int("mode", 0)
+
+class CompareLessGreater_Positive(Template, Compare_Int_LessGreater):
+    name = "[0/1/2]"
+    picker = True
+    def settings(self):
+        self.Field.set_int("mode", 1)
+
+class CompareLessGreater_Sumup(Template, Compare_Int_LessGreater):
+    name = "[±1]"
+    picker = True
+    def settings(self):
+        self.Field.set_int("mode", 2)

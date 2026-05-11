@@ -1,5 +1,5 @@
 SkipSplashScreen = 1
-SkipMainMenu = 0
+SkipMainMenu = 1
 SkipMainMenuAndLoadLastestSave = 1
 LaunchMapEditor = 0
 EnableUiHotReload = 0

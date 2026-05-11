@@ -5,6 +5,7 @@ using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
 using System.Linq;
+using Mafi;
 
 namespace ProgramableNetwork.Ui
 {
@@ -30,13 +31,14 @@ namespace ProgramableNetwork.Ui
 
         public int Size => Multilined ? 80 : 20;
 
-        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog, bool directEdit = false)
         {
-            RowContainer row = fieldContainer.Row(this, module, uiContext, out _);
+            RowContainer row = fieldContainer.Row(this, module, uiContext, out _, directEdit: directEdit);
 
             var numberEditor = new TextField();
             numberEditor.Value(new Mafi.Localization.LocStrFormatted(module.Field[Id, false]));
-            numberEditor.Width(200 - Sizes.BLOCK_SIZE * 1.5f);
+            // Direct-edit mode has no save button, so the editor gets the full row.
+            numberEditor.Width(directEdit ? 200.px() : (200 - Sizes.BLOCK_SIZE * 1.5f));
             // Multi-line text fields grow vertically — give them ~4 rows of editing space
             // so the user sees enough context.  Single-line keeps the original BLOCK_SIZE row.
             numberEditor.Height(Multilined ? Sizes.BLOCK_SIZE * 4 : Sizes.BLOCK_SIZE);
@@ -44,6 +46,15 @@ namespace ProgramableNetwork.Ui
                 numberEditor.Multiline(true);
             }
             row.Add(numberEditor);
+
+            if (directEdit)
+            {
+                numberEditor.OnValueChanged((e) =>
+                {
+                    module.Field[Id, false] = numberEditor.GetText();
+                });
+                return;
+            }
 
             var setButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg);
             setButton.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);

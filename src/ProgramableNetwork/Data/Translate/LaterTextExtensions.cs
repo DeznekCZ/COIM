@@ -54,24 +54,26 @@ namespace ProgramableNetwork
 		private sealed class HostTag { public int Id; public string TypeName; }
 
 		/// <summary>
-		/// Registers a deferred text setter for a <see cref="Label"/>. Returns the label so it can be
-		/// chained in builder-style code.
+		/// Generic overload for any component type that has its own value-setter signature. Caller
+		/// supplies the <paramref name="setter"/> that knows how to apply a <see cref="LocStrFormatted"/>
+		/// to <typeparamref name="T"/> (e.g. <c>(d, v) =&gt; d.Value(v)</c> for a Display).
 		/// </summary>
-		public static Label LaterText(this Label label, Func<LocStrFormatted> getter, UiComponent host)
+		public static T LaterText<T>(this T component, Func<LocStrFormatted> getter, UiComponent host)
+			where T : IComponentWithText
 		{
-			Register(host, () => label.Value(getter()));
-			return label;
+			Register(host, () => component.Value(getter()));
+			return component;
 		}
 
 		/// <summary>
-		/// Overload accepting a <see cref="LocStr"/>-returning getter. Convenient when the source is a
-		/// <c>NewTr</c>-style field/property whose return type is <c>LocStr</c>; the implicit conversion
-		/// to <c>LocStrFormatted</c> happens inside the lambda.
+		/// Generic overload accepting a <see cref="LocStr"/>-returning getter — implicit conversion
+		/// from LocStr to LocStrFormatted is applied when invoking the setter.
 		/// </summary>
-		public static Label LaterText(this Label label, Func<LocStr> getter, UiComponent host)
+		public static T LaterText<T>(this T component, Func<LocStr> getter, UiComponent host)
+			where T : IComponentWithText
 		{
-			Register(host, () => label.Value(getter()));
-			return label;
+			Register(host, () => component.Value(getter()));
+			return component;
 		}
 
 		/// <summary>

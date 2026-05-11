@@ -14,7 +14,29 @@ namespace ProgramableNetwork.Python
     {
         private static Dictionary<string, Template> templates;
 
-        public static Dictionary<string, Template> GetTemplates() => templates;
+        public static Dictionary<string, Template> GetTemplates() => templates ?? new Dictionary<string, Template>();
+
+        // Module-picker subset — entries flagged with `picker = True` in
+        // their Python class definition.  These are mode / preset variants
+        // of a single ModuleProto that the picker shows alongside the
+        // unconfigured module so the player can pick a configured shape
+        // directly.  Other templates stay only in the dedicated template
+        // picker.
+        public static IEnumerable<KeyValuePair<string, Template>> GetModulePickerTemplates(Option<ModuleProto> proto)
+        {
+            if (templates == null)
+            {
+                yield break;
+            }
+            foreach (KeyValuePair<string, Template> kv in templates)
+            {
+                if (kv.Value.ShowInModulePicker
+					&& (proto.IsNone || kv.Value.ModuleProto.Id.Equals(proto.Value.Id)))
+                {
+                    yield return kv;
+                }
+            }
+        }
 
         public static void Register(ProtoRegistrator registrator, Class templateEntry)
         {
@@ -53,12 +75,26 @@ namespace ProgramableNetwork.Python
                     templateName = templateName + "_" + DateTime.Now.Ticks;
                 }
 
+                // `picker = True` at class scope opts the template into the
+                // regular module picker (alongside the unconfigured module),
+                // not just the dedicated template picker.  Use it for mode
+                // variants of one ModuleProto so the player can pick the
+                // configured shape directly.  Anything truthy counts; the
+                // attribute is optional and defaults to false.
+                bool showInModulePicker = false;
+                if (templateEntry.classContext.TryGetValue("picker", out object pickerFlag) && pickerFlag != null)
+                {
+                    showInModulePicker = pickerFlag is bool b ? b
+                                       : pickerFlag is int i ? i != 0
+                                       : false;
+                }
+
                 templates[templateName] = new Template(displayName, moduleProto, (module) =>
                 {
                     ModuleWrapper wrapper = new ModuleWrapper(module, templateEntry);
                     (action as Method).Self = wrapper;
                     Expressions.__call__(action, new List<(string name, object value)>());
-                });
+                }, showInModulePicker);
             }
         }
 

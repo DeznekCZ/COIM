@@ -41,7 +41,45 @@ namespace ProgramableNetwork.Python
                     case PythonTokens.from:
                         IExpression p = primary();
                         RequireNext(PythonTokens.import);
-                        ImportStatement import = new ImportStatement(p, NextList(PythonTokens.name, next: PythonTokens.next));
+                        // Python supports both the bare list `from x import a, b`
+                        // and the parenthesised form `from x import (a, b,)`
+                        // — the latter allows splitting the list across lines
+                        // (the tokenizer's parenDepth already suppresses
+                        // newline/indent/dedent inside `( ... )`) and a
+                        // trailing comma, neither of which the bare form
+                        // accepts.  We branch on `(` and parse the parenthesised
+                        // body manually so we can stop on a closing `)` and
+                        // tolerate the trailing comma without retrofitting
+                        // NextList for both behaviours.
+                        List<Token> importNames;
+                        if (IsNext(PythonTokens.lparen, out Token _, defaultIgnore))
+                        {
+                            importNames = new List<Token>();
+                            importNames.Add(RequireNext(PythonTokens.name, newLineIgnore));
+                            bool consumedRparen = false;
+                            while (IsNext(PythonTokens.next, out Token _, newLineIgnore))
+                            {
+                                // Trailing comma → next is `)`; consume it
+                                // and stop.  Without this branch the rparen
+                                // would fall through to the RequireNext(name)
+                                // below and raise a parse error.
+                                if (IsNext(PythonTokens.rparen, out Token _, newLineIgnore))
+                                {
+                                    consumedRparen = true;
+                                    break;
+                                }
+                                importNames.Add(RequireNext(PythonTokens.name, newLineIgnore));
+                            }
+                            if (!consumedRparen)
+                            {
+                                RequireNext(PythonTokens.rparen, newLineIgnore);
+                            }
+                        }
+                        else
+                        {
+                            importNames = NextList(PythonTokens.name, next: PythonTokens.next);
+                        }
+                        ImportStatement import = new ImportStatement(p, importNames);
                         tree.Add(import);
                         RequireNext(PythonTokens.newline);
                         break;
@@ -115,16 +153,69 @@ namespace ProgramableNetwork.Python
                             ParseSection(tree, token.value);
                             break;
                         }
-                        // Assignment
+                        // Assignment OR bare expression-as-statement.
                         Revert(token);
                         IExpression leftExpression = ParseExpression();
-                        while (IsNext(PythonTokens.set, out Token _))
+                        // One of seven assignment-like operators may follow:
+                        // `=` (plain) or one of the six augmented forms
+                        // (`+=`, `-=`, `*=`, `/=`, `<<=`, `>>=`).  The
+                        // augmented forms desugar to `target = target OP rhs`
+                        // — building the AST node here keeps AssignmentStatement
+                        // simple (one shape, one execute path) and lets the
+                        // runtime stay oblivious to the compound forms.
+                        if (IsNextOf(new PythonTokens[] {
+                            PythonTokens.set,
+                            PythonTokens.setplus,
+                            PythonTokens.setminus,
+                            PythonTokens.setmul,
+                            PythonTokens.setdiv,
+                            PythonTokens.setshl,
+                            PythonTokens.setshr,
+                        }, out Token assignOp, defaultIgnore))
                         {
-                            tree.Add(ParseAssignment(leftExpression));
-                            break;
+                            IExpression rhs = ParseExpression();
+                            IExpression assignedValue;
+                            switch (assignOp.type)
+                            {
+                                case PythonTokens.set:
+                                    assignedValue = rhs;
+                                    break;
+                                case PythonTokens.setplus:
+                                    assignedValue = new AddExpression(leftExpression, rhs);
+                                    break;
+                                case PythonTokens.setminus:
+                                    // Mirrors the sum() rule: `a - b` is
+                                    // built as `a + (-b)` so the AST stays
+                                    // a single AddExpression family instead
+                                    // of needing a dedicated SubExpression.
+                                    assignedValue = new AddExpression(leftExpression, new NegativeExpression(rhs));
+                                    break;
+                                case PythonTokens.setmul:
+                                    assignedValue = new MulExpression(leftExpression, rhs);
+                                    break;
+                                case PythonTokens.setdiv:
+                                    assignedValue = new DivExpression(leftExpression, rhs);
+                                    break;
+                                case PythonTokens.setshl:
+                                    assignedValue = new ShiftLeftExpression(leftExpression, rhs);
+                                    break;
+                                case PythonTokens.setshr:
+                                    assignedValue = new ShiftRightExpression(leftExpression, rhs);
+                                    break;
+                                default:
+                                    throw new PythonParseException(assignOp, "<unreachable: unhandled assignment operator>");
+                            }
+                            tree.Add(new AssignmentStatement(leftExpression, assignedValue));
+                        }
+                        else
+                        {
+                            // Bare expression-as-statement (e.g. `foo()`).
+                            // Only emit when there's no assignment so a
+                            // simple `x = 5` doesn't redundantly re-evaluate
+                            // the LHS after the AssignmentStatement runs.
+                            tree.Add(new EvaluateStatement(leftExpression));
                         }
                         IsNext(PythonTokens.newline, out Token _);
-                        tree.Add(new EvaluateStatement(leftExpression));
                         break;
 
                     case PythonTokens.newline:
@@ -157,11 +248,6 @@ namespace ProgramableNetwork.Python
         private void Revert(Token token)
         {
             enumerator.AddFirst(token);
-        }
-
-        private AssignmentStatement ParseAssignment(IExpression qualifiedName)
-        {
-            return new AssignmentStatement(qualifiedName, ParseExpression());
         }
 
         private IExpression ParseExpression(params PythonTokens[] ignore)
@@ -238,25 +324,31 @@ namespace ProgramableNetwork.Python
                 }
                 else
                 {
+                    // RHS descends to bitviseor — the same level used for the
+                    // LHS at the top of compare().  Was previously hopping
+                    // straight to bitvisexor, which skipped the `|` level
+                    // and made `a == b | c` parse as `(a == b) | c` instead
+                    // of Python's `a == (b | c)` (comparisons are LOWER
+                    // precedence than bitwise-or per CPython grammar).
                     switch (operat.type)
                     {
                         case PythonTokens.eq:
-                            bitvise = new EqualExpression(bitvise, bitvisexor());
+                            bitvise = new EqualExpression(bitvise, bitviseor());
                             break;
                         case PythonTokens.neq:
-                            bitvise = new NotExpression(new EqualExpression(bitvise, bitvisexor()));
+                            bitvise = new NotExpression(new EqualExpression(bitvise, bitviseor()));
                             break;
                         case PythonTokens.lre:
-                            bitvise = new LowerEqualExpression(bitvise, bitvisexor());
+                            bitvise = new LowerEqualExpression(bitvise, bitviseor());
                             break;
                         case PythonTokens.gre:
-                            bitvise = new GreaterEqualExpression(bitvise, bitvisexor());
+                            bitvise = new GreaterEqualExpression(bitvise, bitviseor());
                             break;
                         case PythonTokens.lr:
-                            bitvise = new LowerExpression(bitvise, bitvisexor());
+                            bitvise = new LowerExpression(bitvise, bitviseor());
                             break;
                         case PythonTokens.gr:
-                            bitvise = new GreaterExpression(bitvise, bitvisexor());
+                            bitvise = new GreaterExpression(bitvise, bitviseor());
                             break;
                         default:
                             break;
@@ -276,97 +368,57 @@ namespace ProgramableNetwork.Python
             return bitvise;
         }
 
+        // Left-associative chain: `a | b | c` ⇒ `(a | b) | c`.
+        // Each binary level used to collect all operands into a list and
+        // then fold right-to-left, which produced right-associative ASTs.
+        // For commutative+associative ops (or/xor/and) the value was the
+        // same but for non-commutative ops (sub/div/shift) the result was
+        // wrong (e.g. `1 - 2 + 3` evaluated as `1 - (2 + 3) = -4`).  Folding
+        // left-to-right inline matches Python's grammar for all binary
+        // levels and keeps the AST shape consistent across operators.
         private IExpression bitviseor(PythonTokens[] ignore = null)
         {
-            List<IExpression> ors = new List<IExpression>
-            {
-                bitvisexor(ignore ?? defaultIgnore)
-            };
+            IExpression f = bitvisexor(ignore ?? defaultIgnore);
             while (IsNext(PythonTokens.bitor, out Token _, defaultIgnore))
             {
-                ors.Add(bitviseor());
-            }
-            if (ors.Count == 1) {
-				return ors[0];
-			}
-
-			IExpression f = ors.Last();
-            for (int i = ors.Count - 2; i >= 0; i--)
-            {
-                f = new BitOrExpression(ors[i], f);
+                f = new BitOrExpression(f, bitvisexor());
             }
             return f;
         }
 
         private IExpression bitvisexor(PythonTokens[] ignore = null)
         {
-            List<IExpression> ands = new List<IExpression>
-            {
-                bitviseand(ignore ?? defaultIgnore)
-            };
+            IExpression f = bitviseand(ignore ?? defaultIgnore);
             while (IsNext(PythonTokens.bitxor, out Token _, defaultIgnore))
             {
-                ands.Add(bitviseand());
-            }
-            if (ands.Count == 1) {
-				return ands[0];
-			}
-
-			IExpression f = ands.Last();
-            for (int i = ands.Count - 2; i >= 0; i--)
-            {
-                f = new BitXorExpression(ands[i], f);
+                f = new BitXorExpression(f, bitviseand());
             }
             return f;
         }
 
         private IExpression bitviseand(PythonTokens[] ignore = null)
         {
-            List<IExpression> shifts = new List<IExpression>
-            {
-                bitviseshift(ignore ?? defaultIgnore)
-            };
+            IExpression f = bitviseshift(ignore ?? defaultIgnore);
             while (IsNext(PythonTokens.bitand, out Token _, defaultIgnore))
             {
-                shifts.Add(bitviseshift());
-            }
-            if (shifts.Count == 1) {
-				return shifts[0];
-			}
-
-			IExpression f = shifts.Last();
-            for (int i = shifts.Count - 2; i >= 0; i--)
-            {
-                f = new BitAndExpression(shifts[i], f);
+                f = new BitAndExpression(f, bitviseshift());
             }
             return f;
         }
 
         private IExpression bitviseshift(PythonTokens[] ignore = null)
         {
-            List<(PythonTokens, IExpression) > shifts = new List<(PythonTokens, IExpression)>
+            IExpression f = sum(ignore ?? defaultIgnore);
+            while (IsNextOf(new PythonTokens[] { PythonTokens.shiftl, PythonTokens.shiftr }, out Token shift, defaultIgnore))
             {
-                (0, sum(ignore ?? defaultIgnore))
-            };
-            while (IsNextOf(new PythonTokens[]{ PythonTokens.shiftl, PythonTokens.shiftr }, out Token shift, defaultIgnore))
-            {
-                shifts.Add((shift.type, sum()));
-            }
-            if (shifts.Count == 1) {
-				return shifts[0].Item2;
-			}
-
-			IExpression f = shifts.Last().Item2;
-            for (int i = shifts.Count - 2; i >= 0; i--)
-            {
-                var shiftDrirection = shifts[i+1].Item1;
-                if (shiftDrirection == PythonTokens.shiftl)
+                IExpression rhs = sum();
+                if (shift.type == PythonTokens.shiftl)
                 {
-                    f = new ShiftLeftExpression(shifts[i].Item2, f);
+                    f = new ShiftLeftExpression(f, rhs);
                 }
                 else
                 {
-                    f = new ShiftRightExpression(shifts[i].Item2, f);
+                    f = new ShiftRightExpression(f, rhs);
                 }
             }
             return f;
@@ -374,33 +426,22 @@ namespace ProgramableNetwork.Python
 
         private IExpression sum(PythonTokens[] ignore = null)
         {
-            List<(PythonTokens, IExpression)> sums = new List<(PythonTokens, IExpression)>
+            IExpression f = term(ignore ?? defaultIgnore);
+            while (IsNextOf(new PythonTokens[] { PythonTokens.plus, PythonTokens.minus }, out Token op, defaultIgnore))
             {
-                (0, term(ignore ?? defaultIgnore))
-            };
-            while (IsNextOf(new PythonTokens[] { PythonTokens.plus, PythonTokens.minus }, out Token shift, defaultIgnore))
-            {
-                sums.Add((shift.type, term()));
-            }
-            if (sums.Count == 1) {
-				return sums[0].Item2;
-			}
-
-			IExpression f = sums.Last().Item2;
-            for (int i = sums.Count - 2; i >= 0; i--)
-            {
-                var shiftDrirection = sums[i + 1].Item1;
-                if (shiftDrirection == PythonTokens.plus)
+                IExpression rhs = term();
+                if (op.type == PythonTokens.plus)
                 {
-                    f = new AddExpression(sums[i].Item2, f);
+                    f = new AddExpression(f, rhs);
                 }
                 else
                 {
-                    // Subtraction: a - b ≡ a + (-b).  Was previously creating a
-                    // ModExpression (a % b) — completely wrong; turned every
-                    // subtraction into a modulo and tripped ZeroCheck on any
-                    // 0-LHS expression like `0 - 1` (parsed as `0 % 1`).
-                    f = new AddExpression(sums[i].Item2, new NegativeExpression(f));
+                    // Subtraction: a - b ≡ a + (-b).  The right-hand operand
+                    // is the term we just parsed — wrapping it in a Negative
+                    // here keeps the AST a clean sequence of AddExpressions
+                    // while preserving Python's left-associative semantics
+                    // (`a - b + c` ⇒ `(a + (-b)) + c`, not `a - (b + c)`).
+                    f = new AddExpression(f, new NegativeExpression(rhs));
                 }
             }
             return f;
@@ -408,37 +449,25 @@ namespace ProgramableNetwork.Python
 
         private IExpression term(PythonTokens[] ignore = null)
         {
-            List<(PythonTokens, IExpression)> sums = new List<(PythonTokens, IExpression)>
+            IExpression f = factor(ignore ?? defaultIgnore);
+            while (IsNextOf(new PythonTokens[] { PythonTokens.mul, PythonTokens.div, PythonTokens.divint, PythonTokens.mod }, out Token op, defaultIgnore))
             {
-                (0, factor(ignore ?? defaultIgnore))
-            };
-            while (IsNextOf(new PythonTokens[] { PythonTokens.mul, PythonTokens.div, PythonTokens.divint , PythonTokens.mod }, out Token operToken, defaultIgnore))
-            {
-                sums.Add((operToken.type, factor()));
-            }
-            if (sums.Count == 1) {
-				return sums[0].Item2;
-			}
-
-			IExpression f = sums.Last().Item2;
-            for (int i = sums.Count - 2; i >= 0; i--)
-            {
-                var oper = sums[i + 1].Item1;
-                if (oper == PythonTokens.mul)
+                IExpression rhs = factor();
+                if (op.type == PythonTokens.mul)
                 {
-                    f = new MulExpression(sums[i].Item2, f);
+                    f = new MulExpression(f, rhs);
                 }
-                else if (oper == PythonTokens.div)
+                else if (op.type == PythonTokens.div)
                 {
-                    f = new DivExpression(sums[i].Item2, f);
+                    f = new DivExpression(f, rhs);
                 }
-                else if (oper == PythonTokens.divint)
+                else if (op.type == PythonTokens.divint)
                 {
-                    f = new DivIntExpression(sums[i].Item2, f);
+                    f = new DivIntExpression(f, rhs);
                 }
                 else
                 {
-                    f = new ModExpression(sums[i].Item2, f);
+                    f = new ModExpression(f, rhs);
                 }
             }
             return f;

@@ -24,6 +24,7 @@ public class VariableWindow : Window {
     public VariableWindow(ControllerContext context, VariableManager variableManager)
 		: base("Network variables".ToDoLoc(), addFullscreenButton: true) {
 
+		this.LaterText(() => NewTr.Inspector.NetworkVariablesTitle, this, (vv, t) => vv.Title(t));
 		WindowMaxHeight(Percent.Hundred);
 		MakeMovable();
 

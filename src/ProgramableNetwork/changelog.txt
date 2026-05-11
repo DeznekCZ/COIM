@@ -1,10 +1,20 @@
-v1.0.0 | 2025-07-10:
-- added the connection modules
-- added simple LED lights
-- added 7-segment and 16-segment displays
-- added sound emitter
+v1.1.1 | 2026-06-15:
+- added option convert hex values, that is usable for colors and product
+- added Compare: A vs B module (A<>B) — combined less/greater compare with binary / positive / sumup output modes; mode variants surface in the module picker as preset templates
+- extended Connection: Office - Unity - now have extendable pins to show more info
+- added hint checkbox, that will hide tooltip for controls
+- added option to select template directly from NewModule picker
+- added option to precofigure some fields directly from NewModule picker
+- added direct edit for modules, that are not part of controller yet
+- moved panel for openning variable window
 
 v1.1.0 | 2026-05-01:
 - added python PLC module for custom pin to pin reaction
 - changed cable display
 - updated modules to be extendable
+
+v1.0.0 | 2025-07-10:
+- added the connection modules
+- added simple LED lights
+- added 7-segment and 16-segment displays
+- added sound emitter

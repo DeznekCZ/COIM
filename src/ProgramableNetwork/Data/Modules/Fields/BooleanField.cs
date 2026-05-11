@@ -34,7 +34,7 @@ namespace ProgramableNetwork.Ui
             return module.Field.Bool[Id] ? "true" : "false";
         }
 
-        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog)
+        public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, System.Action updateDialog, bool directEdit = false)
         {
             // input field definition
             if (Id.StartsWith("field_") && module.Prototype.Inputs.Exists(i => i.Id == Id.Substring("field_".Length)))
@@ -42,7 +42,7 @@ namespace ProgramableNetwork.Ui
                 return;
             }
 
-            RowContainer row = fieldContainer.Row(this, module, uiContext, out bool draw);
+            RowContainer row = fieldContainer.Row(this, module, uiContext, out bool draw, directEdit: directEdit);
             if (!draw) {
 				return;
 			}
@@ -57,8 +57,12 @@ namespace ProgramableNetwork.Ui
 
             toggle.OnValueChanged((v) =>
             {
-                uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
-                    module.Controller.Id, module.Id, Id, v ? Fix32.One : Fix32.Zero));
+                if (directEdit) {
+                    module.Field[Id] = v ? Fix32.One : Fix32.Zero;
+                } else {
+                    uiContext.InputScheduler.ScheduleInputCmd(new ModuleSetFix32FieldCmd(
+                        module.Controller.Id, module.Id, Id, v ? Fix32.One : Fix32.Zero));
+                }
             });
         }
 

@@ -65,6 +65,13 @@ public class PlcPyCodeEditorWindow : Window {
 	private readonly Label m_tooltipLabel;
 	private readonly VisualElement m_errorStrip;
 
+	// The module the editor is currently bound to.  Captured by LoadFromModule
+	// (and cleared back to null on close so a stale reference can't survive
+	// a controller swap).  Used by RefreshIdentifierTooltip to surface the
+	// runtime type of player vars under the caret without going through the
+	// scheduler closures the stats-label refresh uses.
+	private Module m_currentModule;
+
 	// IntelliSense floater state — collapsed by default; opened by '.' or
 	// Ctrl+Space.  m_floaterEntries snapshots the active completion list
 	// at open time; the visible Labels are rebuilt to match each open so
@@ -472,8 +479,20 @@ public class PlcPyCodeEditorWindow : Window {
 			SetTooltipText("");
 			return;
 		}
+		// Live runtime type for player vars — checked first so a player who
+		// hovers an `x = fix(5)` they wrote sees `x: Fix32 = 5` without the
+		// static doc table getting in the way (the table only knows
+		// well-known names).  Falls through to docs when the var is unknown
+		// or the module isn't bound, so the existing help still surfaces.
+		string runtimeInfo = LookupRuntimeType(ident);
 		if (PlcPySyntax.Docs.TryGetValue(ident, out string doc)) {
-			SetTooltipText(ident + " — " + doc);
+			SetTooltipText(runtimeInfo != null
+				? ident + ": " + runtimeInfo + " — " + doc
+				: ident + " — " + doc);
+			return;
+		}
+		if (runtimeInfo != null) {
+			SetTooltipText(ident + ": " + runtimeInfo);
 			return;
 		}
 		int dot = ident.LastIndexOf('.');
@@ -486,6 +505,80 @@ public class PlcPyCodeEditorWindow : Window {
 			dot = parent.LastIndexOf('.');
 		}
 		SetTooltipText("");
+	}
+
+	// "type[ = value]" string for a bare identifier currently in PlcContext,
+	// or null if we can't resolve it (no module bound, no entry, dotted
+	// path).  Type names mirror what a Python author expects rather than
+	// the C# class name (Fix32 stays Fix32; Method renders as "function";
+	// raw List/Dict become "list"/"dict").  Primitive values are inlined
+	// so the player can also see what's stored without inspecting state
+	// elsewhere; complex objects stay just-a-type to keep the strip short.
+	private string LookupRuntimeType(string ident) {
+		if (m_currentModule == null || string.IsNullOrEmpty(ident)) {
+			return null;
+		}
+		// Only resolve bare names — dotted paths (self.Input.A, range(10).Stop)
+		// would need a full expression evaluator.  Handled by the existing
+		// dotted-prefix doc fallback.
+		if (ident.IndexOf('.') >= 0) {
+			return null;
+		}
+		Mafi.Collections.Dict<string, object> ctx = m_currentModule.PlcContext;
+		if (ctx == null || !ctx.TryGetValue(ident, out object value)) {
+			return null;
+		}
+		return DescribePlcValue(value);
+	}
+
+	private static string DescribePlcValue(object value) {
+		if (value is null) {
+			return "None";
+		}
+		if (value is bool b) {
+			return "bool = " + (b ? "True" : "False");
+		}
+		if (value is int i) {
+			return "int = " + i;
+		}
+		if (value is float f) {
+			return "float = " + f;
+		}
+		if (value is double d) {
+			return "float = " + d;
+		}
+		if (value is long l) {
+			return "int = " + l;
+		}
+		if (value is Mafi.Fix32 fix) {
+			return "Fix32 = " + fix.ToFloat();
+		}
+		if (value is string s) {
+			string preview = s.Length > 32 ? s.Substring(0, 32) + "…" : s;
+			return "str = \"" + preview + "\"";
+		}
+		if (value is ProgramableNetwork.Python.Method) {
+			return "function";
+		}
+		if (value is ProgramableNetwork.Python.Class) {
+			return "class";
+		}
+		if (value is ProgramableNetwork.Python.Constructor) {
+			return "builtin";
+		}
+		if (value is ProgramableNetwork.Python.RangeIterable r) {
+			return "range(" + r.Start + ", " + r.Stop + ", " + r.Step + ")";
+		}
+		if (value is System.Type t) {
+			return "type[" + t.Name + "]";
+		}
+		if (value is System.Collections.IDictionary dict) {
+			return "dict[" + dict.Count + "]";
+		}
+		if (value is System.Collections.ICollection col) {
+			return "list[" + col.Count + "]";
+		}
+		return value.GetType().Name;
 	}
 
 	private void SetTooltipText(string text) {
@@ -952,6 +1045,7 @@ public class PlcPyCodeEditorWindow : Window {
 	// polling every tick.
 	public void LoadFromModule(Module module) {
 		CloseFloater();
+		m_currentModule = module;
 		string current = module?.Field["code", ""] ?? "";
 		m_codeEditor.Text = current;
 		UpdateLineNumbers(current);

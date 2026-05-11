@@ -41,15 +41,25 @@ namespace ProgramableNetwork.Ui
             return $"#{c.Rgba:X8}";
         }
 
-		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog)
+		public void Init(ControllerInspector inspector, Window parentWindow, UiComponent fieldContainer, UiContext uiContext, Module module, Action updateDialog, bool directEdit = false)
         {
-            RowContainer row = fieldContainer.Row(this, module, uiContext, out _, useFiller: false);
+            RowContainer row = fieldContainer.Row(this, module, uiContext, out _, useFiller: false, directEdit: directEdit);
 
             var colorPicker = new RgbColorPicker();
             colorPicker.Value(module.Field[Id, Default.AsFix32].AsColorRgba);
-            colorPicker.Width(200 - Sizes.BLOCK_SIZE * 1.5f);
+            // Direct-edit mode has no save button, so the picker gets the full row.
+            colorPicker.Width(directEdit ? 200.px() : (200 - Sizes.BLOCK_SIZE * 1.5f));
             colorPicker.Height(Px.Auto);
             row.Add(colorPicker);
+
+            if (directEdit)
+            {
+                colorPicker.OnColorChanged((c) =>
+                {
+                    module.Field[Id] = c.AsFix32;
+                });
+                return;
+            }
 
             var setButton = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Save_svg);
             setButton.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE);

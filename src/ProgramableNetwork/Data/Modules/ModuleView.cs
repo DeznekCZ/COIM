@@ -259,8 +259,12 @@ public partial class ControllerView
 				// manipulator, attaching a Floater here no longer interferes with the
 				// click path: Floater registers a tooltip-style listener that fires on
 				// hover only.  Same KeyUi/icon row layout the base game uses for its
-				// own keyboard hints (and the slot button's AddHelper).
-				fieldsPanel.Floater(() => buildModuleKeybindHelp(fieldsPanel).SomeOption<UiComponent>());
+				// own keyboard hints (and the slot button's AddHelper).  Gated on the
+				// inspector's m_showHints checkbox so the entire hint system can be
+				// silenced from one place.
+				fieldsPanel.Floater(() => m_controller.Inspector.m_showHints
+					? buildModuleKeybindHelp(fieldsPanel).SomeOption<UiComponent>()
+					: Option<UiComponent>.None);
 			}
 			fieldsRow.Observe(() => module.InputExtensionCount)
 					 .Observe(() => module.OutputExtensionCount)
@@ -520,13 +524,17 @@ public partial class ControllerView
 			// Layout: [inner filler ── right-aligns statics in their original baseWidth]
 			//         [static input pins from the prototype]
 			//         [active extension input pins]
+			//         [trailing input pins ── pinned to end of THIS row's active area]
 			//         [outer filler ── present when the OTHER row's extensions widen us]
 			// This keeps the static pin columns identical to the pre-extension layout.
+			// Trailing pins follow the input row's own extension count only — display
+			// or output extensions don't shift them; the gap is absorbed by outerFiller.
 			var staticInputs = module.Prototype.Inputs;
+			var trailingInputs = module.Prototype.InputsTrailing ?? (System.Collections.Generic.IList<ModuleConnectorProto>)System.Array.Empty<ModuleConnectorProto>();
 			int totalWidth = module.Layout.GetWidth(module);
 			int baseWidth = module.Layout.GetBaseWidth(module);
 			int extCount = System.Math.Min(module.InputExtensionCount, module.Prototype.MaxInputExtensions);
-			int innerFiller = System.Math.Max(0, baseWidth - staticInputs.Count);
+			int innerFiller = System.Math.Max(0, baseWidth - staticInputs.Count - trailingInputs.Count);
 			int outerFiller = System.Math.Max(0, totalWidth - baseWidth - extCount);
 
 			if (innerFiller > 0)
@@ -535,12 +543,18 @@ public partial class ControllerView
 					.Width(innerFiller * Sizes.BLOCK_SIZE)
 					.Height(Sizes.BLOCK_SIZE);
 			}
-			int totalPins = staticInputs.Count + extCount;
+			int staticAndExtPins = staticInputs.Count + extCount;
+			int totalPins = staticAndExtPins + trailingInputs.Count;
 			for (int i = 0; i < totalPins; i++)
 			{
-				var input = i < staticInputs.Count
-					? staticInputs[i]
-					: module.Prototype.InputExtensions[i - staticInputs.Count];
+				ModuleConnectorProto input;
+				if (i < staticInputs.Count) {
+					input = staticInputs[i];
+				} else if (i < staticAndExtPins) {
+					input = module.Prototype.InputExtensions[i - staticInputs.Count];
+				} else {
+					input = trailingInputs[i - staticAndExtPins];
+				}
 				bool isConnected = module.InputModules.ContainsKey(input.Id);
 
 				PortPinButton btn = new PortPinButton(PortPinButton.PortKind.Input, isConnected)
@@ -633,6 +647,10 @@ public partial class ControllerView
 					);
 				}
 			}
+			// outerFiller is always appended last — past the trailings — so when
+			// another row's extensions widen the module past this row's own
+			// extension count, the trailings stay anchored to the end of the
+			// active input area and the empty cells appear to the right of them.
 			if (outerFiller > 0)
 			{
 				inputsPanel.AddAndReturn(new UiComponent())

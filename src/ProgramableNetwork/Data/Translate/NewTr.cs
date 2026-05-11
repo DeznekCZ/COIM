@@ -91,6 +91,14 @@ namespace ProgramableNetwork
                 "Ticks per 60 seconds", "controller inspector: tooltip for the speed display");
             public static readonly LocStr Modules = Loc.Str("ProgramableNetwork_Inspector_Modules",
                 "Modules", "controller inspector: panel header above the module grid");
+            public static readonly LocStr ShowHints = Loc.Str("ProgramableNetwork_Inspector_ShowHints",
+                "Hints", "controller inspector: header checkbox label/tooltip — when on, hover hints (slot '+ click to add', per-module LMB/Alt+LMB/Shift+LMB/RMB/Shift+RMB cheatsheet) appear; when off, the inspector stays quiet");
+            public static readonly LocStr ExtensionCountInputs = Loc.Str("ProgramableNetwork_Inspector_ExtensionCountInputs",
+                "Additional input pins", "module picker settings dialog: label for the input-extension count row (counts EXTRA pins beyond the module's static base — clarified from 'Input pins' to make the additive semantic obvious)");
+            public static readonly LocStr ExtensionCountOutputs = Loc.Str("ProgramableNetwork_Inspector_ExtensionCountOutputs",
+                "Additional output pins", "module picker settings dialog: label for the output-extension count row (counts EXTRA pins beyond the module's static base)");
+            public static readonly LocStr ExtensionCountDisplays = Loc.Str("ProgramableNetwork_Inspector_ExtensionCountDisplays",
+                "Additional display cells", "module picker settings dialog: label for the display-extension count row (counts EXTRA cells beyond the display widget's static width)");
             public static readonly LocStr ConfirmRemoveModule = Loc.Str("ProgramableNetwork_Inspector_ConfirmRemoveModule",
                 "Remove this module?", "controller inspector: question shown in the right-click confirmation dropdown before deleting a module");
             public static readonly LocStr ConfirmRemoveYes = Loc.Str("ProgramableNetwork_Inspector_ConfirmRemoveYes",
@@ -127,8 +135,11 @@ namespace ProgramableNetwork
                 "Remove (with confirm)", "controller inspector: placed-module hover hint for plain RMB");
             public static readonly LocStr ModuleHintRemoveDirect = Loc.Str("ProgramableNetwork_Inspector_ModuleHintRemoveDirect",
                 "Remove (no confirm)", "controller inspector: placed-module hover hint for Shift+RMB direct delete");
+			public static readonly LocStr NetworkVariablesTitle = Loc.Str(
+				"ProgramableNetwork_NetworkVariablesTitle",
+				"Network variables", "");
 
-            public static readonly LocStr Connections = Loc.Str("ProgramableNetwork_Inspector_Connections",
+			public static readonly LocStr Connections = Loc.Str("ProgramableNetwork_Inspector_Connections",
                 "Connections", "controller inspector: panel header for the per-module entity connections list");
             public static readonly LocStr ConnectionsEmpty = Loc.Str("ProgramableNetwork_Inspector_ConnectionsEmpty",
                 "No entity-bound fields", "controller inspector: shown in connections panel when no module has any entity field");
@@ -158,7 +169,7 @@ namespace ProgramableNetwork
                 "Shoot", "speaker sound option: turret shot");
             public static readonly LocStr Sound_Message = Loc.Str("ProgramableNetwork_Speaker_Sound_Message",
                 "Message", "speaker sound option: new message chime");
-        }
+		}
 
         public partial class FieldStatus
         {

@@ -199,6 +199,9 @@ namespace ProgramableNetwork.Python
             else if (name == "Core.mafi")
             {
                 context["fix"] = new Constructor((args) => Expressions.__fix__(args[0].Value), new string[] { "value" });
+                context["int"] = new Constructor((args) => Expressions.__int__(args[0].Value), new string[] { "value" });
+                context["raw"] = new Constructor((args) => Expressions.__raw__(args[0].Value), new string[] { "value" });
+                context["hex"] = new Constructor((args) => Fix32.FromRaw(Expressions.__int__(args[0].Value)), new string[] { "value" });
                 context["Fix32"] = typeof(Fix32);
             }
 
