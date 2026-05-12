@@ -1,4 +1,7 @@
-v1.1.1 | 2026-06-15:
+v1.1.2 | 2026-07-15:
+- TODO
+
+v1.1.1 | 2026-06-12:
 - added option convert hex values, that is usable for colors and product
 - added Compare: A vs B module (A<>B) — combined less/greater compare with binary / positive / sumup output modes; mode variants surface in the module picker as preset templates
 - extended Connection: Office - Unity - now have extendable pins to show more info
