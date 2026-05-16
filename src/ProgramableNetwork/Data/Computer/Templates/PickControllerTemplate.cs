@@ -3,6 +3,7 @@ using Mafi.Collections;
 using Mafi.Core;
 using Mafi.Core.Syncers;
 using Mafi.Localization;
+using Mafi.Unity.Ui;
 using Mafi.Unity.Ui.Hud;
 using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
@@ -30,11 +31,13 @@ namespace ProgramableNetwork.Ui
 		private static readonly DropdownPositionPolicy POLICY = new DropdownPositionPolicy();
 		private string m_searchText = "";
 		private readonly BlueprintsLibrary m_blueprintsLibrary;
+		private readonly UiContext m_uiContext;
 
-		public PickControllerTemplate(Controller controller, BlueprintsLibrary blueprintsLibrary)
+		public PickControllerTemplate(Controller controller, BlueprintsLibrary blueprintsLibrary, UiContext uiContext)
 			: base(POLICY, false, false, true)
 		{
 			m_blueprintsLibrary = blueprintsLibrary;
+			m_uiContext = uiContext;
 
 			PanelWithHeader panel = AddAndReturn(new PanelWithHeader("Pick controller template".AsLoc()));
 			panel.Height(Px.Auto);
@@ -74,7 +77,20 @@ namespace ProgramableNetwork.Ui
 					{
 						try
 						{
-							captured.Apply(controller);
+							// Python-registered templates apply via a command so the
+							// mutation (clear modules + run lambda + init) runs on the
+							// sim thread.  Blueprint-backed entries continue with direct
+							// Apply because they read from the per-client BlueprintsLibrary
+							// (local state, not deterministically replicable in MP).
+							if (captured is PythonControllerTemplateEntry py && m_uiContext != null)
+							{
+								m_uiContext.InputScheduler.ScheduleInputCmd(
+									new ControllerApplyTemplateCmd(controller.Id, py.TemplateId));
+							}
+							else
+							{
+								captured.Apply(controller);
+							}
 						}
 						catch (Exception ex)
 						{

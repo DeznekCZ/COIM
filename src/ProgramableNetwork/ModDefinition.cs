@@ -6,6 +6,8 @@ using ProgramableNetwork.Data.Mod;
 using ProgramableNetwork.Data.Modules;
 using System;
 using System.IO;
+using Mafi.Core.Products;
+using Mafi.Core.Prototypes;
 using ProgramableNetwork.Data.DisplayEntity;
 using UnityEngine;
 

@@ -28,6 +28,14 @@ using System.Reflection;
 
 namespace ProgramableNetwork
 {
+	// TODO (next commit): sort all fields and properties before the constructor,
+	// then all methods (public then private) after it.  The class has grown by
+	// accretion — IsRangeFree / TryRemoveModule / TryMoveModule / TryPlaceModule
+	// / TryShiftAddModule / ApplyPythonTemplate currently sit between the
+	// description property and the constructor, which puts methods before
+	// fields.  Moving the new helpers below the constructor (alongside
+	// UpdateModules) will restore the field-property-ctor-method ordering and
+	// make the class easier to skim.
 	[ManuallyWrittenSerialization]
 	public class Controller : LayoutEntityBase, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate,
 		IUnityConsumingEntity, IComputingConsumingEntity, IElectricityConsumingEntity, IMaintainedEntity, IObjectWithCustomTitle
@@ -167,6 +175,297 @@ namespace ProgramableNetwork
 			return sb.ToString();
 		}
 
+		/// <summary>
+		/// True iff every cell in [col, col+width) on the given row is in-bounds and
+		/// unoccupied by any module other than <paramref name="ignore"/>.  Shared
+		/// between the inspector (pre-validation, audio feedback) and the command
+		/// executor (authoritative re-check on the sim thread) so both decisions
+		/// use the same rule.  Out-of-bounds rows/cols return false rather than
+		/// throwing — callers test this before mutating.
+		/// </summary>
+		public bool IsRangeFree(int row, int col, int width, Module ignore)
+		{
+			if (Prototype == null) {
+				return false;
+			}
+			if (row < 0 || row >= Prototype.Rows) {
+				return false;
+			}
+			if (col < 0 || col + width > Prototype.Columns) {
+				return false;
+			}
+			foreach (Module m in Modules)
+			{
+				if (m == null || m.Prototype == null) {
+					continue;
+				}
+				if (ignore != null && m.Id == ignore.Id) {
+					continue;
+				}
+				if (m.Row != row) {
+					continue;
+				}
+				int mw = m.Layout.GetWidth(m);
+				int mEnd = m.Column + mw;
+				int end = col + width;
+				if (m.Column < end && col < mEnd) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// Removes the module with the given id and drops every cable that
+		/// referenced it from any other module on this controller.  Returns false
+		/// if no such module exists.  Used by ModuleRemoveCmd on the sim thread.
+		/// </summary>
+		public bool TryRemoveModule(long moduleId)
+		{
+			Module victim = null;
+			foreach (Module m in Modules) {
+				if (m.Id == moduleId) { victim = m; break; }
+			}
+			if (victim == null) {
+				return false;
+			}
+			Modules.RemoveFirst(m => m.Id == moduleId);
+			foreach (Module item in Modules)
+			{
+				foreach (KeyValuePair<string, ModuleConnector> input in item.InputModules.ToList())
+				{
+					if (input.Value.ModuleId == moduleId) {
+						item.InputModules.Remove(input.Key);
+					}
+				}
+			}
+			InvalidateTopology();
+			return true;
+		}
+
+		/// <summary>
+		/// Moves the module to (targetRow, targetColumn), snapping past-end-of-line
+		/// targets to the rightmost valid slot rather than refusing.  The clamp is
+		/// the "move to slot, on end of line if it would collide with himself"
+		/// behaviour requested by the inspector: a wide module nudged right at the
+		/// edge stays at the edge instead of bouncing.  Returns false only if the
+		/// module is unknown, the controller has no valid slot for this width, or
+		/// the clamped destination is occupied by a different module.  A clamped
+		/// target equal to the module's current position is a successful no-op.
+		/// Used by ModuleMoveToCmd.
+		/// </summary>
+		public bool TryMoveModule(long moduleId, int targetRow, int targetColumn)
+		{
+			Module module = null;
+			foreach (Module m in Modules) {
+				if (m.Id == moduleId) { module = m; break; }
+			}
+			if (module == null || Prototype == null) {
+				return false;
+			}
+			int width = module.Layout.GetWidth(module);
+			if (width <= 0 || width > Prototype.Columns || Prototype.Rows <= 0) {
+				return false;
+			}
+			int clampedRow = System.Math.Max(0, System.Math.Min(Prototype.Rows - 1, targetRow));
+			int clampedCol = System.Math.Max(0, System.Math.Min(Prototype.Columns - width, targetColumn));
+			if (clampedRow == module.Row && clampedCol == module.Column) {
+				// Already at the (clamped) target — treat as success rather than
+				// forcing the caller to special-case the no-op.
+				return true;
+			}
+			if (!IsRangeFree(clampedRow, clampedCol, width, ignore: module)) {
+				return false;
+			}
+			module.Row = clampedRow;
+			module.Column = clampedCol;
+			return true;
+		}
+
+		/// <summary>
+		/// Creates a fresh module of the given prototype at (targetRow, targetColumn)
+		/// and returns the new id (or 0 on failure).  Calls <c>ExecuteInit</c> on
+		/// the new module before returning so the prototype's default state (fields,
+		/// extension counts, etc.) is set on the sim thread for every MP peer — the
+		/// inspector used to do this client-side after a successful place, which
+		/// would diverge between host and clients.  The allocated id is freed via
+		/// <c>ModuleIdManager.Free</c> when placement validation fails so the id
+		/// pool doesn't leak.  Used by ModulePlaceCmd.
+		/// </summary>
+		public long TryPlaceModule(ModuleProto proto, int targetRow, int targetColumn)
+		{
+			if (proto == null) {
+				return 0;
+			}
+			ModuleIdManager idManager = Resolver.Resolve<ModuleIdManager>();
+			long newId = idManager.Allocate();
+			Module module = new Module(proto, Context, this, newId);
+			int width = module.Layout.GetWidth(module);
+			if (!IsRangeFree(targetRow, targetColumn, width, ignore: null))
+			{
+				idManager.Free(newId);
+				return 0;
+			}
+			module.Row = targetRow;
+			module.Column = targetColumn;
+			module.Prototype.ExecuteInit(module);
+			Modules.Add(module);
+			InvalidateTopology();
+			return newId;
+		}
+
+		/// <summary>
+		/// Places a fresh module of <paramref name="proto"/> at (row, column) and
+		/// then stamps the configurable state from <paramref name="snapshot"/> onto
+		/// it — combines <see cref="TryPlaceModule"/> + <see cref="TryPasteModule"/>
+		/// into a single atomic operation.  Used by ModulePlaceFromBlueprintCmd so
+		/// the configure step (which carries arbitrary, possibly per-client data)
+		/// runs on the sim thread for every MP peer.  Returns the new module's id
+		/// (0 on failure).
+		/// </summary>
+		public long TryPlaceModuleFromSnapshot(ModuleProto proto, int targetRow, int targetColumn, Module snapshot)
+		{
+			long newId = TryPlaceModule(proto, targetRow, targetColumn);
+			if (newId == 0) {
+				return 0;
+			}
+			if (snapshot != null)
+			{
+				TryPasteModule(newId, snapshot);
+			}
+			return newId;
+		}
+
+		/// <summary>
+		/// Copies the source module's configurable state onto an EXISTING destination
+		/// module on this controller — same data copy that <see cref="TryShiftAddModule"/>
+		/// performs, but without the placement step.  Used by ModulePasteCmd to back
+		/// the inspector's "paste from last-created" button.  Cable connections
+		/// (<c>InputModules</c>) are intentionally NOT copied — the source's
+		/// endpoints don't generally point at neighbours of the destination.
+		/// Returns false when the destination doesn't live on this controller.
+		/// </summary>
+		public bool TryPasteModule(long destModuleId, Module source)
+		{
+			Module dest = null;
+			foreach (Module m in Modules) {
+				if (m.Id == destModuleId) { dest = m; break; }
+			}
+			if (dest == null || source?.Prototype == null) {
+				return false;
+			}
+			dest.SetStatus(ModuleStatus.Init);
+			dest.NumberData.Clear();
+			dest.FieldNumberData.Clear();
+			dest.StringData.Clear();
+			foreach (KeyValuePair<string, int> item in source.NumberData) {
+				dest.NumberData[item.Key] = item.Value;
+			}
+			foreach (KeyValuePair<string, Fix32> item in source.FieldNumberData) {
+				dest.FieldNumberData[item.Key] = item.Value;
+			}
+			foreach (KeyValuePair<string, string> item in source.StringData) {
+				dest.StringData[item.Key] = item.Value;
+			}
+			// All three extension dimensions roundtrip via the Set* setters so the
+			// linked-side mirroring and dropped-cable pruning happen on the sim
+			// thread, deterministically across MP peers.
+			dest.SetInputExtensionCount(source.InputExtensionCount);
+			dest.SetOutputExtensionCount(source.OutputExtensionCount);
+			dest.SetDisplayExtensionCount(source.DisplayExtensionCount);
+			if (source.ArrayData != null && source.ArrayData.Length > 0)
+			{
+				Fix32[] copy = new Fix32[source.ArrayData.Length];
+				System.Array.Copy(source.ArrayData, copy, copy.Length);
+				typeof(Module).GetProperty(nameof(Module.ArrayData)).SetValue(dest, copy);
+			}
+			dest.Prototype.ExecuteInit(dest);
+			// Extension count changes may have dropped cables — invalidate the
+			// signal-copy plan so the next tick rebuilds without the stale edges.
+			InvalidateTopology();
+			return true;
+		}
+
+		/// <summary>
+		/// Stamps a copy of <paramref name="source"/> at (targetRow, targetColumn) on
+		/// this controller.  The destination's prototype is initialised, then the
+		/// source's NumberData / FieldNumberData / StringData / extension counts /
+		/// ArrayData are copied across so the new module reproduces the original's
+		/// settings.  Returns the new id (or 0 on failure).  Used by ModuleShiftAddCmd.
+		/// </summary>
+		public long TryShiftAddModule(Module source, int targetRow, int targetColumn)
+		{
+			if (source?.Prototype == null) {
+				return 0;
+			}
+			long newId = TryPlaceModule(source.Prototype, targetRow, targetColumn);
+			if (newId == 0) {
+				return 0;
+			}
+			Module placed = null;
+			foreach (Module m in Modules) {
+				if (m.Id == newId) { placed = m; break; }
+			}
+			if (placed == null) {
+				return 0;
+			}
+			placed.Prototype.ExecuteInit(placed, log: false);
+			foreach (KeyValuePair<string, int> item in source.NumberData) {
+				placed.NumberData[item.Key] = item.Value;
+			}
+			foreach (KeyValuePair<string, Fix32> item in source.FieldNumberData) {
+				placed.FieldNumberData[item.Key] = item.Value;
+			}
+			foreach (KeyValuePair<string, string> item in source.StringData) {
+				placed.StringData[item.Key] = item.Value;
+			}
+			placed.SetInputExtensionCount(source.InputExtensionCount);
+			placed.SetOutputExtensionCount(source.OutputExtensionCount);
+			if (source.ArrayData != null && source.ArrayData.Length > 0)
+			{
+				Fix32[] copy = new Fix32[source.ArrayData.Length];
+				System.Array.Copy(source.ArrayData, copy, copy.Length);
+				typeof(Module).GetProperty(nameof(Module.ArrayData)).SetValue(placed, copy);
+			}
+			placed.Prototype.DisplayUpdate(placed);
+			return newId;
+		}
+
+		/// <summary>
+		/// Applies a Python-registered controller template (lookup by stable id) to
+		/// this controller in place — clears existing modules, runs the template's
+		/// placement lambda, executes per-module Init, then runs the deferred
+		/// settings callback.  Returns false if no template with the given id is
+		/// registered (e.g., mod removed since save).  Used by ControllerApplyTemplateCmd.
+		/// </summary>
+		public bool ApplyPythonTemplate(string templateId)
+		{
+			Python.ControllerTemplate? match = null;
+			foreach (Python.ControllerTemplate t in Data.Mod.ControllerTemplates.CachedTemplates)
+			{
+				if (t.id == templateId) { match = t; break; }
+			}
+			if (!match.HasValue) {
+				return false;
+			}
+			Python.ControllerTemplate template = match.Value;
+			if (template.modules == null) {
+				return false;
+			}
+			Modules.Clear();
+			Python.ControllerTemplate.Settings settings = template.modules(this);
+			foreach (Module module in Modules) {
+				module.Prototype.ExecuteInit(module);
+			}
+			settings?.Invoke();
+			InvalidateTopology();
+			SetColor(template.color);
+			if (!string.IsNullOrEmpty(template.description)) {
+				CustomDescription = template.description.SomeOption();
+			}
+			return true;
+		}
+
 		public Controller(EntityId id, ControllerProto proto, TileTransform transform, EntityContext context,
 			IEntityMaintenanceProvidersFactory maintenanceProvidersFactory,
 			DependencyResolver resolver)
@@ -226,6 +525,116 @@ namespace ProgramableNetwork
 		[DoNotSave(0, null)]
 		public bool CanWorkOvertime => true;
 
+		// Pre-compiled per-tick signal-copy plan.  Modules/connections only change
+		// on user edits (and on load), so the dictionary indirections that used to
+		// run every tick (rebuild Dictionary<long, Module>, ToArray on each
+		// InputModules, two TryGetValue hops per cable) are hoisted into these
+		// caches and rebuilt only when InvalidateTopology() is called.  See
+		// UpdateModules() for the hot path that consumes them.
+		[DoNotSave(0, null)]
+		private bool m_topologyDirty;
+		[DoNotSave(0, null)]
+		private Dictionary<long, Module> m_moduleCache;
+		[DoNotSave(0, null)]
+		private CopyEdge[] m_copyPlan;
+		[DoNotSave(0, null)]
+		private InputClear[] m_inputClearPlan;
+
+		// One per (input pin <- output pin) cable.  Direct dict references skip
+		// the Modules-by-Id lookup; string keys are still needed because output
+		// pin ids can be written dynamically by a module's Execute() — they are
+		// not statically declared anywhere we could index by.
+		private readonly struct CopyEdge
+		{
+			public readonly Dict<string, Fix32> SrcOutputs;
+			public readonly string SrcKey;
+			public readonly Dict<string, Fix32> DstInputs;
+			public readonly string DstKey;
+			public CopyEdge(Dict<string, Fix32> srcOutputs, string srcKey,
+							Dict<string, Fix32> dstInputs, string dstKey)
+			{
+				SrcOutputs = srcOutputs;
+				SrcKey = srcKey;
+				DstInputs = dstInputs;
+				DstKey = dstKey;
+			}
+		}
+
+		// Per-module list of input pin ids that have NO incoming cable.  These
+		// get TryRemove'd each tick so an unconnected pin reads as zero; connected
+		// pins are unconditionally written by the copy plan so they don't need
+		// clearing first.
+		private readonly struct InputClear
+		{
+			public readonly Dict<string, Fix32> Dict;
+			public readonly string[] Keys;
+			public InputClear(Dict<string, Fix32> dict, string[] keys)
+			{
+				Dict = dict;
+				Keys = keys;
+			}
+		}
+
+		/// <summary>
+		/// Marks the cached signal-copy plan as stale.  Call after any change to
+		/// the module list or to any module's InputModules connections.  The plan
+		/// is rebuilt lazily on the next SimUpdate tick.
+		/// </summary>
+		public void InvalidateTopology()
+		{
+			m_topologyDirty = true;
+		}
+
+		private void BuildSignalPlan()
+		{
+			var cache = new Dictionary<long, Module>(Modules.Count);
+			foreach (Module m in Modules) { cache[m.Id] = m; }
+			m_moduleCache = cache;
+
+			var copyEdges = new List<CopyEdge>();
+			var clearPlan = new InputClear[Modules.Count];
+			int moduleIdx = 0;
+
+			foreach (Module module in Modules)
+			{
+				// Walk a snapshot of InputModules so we can prune dangling entries
+				// (source module no longer on this controller) inline, matching
+				// the self-healing behavior that UpdateModules used to do per tick.
+				HashSet<string> connected = null;
+				foreach (var item in module.InputModules.ToArray())
+				{
+					if (cache.TryGetValue(item.Value.ModuleId, out Module srcMod))
+					{
+						copyEdges.Add(new CopyEdge(
+							srcMod.OutputNumberData, item.Value.OutputId,
+							module.InputNumberData, item.Key));
+						(connected ??= new HashSet<string>()).Add(item.Key);
+					}
+					else
+					{
+						module.InputModules.Remove(item.Key);
+						module.InputNumberData.TryRemove(item.Key, out _);
+					}
+				}
+
+				// Inputs with no incoming cable — these get cleared each tick so
+				// they read as zero.  Connected pins are unconditionally overwritten
+				// by the copy plan, so we skip them here.
+				var unconnected = new List<string>();
+				foreach (var input in module.EffectiveInputs)
+				{
+					if (connected == null || !connected.Contains(input.Id)) {
+						unconnected.Add(input.Id);
+					}
+				}
+				clearPlan[moduleIdx++] = new InputClear(module.InputNumberData, unconnected.ToArray());
+			}
+
+			m_copyPlan = copyEdges.ToArray();
+			m_inputClearPlan = clearPlan;
+			m_topologyDirty = false;
+		}
+
 		public void AddToConfig(EntityConfigData data)
 		{
 			// TODO copy modules, name, entity connections, ...
@@ -268,6 +677,7 @@ namespace ProgramableNetwork
 						field.Validate(module);
 					}
 				}
+				InvalidateTopology();
 			}
 			// Legacy clones may still have "controller_rows"; back-fill module positions if so.
 			ImmutableArray<Lyst<ModulePlacement>>? newLocation =
@@ -486,6 +896,7 @@ namespace ProgramableNetwork
 						}
 					}
 				}
+				InvalidateTopology();
 			}
 
 			if (m_legacyRows != null)
@@ -826,34 +1237,35 @@ namespace ProgramableNetwork
 
 		private void UpdateModules(bool computingConsumed)
 		{
-			// This will run the "compiled tree" per tick
-			// the tree is recompiled when edited only or when construct
-			Dictionary<long, Module> cache = Modules.ToDictionary(m => m.Id);
+			// The "compiled tree" — module/connection topology only changes on
+			// user edits, so the per-module-id lookup and the per-cable resolution
+			// are hoisted into m_copyPlan / m_inputClearPlan and rebuilt lazily
+			// via BuildSignalPlan() after InvalidateTopology().
+			if (m_topologyDirty || m_copyPlan == null) {
+				BuildSignalPlan();
+			}
 
-			// Copy all outputs to inputs
-			foreach (Module module in Modules)
+			// Clear unconnected inputs to zero (connected inputs are unconditionally
+			// overwritten below, no point clearing them first).
+			var clears = m_inputClearPlan;
+			for (int i = 0; i < clears.Length; i++)
 			{
-				// Clear last-tick values across all effective inputs (statics + active
-				// extensions) so unconnected pins evaluate as zero on the next read.
-				foreach (var input in module.EffectiveInputs)
+				Dict<string, Fix32> dict = clears[i].Dict;
+				string[] keys = clears[i].Keys;
+				for (int k = 0; k < keys.Length; k++)
 				{
-					module.InputNumberData.TryRemove(input.Id, out _);
-					// module.StringData.TryRemove("in__" + input.Id, out _);
+					dict.TryRemove(keys[k], out _);
 				}
+			}
 
-				foreach (KeyValuePair<string, ModuleConnector> item in module.InputModules.ToArray())
-				{
-					if (cache.TryGetValue(item.Value.ModuleId, out Module connected))
-					{
-						module.Input[item.Key] = connected.Output[item.Value.OutputId, 0];
-					}
-					else
-					{
-						// Remove disconnected module
-						module.InputModules.Remove(item.Key);
-						module.Input[item.Key] = Fix32.Zero;
-					}
-				}
+			// Run the pre-compiled copy plan.  Two dict ops per cable (1 read,
+			// 1 write) — no module-by-id lookup, no per-tick ToArray on InputModules.
+			CopyEdge[] plan = m_copyPlan;
+			for (int i = 0; i < plan.Length; i++)
+			{
+				CopyEdge e = plan[i];
+				e.DstInputs[e.DstKey] = e.SrcOutputs.TryGetValue(e.SrcKey, out Fix32 v)
+					? v : Fix32.Zero;
 			}
 
 			// Execute all modules

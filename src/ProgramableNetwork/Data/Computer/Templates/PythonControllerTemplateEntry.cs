@@ -30,34 +30,23 @@ namespace ProgramableNetwork.Ui
 		public override string SearchString => string.Join(" ",
 			m_template.name ?? "", m_template.description ?? "", m_template.id ?? "");
 
+		// The id used to find this template in <see cref="ProgramableNetwork.Data.Mod.ControllerTemplates.CachedTemplates"/>
+		// at command-apply time.  Same value the "py:..." picker id is built from.
+		public string TemplateId => m_template.id;
+
+		// In the normal UI flow the picker dispatches <c>ControllerApplyTemplateCmd</c>
+		// (see PickControllerTemplate) so the mutation runs on the sim thread and
+		// MP/replay stay deterministic.  This direct override is kept for callers
+		// that already hold a Controller and want to apply the template synchronously
+		// (programmatic uses, tests).  The body delegates to the shared
+		// <see cref="Controller.ApplyPythonTemplate"/> helper so there is one
+		// authoritative implementation of the apply semantics.
 		public override void Apply(Controller controller)
 		{
-			if (controller == null || m_template.modules == null) {
+			if (controller == null) {
 				return;
 			}
-			// Wipe any existing modules first.  ControllerTemplate.modules is the
-			// same lambda registered when the original Python templates ran on a
-			// freshly-constructed controller, so the controller must look fresh
-			// for it to behave the same way.  We also drop any cable connections
-			// (the lambda will re-establish whatever wiring it needs).
-			controller.Modules.Clear();
-
-			ControllerTemplate.Settings settings = m_template.modules(controller);
-			foreach (Module module in controller.Modules)
-			{
-				module.Prototype.ExecuteInit(module);
-			}
-			settings?.Invoke();
-
-			controller.SetColor(m_template.color);
-
-			// Auto-populate the description from the template — the player can edit
-			// it later in the inspector.  GetFullDescription will append the live
-			// module list each time it renders.
-			if (!string.IsNullOrEmpty(m_template.description))
-			{
-				controller.CustomDescription = m_template.description.SomeOption();
-			}
+			controller.ApplyPythonTemplate(m_template.id);
 		}
 	}
 }

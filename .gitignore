@@ -25,3 +25,5 @@ desktop.ini
 !/src/ExampleMod.Unity/AssetBundles/mafi_bundles.manifest
 .claude/settings.local.json
 .claude/settings.json
+src/ExampleMod.Unity/CoiMod.Editor.csproj.lscache
+src/ExampleMod.Unity/CoiMod.Unity.csproj.lscache

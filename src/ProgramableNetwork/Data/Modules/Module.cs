@@ -392,6 +392,7 @@ namespace ProgramableNetwork
 						}
 					}
 				}
+				Controller.InvalidateTopology();
 			}
 			return newCount;
 		}
@@ -404,6 +405,7 @@ namespace ProgramableNetwork
 					InputModules.Remove(kv.Key);
 				}
 			}
+			Controller?.InvalidateTopology();
 		}
 
 		public EntityContext Context { get; set; }

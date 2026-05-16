@@ -15,7 +15,7 @@ namespace ProgramableNetwork.Ui
 	{
 		private KeyValuePair<string, Template> item;
 
-		public TemplateModule(ControllerView controllerView, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate, KeyValuePair<string, Template> item)
+		public TemplateModule(ControllerView controllerView, Action refresh, Action<Module> onSuccess, Action<ModuleProto, Action<bool, Module>> tryCreate, KeyValuePair<string, Template> item)
 			: base(controllerView, refresh, onSuccess, tryCreate)
 		{
 			this.item = item;
@@ -69,11 +69,23 @@ namespace ProgramableNetwork.Ui
 
 		public override void Selected()
 		{
-			(bool created, Module module) = m_tryCreate(item.Value.ModuleProto);
-			if (created) {
-				module.Prototype.ExecuteInit(module);
-				item.Value.Setting(module);
-			}
+			// ExecuteInit is now part of Controller.TryPlaceModule (runs on the sim
+			// thread for every MP peer).  The template's Setting lambda still runs
+			// UI-side on the originating client only — MP-incorrect today.
+			//
+			// TODO MP correctness: route through a "place + configure" cmd that
+			// CARRIES THE RESULTING MODULE STATE in its payload (not the template id),
+			// because Python templates / blueprint entries can be loaded only on
+			// the originating client and may not exist on other peers.  The originator
+			// runs Setting on a throwaway Module locally to materialise the configured
+			// state, serialises that into the cmd, and the executor copies it onto
+			// the freshly-placed module on every peer.
+			m_tryCreate(item.Value.ModuleProto, (created, module) =>
+			{
+				if (created && module != null) {
+					item.Value.Setting(module);
+				}
+			});
 		}
 	}
 }

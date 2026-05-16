@@ -60,25 +60,17 @@ namespace ProgramableNetwork.Ui
 			paste.Tooltip("Copy data from last created or copied module".ToDoLoc());
 			paste.OnClick(() =>
 			{
-				m_module.SetStatus(ModuleStatus.Init);
-				m_module.NumberData.Clear();
-				m_module.FieldNumberData.Clear();
-				m_module.StringData.Clear();
-				foreach (KeyValuePair<string, int> item in ControllerView.m_lastCreated.NumberData) {
-					m_module.NumberData[item.Key] = item.Value;
+				// The whole paste — data copy plus input/output/display extension
+				// counts plus ExecuteInit — runs inside ModulePasteCmd on the sim
+				// thread so MP peers see the same destination state and any cables
+				// orphaned by a shrunken extension count get pruned identically.
+				Module source = ControllerView.m_lastCreated;
+				if (source == null || source.Controller == null) {
+					return;
 				}
-				foreach (KeyValuePair<string, Fix32> item in ControllerView.m_lastCreated.FieldNumberData) {
-					m_module.FieldNumberData[item.Key] = item.Value;
-				}
-				foreach (KeyValuePair<string, string> item in ControllerView.m_lastCreated.StringData) {
-					m_module.StringData[item.Key] = item.Value;
-				}
-				// Carry over pin extension counts so a copy of an extended A+B keeps
-				// the same shape; SetXxx prunes any cables already on m_module that
-				// would land outside the new extension range.
-				m_module.SetInputExtensionCount(ControllerView.m_lastCreated.InputExtensionCount);
-				m_module.SetOutputExtensionCount(ControllerView.m_lastCreated.OutputExtensionCount);
-				m_module.Prototype.ExecuteInit(m_module);
+				uiContext.InputScheduler.ScheduleInputCmd(new ModulePasteCmd(
+					m_module.Controller.Id, m_module.Id,
+					source.Controller.Id, source.Id));
 			});
 			this.Observe(() => ControllerView.m_lastCreated)
 				.Do(m => paste.Enabled(!(m is null) && m.Prototype.Id == m_module.Prototype.Id));

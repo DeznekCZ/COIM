@@ -99,6 +99,12 @@ namespace ProgramableNetwork
                 "Additional output pins", "module picker settings dialog: label for the output-extension count row (counts EXTRA pins beyond the module's static base)");
             public static readonly LocStr ExtensionCountDisplays = Loc.Str("ProgramableNetwork_Inspector_ExtensionCountDisplays",
                 "Additional display cells", "module picker settings dialog: label for the display-extension count row (counts EXTRA cells beyond the display widget's static width)");
+            public static readonly LocStr VariablePanToWriter = Loc.Str("ProgramableNetwork_Inspector_VariablePanToWriter",
+                "Pan to writer", "variables window: tooltip on the goto button that pans the camera to the controller writing this network variable");
+            public static readonly LocStr VariableOpenInspector = Loc.Str("ProgramableNetwork_Inspector_VariableOpenInspector",
+                "Open writer inspector", "variables window: tooltip on the inspector button that opens the inspector for the controller writing this network variable");
+            public static readonly LocStr VariableRemove = Loc.Str("ProgramableNetwork_Inspector_VariableRemove",
+                "Remove stale variable", "variables window: tooltip on the trash button — only enabled when the writer controller has been deleted, lets the player clean up a leftover variable");
             public static readonly LocStr ConfirmRemoveModule = Loc.Str("ProgramableNetwork_Inspector_ConfirmRemoveModule",
                 "Remove this module?", "controller inspector: question shown in the right-click confirmation dropdown before deleting a module");
             public static readonly LocStr ConfirmRemoveYes = Loc.Str("ProgramableNetwork_Inspector_ConfirmRemoveYes",

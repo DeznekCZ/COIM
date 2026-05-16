@@ -131,6 +131,27 @@ namespace ProgramableNetwork
                 return null;
             }
 
+            /// <summary>
+            /// Stable proto reader for picker fields that DO NOT have a per-game-instance
+            /// SlimId (everything except <see cref="ProductProto"/>). The picker writes both
+            /// the proto-id string (StringData["field__&lt;name&gt;"]) and a Fix32 numeric
+            /// id (FieldNumberData[name]) — but the Fix32 comes from
+            /// <see cref="FixSavedGames.GetPrototypeString"/> which is just the proto's
+            /// INDEX in the loaded protosDb. That index shifts whenever the set of loaded
+            /// mods or load order changes, so trusting it across saves / hosts is unsafe.
+            /// This accessor reads ONLY the string id and resolves through ProtosDb, so it
+            /// is stable across instances and multiplayer peers (every peer's
+            /// StringData["field__&lt;name&gt;"] holds the identical proto id string).
+            /// </summary>
+            public T EntityProto<T>(string name) where T : Proto
+            {
+                string id = this[name, ""];
+                if (string.IsNullOrEmpty(id)) {
+                    return null;
+                }
+                return module.Context.ProtosDb.Get<T>(new Mafi.Core.Prototypes.Proto.ID(id)).ValueOrNull;
+            }
+
             public IProtoWithIcon EntityProtoIconified(string name)
             {
                 module.FieldNumberData.TryGetValue(name, out Fix32 data);

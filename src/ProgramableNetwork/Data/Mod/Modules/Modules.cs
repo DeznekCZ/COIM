@@ -15,6 +15,8 @@ using Mafi.Core.Entities.Dynamic;
 using Mafi.Core.Entities.Priorities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Factory;
+using Mafi.Core.Factory.ComputingPower;
+using Mafi.Core.Factory.Datacenters;
 using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.Machines;
 using Mafi.Core.Factory.MechanicalPower;
@@ -25,6 +27,7 @@ using Mafi.Core.Factory.WellPumps;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
+using Mafi.Core.Population.Edicts;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Trains;
@@ -533,6 +536,134 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Output["m"] = 0 - Math.Min(0, m.Context.WorkersManager.AmountOfFreeWorkersOrMissing);
 				m.Output["u"] = m.Output["t", 0] - m.Output["a", 0];
 				return ModuleStatus.Running;
+			})
+			.AddControllerDevice()
+			.BuildAndAdd();
+
+		EdictsManager edictsManager = null;
+		registrator
+			.ModuleBuilderStart("Connection_Office_Edict", "Connection: Office - Edict", "EDICT")
+			.SetDescription("Drives the level of a selected <b>edict</b> on the linked Captain's Office toward the <b>level</b> input/field. Level 0 disables the edict; higher levels enable successive tiers along the edict's chain. Outputs the current <b>level</b> and <b>active</b> (1 when the highest-enabled tier is actually in effect, 0 when blocked by prerequisites such as Unity, research, or an advanced-office requirement). Enable the <b>max</b> output extension to also expose the chain length and switch the display to <b>x|n</b> format.")
+			.AddCategory(Category.Connection)
+			.AddCategory(Category.ConnectionWrite)
+			.AddCategory(Category.ConnectionRead)
+			.AddInput("level", "Target level")
+			.AddEntityField<CaptainOffice>("office", "Captains office", "Must be placest next to Captains office")
+			.AddInt32Field("level", "Target level", overrideInput: true)
+			// Edict is field-only (no input/override-toggle). The picker writes the
+			// proto-id string into StringData["field__edict"] which is the stable,
+			// MP-safe identifier; wired inputs would carry only the unstable
+			// FixSavedGames index, so we deliberately omit that path for now.
+			.AddEntityTypeField<EdictProto>("edict", "Edict (base tier)", "Pick the base-tier edict whose level to control",
+				filter: (m, e) => e.PreviousTier.IsNone)
+			// Output column order = pin column order (left→right): active at column 0
+			// sits directly under the edict icon display, level at column 1 under the
+			// level display.  When the player toggles the optional max extension on,
+			// the max pin appears at column 2 and the LAST static display (level) auto-
+			// grows by one cell via the framework's linked-leftover absorption rule —
+			// no per-extension display widget needed.
+			.AddOutput("active", "Active")
+			.AddOutput("level", "Current level")
+			.AllowOutputExtensions(1, i => ("max", "Max level"))
+			.Width(2)
+			.Action(m => {
+				if (m.Field.Entity<CaptainOffice>("office") is null) {
+					m.SetError("Captain's office not connected");
+					m.Output["level"] = 0;
+					m.Output["active"] = 0;
+					return ModuleStatus.Error;
+				}
+
+				// Read the edict by stable string id (see EntityProto<T> doc): the
+				// picker stored the proto id in StringData["field__edict"] which is
+				// identical across save loads and MP peers, whereas the Fix32 index
+				// from FixSavedGames depends on protosDb load order.
+				EdictProto firstEdict = m.Field.EntityProto<EdictProto>("edict");
+				if (firstEdict == null || firstEdict.PreviousTier.HasValue) {
+					m.SetError("Pick a base-tier edict");
+					m.Output["level"] = 0;
+					m.Output["active"] = 0;
+					return ModuleStatus.Error;
+				}
+
+				edictsManager ??= m.Controller.Resolver.Resolve<EdictsManager>();
+
+				// Walk the chain starting from the picked base tier so the index in
+				// `chain` matches the slider semantics: chain[0] is the base, level=N
+				// means chain[0..N-1] are all IsEnabled.
+				var chainList = new List<Edict>();
+				EdictProto p = firstEdict;
+				while (p != null) {
+					Edict e = edictsManager.AllEdicts.FirstOrDefault(x => x.Prototype == p);
+					if (e == null) break;
+					chainList.Add(e);
+					p = p.NextTier.ValueOrNull;
+				}
+				Edict[] chain = chainList.ToArray();
+
+				int maxLevel = chain.Length;
+				int currentLevel = 0;
+				for (int i = 0; i < chain.Length; i++) {
+					if (!chain[i].IsEnabled) break;
+					currentLevel = i + 1;
+				}
+
+				int targetLevel = Math.Clamp(m.FieldOrInput.Integer["level"], 0, maxLevel);
+
+				m.Output["level"] = currentLevel;
+				m.Output["active"] = (currentLevel > 0 && chain[currentLevel - 1].IsActive) ? 1 : 0;
+				if (m.OutputExtensionCount >= 1) {
+					m.Output["max"] = maxLevel;
+				}
+
+				// Mirror EdictsManager.Invoke's cascade behavior so a single tick lands
+				// the chain on the target level: enable parents bottom-up (each gated
+				// by CanBeEnabled so locked tiers stop us cleanly), disable
+				// extras top-down.
+				if (currentLevel < targetLevel) {
+					for (int i = currentLevel; i < targetLevel; i++) {
+						if (!chain[i].CanBeEnabled().CanBeEnabled) break;
+						chain[i].ToggleEnabled();
+					}
+				} else if (currentLevel > targetLevel) {
+					for (int i = currentLevel - 1; i >= targetLevel; i--) {
+						if (chain[i].IsEnabled) chain[i].ToggleEnabled();
+					}
+				}
+
+				return ModuleStatus.Running;
+			})
+			// Display layout (width 2 base; level cell widens to 2 with the max ext):
+			//   [ edict icon ] [ level "x" or "x|n" ]
+			// The icon sits directly above the `active` output pin and carries the
+			// active state visually via the #P / #E state prefix (positive=green
+			// border, danger=red border).  The level display is declared LAST so the
+			// framework's linked-leftover absorption rule grows it to span the extra
+			// max-extension column.
+			.AddDisplay("icon", "Edict", 1, image: true)
+			.AddDisplay("level", "Level", 1)
+			.Display(m => {
+				int lvl = m.Output.Integer["level"];
+				bool act = m.Output.Bool["active"];
+				bool hasMaxVisible = m.OutputExtensionCount >= 1;
+				int max = m.Output.Integer["max"];
+
+				string state = act ? "#P" : (lvl > 0 ? "#W" : "");
+				if (hasMaxVisible) {
+					m.Display["level"] = $"{state}{lvl} / {max}";
+				} else {
+					m.Display["level"] = $"{state}{lvl}|{max}";
+				}
+
+				EdictProto picked = m.Field.EntityProto<EdictProto>("edict");
+				if (picked != null) {
+					// `#P` / `#E` state prefixes drive the ImageDisplay's border colour
+					// (positive=green, danger=red) — see ModuleView.StatusText.
+					string border = act ? "#P" : "#E";
+					m.Display["icon"] = $"{border}{picked.IconPath}";
+				} else {
+					m.Display["icon"] = "";
+				}
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
@@ -1388,11 +1519,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		SettlementsManager settlementsManager = null; // lazy init in action to avoid circular dependency
+		IComputingManager computingManager = null;   // same lazy-init pattern for the network-wide computing snapshot
 		Fix32 neg1 = (-1).ToFix32();
 		Fix32 neg2 = (-2).ToFix32();
 		registrator
 			.ModuleBuilderStart("Connection_Storage", "Connection: Storage", "STOCK")
-			.SetDescription("Reads the linked storage <b>entity</b> (storages, in/out buffers, virtual miners, FlyWheels, ThermalStorage, Settlements, or Captain Office). Outputs <b>quantity</b>, <b>capacity</b>, <b>fullness</b> (%), and stored <b>product</b> slim-id. With <b>field_product</b> set, filters buffers by the chosen <b>product</b>.")
+			.SetDescription("Reads the linked storage <b>entity</b> (storages, in/out buffers, virtual miners, FlyWheels, ThermalStorage, Settlements, Captain Office, or any computing generator — Mainframe / DataCenter — which surfaces network-wide computing totals). Outputs <b>quantity</b>, <b>capacity</b>, <b>fullness</b> (%), and stored <b>product</b> slim-id. With <b>field_product</b> set, filters buffers by the chosen <b>product</b>.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddInput("product", "Product")
@@ -1402,7 +1534,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddOutput("product", "Product in #")
 			.AddEntityField<LayoutEntity>("entity", "Connected storage", "Storage connectable by cable 40m from"
 					+ " controller\nCan read everything with buffer information including Thermal Storage and"
-					+ " shaft of generators in single row, and also Settlements and Captain Office (for population)",
+					+ " shaft of generators in single row, and also Settlements and Captain Office (for population),"
+					+ " plus Mainframe / DataCenter for the network's computing supply vs. capacity",
 				filter: (m, e) => e
 					is IEntityWithStoredProductForUi
 					or IEntityWithInputBuffersForUi
@@ -1412,6 +1545,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					or ThermalStorage
 					or SettlementHousingModule
 					or CaptainOffice
+					or IComputingGenerator
 				)
 			.AddProductField("product", "Product", "Select filter for product", overrideInput: true)
 			.Width(4)
@@ -1507,6 +1641,23 @@ public class Modules : ModuleGroup, IModuleGroup {
 					return ModuleStatus.Running;
 				}
 
+				if (entity is IComputingGenerator) {
+					// Connecting to ANY computing-generator (Mainframe, DataCenter, ...)
+					// surfaces the NETWORK-wide computing snapshot, not just this one
+					// entity's contribution — the manager already aggregates across
+					// every generator and consumer. Lets a single inspector wire pick
+					// up "what's the network using right now" from whatever computer
+					// happens to be in cable range.
+					computingManager ??= m.Controller.Resolver.Resolve<IComputingManager>();
+					int produced = computingManager.DemandedThisTick.Value;
+					int capacity = computingManager.GenerationCapacityThisTick.Value;
+					m.Output["quantity"] = produced;
+					m.Output["capacity"] = capacity;
+					m.Output["fullness"] = capacity > 0 ? (int)(100f * produced / capacity) : 0;
+					m.Output["product"] = Fix32.FromRaw((int)(uint)computingManager.ComputingProductProto.SlimId.Value);
+					return ModuleStatus.Running;
+				}
+
 				m.Output["quantity"] = 0;
 				m.Output["capacity"] = 0;
 				m.Output["fullness"] = 100;
@@ -1532,7 +1683,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		registrator
 			.ModuleBuilderStart("Connection_Transport", "Connection: Transport", "TRANS")
-			.SetDescription("Transport connectable by cable 40m from controller")
+			.SetDescription("Transport or Dock connectable by cable 40m from controller. When connected to a Dock, reads cargo of the assigned ship — quantity/capacity are zero while the ship is away, and the 'Is moving' output is 1 whenever the ship is NOT docked.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddOutput("quantity", "Quantity")
@@ -1541,33 +1692,34 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddOutput("moving", "Is moving")
 			.AddInput("direction", "Flip direction:\n1 - from close port to far port\n2 - from far port to close port")
 			.AddInput("product", "Product filter")
-			.AddEntityField<Transport>("entity", "Connection device")
+			.AddEntityField("entity", "Connection device",
+				(m, entity) => entity is Transport or CargoDepot)
 			.AddBooleanField("fullstack", "Cap fullness to 100%", "Bigger tiers of transport may display value over 100%. It's caused by maximum stack size. Activating this option will be the value normalized to 100%.")
 			.AddProductField("product", "Product", "Select filter for product", overrideInput: true)
 			.Width(4)
 			.Action(m => {
-				Transport entity = m.Field.Entity<Transport>("entity");
+				IEntity entity = m.Field.Entity<IEntity>("entity");
 				Fix32 buffer = m.Input["buffer", 0];
 				ProductProto filterId = m.FieldOrInput.Product("product");
 				bool fullstack = m.Field.Bool["fullstack"];
 
-				if (entity != null) {
-					m.Output["quantity"] = entity.TransportedProducts
+				if (entity is Transport tr) {
+					m.Output["quantity"] = tr.TransportedProducts
 										.Where(p => filterId is null || p.SlimId == filterId.SlimId)
 										.Select(p => p.Quantity.Value).Sum();
-					m.Output["capacity"] = entity.Trajectory.MaxProducts
-										 * (fullstack ? entity.Prototype.MaxQuantityPerTransportedProduct.Value : 1);
+					m.Output["capacity"] = tr.Trajectory.MaxProducts
+										 * (fullstack ? tr.Prototype.MaxQuantityPerTransportedProduct.Value : 1);
 					m.Output["fullness"] = (100.ToFix32() * m.Output["quantity"]) / m.Output["capacity"];
-					m.Output["moving"] = entity.GetStatus() == Mafi.Core.Factory.Transports.Transport.Status.Moving ? 1 : 0;
+					m.Output["moving"] = tr.GetStatus() == Mafi.Core.Factory.Transports.Transport.Status.Moving ? 1 : 0;
 
 					int dirSet = m.Input.Integer["direction"];
-					if (dirSet > 0 && entity.StartInputPort.Type != IoPortType.Any) { // flipper
-						bool startHere = entity.StartPosition.DistanceSqrTo(m.Controller.Position3f.Tile3i) <
-										 entity.EndPosition.DistanceSqrTo(m.Controller.Position3f.Tile3i);
-						bool fromHere = startHere && entity.StartInputPort.Type == IoPortType.Input;
+					if (dirSet > 0 && tr.StartInputPort.Type != IoPortType.Any) { // flipper
+						bool startHere = tr.StartPosition.DistanceSqrTo(m.Controller.Position3f.Tile3i) <
+										 tr.EndPosition.DistanceSqrTo(m.Controller.Position3f.Tile3i);
+						bool fromHere = startHere && tr.StartInputPort.Type == IoPortType.Input;
 
 						if (startHere && fromHere && dirSet == 2) {
-							if (entity.TryReverse(out string error)) {
+							if (tr.TryReverse(out string error)) {
 								m.SetError(error);
 								return ModuleStatus.Error;
 							}
@@ -1575,7 +1727,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 						}
 
 						if (!startHere && !fromHere && dirSet == 1) {
-							if (entity.TryReverse(out string error)) {
+							if (tr.TryReverse(out string error)) {
 								m.SetError(error);
 								return ModuleStatus.Error;
 							}
@@ -1583,6 +1735,34 @@ public class Modules : ModuleGroup, IModuleGroup {
 						}
 					}
 
+					return ModuleStatus.Running;
+				}
+
+				if (entity is CargoDepot dock) {
+					var shipOpt = dock.CargoShip;
+					bool docked = shipOpt.HasValue && shipOpt.Value.IsDocked;
+					m.Output["moving"] = docked ? 0 : 1;
+
+					if (!docked) {
+						m.Output["quantity"] = 0;
+						m.Output["capacity"] = 0;
+						m.Output["fullness"] = 0;
+						return ModuleStatus.Running;
+					}
+
+					var ship = shipOpt.Value;
+					int qty = 0;
+					int cap = 0;
+					foreach (var sm in ship.NonEmptyModules) {
+						var stored = sm.StoredProduct.ValueOrNull;
+						if (filterId is null || (stored != null && stored.SlimId == filterId.SlimId)) {
+							qty += sm.Quantity.Value;
+							cap += sm.Capacity.Value;
+						}
+					}
+					m.Output["quantity"] = qty;
+					m.Output["capacity"] = cap;
+					m.Output["fullness"] = cap > 0 ? (100.ToFix32() * qty.ToFix32()) / cap.ToFix32() : 0.ToFix32();
 					return ModuleStatus.Running;
 				}
 
@@ -2294,11 +2474,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 				string recipeId = m.Field["recipe", (string)null];
 				if (recipeId.IsNullOrEmpty() ||
 					!(m.Controller.Context.ProtosDb.Get(new Mafi.Core.Prototypes.Proto.ID(recipeId)).ValueOrNull is RecipeProto recipe)) {
-					m.SetError("No recipe selected");
-					return ModuleStatus.Error;
+					entity.ClearAssignedRecipes();
+					return ModuleStatus.Running;
 				}
 
-				if (entity.RecipesAssigned.Count > 0 && entity.RecipesAssigned[0] != recipe) {
+				if (entity.RecipesAssigned.Count != 1 || entity.RecipesAssigned[0] != recipe) {
 					entity.ClearAssignedRecipes();
 					entity.AssignRecipe(recipe);
 				}
@@ -2465,6 +2645,117 @@ public class Modules : ModuleGroup, IModuleGroup {
 					? $"#CA000E0{UserInterface.EntityIcons.Boost_png}"
 					: $"#C606060{UserInterface.EntityIcons.Boost_png}";
 			})
+			.BuildAndAdd();
+
+		registrator
+			.ModuleBuilderStart("Connection_Datacenter_Racks", "Connection: Datacenter - Racks", "RACK")
+			.SetDescription("Drives the rack count of the linked Data Center toward the <b>target</b> input/field — acts like a network switch enabling/disabling racks on demand. Each tick the module adds racks (consuming the chosen rack product from storage) or removes racks (returning the product) until the count matches the target. Rack type comes from the <b>rack</b> prototype field/input; when unset, the module reuses whichever rack type is already installed in the data center, falling back to the first unlocked ServerRackProto. Outputs current <b>count</b> and <b>capacity</b>. Costs 1 unit of computing power to keep the switching logic running. Errors if no Data Center is linked.")
+			.AddCategory(Category.Connection)
+			.AddCategory(Category.ConnectionWrite)
+			.AddCategory(Category.ConnectionRead)
+			.UseComputation(PartialQuantity.One)
+			.AddEntityField<DataCenter>("entity", "Data center", "Data Center connectable by cable 40m from controller")
+			.AddInput("target", "Target rack count")
+			.AddInt32Field("target", "Target rack count", overrideInput: true)
+			.AddInput("rack", "Rack type")
+			.AddEntityTypeField<ServerRackProto>("rack", "Rack type",
+				"Server rack prototype to install/remove. Leave unset to reuse whichever type is already installed, or fall back to the first unlocked rack prototype.",
+				overrideInput: true)
+			.AddOutput("count", "Current rack count")
+			.AddOutput("capacity", "Capacity")
+			.Width(2)
+			.Action(m => {
+				DataCenter dc = m.Field.Entity<DataCenter>("entity");
+				if (dc is null) {
+					m.SetError("No Data Center connected");
+					return ModuleStatus.Error;
+				}
+
+				int capacity = dc.Prototype.RacksCapacity;
+				int current = dc.RacksCount;
+				int target = m.FieldOrInput.Integer["target"];
+				if (target < 0) {
+					target = 0;
+				} else if (target > capacity) {
+					target = capacity;
+				}
+
+				// Pin down which rack proto we operate on.  Resolution order:
+				//   1) explicit field/input pick — player override via EntityTypeField
+				//   2) any rack already installed in this data center — keeps add/remove
+				//      symmetric with what's there so the module doesn't introduce a
+				//      different type the player didn't ask for
+				//   3) first unlocked ServerRackProto — sensible default for a fresh DC
+				// `pickedRack` may stay null on a brand-new save with no unlocked
+				// racks — add/remove silently skips in that case.
+				ServerRackProto pickedRack = m.FieldOrInput.EntityProtoIconified("rack") as ServerRackProto;
+				if (pickedRack is null) {
+					foreach (KeyValuePair<ServerRackProto, int> kv in dc.ServersCounts) {
+						if (kv.Value > 0) {
+							pickedRack = kv.Key;
+							break;
+						}
+					}
+				}
+				if (pickedRack is null) {
+					foreach (ServerRackProto r in m.Context.ProtosDb.All<ServerRackProto>()) {
+						if (r.IsAvailable && dc.ServersCounts.ContainsKey(r)) {
+							pickedRack = r;
+							break;
+						}
+					}
+				}
+
+				int diff = target - current;
+				if (diff > 0 && pickedRack != null) {
+					for (int i = 0; i < diff; i++) {
+						if (!dc.TryAddServerRack(pickedRack)) {
+							// Out of product, capacity reached, or build not finished —
+							// stop attempting; we'll retry on the next tick.
+							break;
+						}
+					}
+				} else if (diff < 0) {
+					int toRemove = -diff;
+					for (int i = 0; i < toRemove; i++) {
+						// Prefer removing the picked type when it has stock; otherwise
+						// drain whichever type currently has stock so the count can
+						// reach `target` even when the picked type isn't installed.
+						ServerRackProto removeFrom = pickedRack;
+						if (removeFrom is null
+							|| !dc.ServersCounts.TryGetValue(removeFrom, out int rcount)
+							|| rcount <= 0) {
+							removeFrom = null;
+							foreach (KeyValuePair<ServerRackProto, int> kv in dc.ServersCounts) {
+								if (kv.Value > 0) {
+									removeFrom = kv.Key;
+									break;
+								}
+							}
+						}
+						if (removeFrom is null || !dc.TryRemoveServerRack(removeFrom)) {
+							break;
+						}
+					}
+				}
+
+				m.Output["count"] = dc.RacksCount;
+				m.Output["capacity"] = capacity;
+				return ModuleStatus.Running;
+			})
+			.AddDisplay("value", "Racks", 2)
+			.Display(m => {
+				int count = m.Output.Integer["count"];
+				int cap = m.Output.Integer["capacity"];
+				// Color by fill level matching the Maintenance / Unity display
+				// thresholds, so a glance at the inspector tells the player whether
+				// the DC is empty (#E red), partially populated (#W orange), or
+				// near-capacity (#P green).
+				int percent = cap > 0 ? (int)(100f * count / cap) : 0;
+				string state = percent < 25 ? "#E" : percent < 50 ? "#W" : percent < 75 ? "" : "#P";
+				m.Display["value"] = $"{state}{count}/{cap}";
+			})
+			.AddControllerDevice()
 			.BuildAndAdd();
 	}
 
@@ -3166,7 +3457,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 
 				m.Controller.Resolver.Resolve<VariableManager>()
-					.SetVariable(name, m.FieldOrInput["value", Fix32.Zero]);
+					.SetVariable(name, m.FieldOrInput["value", Fix32.Zero], m.Controller.Id);
 				return ModuleStatus.Running;
 			})
 			.AddControllerDevice()

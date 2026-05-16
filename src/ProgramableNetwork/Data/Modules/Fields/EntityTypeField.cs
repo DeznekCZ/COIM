@@ -7,8 +7,13 @@ using Mafi.Unity.UiToolkit.Library;
 using System;
 
 namespace ProgramableNetwork.Ui {
+	// Despite the name, T can be any IProtoWithIcon-bearing Proto — not just
+	// EntityProto. Originally constrained to EntityProto for machine/vehicle
+	// pickers, broadened to handle prototype-only categories like ServerRackProto
+	// (which doesn't spawn an entity itself but is selectable as a configuration
+	// target). The picker UI only needs IconPath + Name, both on IProtoWithIcon.
 	internal class EntityTypeField<T> : IField
-		where T : EntityProto, IProtoWithIcon {
+		where T : Proto, IProtoWithIcon {
 		public EntityTypeField(string id, Proto.Str strs, Func<Module, T, bool> func = null, bool showInTooltip = false) {
 			Id = id;
 			Name = strs.Name;

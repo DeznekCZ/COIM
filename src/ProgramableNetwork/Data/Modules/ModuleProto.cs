@@ -1044,7 +1044,7 @@ namespace ProgramableNetwork
             }
 
             public Builder AddEntityTypeField<T>(string id, string name, string shortDesc = null, Func<Module, T, bool> filter = null, bool overrideInput = false, bool showInTooltip = false)
-                where T : EntityProto, IProtoWithIcon
+                where T : Proto, IProtoWithIcon
             {
                 if (overrideInput) {
 					addOverrideToggle(id);

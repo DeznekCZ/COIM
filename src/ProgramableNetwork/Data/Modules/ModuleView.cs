@@ -289,7 +289,14 @@ public partial class ControllerView
 					_ => 0,
 				};
 				int extDispCount() => System.Math.Min(linkedActive(), module.Prototype.ExtensionDisplays.Count);
-				int displayPanelCells() => baseWidth + dispExtNow() + extDispCount();
+				// Mirror the absorption logic in AddDisplays: cells claimed by the linked
+				// pin side but not covered by per-extension displays widen the last
+				// static display, so the panel needs to grow to include them.  Only
+				// kicks in when the proto declared no extension displays at all.
+				int linkedLeftover() => module.Prototype.ExtensionDisplays.Count == 0
+					? System.Math.Max(0, linkedActive())
+					: 0;
+				int displayPanelCells() => baseWidth + dispExtNow() + extDispCount() + linkedLeftover();
 
 				Row displaysRow = new Row().Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
 				Row displaysPanel = new Row()
@@ -783,21 +790,6 @@ public partial class ControllerView
 		private void AddDisplays(UiContext uiContext, Row displaysPanel, Module module, bool preview, Action refresh) {
 			var displays = module.Prototype.Displays;
 			int extCount = System.Math.Min(module.DisplayExtensionCount, module.Prototype.MaxDisplayExtensions);
-			for (int i = 0; i < displays.Count; i++)
-			{
-				ModuleConnectorProto display = displays[i];
-				// The LAST display absorbs DisplayExtensionCount cells when the prototype
-				// opted into display extensions.  We materialise a thin override of the
-				// proto so existing per-type renderers keep working unchanged.
-				if (extCount > 0 && i == displays.Count - 1)
-				{
-					display = new ModuleConnectorProto(
-						display.Id, display.Name,
-						display.Width + extCount.ToFix32(),
-						display.DefaultText);
-				}
-				AddSingleDisplay(uiContext, displaysPanel, module, preview, display);
-			}
 
 			// Per-extension display widgets (flip-flop's per-channel LEDs etc.).
 			// The active count comes from whichever pin side this proto is linked to,
@@ -809,6 +801,35 @@ public partial class ControllerView
 				_ => 0,
 			};
 			int extDispCount = System.Math.Min(linkedActive, module.Prototype.ExtensionDisplays.Count);
+			// Cells claimed by the linked side's pin extensions but NOT covered by a
+			// per-extension display widget — the LAST static display absorbs them so
+			// the row stays gap-free without forcing the proto to declare a matching
+			// filler extension display.  Gated on "no per-extension displays declared"
+			// so modules like Stats_Unity that intentionally cap display extensions
+			// below their pin extension count keep their existing gap behavior.
+			int linkedLeftover = module.Prototype.ExtensionDisplays.Count == 0
+				? System.Math.Max(0, linkedActive)
+				: 0;
+			int totalAbsorb = extCount + linkedLeftover;
+
+			for (int i = 0; i < displays.Count; i++)
+			{
+				ModuleConnectorProto display = displays[i];
+				// The LAST display absorbs DisplayExtensionCount cells (existing
+				// AllowDisplayExtensions opt-in) plus any leftover cells from a linked
+				// pin-side extension — see linkedLeftover above.  We materialise a thin
+				// override of the proto so existing per-type renderers keep working
+				// unchanged.
+				if (totalAbsorb > 0 && i == displays.Count - 1)
+				{
+					display = new ModuleConnectorProto(
+						display.Id, display.Name,
+						display.Width + totalAbsorb.ToFix32(),
+						display.DefaultText);
+				}
+				AddSingleDisplay(uiContext, displaysPanel, module, preview, display);
+			}
+
 			for (int i = 0; i < extDispCount; i++) {
 				AddSingleDisplay(uiContext, displaysPanel, module, preview, module.Prototype.ExtensionDisplays[i]);
 			}
@@ -1229,77 +1250,117 @@ public partial class ControllerView
 		m_controller.ClearPreviewHighlight();
 	}
 
-	public void RemoveModule(Module module)
+	// Routes module deletion through a command so the mutation (drop from
+	// Modules + scrub every dangling cable) runs on the sim thread.  RedrawComponents
+	// runs in the OnApplied callback so the panel doesn't repaint against stale state.
+	// onApplied receives the real outcome (cmd.Result == true ⇔ removed) for callers
+	// that need to know whether the mutation actually happened.
+	public void RemoveModule(Module module, Action<bool> onApplied = null)
 	{
-		// GUARD
-		if (module.Controller.Id != Entity.Id) {
+		if (module == null || module.Controller == null || Entity == null) {
+			onApplied?.Invoke(false);
 			return;
 		}
-
-		// remove module (positions live on the module, no separate grid to clear)
-		Entity.Modules.RemoveFirst(m => m.Id == module.Id);
-
-		// Remove connections that referenced the deleted module
-		foreach (Module item in Entity.Modules)
-		{
-			foreach (KeyValuePair<string, ModuleConnector> input in item.InputModules.ToList())
-			{
-				if (input.Value.ModuleId == module.Id)
-				{
-					item.InputModules.Remove(input.Key);
-				}
-			}
+		if (module.Controller.Id != Entity.Id) {
+			onApplied?.Invoke(false);
+			return;
 		}
-
-		RedrawComponents();
+		ModuleRemoveCmd cmd = new ModuleRemoveCmd(Entity.Id, module.Id);
+		m_controller.Context.InputScheduler.ScheduleAndOnApplied(cmd, this, () =>
+		{
+			bool ok = cmd.ResultSet && !cmd.HasError;
+			if (ok) {
+				RedrawComponents();
+			}
+			onApplied?.Invoke(ok);
+		});
 	}
 
 	// New move logic operating directly on Module.Row / Module.Column.
-	// Replaces the broken cache/Rows-based version.
+	// Mirrors <see cref="Controller.TryMoveModule"/>'s clamp-then-check rule:
+	// the target is snapped to the controller's bounds first, so a wide module
+	// already at the right edge reports CanMove(x:+1) == true (it would land
+	// on its current position — a successful no-op).  Callers can still rely
+	// on this for "should the keyboard nudge play a fail sound?" — the answer
+	// is now only false when the clamped slot is occupied by something else.
 	public bool CanMove(Module module, int x = 0, int y = 0)
 	{
 		if (module == null || module.Controller == null || Entity == null) {
 			return false;
 		}
-		if (module.Controller.Id != Entity.Id) {
+		if (module.Controller.Id != Entity.Id || Entity.Prototype == null) {
 			return false;
 		}
-
+		int width = module.Layout.GetWidth(module);
+		if (width <= 0 || width > Entity.Prototype.Columns) {
+			return false;
+		}
 		int targetRow = module.Row + y;
 		int targetCol = module.Column + x;
-		int width = module.Layout.GetWidth(module);
-		return IsRangeFree(targetRow, targetCol, width, ignore: module);
-	}
-
-	public void Move(Module module, int x = 0, int y = 0)
-	{
-		if (!CanMove(module, x, y)) {
-			return;
+		int clampedRow = Math.Max(0, Math.Min(Entity.Prototype.Rows - 1, targetRow));
+		int clampedCol = Math.Max(0, Math.Min(Entity.Prototype.Columns - width, targetCol));
+		if (clampedRow == module.Row && clampedCol == module.Column) {
+			return true;
 		}
-		module.Row += y;
-		module.Column += x;
-		RedrawComponents();
+		return Entity.IsRangeFree(clampedRow, clampedCol, width, ignore: module);
 	}
 
-	// Drop a module at an explicit (row, col). Returns true on success.
-	public bool TryMoveTo(Module module, int targetRow, int targetCol)
+	// Relative move (arrow-style nudge).  The target is dispatched as-is — the
+	// executor clamps past-end-of-line targets to the rightmost valid slot, so
+	// nudging a wide module against the edge is a successful no-op instead of
+	// a refusal.  No pre-validation here: the cmd's HasError reflects whether
+	// another module actually blocked the (clamped) slot.
+	public void Move(Module module, int x = 0, int y = 0, Action<bool> onApplied = null)
 	{
 		if (module == null || module.Controller == null || Entity == null) {
+			onApplied?.Invoke(false);
+			return;
+		}
+		if (module.Controller.Id != Entity.Id) {
+			onApplied?.Invoke(false);
+			return;
+		}
+		int targetRow = module.Row + y;
+		int targetCol = module.Column + x;
+		ModuleMoveToCmd cmd = new ModuleMoveToCmd(Entity.Id, module.Id, targetRow, targetCol);
+		m_controller.Context.InputScheduler.ScheduleAndOnApplied(cmd, this, () =>
+		{
+			bool ok = cmd.ResultSet && !cmd.HasError;
+			if (ok) {
+				RedrawComponents();
+			} else {
+				m_controller.Context.AudioDb.InvalidOp(true).Play();
+			}
+			onApplied?.Invoke(ok);
+		});
+	}
+
+	/// Drop a module at an explicit (row, col).  The executor clamps past-end-of-
+	/// line targets, so an in-bounds-after-clamp request applies even when the
+	/// raw target is off-grid.  The returned bool only confirms the cmd was
+	/// dispatched (entity refs valid) — the actual outcome is surfaced via the
+	/// optional <paramref name="onApplied"/> callback (true ⇔ cmd.Result == true).
+	public bool TryMoveTo(Module module, int targetRow, int targetCol, Action<bool> onApplied = null)
+	{
+		if (module == null || module.Controller == null || Entity == null) {
+			onApplied?.Invoke(false);
 			return false;
 		}
 		if (module.Controller.Id != Entity.Id) {
+			onApplied?.Invoke(false);
 			return false;
 		}
-
-		int width = module.Layout.GetWidth(module);
-		if (!IsRangeFree(targetRow, targetCol, width, ignore: module))
+		ModuleMoveToCmd cmd = new ModuleMoveToCmd(Entity.Id, module.Id, targetRow, targetCol);
+		m_controller.Context.InputScheduler.ScheduleAndOnApplied(cmd, this, () =>
 		{
-			m_controller.Context.AudioDb.InvalidOp(true).Play();
-			return false;
-		}
-		module.Row = targetRow;
-		module.Column = targetCol;
-		RedrawComponents();
+			bool ok = cmd.ResultSet && !cmd.HasError;
+			if (ok) {
+				RedrawComponents();
+			} else {
+				m_controller.Context.AudioDb.InvalidOp(true).Play();
+			}
+			onApplied?.Invoke(ok);
+		});
 		return true;
 	}
 }

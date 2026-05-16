@@ -1,5 +1,14 @@
 v1.1.2 | 2026-07-15:
-- TODO
+- added calculation optimization for copying of connected signals
+- updated actions to be done with commands for potential multiplayer
+- added read for computation on Mainframe and DataCenter
+- added module for set racks
+- added button to deselect all categories
+- cargo docks can now read with transport module, connected ship
+- added Connection: Office - Edict module to drive edict level on the Captain's Office
+- prototype picker grid switched to transparent icon-only buttons; vehicle options now show vehicle + fuel icons side-by-side
+- fixed that the recipe selector did not update recipes when more than one or no one set
+- the recipe selector also unset the building
 
 v1.1.1 | 2026-06-12:
 - added option convert hex values, that is usable for colors and product

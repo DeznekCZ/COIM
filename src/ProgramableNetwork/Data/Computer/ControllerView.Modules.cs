@@ -139,7 +139,7 @@ namespace ProgramableNetwork.Ui
 				return false;
 			}
 			int rightEdge = module.Column + module.Layout.GetWidth(module);
-			return IsRangeFree(module.Row, rightEdge, 1, ignore: module);
+			return Entity.IsRangeFree(module.Row, rightEdge, 1, ignore: module);
 		}
 
 		public void RedrawComponents()
@@ -1047,12 +1047,13 @@ namespace ProgramableNetwork.Ui
 				return false;
 			}
 			int width = picked.Layout.GetWidth(picked);
-			return IsRangeFree(row, col, width, ignore: picked);
+			return Entity.IsRangeFree(row, col, width, ignore: picked);
 		}
 
-		// Drops the inspector's picked-up module at (row, col).  Returns false if no module
-		// is picked up or the slot doesn't fit; on success clears PickedUpModule.
-		// TODO this should be a command
+		// Drops the inspector's picked-up module at (row, col).  PickedUpModule is
+		// cleared only when the executor confirms the move succeeded — if the slot
+		// is occupied on the sim thread (race), the picked module stays "in hand"
+		// so the player can try a different slot.
 		public bool TryDropPickedAt(int row, int col)
 		{
 			var inspector = m_controller;
@@ -1060,59 +1061,52 @@ namespace ProgramableNetwork.Ui
 			if (picked == null) {
 				return false;
 			}
-			if (!TryMoveTo(picked, row, col)) {
-				return false;
-			}
-			inspector.PickedUpModule = null;
-			return true;
+			return TryMoveTo(picked, row, col, onApplied: ok =>
+			{
+				if (ok) {
+					inspector.PickedUpModule = null;
+				}
+			});
 		}
 
 		// Stamps a copy of the most-recently created/picked module at (row, col), preserving
 		// its number/field/string data so shift-paste reproduces the original's settings.
-		// TODO this should be a command
-		public bool TryShiftAddAt(int row, int col)
+		// All of the stamp work (placement + data copy) happens atomically inside the
+		// ModuleShiftAddCmd executor; the inspector just dispatches the cmd and updates
+		// m_lastCreated in the OnApplied callback so a subsequent shift-stamp copies
+		// from the freshly-placed module — only when the executor actually placed it.
+		public bool TryShiftAddAt(int row, int col, Action<bool, Module> onApplied = null)
 		{
-			if (m_lastCreated == null) {
+			if (m_lastCreated?.Prototype == null) {
+				onApplied?.Invoke(false, null);
 				return false;
 			}
-			// Capture the source BEFORE TryPlaceAt — that call constructs a new
-			// module and reassigns m_lastCreated to it, so without this local the
-			// data-copy loop below would iterate the freshly-created (empty)
-			// destination over itself and lose the original settings entirely.
 			Module source = m_lastCreated;
-			if (!TryPlaceAt(source.Prototype, row, col)) {
-				return false;
-			}
-			Module placed = m_lastCreated;
-			if (placed == source) {
-				// Defensive: TryPlaceAt should have replaced m_lastCreated with a
-				// fresh module; if it didn't, refuse to do an in-place self-write.
-				return false;
-			}
-
-			placed.Prototype.ExecuteInit(placed, log: false);
-			foreach (KeyValuePair<string, int> item in source.NumberData) {
-				placed.NumberData[item.Key] = item.Value;
-			}
-			foreach (KeyValuePair<string, Fix32> item in source.FieldNumberData) {
-				placed.FieldNumberData[item.Key] = item.Value;
-			}
-			foreach (KeyValuePair<string, string> item in source.StringData) {
-				placed.StringData[item.Key] = item.Value;
-			}
-			// Pin extension counts roundtrip too so a copy of an extended module
-			// keeps its width.  ArrayData (per-module Fix32 buffer) is replaced
-			// wholesale rather than per-element so a Delay/etc. module's ring
-			// buffer comes across intact.
-			placed.SetInputExtensionCount(source.InputExtensionCount);
-			placed.SetOutputExtensionCount(source.OutputExtensionCount);
-			if (source.ArrayData != null && source.ArrayData.Length > 0)
+			int width = source.Layout.GetWidth(source);
+			if (!Entity.IsRangeFree(row, col, width, ignore: null))
 			{
-				Fix32[] copy = new Fix32[source.ArrayData.Length];
-				System.Array.Copy(source.ArrayData, copy, copy.Length);
-				typeof(Module).GetProperty(nameof(Module.ArrayData)).SetValue(placed, copy);
+				m_controller.Context.AudioDb.InvalidOp(true).Play();
+				onApplied?.Invoke(false, null);
+				return false;
 			}
-			placed.Prototype.DisplayUpdate(placed);
+			EntityId sourceControllerId = source.Controller != null ? source.Controller.Id : Entity.Id;
+			ModuleShiftAddCmd cmd = new ModuleShiftAddCmd(Entity.Id, sourceControllerId, source.Id, row, col);
+			m_controller.Context.InputScheduler.ScheduleAndOnApplied(cmd, this, () =>
+			{
+				bool ok = cmd.ResultSet && !cmd.HasError && cmd.CreatedModuleId != 0;
+				Module placed = null;
+				if (ok) {
+					placed = Entity.Modules.AsEnumerable()
+						.FirstOrDefault(m => m.Id == cmd.CreatedModuleId);
+					if (placed != null) {
+						m_lastCreated = placed;
+					}
+					RedrawComponents();
+				} else {
+					m_controller.Context.AudioDb.InvalidOp(true).Play();
+				}
+				onApplied?.Invoke(ok, placed);
+			});
 			return true;
 		}
 
@@ -1166,16 +1160,15 @@ namespace ProgramableNetwork.Ui
 		private IEnumerable<AModuleProtoSelector> NewTemplates()
 		{
 			foreach (KeyValuePair<string, Template> item in TemplateRegistrator.GetTemplates()) {
-				yield return new TemplateModule(this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+				yield return new TemplateModule(this, m_refresh, (m) => m_lastCreated = m, (moduleProto, callback) =>
 				{
-					if (TryPlaceAt(moduleProto, m_targetRow, m_targetColumn))
-					{
-						return (true, m_lastCreated);
-					}
-					else
-					{
-						return (false, null);
-					}
+					// The place itself is async (sim-thread cmd), so forward the
+					// callback unchanged — the template's post-place work
+					// (ExecuteInit + Setting lambda) runs in the consumer's
+					// callback against the real placed module, not against a
+					// pre-cmd snapshot of m_lastCreated.
+					TryPlaceAt(moduleProto, m_targetRow, m_targetColumn,
+						onApplied: (ok, placed) => callback?.Invoke(ok, placed));
 				}, item);
 			}
 
@@ -1233,15 +1226,69 @@ namespace ProgramableNetwork.Ui
 					Log.Warning($"[ModuleBlueprints] Skipping '{bp.Name}' — module proto not found in current ProtosDb");
 					continue;
 				}
-				yield return new BlueprintModuleSelector(this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+				// Capture the blueprint reference so the lambda below can read its
+				// payload — peers won't have this blueprint in their library, so
+				// the snapshot we read here is what gets carried (serialised) in
+				// the cmd to every receiving client.
+				Mafi.Core.Entities.Blueprints.IBlueprint capturedBp = bp;
+				yield return new BlueprintModuleSelector(this, m_refresh, (m) => m_lastCreated = m, (moduleProto, callback) =>
 				{
-					if (TryPlaceAt(moduleProto, m_targetRow, m_targetColumn))
+					// Read the raw Module out of the blueprint's controller_modules
+					// array WITHOUT calling TryExtractInto — that helper allocates an
+					// id from the destination's ModuleIdManager which would leak
+					// when we only need the data fields.  The deserialised module
+					// is data-only; the cmd executor will re-serialise it into
+					// every peer's local copy of the cmd.
+					Module snapshot = readBlueprintSnapshot(capturedBp);
+					if (snapshot == null)
 					{
-						return (true, m_lastCreated);
+						m_controller.Context.AudioDb.InvalidOp(true).Play();
+						callback?.Invoke(false, null);
+						return;
 					}
-					return (false, null);
+					ModulePlaceFromBlueprintCmd cmd = new ModulePlaceFromBlueprintCmd(
+						Entity.Id, moduleProto.Id, m_targetRow, m_targetColumn, snapshot);
+					m_controller.Context.InputScheduler.ScheduleAndOnApplied(cmd, this, () =>
+					{
+						bool ok = cmd.ResultSet && !cmd.HasError && cmd.CreatedModuleId != 0;
+						Module placed = null;
+						if (ok)
+						{
+							placed = Entity.Modules.AsEnumerable()
+								.FirstOrDefault(m => m.Id == cmd.CreatedModuleId);
+							if (placed != null)
+							{
+								m_lastCreated = placed;
+							}
+							RedrawComponents();
+						}
+						else
+						{
+							m_controller.Context.AudioDb.InvalidOp(true).Play();
+						}
+						callback?.Invoke(ok, placed);
+					});
 				}, bp, protoOpt.Value);
 			}
+		}
+
+		// Reads the raw Module data out of a blueprint's controller_modules array.
+		// Used by the blueprint selectors to carry the configured state in
+		// <see cref="ModulePlaceFromBlueprintCmd"/> without wiring the module up
+		// or allocating a destination id from the module-id pool.
+		private static Module readBlueprintSnapshot(Mafi.Core.Entities.Blueprints.IBlueprint bp)
+		{
+			if (bp == null || bp.Items.Length == 0)
+			{
+				return null;
+			}
+			Mafi.Collections.ImmutableCollections.ImmutableArray<Module>? modules =
+				bp.Items[0].GetArray<Module>("controller_modules", Module.Deserialize);
+			if (modules == null || modules.Value.Length != 1)
+			{
+				return null;
+			}
+			return modules.Value[0];
 		}
 
 		private IEnumerable<AModuleProtoSelector> NewModules()
@@ -1253,72 +1300,55 @@ namespace ProgramableNetwork.Ui
 											.All<ModuleProto>()
 											//.Where(p => p.IsAvailable)
 											/*.Where(p => p.AllowedDevices.Any(e => e.Equals(id)))*/) {
-				yield return new NewModule(this, m_refresh, (m) => m_lastCreated = m, (moduleProto) =>
+				yield return new NewModule(this, m_refresh, (m) => m_lastCreated = m, (moduleProto, callback) =>
 				{
-					if (TryPlaceAt(moduleProto, m_targetRow, m_targetColumn))
-					{
-						return (true, m_lastCreated);
-					}
-					else
-					{
-						return (false, null);
-					}
+					// Async forward — see NewTemplates above for the rationale.
+					TryPlaceAt(moduleProto, m_targetRow, m_targetColumn,
+						onApplied: (ok, placed) => callback?.Invoke(ok, placed));
 				}, item);
 			}
 		}
 
-		public bool TryPlaceAt(ModuleProto moduleProto, int targetRow, int targetColumn)
+		// Dispatches a ModulePlaceCmd so the new-module allocation + Modules.Add
+		// runs on the sim thread (matches the rest of the cmd-driven mutation
+		// surface — MP/replay see a single deterministic ordering of placements).
+		// The returned bool only reports that the cmd was scheduled — the actual
+		// outcome (and the placed Module, if any) is delivered via the optional
+		// <paramref name="onApplied"/> callback once the executor finishes.
+		// m_lastCreated is updated only when the executor confirms placement.
+		public bool TryPlaceAt(ModuleProto moduleProto, int targetRow, int targetColumn, Action<bool, Module> onApplied = null)
 		{
-			ModuleIdManager moduleIdManager = Entity.Resolver.Resolve<ModuleIdManager>();
-			var module = new Module(moduleProto, Entity.Context, Entity, moduleIdManager.Allocate());
-			var width = module.Layout.GetWidth(module);
-
-			if (!IsRangeFree(targetRow, targetColumn, width, ignore: null))
+			if (moduleProto == null) {
+				onApplied?.Invoke(false, null);
+				return false;
+			}
+			// A fresh module has no extensions, so its layout width is the base
+			// width — compute it from the proto without constructing a throwaway
+			// Module instance or touching the id manager.
+			int width = new ModuleLayout(moduleProto).GetWidth(null);
+			if (!Entity.IsRangeFree(targetRow, targetColumn, width, ignore: null))
 			{
-				moduleIdManager.Free(module.Id);
 				m_controller.Context.AudioDb.InvalidOp(true).Play();
+				onApplied?.Invoke(false, null);
 				return false;
 			}
-
-			module.Row = targetRow;
-			module.Column = targetColumn;
-			Entity.Modules.Add(module);
-			m_lastCreated = module;
-			return true;
-		}
-
-		// True iff every cell in [col, col+width) on the given row is unoccupied.
-		// `ignore` lets a module be excluded from the check (used for moves).
-		private bool IsRangeFree(int row, int col, int width, Module ignore)
-		{
-			if (Entity?.Prototype == null) {
-				return false;
-			}
-			if (row < 0 || row >= Entity.Prototype.Rows) {
-				return false;
-			}
-			if (col < 0 || col + width > Entity.Prototype.Columns) {
-				return false;
-			}
-
-			foreach (var m in Entity.Modules)
+			ModulePlaceCmd cmd = new ModulePlaceCmd(Entity.Id, moduleProto.Id, targetRow, targetColumn);
+			m_controller.Context.InputScheduler.ScheduleAndOnApplied(cmd, this, () =>
 			{
-				if (m == null || m.Prototype == null) {
-					continue;
+				bool ok = cmd.ResultSet && !cmd.HasError && cmd.CreatedModuleId != 0;
+				Module placed = null;
+				if (ok) {
+					placed = Entity.Modules.AsEnumerable()
+						.FirstOrDefault(m => m.Id == cmd.CreatedModuleId);
+					if (placed != null) {
+						m_lastCreated = placed;
+					}
+					RedrawComponents();
+				} else {
+					m_controller.Context.AudioDb.InvalidOp(true).Play();
 				}
-				if (ignore != null && m.Id == ignore.Id) {
-					continue;
-				}
-				if (m.Row != row) {
-					continue;
-				}
-				int mw = m.Layout.GetWidth(m);
-				int mEnd = m.Column + mw;
-				int end = col + width;
-				if (m.Column < end && col < mEnd) {
-					return false;
-				}
-			}
+				onApplied?.Invoke(ok, placed);
+			});
 			return true;
 		}
 

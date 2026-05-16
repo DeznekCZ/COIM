@@ -214,6 +214,7 @@ The controller can use maintenance from T1 to T3 base on layout of the modules:
             module.Row = row;
             module.Column = column;
             controller.Modules.Add(module);
+            controller.InvalidateTopology();
             int width = module.Layout.GetWidth(module);
             column += width;
 

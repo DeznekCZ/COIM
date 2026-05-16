@@ -1,6 +1,6 @@
 {
 	"id": "ProgramableNetwork",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"display_name": "Programable Network",
 	"description_short": "Adds additional options to control machines by custom specified conditions in Controllers. Contains also programable displays and lights",
 	"description_long": "Adds additional options to control machines by custom specified conditions in Controllers. Contains also programable displays and lights\nMod can be removed only in case is replaced by sanitizer version.",

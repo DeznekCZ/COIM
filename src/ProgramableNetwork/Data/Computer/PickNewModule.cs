@@ -103,14 +103,20 @@ public class PickNewModule : FloatingColumn {
 		ScrollColumn categoriesSelection = row.AddAndReturn(new ScrollColumn())
 			.Width(150.px())
 			.Height(600);
-		Button allButton = categoriesSelection.AddAndReturn(new ButtonText(LocStrFormatted.Empty)
-			.LaterText<ButtonText>(() => NewTr.Inspector.All, this, (b, v) => b.Value(v)));
-		categoriesSelection.Add(new HorizontalDivider().Height(10.px()));
+		Row buttonRow = categoriesSelection.AddAndReturn(new Row()).Gap(5.px());
+		Button allButton = buttonRow.AddAndReturn(new ButtonText(Tr.All));
 		allButton.OnClick(() => {
 			foreach (ButtonText b in categoryDict.Values) {
 				b.Selected();
 			}
 		});
+		Button noneButton = buttonRow.AddAndReturn(new ButtonText(Tr.None));
+		noneButton.OnClick(() => {
+			foreach (ButtonText b in categoryDict.Values) {
+				b.Selected(false);
+			}
+		});
+		categoriesSelection.Add(new HorizontalDivider().Height(10.px()));
 		categoriesSelection.Add(categoryDict
 			.OrderBy(i => categoryOrdering[i.Key].Name.TranslatedString)
 			.Select(c => c.Value));

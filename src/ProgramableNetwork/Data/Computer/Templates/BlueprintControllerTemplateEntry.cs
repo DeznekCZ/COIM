@@ -114,6 +114,7 @@ namespace ProgramableNetwork.Ui
 					}
 				}
 			}
+			controller.InvalidateTopology();
 
 			int? color = data.GetInt("color");
 			if (color.HasValue) {

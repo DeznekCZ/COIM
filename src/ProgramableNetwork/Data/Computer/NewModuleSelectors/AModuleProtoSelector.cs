@@ -11,10 +11,16 @@ namespace ProgramableNetwork.Ui
     {
         protected readonly ControllerView m_controllerView;
         protected readonly Action m_refresh;
-        protected readonly Func<ModuleProto, (bool, Module)> m_tryCreate;
+        // Placement is async (the underlying cmd applies on the sim thread), so
+        // tryCreate hands off the (ok, placedModule) pair via a callback fired
+        // when the executor confirms the placement.  Callers' post-place work
+        // (ExecuteInit, applying template Settings, blueprint extraction) goes
+        // inside the callback so it runs against the real placed module instead
+        // of a stale snapshot.
+        protected readonly Action<ModuleProto, Action<bool, Module>> m_tryCreate;
         protected readonly Action<Module> m_onSuccess;
 
-        protected AModuleProtoSelector(ControllerView controllerView, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate)
+        protected AModuleProtoSelector(ControllerView controllerView, Action refresh, Action<Module> onSuccess, Action<ModuleProto, Action<bool, Module>> tryCreate)
         {
             m_controllerView = controllerView;
             m_refresh = refresh;

@@ -28,7 +28,7 @@ namespace ProgramableNetwork.Ui {
 		private Button m_button;
 		private PanelWithHeader m_panel;
 
-		public NewModule(ControllerView controllerView, Action refresh, Action<Module> onSuccess, Func<ModuleProto, (bool, Module)> tryCreate, ModuleProto item)
+		public NewModule(ControllerView controllerView, Action refresh, Action<Module> onSuccess, Action<ModuleProto, Action<bool, Module>> tryCreate, ModuleProto item)
 			: base(controllerView, refresh, onSuccess, tryCreate) {
 			this.item = item;
 		}
@@ -210,12 +210,22 @@ namespace ProgramableNetwork.Ui {
 			panel.BodyAdd(new ButtonText(NewTr.Tools.Add)
 				.LaterText(() => NewTr.Tools.Add, panel)
 				.OnClick(() => {
-					(bool create, Module module) = m_tryCreate(item);
-					if (create) {
-						module.Prototype.ExecuteInit(module);
-						module.CopyFrom(previewModule);
-						dialog.Close();
-					}
+					// ExecuteInit is now baked into Controller.TryPlaceModule.
+					// TODO MP correctness: CopyFrom(previewModule) still runs UI-side
+					// — previewModule is local UI state.  The fix is the same shape
+					// as the template chip path above: serialise the configurable
+					// fields of previewModule (NumberData / FieldNumberData /
+					// StringData / extension counts / ArrayData) into a place-with-
+					// config cmd payload, and have the executor copy them onto the
+					// freshly-placed module so every peer sees the same configured
+					// state.  Sending the template/blueprint id is NOT safe — those
+					// definitions can live on the originating client only.
+					m_tryCreate(item, (create, module) => {
+						if (create && module != null) {
+							module.CopyFrom(previewModule);
+							dialog.Close();
+						}
+					});
 				}));
 
 			dialog.Add(panel);
@@ -290,13 +300,21 @@ namespace ProgramableNetwork.Ui {
 				ButtonText chip = new ButtonText(new LocStrFormatted(template.Name ?? ""));
 				chip.Tooltip(new LocStrFormatted(template.Name ?? ""));
 				chip.OnClick(() => {
-					(bool created, Module createdModule) = m_tryCreate(template.ModuleProto);
-					if (created) {
-						createdModule.Prototype.ExecuteInit(createdModule);
-						template.Setting(createdModule);
-						createdModule.Prototype.DisplayUpdate(createdModule);
-						dialog.Close();
-					}
+					// ExecuteInit is now baked into Controller.TryPlaceModule.
+					// TODO MP correctness: template.Setting + DisplayUpdate still
+					// run UI-side.  A template id is NOT safe to send across peers
+					// (mods/blueprints can be installed on one client only), so the
+					// fix is to materialise the configured Module state on the
+					// originator (run Setting on a temp module) and send that state
+					// payload in a place-with-config cmd — the executor then copies
+					// it onto the freshly-placed module on every peer.
+					m_tryCreate(template.ModuleProto, (created, createdModule) => {
+						if (created && createdModule != null) {
+							template.Setting(createdModule);
+							createdModule.Prototype.DisplayUpdate(createdModule);
+							dialog.Close();
+						}
+					});
 				});
 				chip.RegisterCallback<MouseUpEvent>(evt => evt.StopPropagation());
 				chip.RegisterCallback<MouseDownEvent>(evt => evt.StopPropagation());
@@ -307,10 +325,10 @@ namespace ProgramableNetwork.Ui {
 		}
 
 		public override void Selected() {
-			(bool create, Module module) = m_tryCreate(item);
-			if (create) {
-				module.Prototype.ExecuteInit(module);
-			}
+			// ExecuteInit is part of Controller.TryPlaceModule now — nothing else to
+			// do here.  The callback is still useful for refresh / lifecycle hooks
+			// the base class may add later.
+			m_tryCreate(item, (create, module) => { });
 		}
 
 		private class ResearchNodeReferenceUi : Row {

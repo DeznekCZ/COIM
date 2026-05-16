@@ -3,6 +3,8 @@ using Mafi;
 using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Input;
+using Mafi.Core.Prototypes;
+using ProgramableNetwork.Data.Variables;
 using ProgramableNetwork.Ui;
 
 namespace ProgramableNetwork
@@ -22,13 +24,25 @@ namespace ProgramableNetwork
 		ICommandProcessor<ModuleClearFieldCmd>,
 		ICommandProcessor<ModuleSetInputConnectionCmd>,
 		ICommandProcessor<ModuleSetExtensionCountCmd>,
-		ICommandProcessor<ControllerSetColorCmd>
+		ICommandProcessor<ControllerSetColorCmd>,
+		ICommandProcessor<ModuleRemoveCmd>,
+		ICommandProcessor<ModuleMoveToCmd>,
+		ICommandProcessor<ModulePlaceCmd>,
+		ICommandProcessor<ModuleShiftAddCmd>,
+		ICommandProcessor<ModulePasteCmd>,
+		ICommandProcessor<ModulePlaceFromBlueprintCmd>,
+		ICommandProcessor<ControllerApplyTemplateCmd>,
+		ICommandProcessor<VariableRemoveCmd>
 	{
 		private readonly IEntitiesManager m_entitiesManager;
+		private readonly ProtosDb m_protosDb;
+		private readonly VariableManager m_variableManager;
 
-		public ControllerCommandExecutor(IEntitiesManager entitiesManager)
+		public ControllerCommandExecutor(IEntitiesManager entitiesManager, ProtosDb protosDb, VariableManager variableManager)
 		{
 			m_entitiesManager = entitiesManager;
+			m_protosDb = protosDb;
+			m_variableManager = variableManager;
 		}
 
 		public void Invoke(ModuleSetFix32FieldCmd cmd)
@@ -93,6 +107,20 @@ namespace ProgramableNetwork
 			cmd.SetResultSuccess();
 		}
 
+		public void Invoke(VariableRemoveCmd cmd)
+		{
+			// Stale-variable cleanup — UI only exposes the trash button when the
+			// writer entity is gone, but the executor stays permissive and lets
+			// any peer issue the removal.  Removing a name that no longer exists
+			// is a no-op and still reports success.
+			if (string.IsNullOrEmpty(cmd.Name)) {
+				cmd.SetResultError("Variable name is empty.");
+				return;
+			}
+			m_variableManager.RemoveVariable(cmd.Name);
+			cmd.SetResultSuccess();
+		}
+
 		public void Invoke(ModuleSetInputConnectionCmd cmd)
 		{
 			if (!tryGetModule(cmd.ControllerId, cmd.ModuleId, out _, out Module module, out string error)) {
@@ -104,6 +132,7 @@ namespace ProgramableNetwork
 			} else {
 				module.InputModules[cmd.InputId] = new ModuleConnector(cmd.SourceModuleId, cmd.SourceOutputId);
 			}
+			module.Controller?.InvalidateTopology();
 			cmd.SetResultSuccess();
 		}
 
@@ -119,6 +148,136 @@ namespace ProgramableNetwork
 			// flop).  No separate InputModules reconciliation needed — the side
 			// setters already handle it.
 			module.SetExtensionCountLinked(cmd.Side, cmd.NewCount);
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModuleRemoveCmd cmd)
+		{
+			if (!m_entitiesManager.TryGetEntity(cmd.ControllerId, out Controller controller)) {
+				cmd.SetResultError($"Controller {cmd.ControllerId} not found.");
+				return;
+			}
+			if (!controller.TryRemoveModule(cmd.ModuleId)) {
+				cmd.SetResultError($"Module {cmd.ModuleId} not found on controller {cmd.ControllerId}.");
+				return;
+			}
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModuleMoveToCmd cmd)
+		{
+			if (!m_entitiesManager.TryGetEntity(cmd.ControllerId, out Controller controller)) {
+				cmd.SetResultError($"Controller {cmd.ControllerId} not found.");
+				return;
+			}
+			if (!controller.TryMoveModule(cmd.ModuleId, cmd.TargetRow, cmd.TargetColumn)) {
+				// Authoritative re-check on the sim thread refused the move (slot
+				// occupied by a different module, or the module itself disappeared
+				// between click and apply).  Surface this so the UI's OnApplied
+				// callback can react — cmd.HasError will be true, cmd.Result false.
+				cmd.SetResultError($"Module {cmd.ModuleId} could not be moved to ({cmd.TargetRow}, {cmd.TargetColumn}) on controller {cmd.ControllerId}.");
+				return;
+			}
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModulePlaceCmd cmd)
+		{
+			if (!m_entitiesManager.TryGetEntity(cmd.ControllerId, out Controller controller)) {
+				cmd.SetResultError($"Controller {cmd.ControllerId} not found.");
+				return;
+			}
+			Option<ModuleProto> proto = m_protosDb.Get<ModuleProto>(cmd.ProtoId);
+			if (!proto.HasValue) {
+				cmd.SetResultError($"Module proto '{cmd.ProtoId}' not found.");
+				return;
+			}
+			long newId = controller.TryPlaceModule(proto.Value, cmd.TargetRow, cmd.TargetColumn);
+			cmd.CreatedModuleId = newId;
+			if (newId == 0) {
+				cmd.SetResultError($"Could not place module '{cmd.ProtoId}' at ({cmd.TargetRow}, {cmd.TargetColumn}) on controller {cmd.ControllerId}.");
+				return;
+			}
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModuleShiftAddCmd cmd)
+		{
+			if (!m_entitiesManager.TryGetEntity(cmd.DestControllerId, out Controller dest)) {
+				cmd.SetResultError($"Controller {cmd.DestControllerId} not found.");
+				return;
+			}
+			if (!m_entitiesManager.TryGetEntity(cmd.SourceControllerId, out Controller src)) {
+				cmd.SetResultError($"Source controller {cmd.SourceControllerId} not found.");
+				return;
+			}
+			Module source = src.Modules.AsEnumerable().FirstOrDefault(m => m.Id == cmd.SourceModuleId);
+			if (source == null) {
+				cmd.SetResultError($"Source module {cmd.SourceModuleId} not found on controller {cmd.SourceControllerId}.");
+				return;
+			}
+			long newId = dest.TryShiftAddModule(source, cmd.TargetRow, cmd.TargetColumn);
+			cmd.CreatedModuleId = newId;
+			if (newId == 0) {
+				cmd.SetResultError($"Could not stamp module at ({cmd.TargetRow}, {cmd.TargetColumn}) on controller {cmd.DestControllerId}.");
+				return;
+			}
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModulePasteCmd cmd)
+		{
+			if (!m_entitiesManager.TryGetEntity(cmd.DestControllerId, out Controller dest)) {
+				cmd.SetResultError($"Controller {cmd.DestControllerId} not found.");
+				return;
+			}
+			if (!m_entitiesManager.TryGetEntity(cmd.SourceControllerId, out Controller src)) {
+				cmd.SetResultError($"Source controller {cmd.SourceControllerId} not found.");
+				return;
+			}
+			Module source = src.Modules.AsEnumerable().FirstOrDefault(m => m.Id == cmd.SourceModuleId);
+			if (source == null) {
+				cmd.SetResultError($"Source module {cmd.SourceModuleId} not found on controller {cmd.SourceControllerId}.");
+				return;
+			}
+			if (!dest.TryPasteModule(cmd.DestModuleId, source)) {
+				cmd.SetResultError($"Destination module {cmd.DestModuleId} not found on controller {cmd.DestControllerId}.");
+				return;
+			}
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModulePlaceFromBlueprintCmd cmd)
+		{
+			if (!m_entitiesManager.TryGetEntity(cmd.ControllerId, out Controller controller)) {
+				cmd.SetResultError($"Controller {cmd.ControllerId} not found.");
+				return;
+			}
+			Option<ModuleProto> proto = m_protosDb.Get<ModuleProto>(cmd.ProtoId);
+			if (!proto.HasValue) {
+				cmd.SetResultError($"Module proto '{cmd.ProtoId}' not found.");
+				return;
+			}
+			long newId = controller.TryPlaceModuleFromSnapshot(
+				proto.Value, cmd.TargetRow, cmd.TargetColumn, cmd.Snapshot);
+			cmd.CreatedModuleId = newId;
+			if (newId == 0) {
+				cmd.SetResultError($"Could not place blueprint module '{cmd.ProtoId}' at ({cmd.TargetRow}, {cmd.TargetColumn}) on controller {cmd.ControllerId}.");
+				return;
+			}
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ControllerApplyTemplateCmd cmd)
+		{
+			if (!m_entitiesManager.TryGetEntity(cmd.ControllerId, out Controller controller)) {
+				cmd.SetResultError($"Controller {cmd.ControllerId} not found.");
+				return;
+			}
+			if (!controller.ApplyPythonTemplate(cmd.TemplateId)) {
+				cmd.SetResultError($"Template '{cmd.TemplateId}' not registered.");
+				return;
+			}
 			cmd.SetResultSuccess();
 		}
 

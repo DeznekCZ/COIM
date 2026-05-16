@@ -31,7 +31,7 @@ namespace ProgramableNetwork.Ui
 			ControllerView controllerView,
 			Action refresh,
 			Action<Module> onSuccess,
-			Func<ModuleProto, (bool, Module)> tryCreate,
+			Action<ModuleProto, Action<bool, Module>> tryCreate,
 			IBlueprint blueprint,
 			ModuleProto proto)
 			: base(controllerView, refresh, onSuccess, tryCreate)
@@ -139,48 +139,20 @@ namespace ProgramableNetwork.Ui
 
 		public override void Selected()
 		{
-			(bool placed, Module placedModule) = m_tryCreate(m_proto);
-			if (!placed || placedModule == null)
+			// All the place + configure work — including the blueprint snapshot
+			// copy that used to run here UI-side — is now baked into
+			// ModulePlaceFromBlueprintCmd (see the lambda in
+			// ControllerView.EnumerateBlueprintSelectorsCore where this selector
+			// is constructed).  The cmd carries the deserialised Module snapshot
+			// inline, so every MP peer reconstructs the same configured state
+			// independently of whether they have the blueprint in their library.
+			m_tryCreate(m_proto, (placed, placedModule) =>
 			{
-				return;
-			}
-			// Overwrite the freshly-placed default with the saved configuration.
-			// Re-extracting from the blueprint (rather than copying from the preview)
-			// keeps each placement independent of any other selector's UI state.
-			Option<Module> extracted = ModuleBlueprints.TryExtractInto(m_blueprint, m_controllerView.Entity);
-			if (!extracted.HasValue)
-			{
-				return;
-			}
-			Module from = extracted.Value;
-			// Mirrors the in-controller "Copy / Paste" handler in ModuleEditDialog —
-			// only configured/persistent state is copied.  Input/Output numeric
-			// snapshots are per-tick volatile values that get overwritten next sim
-			// tick from real cable inputs, so copying them just adds noise.  Likewise
-			// InputModules (cable connections) are intentionally not restored: the
-			// blueprint's source-side module IDs don't exist in the target controller.
-			placedModule.NumberData.Clear();
-			placedModule.FieldNumberData.Clear();
-			placedModule.StringData.Clear();
-			foreach (var kv in from.NumberData)       { placedModule.NumberData[kv.Key] = kv.Value; }
-			foreach (var kv in from.FieldNumberData)  { placedModule.FieldNumberData[kv.Key] = kv.Value; }
-			foreach (var kv in from.StringData)       { placedModule.StringData[kv.Key] = kv.Value; }
-			// Pin extension counts roundtrip through the blueprint payload — restore
-			// them so a saved A+B with extra inputs places back at the same width.
-			placedModule.SetInputExtensionCount(from.InputExtensionCount);
-			placedModule.SetOutputExtensionCount(from.OutputExtensionCount);
-			// ArrayData is replaced wholesale rather than per-element copied — the
-			// saved buffer is the canonical state for any module that uses Array.
-			if (from.ArrayData != null && from.ArrayData.Length > 0)
-			{
-				Fix32[] copy = new Fix32[from.ArrayData.Length];
-				Array.Copy(from.ArrayData, copy, copy.Length);
-				typeof(Module)
-					.GetProperty(nameof(Module.ArrayData))
-					.SetValue(placedModule, copy);
-			}
-			placedModule.Prototype.ExecuteInit(placedModule, log: false);
-			m_onSuccess?.Invoke(placedModule);
+				if (placed && placedModule != null)
+				{
+					m_onSuccess?.Invoke(placedModule);
+				}
+			});
 		}
 	}
 }
