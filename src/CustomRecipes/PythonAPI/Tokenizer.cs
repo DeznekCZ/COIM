@@ -13,9 +13,13 @@ namespace PythonAPI
         //lang=regex
         private const string paren = @"(?<lparen>\()|(?<rparen>\))|(?<llist>\[)|(?<rlist>\])|(?<ldict>{)|(?<rdict>})";
         //lang=regex
-        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre>>=)|(?<shiftl><<)|(?<shiftr>>>)|(?<lr><)|(?<gr>>)|(?<isp>is\s)|(?<not>not\s)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
+        // NB: `<<=` / `>>=` must come BEFORE `<<` / `>>`, otherwise they'd be tokenized as
+        // shift + set (two tokens) instead of one compound-assign token.
+        private const string comp = @"(?<eq>==)|(?<neq>!=)|(?<lre><=)|(?<gre>>=)|(?<setshiftl><<=)|(?<setshiftr>>>=)|(?<shiftl><<)|(?<shiftr>>>)|(?<lr><)|(?<gr>>)|(?<isp>is\s)|(?<not>not\s)|(?<bitor>\|)|(?<bitxor>\^)|(?<bitand>&)";
         //lang=regex
-        private const string oper = @"(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>//)|(?<div>/)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<invert>~)|(?<semicolon>;)";
+        // NB: `+=` / `-=` / `*=` / `/=` must come BEFORE the corresponding single-char
+        // operator (and `*=` before `**`, `/=` before `//`) for the same reason.
+        private const string oper = @"(?<setadd>\+=)|(?<setsub>-=)|(?<setmul>\*=)|(?<setdiv>/=)|(?<plus>\+)|(?<minus>-)|(?<power>\*\*)|(?<mul>\*)|(?<divint>//)|(?<div>/)|(?<mod>%)|(?<dot>\.)|(?<next>,)|(?<set>=)|(?<invert>~)|(?<semicolon>;)";
         //lang=regex
         private const string data = @"(?<str>""[^""]*""|'[^']*')|(?<number>\d+(?:.\d+)?)|(?<name>[a-zA-Z_]\w*)";
         //lang=regex

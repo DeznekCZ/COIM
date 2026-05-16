@@ -101,6 +101,7 @@ namespace CustomAssets.ModBuilder
                 ["{{COI_ROOT}}"] = _options.CoiRoot ?? string.Empty,
                 ["{{COI_MODS}}"] = _options.CoiMods ?? string.Empty,
                 ["{{PACK_DIR}}"] = packDirAbs,
+                ["{{MODBUILDER_EXE}}"] = ResolveSelfExePath(),
                 ["{{LIB_REFERENCE}}"] = libRef,
                 ["{{ASSETBUNDLES_ITEMGROUP}}"] = assetBundlesItem,
                 ["{{ASSETBUNDLES_COPY}}"] = assetBundlesCopy,
@@ -153,6 +154,17 @@ namespace CustomAssets.ModBuilder
 
         private static string EnsureTrailingSeparator(string path) =>
             path.EndsWith(Path.DirectorySeparatorChar.ToString()) ? path : path + Path.DirectorySeparatorChar;
+
+        // Path to the running ModBuilder.exe — embedded in the generated csproj so the
+        // RasterizeSvgIcons target can call back into us (svg2png subcommand) at MSBuild
+        // time. EntryAssembly is null when ModBuilder is hosted (rare); fall back to the
+        // executing assembly in that case.
+        private static string ResolveSelfExePath()
+        {
+            var entry = System.Reflection.Assembly.GetEntryAssembly()
+                     ?? System.Reflection.Assembly.GetExecutingAssembly();
+            return Path.GetFullPath(entry.Location);
+        }
 
         private static string EscapeForXml(string value)
         {

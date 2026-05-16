@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CustomAssets.IconStudio</RootNamespace>
+    <AssemblyName>IconStudio</AssemblyName>
+    <UseWindowsForms>false</UseWindowsForms>
+    <UseWPF>false</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <!--
+      The linked ModBuilder.Svg sources were authored without nullable annotations
+      (ModBuilder targets net48 with Nullable disabled). Suppress the resulting
+      noise; IconStudio's own code is still nullable-checked.
+    -->
+    <NoWarn>$(NoWarn);CS8600;CS8602;CS8603;CS8604;CS8618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Photino.Blazor" Version="3.2.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Photino loads the WebView's static assets from the application directory at
+      runtime, not from source. The Razor SDK doesn't auto-copy wwwroot the way
+      the Web SDK does for `dotnet run`, so we copy it explicitly.
+    -->
+    <Content Update="wwwroot\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The ModBuilder project targets net48, so we cannot ProjectReference it from a
+      net8.0 host. Linking the source files compiles the same SVG render / trace
+      code under each project's target framework — no shared assembly required.
+    -->
+    <Compile Include="..\ModBuilder\Svg\SvgColor.cs"     Link="Svg\SvgColor.cs" />
+    <Compile Include="..\ModBuilder\Svg\SvgTransform.cs" Link="Svg\SvgTransform.cs" />
+    <Compile Include="..\ModBuilder\Svg\SvgPath.cs"      Link="Svg\SvgPath.cs" />
+    <Compile Include="..\ModBuilder\Svg\SvgRenderer.cs"  Link="Svg\SvgRenderer.cs" />
+    <Compile Include="..\ModBuilder\Svg\PngToSvgTracer.cs" Link="Svg\PngToSvgTracer.cs" />
+  </ItemGroup>
+
+</Project>

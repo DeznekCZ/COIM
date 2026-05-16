@@ -1,0 +1,349 @@
+@inject SceneStore Store
+@implements IDisposable
+
+<div class="side-panel-section">
+    <h3>Layers</h3>
+    <ul class="layer-list">
+        @for (int i = Store.Scene.Layers.Count - 1; i >= 0; i--)
+        {
+            var layer = Store.Scene.Layers[i];
+            var isActive = Store.Scene.ActiveLayerId == layer.Id;
+            var isDropTarget = _dropTargetId == layer.Id;
+            var isExpanded = _expanded.Contains(layer.Id);
+            var isEditing = _editingNameId == layer.Id;
+            <li class="layer-row @(isActive ? "active" : "") @(isDropTarget ? "drop-target" : "")"
+                draggable="true"
+                @ondragstart="() => OnLayerDragStart(layer)"
+                @ondragend="OnDragEnd"
+                @ondragover="e => OnDragOver(e, layer)"
+                @ondragover:preventDefault="true"
+                @ondragleave="() => OnDragLeave(layer)"
+                @ondrop="() => OnDrop(layer)"
+                @ondrop:preventDefault="true"
+                @onclick="() => Activate(layer)">
+                <button class="caret"
+                        @onclick="() => ToggleExpand(layer)"
+                        @onclick:stopPropagation="true"
+                        title="@(isExpanded ? "Collapse" : "Expand")">
+                    @(isExpanded ? "▼" : "▶")
+                </button>
+                <span class="grip" title="Drag to reorder">⋮⋮</span>
+                <input type="checkbox" checked="@layer.Visible"
+                       @onchange="e => Toggle(layer, e)" @onclick:stopPropagation="true"
+                       title="Show / hide layer" />
+                @if (isEditing)
+                {
+                    <input class="name-edit"
+                           value="@layer.Name"
+                           @onchange="e => FinishRename(layer, e)"
+                           @onblur="ExitEdit"
+                           @onkeydown="e => OnNameKey(layer, e)"
+                           @onclick:stopPropagation="true"
+                           @ref="_editInputRef" />
+                }
+                else
+                {
+                    <span class="name-display"
+                          @ondblclick="() => BeginRename(layer)"
+                          title="Double-click to rename">@layer.Name</span>
+                }
+                <span class="badge">@LayerBadge(layer)</span>
+            </li>
+            @if (isExpanded)
+            {
+                <ul class="shape-list">
+                    @* Opacity slider applies to any layer kind — every layer's
+                       Opacity property is honored by the renderer (ShapeLayer wraps
+                       its shapes in <g opacity=".."> and ReferenceImageLayer is
+                       painted with ctx.globalAlpha). *@
+                    <li class="shape-row" @onclick:stopPropagation="true">
+                        <span class="shape-label" style="display:flex;align-items:center;gap:8px;width:100%">
+                            <span style="min-width:50px">Opacity</span>
+                            <input type="range" min="0" max="100" step="1"
+                                   value="@PctOf(layer.Opacity)"
+                                   @oninput="e => SetLayerOpacityPct(layer, e)"
+                                   style="flex:1" />
+                            <input type="number" min="0" max="100" step="1" style="width:60px"
+                                   value="@PctOf(layer.Opacity)"
+                                   @onchange="e => SetLayerOpacityPct(layer, e)" />
+                            <span style="min-width:18px">%</span>
+                        </span>
+                    </li>
+                    @if (layer is ReferenceImageLayer ri)
+                    {
+                        <li class="shape-row">
+                            <span class="thumb">
+                                <img src="@ri.DataUrl" width="32" height="32" />
+                            </span>
+                            <span class="shape-label">@ri.PixelWidth × @ri.PixelHeight px reference</span>
+                        </li>
+                    }
+                    else if (layer is ShapeLayer sl)
+                    {
+                        @if (sl.Shapes.Count == 0)
+                        {
+                            <li class="shape-row empty muted">(no shapes — drag one here)</li>
+                        }
+                        else
+                        {
+                            @foreach (var shape in sl.Shapes)
+                            {
+                                var isShapeSelected = Store.SelectedShape?.Id == shape.Id;
+                                <li class="shape-row @(isShapeSelected ? "selected" : "")"
+                                    draggable="true"
+                                    @ondragstart="() => OnShapeDragStart(shape)"
+                                    @ondragend="OnDragEnd"
+                                    @onclick="() => SelectShape(shape)"
+                                    @onclick:stopPropagation="true"
+                                    title="Click to select. Drag onto another layer to move.">
+                                    <span class="thumb">
+                                        @((MarkupString)BuildThumb(shape))
+                                    </span>
+                                    <span class="shape-label">@ShapeSummary(shape)</span>
+                                </li>
+                            }
+                        }
+                    }
+                </ul>
+            }
+        }
+    </ul>
+    <div class="layer-actions">
+        <button @onclick="AddShapeLayer" title="Add a new empty shape layer">+ Layer</button>
+        <button @onclick="() => MoveActive(+1)" disabled="@(!CanMove())" title="Move active layer up">↑</button>
+        <button @onclick="() => MoveActive(-1)" disabled="@(!CanMove())" title="Move active layer down">↓</button>
+        <button @onclick="DeleteActive" disabled="@(Active is null)" title="Delete active layer">Del</button>
+    </div>
+</div>
+
+@code {
+    private readonly HashSet<int> _expanded = new();
+    private int? _draggingLayerId;
+    private int? _draggingShapeId;
+    private int? _dropTargetId;
+    private int? _editingNameId;
+    private ElementReference _editInputRef;
+    private bool _focusEditNext;
+    private static readonly System.Globalization.CultureInfo Inv =
+        System.Globalization.CultureInfo.InvariantCulture;
+
+    protected override void OnInitialized() => Store.OnChange += OnChange;
+    private async void OnChange()
+    {
+        try { await InvokeAsync(StateHasChanged); }
+        catch (Exception ex) { CrashLog.Write("LayerPanel.OnChange", ex); }
+    }
+    public void Dispose() => Store.OnChange -= OnChange;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusEditNext)
+        {
+            _focusEditNext = false;
+            try { await _editInputRef.FocusAsync(); } catch { /* ref not bound yet */ }
+        }
+    }
+
+    private Layer? Active => Store.Scene.ActiveLayer;
+    private bool CanMove() => Active is not null && Store.Scene.Layers.Count > 1;
+
+    private void MoveActive(int delta)
+    {
+        if (Active is null) return;
+        Store.Scene.Move(Active, delta);
+        Store.Notify();
+    }
+
+    private static string LayerBadge(Layer l) => l switch
+    {
+        ShapeLayer sl => $"{sl.Shapes.Count} shapes",
+        ReferenceImageLayer => "ref",
+        _ => "?",
+    };
+
+    private static string ShapeSummary(Shape s) => s.Kind switch
+    {
+        ShapeKind.Rect => $"Rect {s.Width:0.#}×{s.Height:0.#}",
+        ShapeKind.Circle => $"Ellipse {s.Width:0.#}×{s.Height:0.#}",
+        ShapeKind.Line => $"Line {s.Width:0.#},{s.Height:0.#}",
+        ShapeKind.Polygon => $"Polygon ({s.Points.Count} pts)",
+        ShapeKind.Polyline => $"Polyline ({s.Points.Count} pts)",
+        _ => s.Kind.ToString(),
+    };
+
+    private static string F(double v) => v.ToString(Inv);
+
+    // Percentage view of an internal 0-1 opacity, shown in the slider / numeric
+    // input. UI uses 0-100 to match how users think about opacity; the model
+    // stays normalized for SVG / canvas compatibility.
+    private static string PctOf(double v) =>
+        ((int)Math.Round(Math.Clamp(v, 0, 1) * 100)).ToString(Inv);
+
+    private void SetLayerOpacityPct(Layer layer, ChangeEventArgs e)
+    {
+        if (!double.TryParse(e.Value?.ToString(),
+                System.Globalization.NumberStyles.Float, Inv, out var pct)) return;
+        layer.Opacity = Math.Clamp(pct / 100.0, 0, 1);
+        Store.Notify();
+    }
+
+    private string BuildThumb(Shape s)
+    {
+        var w = Store.Scene.Width.ToString(Inv);
+        var h = Store.Scene.Height.ToString(Inv);
+        var inner = s.ToSvg();
+        return $"<svg viewBox=\"0 0 {w} {h}\" width=\"32\" height=\"32\" " +
+               $"preserveAspectRatio=\"xMidYMid meet\" style=\"display:block\">{inner}</svg>";
+    }
+
+    private void ToggleExpand(Layer l)
+    {
+        if (!_expanded.Add(l.Id)) _expanded.Remove(l.Id);
+    }
+
+    private void SelectShape(Shape s)
+    {
+        foreach (var layer in Store.Scene.Layers.OfType<ShapeLayer>())
+        {
+            if (layer.Shapes.Contains(s))
+            {
+                Store.Scene.ActiveLayerId = layer.Id;
+                break;
+            }
+        }
+        Store.Select(s);
+    }
+
+    private void Activate(Layer l)
+    {
+        Store.Scene.ActiveLayerId = l.Id;
+        Store.Notify();
+    }
+
+    private void Toggle(Layer l, ChangeEventArgs e)
+    {
+        l.Visible = e.Value is bool b ? b : true;
+        Store.Notify();
+    }
+
+    // ── Rename flow ────────────────────────────────────────────────────
+    // Name is a span by default so it doesn't intercept drag gestures. Double-click
+    // swaps it for an input that auto-focuses on next render; blur or Enter commits.
+    private void BeginRename(Layer l)
+    {
+        _editingNameId = l.Id;
+        _focusEditNext = true;
+    }
+
+    private void FinishRename(Layer l, ChangeEventArgs e)
+    {
+        var newName = e.Value as string ?? l.Name;
+        ApplyRename(l, newName);
+    }
+
+    private void ExitEdit()
+    {
+        // Called on blur even if the value didn't change — closes the input back
+        // to the span so the row regains its plain text + drag target form.
+        _editingNameId = null;
+    }
+
+    private void OnNameKey(Layer l, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") ExitEdit();
+        else if (e.Key == "Escape") ExitEdit();
+    }
+
+    private void ApplyRename(Layer l, string newName)
+    {
+        if (!string.IsNullOrWhiteSpace(newName)) l.Name = newName;
+        _editingNameId = null;
+        Store.Notify();
+    }
+
+    private void AddShapeLayer()
+    {
+        var nl = new ShapeLayer { Name = $"Layer {Store.Scene.Layers.Count + 1}" };
+        Store.Scene.Layers.Add(nl);
+        Store.Scene.ActiveLayerId = nl.Id;
+        _expanded.Add(nl.Id);
+        Store.Notify();
+    }
+
+    private void DeleteActive()
+    {
+        if (Active is null) return;
+        _expanded.Remove(Active.Id);
+        Store.Scene.Remove(Active);
+        Store.Notify();
+    }
+
+    // ── Drag & drop ────────────────────────────────────────────────────
+    // Two drag kinds share the same drop target (the layer row):
+    //   _draggingLayerId — reorder layers
+    //   _draggingShapeId — move a shape between layers
+    // OnDrop disambiguates and runs the appropriate model mutation.
+    private void OnLayerDragStart(Layer l)
+    {
+        _draggingLayerId = l.Id;
+        _draggingShapeId = null;
+    }
+
+    private void OnShapeDragStart(Shape s)
+    {
+        _draggingShapeId = s.Id;
+        _draggingLayerId = null;
+    }
+
+    private void OnDragEnd()
+    {
+        _draggingLayerId = null;
+        _draggingShapeId = null;
+        _dropTargetId = null;
+    }
+
+    private void OnDragOver(DragEventArgs _, Layer over)
+    {
+        bool acceptingShape = _draggingShapeId is not null && over is ShapeLayer;
+        bool acceptingLayer = _draggingLayerId is int id && id != over.Id;
+        if (!acceptingShape && !acceptingLayer) return;
+        if (_dropTargetId != over.Id) { _dropTargetId = over.Id; StateHasChanged(); }
+    }
+
+    private void OnDragLeave(Layer over)
+    {
+        if (_dropTargetId == over.Id) { _dropTargetId = null; StateHasChanged(); }
+    }
+
+    private void OnDrop(Layer over)
+    {
+        try
+        {
+            if (_draggingShapeId is int shapeId && over is ShapeLayer targetLayer)
+            {
+                var shape = Store.Scene.Layers.OfType<ShapeLayer>()
+                    .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == shapeId);
+                if (shape is not null)
+                {
+                    Store.MoveShapeToLayer(shape, targetLayer);
+                    _expanded.Add(targetLayer.Id);
+                }
+                return;
+            }
+
+            if (_draggingLayerId is int layerId && layerId != over.Id)
+            {
+                var src = Store.Scene.Layers.FirstOrDefault(l => l.Id == layerId);
+                if (src is null) return;
+                Store.Scene.Layers.Remove(src);
+                var dstIdx = Store.Scene.Layers.IndexOf(over);
+                Store.Scene.Layers.Insert(dstIdx + 1, src);
+                Store.Notify();
+            }
+        }
+        finally
+        {
+            OnDragEnd();
+        }
+    }
+}

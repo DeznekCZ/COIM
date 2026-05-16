@@ -1,0 +1,277 @@
+@inject SceneStore Store
+@implements IDisposable
+
+<div class="side-panel-section">
+    <h3>Properties</h3>
+    <div class="body">
+        @{
+            var selected = Store.GetSelectedShapes().ToList();
+        }
+        @if (selected.Count == 0)
+        {
+            <p class="muted">No shape selected. Use the Select tool and click a shape (Ctrl+click to multi-select).</p>
+        }
+        else if (selected.Count == 1)
+        {
+            var s = selected[0];
+            <div class="field"><label>Type</label><span>@s.Kind</span></div>
+            <div class="field">
+                <label>Layer</label>
+                <select value="@CurrentLayerId(s)"
+                        @onchange="e => MoveToLayer(s, (string?)e.Value)">
+                    @foreach (var layer in Store.Scene.Layers.OfType<ShapeLayer>())
+                    {
+                        <option value="@layer.Id">@layer.Name</option>
+                    }
+                </select>
+            </div>
+            @if (s.Kind != ShapeKind.Polygon && s.Kind != ShapeKind.Polyline)
+            {
+                <div class="field"><label>X</label>
+                    <input type="number" step="0.5" value="@F(s.X)" @onchange="e => OnNumber(e, v => s.X = v)" /></div>
+                <div class="field"><label>Y</label>
+                    <input type="number" step="0.5" value="@F(s.Y)" @onchange="e => OnNumber(e, v => s.Y = v)" /></div>
+                <div class="field"><label>Width</label>
+                    <input type="number" step="0.5" value="@F(s.Width)" @onchange="e => OnNumber(e, v => s.Width = v)" /></div>
+                <div class="field"><label>Height</label>
+                    <input type="number" step="0.5" value="@F(s.Height)" @onchange="e => OnNumber(e, v => s.Height = v)" /></div>
+            }
+            @if (s.Kind == ShapeKind.Rect)
+            {
+                <div class="field"><label>Corner radius</label>
+                    <input type="number" step="0.5" min="0" value="@F(s.CornerRadius)" @onchange="e => OnNumber(e, v => s.CornerRadius = v)" /></div>
+            }
+            <div class="field">
+                <label>Fill</label>
+                <input type="color" value="@ColorOrDefault(s.Fill, "#222222")"
+                       @onchange="e => SetFill(selected, (string?)e.Value)" />
+                <input type="text" value="@s.Fill"
+                       @onchange="e => SetFill(selected, (string?)e.Value)" />
+            </div>
+            <div class="field">
+                <label>Stroke</label>
+                <input type="color" value="@ColorOrDefault(s.Stroke, "#000000")"
+                       @onchange="e => SetStroke(selected, (string?)e.Value)" />
+                <input type="text" value="@s.Stroke"
+                       @onchange="e => SetStroke(selected, (string?)e.Value)" />
+            </div>
+            <div class="field"><label>Stroke width</label>
+                <input type="number" step="0.5" min="0" value="@F(s.StrokeWidth)"
+                       @onchange="e => SetNumberAll(selected, e, (sh, v) => { sh.StrokeWidth = v; Store.CurrentStrokeWidth = v; })" /></div>
+            <div class="field"><label>Opacity %</label>
+                <input type="number" step="1" min="0" max="100" value="@Pct(s.Opacity)"
+                       @onchange="e => SetOpacityAllPct(selected, e)" /></div>
+            @if (s.Kind == ShapeKind.Polygon || s.Kind == ShapeKind.Polyline)
+            {
+                <p class="muted" style="font-size:11px;margin:6px 0">
+                    Drag yellow vertex handles to move them.<br/>
+                    Double-click an edge to insert a new vertex.<br/>
+                    Right-click a vertex to remove it (min @(s.Kind == ShapeKind.Polygon ? 3 : 2) vertices).
+                </p>
+            }
+            @if (CanConvert(s))
+            {
+                <div class="field">
+                    <label>Convert to</label>
+                    <span style="display:flex;gap:6px;flex-wrap:wrap">
+                        @if (s.Kind == ShapeKind.Line)
+                        {
+                            <button @onclick="() => ConvertLineToPolyline(s)">Polyline</button>
+                        }
+                        @if (s.Kind == ShapeKind.Rect)
+                        {
+                            <button @onclick="() => ConvertRectToPolygon(s)">Polygon</button>
+                        }
+                        @if (s.Kind == ShapeKind.Circle)
+                        {
+                            <button @onclick="() => ConvertCircleToPolygon(s, 32)">Polygon (32)</button>
+                            <button @onclick="() => ConvertCircleToPolygon(s, 8)">Polygon (8)</button>
+                        }
+                    </span>
+                </div>
+            }
+            <div class="layer-actions" style="padding:0">
+                <button @onclick="Store.DeleteSelected" title="Delete the selected shape (Del / Backspace)">Delete shape (Del)</button>
+            </div>
+        }
+        else
+        {
+            <div class="field"><label>Selection</label><span>@selected.Count shapes</span></div>
+            <p class="muted" style="font-size:11px;margin:6px 0">
+                Editing common fields applies to <b>all selected</b>. Ctrl+click to add/remove from selection.
+            </p>
+            <div class="field">
+                <label>Fill</label>
+                <input type="color" value="@ColorOrDefault(CommonFill(selected), "#222222")"
+                       @onchange="e => SetFill(selected, (string?)e.Value)" />
+                <input type="text" value="@(CommonFill(selected) ?? "(mixed)")"
+                       @onchange="e => SetFill(selected, (string?)e.Value)" />
+            </div>
+            <div class="field">
+                <label>Stroke</label>
+                <input type="color" value="@ColorOrDefault(CommonStroke(selected), "#000000")"
+                       @onchange="e => SetStroke(selected, (string?)e.Value)" />
+                <input type="text" value="@(CommonStroke(selected) ?? "(mixed)")"
+                       @onchange="e => SetStroke(selected, (string?)e.Value)" />
+            </div>
+            <div class="field"><label>Stroke width</label>
+                <input type="number" step="0.5" min="0" placeholder="(mixed)"
+                       value="@(CommonStrokeWidth(selected) is double sw ? F(sw) : "")"
+                       @onchange="e => SetNumberAll(selected, e, (sh, v) => { sh.StrokeWidth = v; Store.CurrentStrokeWidth = v; })" /></div>
+            <div class="field"><label>Opacity %</label>
+                <input type="number" step="1" min="0" max="100" placeholder="(mixed)"
+                       value="@(CommonOpacity(selected) is double op ? Pct(op) : "")"
+                       @onchange="e => SetOpacityAllPct(selected, e)" /></div>
+            <div class="layer-actions" style="padding:0">
+                <button @onclick="Store.DeleteSelected" title="Delete all selected shapes (Del / Backspace)">Delete @selected.Count shapes (Del)</button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized() => Store.OnChange += OnChange;
+    private async void OnChange()
+    {
+        try { await InvokeAsync(StateHasChanged); }
+        catch (Exception ex) { CrashLog.Write("PropertyPanel.OnChange", ex); }
+    }
+    public void Dispose() => Store.OnChange -= OnChange;
+
+    private static string F(double v) =>
+        v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private void OnNumber(ChangeEventArgs e, Action<double> apply)
+    {
+        if (double.TryParse((string?)e.Value, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out var v))
+        {
+            apply(v);
+            Store.Notify();
+        }
+    }
+
+    private void SetNumberAll(List<Shape> shapes, ChangeEventArgs e, Action<Shape, double> apply)
+    {
+        if (!double.TryParse((string?)e.Value, System.Globalization.NumberStyles.Float,
+                             System.Globalization.CultureInfo.InvariantCulture, out var v)) return;
+        foreach (var s in shapes) apply(s, v);
+        Store.Notify();
+    }
+
+    // Opacity-specific percentage handler: UI uses 0-100, model uses 0-1.
+    private void SetOpacityAllPct(List<Shape> shapes, ChangeEventArgs e)
+    {
+        if (!double.TryParse((string?)e.Value, System.Globalization.NumberStyles.Float,
+                             System.Globalization.CultureInfo.InvariantCulture, out var pct)) return;
+        var normalized = Math.Clamp(pct / 100.0, 0, 1);
+        foreach (var s in shapes) s.Opacity = normalized;
+        Store.Notify();
+    }
+
+    private static string Pct(double v) =>
+        ((int)Math.Round(Math.Clamp(v, 0, 1) * 100))
+        .ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private void SetFill(List<Shape> shapes, string? value)
+    {
+        if (value is null) return;
+        foreach (var s in shapes) s.Fill = value;
+        Store.CurrentFill = value; // remember for next shape
+        Store.Notify();
+    }
+
+    private void SetStroke(List<Shape> shapes, string? value)
+    {
+        if (value is null) return;
+        foreach (var s in shapes) s.Stroke = value;
+        Store.CurrentStroke = value; // remember for next shape
+        Store.Notify();
+    }
+
+    // Returns the field's value if all shapes share it, or null if mixed.
+    private static string? CommonFill(List<Shape> shapes)
+        => shapes.Select(s => s.Fill).Distinct().Count() == 1 ? shapes[0].Fill : null;
+    private static string? CommonStroke(List<Shape> shapes)
+        => shapes.Select(s => s.Stroke).Distinct().Count() == 1 ? shapes[0].Stroke : null;
+    private static double? CommonStrokeWidth(List<Shape> shapes)
+        => shapes.Select(s => s.StrokeWidth).Distinct().Count() == 1 ? shapes[0].StrokeWidth : null;
+    private static double? CommonOpacity(List<Shape> shapes)
+        => shapes.Select(s => s.Opacity).Distinct().Count() == 1 ? shapes[0].Opacity : null;
+
+    private static string ColorOrDefault(string? value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return fallback;
+        if (value.StartsWith("#") && (value.Length == 4 || value.Length == 7)) return value;
+        return fallback;
+    }
+
+    private string CurrentLayerId(Shape s)
+    {
+        foreach (var l in Store.Scene.Layers.OfType<ShapeLayer>())
+            if (l.Shapes.Contains(s)) return l.Id.ToString();
+        return "";
+    }
+
+    private void MoveToLayer(Shape s, string? layerIdStr)
+    {
+        if (!int.TryParse(layerIdStr, out var lid)) return;
+        var target = Store.Scene.Layers.OfType<ShapeLayer>().FirstOrDefault(l => l.Id == lid);
+        if (target is null) return;
+        Store.MoveShapeToLayer(s, target);
+    }
+
+    private static bool CanConvert(Shape s) =>
+        s.Kind == ShapeKind.Line || s.Kind == ShapeKind.Rect || s.Kind == ShapeKind.Circle;
+
+    private void ConvertLineToPolyline(Shape s)
+    {
+        var p1 = (s.X, s.Y);
+        var p2 = (s.X + s.Width, s.Y + s.Height);
+        s.Kind = ShapeKind.Polyline;
+        s.Points.Clear();
+        s.Points.Add(p1);
+        s.Points.Add(p2);
+        s.X = s.Y = s.Width = s.Height = 0;
+        if (string.IsNullOrEmpty(s.Stroke)) s.Stroke = "#000000";
+        if (s.StrokeWidth <= 0) s.StrokeWidth = 2;
+        s.Fill = "none";
+        Store.Notify();
+    }
+
+    private void ConvertRectToPolygon(Shape s)
+    {
+        var corners = new[]
+        {
+            (s.X, s.Y),
+            (s.X + s.Width, s.Y),
+            (s.X + s.Width, s.Y + s.Height),
+            (s.X, s.Y + s.Height),
+        };
+        s.Kind = ShapeKind.Polygon;
+        s.Points.Clear();
+        s.Points.AddRange(corners);
+        s.X = s.Y = s.Width = s.Height = s.CornerRadius = 0;
+        Store.Notify();
+    }
+
+    private void ConvertCircleToPolygon(Shape s, int sides)
+    {
+        if (sides < 3) sides = 3;
+        var cx = s.X + s.Width / 2;
+        var cy = s.Y + s.Height / 2;
+        var rx = s.Width / 2;
+        var ry = s.Height / 2;
+        var pts = new List<(double, double)>(sides);
+        for (int i = 0; i < sides; i++)
+        {
+            var theta = -Math.PI / 2 + i * (2 * Math.PI / sides);
+            pts.Add((cx + rx * Math.Cos(theta), cy + ry * Math.Sin(theta)));
+        }
+        s.Kind = ShapeKind.Polygon;
+        s.Points.Clear();
+        s.Points.AddRange(pts);
+        s.X = s.Y = s.Width = s.Height = 0;
+        Store.Notify();
+    }
+}

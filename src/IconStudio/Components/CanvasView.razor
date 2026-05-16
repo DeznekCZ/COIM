@@ -1,0 +1,153 @@
+@inject SceneStore Store
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="canvas-wrap">
+    @* Initial buffer size is just a placeholder — iconStudio.attach()'s ResizeObserver
+       and fitCanvas() take over immediately and re-size both the canvas pixel
+       buffer and the wrap to fill the stage while preserving the scene aspect. *@
+    <canvas @ref="_canvas" width="64" height="64"></canvas>
+</div>
+
+@code {
+    [Parameter] public string ActiveTool { get; set; } = "rect";
+    [Parameter] public EventCallback<SelectArgs> OnSelectShape { get; set; }
+    [Parameter] public EventCallback<Pages.Editor.ShapeCommit> OnCommitShape { get; set; }
+    [Parameter] public EventCallback<PolygonUpdate> OnPolygonUpdated { get; set; }
+    [Parameter] public EventCallback<BoundsUpdate> OnBoundsUpdated { get; set; }
+    [Parameter] public EventCallback DeleteSelectedRequested { get; set; }
+    [Parameter] public EventCallback UndoRequested { get; set; }
+    [Parameter] public EventCallback RedoRequested { get; set; }
+    [Parameter] public EventCallback CopyRequested { get; set; }
+    [Parameter] public EventCallback PasteRequested { get; set; }
+    [Parameter] public EventCallback<ColorPick> ColorPicked { get; set; }
+    [Parameter] public EventCallback<MoveShapes> ShapesMoved { get; set; }
+
+    private ElementReference _canvas;
+    private DotNetObjectReference<CanvasView>? _ref;
+
+    protected override void OnInitialized()
+    {
+        _ref = DotNetObjectReference.Create(this);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("iconStudio.attach", _canvas, _ref, ActiveTool);
+            await PushStateAsync();
+        }
+    }
+
+    public async Task SetToolAsync(string tool)
+        => await JS.InvokeVoidAsync("iconStudio.setTool", tool);
+
+    public async Task PushStateAsync()
+    {
+        var snapshot = new
+        {
+            width = Store.Scene.Width,
+            height = Store.Scene.Height,
+            selectedShapeId = Store.SelectedShape?.Id ?? 0,
+            selectedShapeIds = Store.SelectedShapeIds.ToArray(),
+            layers = Store.Scene.Layers.Select<Layer, object>(l => l switch
+            {
+                ShapeLayer sl => new
+                {
+                    kind = "shape",
+                    id = sl.Id,
+                    visible = sl.Visible,
+                    opacity = sl.Opacity,
+                    shapes = sl.Shapes.Select(s => new
+                    {
+                        id = s.Id,
+                        kind = s.Kind.ToString().ToLowerInvariant(),
+                        x = s.X, y = s.Y,
+                        w = s.Width, h = s.Height,
+                        cornerRadius = s.CornerRadius,
+                        fill = s.Fill,
+                        stroke = s.Stroke,
+                        strokeWidth = s.StrokeWidth,
+                        opacity = s.Opacity,
+                        points = s.Points.SelectMany(p => new[] { p.X, p.Y }).ToArray(),
+                    }).ToArray(),
+                },
+                ReferenceImageLayer rl => new
+                {
+                    kind = "image",
+                    id = rl.Id,
+                    visible = rl.Visible,
+                    opacity = rl.Opacity,
+                    dataUrl = rl.DataUrl,
+                    x = rl.X, y = rl.Y,
+                    w = rl.Width, h = rl.Height,
+                },
+                _ => new { kind = "unknown" },
+            }).ToArray(),
+        };
+        await JS.InvokeVoidAsync("iconStudio.setState", snapshot);
+    }
+
+    [JSInvokable]
+    public Task OnSelect(int shapeId, bool addMode)
+        => OnSelectShape.InvokeAsync(new SelectArgs(shapeId, addMode));
+
+    [JSInvokable]
+    public Task OnCommit(JsCommit c)
+        => OnCommitShape.InvokeAsync(new Pages.Editor.ShapeCommit(
+            c.Tool, c.X, c.Y, c.EndX, c.EndY, c.Points ?? Array.Empty<double>()));
+
+    [JSInvokable]
+    public Task OnUpdatePolygon(int shapeId, double[] points)
+        => OnPolygonUpdated.InvokeAsync(new PolygonUpdate(shapeId, points));
+
+    [JSInvokable]
+    public Task OnUpdateBounds(int shapeId, double x, double y, double w, double h)
+        => OnBoundsUpdated.InvokeAsync(new BoundsUpdate(shapeId, x, y, w, h));
+
+    [JSInvokable]
+    public Task OnDeleteSelected() => DeleteSelectedRequested.InvokeAsync();
+
+    [JSInvokable]
+    public Task OnUndo() => UndoRequested.InvokeAsync();
+
+    [JSInvokable]
+    public Task OnRedo() => RedoRequested.InvokeAsync();
+
+    [JSInvokable]
+    public Task OnCopy() => CopyRequested.InvokeAsync();
+
+    [JSInvokable]
+    public Task OnPaste() => PasteRequested.InvokeAsync();
+
+    [JSInvokable]
+    public Task OnColorPicked(string hex, string target)
+        => ColorPicked.InvokeAsync(new ColorPick(hex, target));
+
+    [JSInvokable]
+    public Task OnMoveShapes(int[] shapeIds, double dx, double dy)
+        => ShapesMoved.InvokeAsync(new MoveShapes(shapeIds, dx, dy));
+
+    public sealed record SelectArgs(int ShapeId, bool AddMode);
+    public sealed record MoveShapes(int[] ShapeIds, double Dx, double Dy);
+    public sealed record ColorPick(string Hex, string Target);
+    public sealed record PolygonUpdate(int ShapeId, double[] Points);
+    public sealed record BoundsUpdate(int ShapeId, double X, double Y, double W, double H);
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("iconStudio.detach"); } catch { /* host may be gone */ }
+        _ref?.Dispose();
+    }
+
+    public sealed class JsCommit
+    {
+        public string Tool { get; set; } = "";
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double EndX { get; set; }
+        public double EndY { get; set; }
+        public double[]? Points { get; set; }
+    }
+}

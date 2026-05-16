@@ -189,6 +189,7 @@
   <ItemGroup>
     <Folder Include="Generated\" />
     <Folder Include="CustomAssets\" />
+    <Folder Include="Generated\CustomAssets_AirFiltering\" />
     <Folder Include="Generated\CustomAssets_IronPlateRecyclation\" />
     <Folder Include="Generated\CustomAssets_LiquifiedCoal\" />
     <Folder Include="Generated\CustomAssets_SteamHeating\" />

@@ -15,6 +15,10 @@ COMMANDS
                          mod DLL (with deploy + zip). The default action.
     new <modId>          Scaffold a new pack folder with manifest.json,
                          Definitions/example.py, and .gitignore.
+    svg2png <input>      Rasterize SVG icons to PNG. Input may be a single file
+                         or a directory (scanned recursively). Incremental.
+    png2svg <input>      Vectorize PNG icons to polygonal SVG (quantize +
+                         contour-trace). Reverse of svg2png; lossy.
 
 GLOBAL
     -h, --help           Show this help.
@@ -41,6 +45,10 @@ Run 'ModBuilder.exe <command> --help' for command-specific options.
                         return Commands.BuildCommand.Run(rest);
                     case "new":
                         return Commands.NewCommand.Run(rest);
+                    case "svg2png":
+                        return Commands.Svg2PngCommand.Run(rest);
+                    case "png2svg":
+                        return Commands.Png2SvgCommand.Run(rest);
                     default:
                         Console.Error.WriteLine($"[ModBuilder] Unknown command '{args[0]}'. Use --help.");
                         return 1;

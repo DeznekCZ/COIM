@@ -1,14 +1,19 @@
 from Mafi import Duration, Quantity
 from Mafi.Base import Assets, Ids
-from CustomAssets import add_loose_product_material, build_product_loose, build_recipe, Product
+from CustomAssets import add_loose_product_material, add_texture, build_product_loose, build_recipe, Product
 
 # Pile material for our new loose product. Only the albedo is overridden; normals and the
 # smooth/metal channel are inherited from the default reference material so the surface
 # still reads as rocky/granular like the vanilla pile.
 filter_media_mat = add_loose_product_material(
-    path   = "Assets/AirFiltering/FilterMediaIronLime_mat",
+    path   = "Assets/AirFiltering/AirFilterIL_mat",
     albedo = "Assets/Products/FilterMediaIronLime.png",
     tiling = 8
+)
+
+# Icon for the new product. Reuse the vanilla filter media icon since it's close enough.
+filter_media_icon = add_texture(
+    path="Assets/Products/FilterMediaIronLimeIcon.png"
 )
 
 # New loose product: iron-limestone filter media. Composition differs from vanilla
@@ -23,7 +28,7 @@ filter_media_iron_lime = build_product_loose(
     productId     = "Product_FilterMediaIronLime",
     name          = "Filter media (iron + limestone)",
     description   = "Filter media produced from iron ore and limestone. Cheaper alternative to vanilla filter media when iron ore is plentiful.",
-    icon          = Assets.Base.Products.Icons.FilterMedia_svg,
+    icon          = filter_media_icon,
     material      = filter_media_mat,
     particleColor = (170, 165, 155),
     isStorable    = True,
@@ -36,7 +41,7 @@ filter_media_iron_lime = build_product_loose(
 # Producer recipe: 3 iron ore + 1 limestone -> 4 iron-limestone filter media.
 # Lossless mixing in the Industrial Mixer; auto-available with the machine.
 build_recipe(
-    recipeId    = "CustomRecipe_FilterMediaIronLime_Mixing",
+    recipeId    = "CustomRecipe_AirFilterIL_Mixing",
     name        = "Filter media (iron + limestone) mixing",
     description = "Mix 1 iron ore + 3 limestone into 4 filter media. More efficient than vanilla filter media production when iron ore is plentiful.",
     machine     = Ids.Machines.IndustrialMixer,
@@ -53,7 +58,7 @@ build_recipe(
 # Producer recipe: 3 iron ore + 1 limestone -> 4 iron-limestone filter media.
 # Lossless mixing in the Industrial Mixer; auto-available with the machine.
 build_recipe(
-    recipeId    = "CustomRecipe_FilterMediaIronLime_Mixing_T2",
+    recipeId    = "CustomRecipe_AirFilterIL_Mixing_T2",
     name        = "Filter media (iron + limestone) mixing",
     description = "Mix 2 iron ore + 6 limestone into 4 filter media. More efficient than vanilla filter media production when iron ore is plentiful.",
     machine     = Ids.Machines.IndustrialMixerT2,
@@ -69,7 +74,7 @@ build_recipe(
 
 # Consumer recipe: add next recipe to air crubber research
 build_recipe(
-    recipeId    = "CustomRecipe_FilterMediaIronLime_Scubbing",
+    recipeId    = "CustomRecipe_AirFilterIL_Scubbing",
     name        = "Air scrubber filter media (iron + limestone) consumption",
     description = "Use 4 iron-limestone filter media to scrub air. More efficient than vanilla filter media consumption when iron ore is plentiful.",
     machine     = Ids.Machines.ExhaustScrubber,

@@ -90,15 +90,27 @@ namespace CustomAssets.Python {
 					break;
 
 				case PythonTokens.name:
-					// Assignment
+					// Statement starting with a name. Three mutually exclusive shapes:
+					//   1) plain assignment   "x = expr"
+					//   2) augmented assign   "x += expr" / -= *= /= <<= >>=
+					//   3) evaluate-only      "foo()", "x.bar"
 					Revert(token);
 					IExpression leftExpression = ParseExpression();
-					while (IsNext(PythonTokens.set, out Token _)) {
+					if (IsNext(PythonTokens.set, out Token _)) {
 						tree.Add(ParseAssignment(leftExpression));
-						break;
+					} else if (IsNextOf(new PythonTokens[] {
+								PythonTokens.setadd,
+								PythonTokens.setsub,
+								PythonTokens.setmul,
+								PythonTokens.setdiv,
+								PythonTokens.setshiftl,
+								PythonTokens.setshiftr
+							}, out Token augOp, defaultIgnore)) {
+						tree.Add(ParseAugmentedAssignment(leftExpression, augOp));
+					} else {
+						tree.Add(new EvaluateStatement(leftExpression));
 					}
 					IsNext(PythonTokens.newline, out Token _);
-					tree.Add(new EvaluateStatement(leftExpression));
 					break;
 
 				case PythonTokens.newline:
@@ -131,6 +143,39 @@ namespace CustomAssets.Python {
 
 		private AssignmentStatement ParseAssignment(IExpression qualifiedName) {
 			return new AssignmentStatement(qualifiedName, ParseExpression());
+		}
+
+		// Augmented assignment: rewrites "target op= value" as "target = target op value".
+		// Python semantics technically dispatch to __i<op>__ for in-place mutation when
+		// available, but this dialect has no such hook — the rewrite is equivalent for
+		// immutable scalars (int / float / Fix32 / bool), which is the only thing the
+		// runtime supports for these operators anyway.
+		private AssignmentStatement ParseAugmentedAssignment(IExpression target, Token op) {
+			IExpression rhs = ParseExpression();
+			IExpression combined;
+			switch (op.type) {
+			case PythonTokens.setadd:
+				combined = new AddExpression(target, rhs);
+				break;
+			case PythonTokens.setsub:
+				combined = new SubExpression(target, rhs);
+				break;
+			case PythonTokens.setmul:
+				combined = new MulExpression(target, rhs);
+				break;
+			case PythonTokens.setdiv:
+				combined = new DivExpression(target, rhs);
+				break;
+			case PythonTokens.setshiftl:
+				combined = new ShiftLeftExpression(target, rhs);
+				break;
+			case PythonTokens.setshiftr:
+				combined = new ShiftRightExpression(target, rhs);
+				break;
+			default:
+				throw new PythonParseException(op, $"unrecognized augmented assignment operator");
+			}
+			return new AssignmentStatement(target, combined);
 		}
 
 		private IExpression ParseExpression(params PythonTokens[] ignore) {
@@ -190,22 +235,22 @@ namespace CustomAssets.Python {
 				} else {
 					switch (operat.type) {
 					case PythonTokens.eq:
-						bitvise = new EqualExpression(bitvise, bitvisexor());
+						bitvise = new EqualExpression(bitvise, bitviseor());
 						break;
 					case PythonTokens.neq:
-						bitvise = new NotExpression(new EqualExpression(bitvise, bitvisexor()));
+						bitvise = new NotExpression(new EqualExpression(bitvise, bitviseor()));
 						break;
 					case PythonTokens.lre:
-						bitvise = new LowerEqualExpression(bitvise, bitvisexor());
+						bitvise = new LowerEqualExpression(bitvise, bitviseor());
 						break;
 					case PythonTokens.gre:
-						bitvise = new GreaterEqualExpression(bitvise, bitvisexor());
+						bitvise = new GreaterEqualExpression(bitvise, bitviseor());
 						break;
 					case PythonTokens.lr:
-						bitvise = new LowerExpression(bitvise, bitvisexor());
+						bitvise = new LowerExpression(bitvise, bitviseor());
 						break;
 					case PythonTokens.gr:
-						bitvise = new GreaterExpression(bitvise, bitvisexor());
+						bitvise = new GreaterExpression(bitvise, bitviseor());
 						break;
 					default:
 						break;
@@ -229,7 +274,7 @@ namespace CustomAssets.Python {
 				bitvisexor(ignore ?? defaultIgnore)
 			};
 			while (IsNext(PythonTokens.bitor, out Token _, defaultIgnore)) {
-				ors.Add(bitviseor());
+				ors.Add(bitvisexor());
 			}
 			if (ors.Count == 1) {
 				return ors[0];
@@ -273,7 +318,7 @@ namespace CustomAssets.Python {
 
 			IExpression f = shifts.Last();
 			for (int i = shifts.Count - 2; i >= 0; i--) {
-				f = new BitXorExpression(shifts[i], f);
+				f = new BitAndExpression(shifts[i], f);
 			}
 			return f;
 		}
@@ -320,7 +365,7 @@ namespace CustomAssets.Python {
 				if (shiftDrirection == PythonTokens.plus) {
 					f = new AddExpression(sums[i].Item2, f);
 				} else {
-					f = new ModExpression(sums[i].Item2, f);
+					f = new SubExpression(sums[i].Item2, f);
 				}
 			}
 			return f;
@@ -363,7 +408,7 @@ namespace CustomAssets.Python {
 						PythonTokens.minus,
 						PythonTokens.invert
 					}, out Token token, ignore ?? defaultIgnore)) {
-				operators.Push(PythonTokens.plus);
+				operators.Push(token.type);
 			}
 			IExpression expression = power(operators.Count == 0 ? ignore ?? defaultIgnore : defaultIgnore);
 			while (operators.Count > 0) {

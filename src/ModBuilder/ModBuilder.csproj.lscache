@@ -1,0 +1,103 @@
+version=1
+
+# This file caches language service data to improve the performance of C# Dev Kit.
+# It is not intended for manual editing. It can safely be deleted and will be
+# regenerated automatically. For more information, see https://aka.ms/lscache
+#
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
+
+[project]
+language=C#
+primary
+lastDtbSucceeded
+
+[properties]
+AssemblyName=ModBuilder
+CommandLineArgsForDesignTimeEvaluation=-langversion:latest -define:DEBUG
+CompilerGeneratedFilesOutputPath=
+MaxSupportedLangVersion=7.3
+ProjectAssetsFile=<PATH>obj/project.assets.json
+RootNamespace=CustomAssets.ModBuilder
+RunAnalyzers=
+RunAnalyzersDuringLiveAnalysis=
+SolutionPath=*Undefined*
+TargetFrameworkIdentifier=.NETFramework
+TargetPath=<PATH>bin/Debug/ModBuilder.exe
+TargetRefPath=
+TemporaryDependencyNodeTargetIdentifier=net48
+
+[commandLineArguments]
+/noconfig
+/unsafe-
+/checked-
+/nowarn:1701,1702,1701,1702
+/fullpaths
+/nostdlib+
+/platform:AnyCPU
+/errorreport:prompt
+/warn:9999
+/define:DEBUG;DEBUG;NETFRAMEWORK;NET48;NET20_OR_GREATER;NET30_OR_GREATER;NET35_OR_GREATER;NET40_OR_GREATER;NET45_OR_GREATER;NET451_OR_GREATER;NET452_OR_GREATER;NET46_OR_GREATER;NET461_OR_GREATER;NET462_OR_GREATER;NET47_OR_GREATER;NET471_OR_GREATER;NET472_OR_GREATER;NET48_OR_GREATER
+/highentropyva+
+/debug+
+/debug:portable
+/filealign:512
+/optimize-
+/out:obj\Debug\ModBuilder.exe
+/subsystemversion:6.00
+/target:exe
+/warnaserror-
+/utf8output
+/deterministic+
+/langversion:latest
+/warnaserror+:NU1605
+
+[sourceFiles]
+Commands/
+ BuildCommand.cs
+ NewCommand.cs
+ Png2SvgCommand.cs
+ Svg2PngCommand.cs
+Manifest.cs
+obj/Debug/
+ .NETFramework,Version=v4.8.AssemblyAttributes.cs
+ ModBuilder.AssemblyInfo.cs
+PackBuilder.cs
+PackMode.cs
+Program.cs
+Svg/
+ PngToSvgTracer.cs
+ SvgColor.cs
+ SvgPath.cs
+ SvgRenderer.cs
+ SvgTransform.cs
+TemplateLoader.cs
+
+[metadataReferences]
+<NETFXREF>/v4.8/
+ mscorlib.dll
+ System.Core.dll
+ System.Data.dll
+ System.dll
+ System.Drawing.dll
+ System.IO.Compression.FileSystem.dll
+ System.Numerics.dll
+ System.Runtime.Serialization.dll
+ System.Xml.dll
+ System.Xml.Linq.dll
+<NUGET>/
+ microsoft.bcl.asyncinterfaces/8.0.0/lib/net462/Microsoft.Bcl.AsyncInterfaces.dll
+ system.buffers/4.5.1/ref/net45/System.Buffers.dll
+ system.memory/4.5.5/lib/net461/System.Memory.dll
+ system.numerics.vectors/4.5.0/ref/net46/System.Numerics.Vectors.dll
+ system.runtime.compilerservices.unsafe/6.0.0/lib/net461/System.Runtime.CompilerServices.Unsafe.dll
+ system.text.encodings.web/8.0.0/lib/net462/System.Text.Encodings.Web.dll
+ system.text.json/8.0.5/lib/net462/System.Text.Json.dll
+ system.threading.tasks.extensions/4.5.4/lib/net461/System.Threading.Tasks.Extensions.dll
+ system.valuetuple/4.5.0/ref/net47/System.ValueTuple.dll
+
+[analyzerReferences]
+<NUGET>/system.text.json/8.0.5/analyzers/dotnet/roslyn4.4/cs/System.Text.Json.SourceGeneration.dll
+
+[analyzerConfigFiles]
+obj/Debug/ModBuilder.GeneratedMSBuildEditorConfig.editorconfig

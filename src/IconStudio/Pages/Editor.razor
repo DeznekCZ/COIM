@@ -1,0 +1,581 @@
+@inject SceneStore Store
+@inject SvgExporter Exporter
+@inject PngImportService PngImport
+@inject ProjectSerializer Projects
+@inject SvgImporter SvgImport
+@inject FileDialogService Dialogs
+@inject UndoService Undo
+@inject IJSRuntime JS
+@implements IDisposable
+@implements IAsyncDisposable
+
+<div class="editor">
+    <div class="editor-toolbar">
+        <button class="tb-icon" @onclick="OpenProject" title="Open project (.iconstudio.xml)">📂</button>
+        <button class="tb-icon" @onclick="SaveProject" title="Save project (.iconstudio.xml)">💾</button>
+        <button class="tb-icon" @onclick="OpenSvg" title="Import SVG">⤓</button>
+        <button class="tb-icon" @onclick="ToggleExport" title="Export SVG / PNG…">⤒</button>
+        <span class="sep">│</span>
+        <button class="tb-icon" @onclick="DoUndo" disabled="@(!Undo.CanUndo)" title="Undo (Ctrl+Z)">↶</button>
+        <button class="tb-icon" @onclick="DoRedo" disabled="@(!Undo.CanRedo)" title="Redo (Ctrl+Y)">↷</button>
+        <span class="sep">│</span>
+        <span class="muted compact" title="Aspect ratio of the editing canvas. Export dialog picks pixel size.">Ratio</span>
+        <input class="tb-num" type="number" min="1" max="4096" step="1" @bind="Store.Scene.Width" @bind:event="oninput" title="Width units" />
+        <span class="muted compact">:</span>
+        <input class="tb-num" type="number" min="1" max="4096" step="1" @bind="Store.Scene.Height" @bind:event="oninput" title="Height units" />
+        <button class="tb-icon" @onclick="ResizeAndPush" title="Apply ratio">✓</button>
+        <span class="sep">│</span>
+        <div class="tb-menu">
+            <button class="tb-icon" @onclick="ToggleImageMenu" title="Reference image / trace…">🖼 ▾</button>
+            @if (_showImageMenu)
+            {
+                <div class="tb-menu-popup">
+                    <button @onclick="async () => { _showImageMenu = false; await ImportPngAsReference(); }">Add PNG reference layer…</button>
+                    <button @onclick="async () => { _showImageMenu = false; await ImportPngAsTrace(); }">Trace PNG → shapes…</button>
+                </div>
+            }
+        </div>
+        <span class="sep" style="flex:1"></span>
+        <div class="brush-widget" title="Brush — colors used by new shapes. Eyedropper picks into fill; hold Shift to pick into stroke.">
+            <label class="brush-slot fill" title="Fill: @Store.CurrentFill">
+                <span class="brush-letter">F</span>
+                <input type="color" value="@HexOf(Store.CurrentFill)"
+                       @onchange="e => SetBrushFill(e)" />
+            </label>
+            <button class="brush-flip" @onclick="FlipBrush" title="Swap fill ↔ stroke">⇄</button>
+            <label class="brush-slot stroke" title="Stroke: @Store.CurrentStroke (@Store.CurrentStrokeWidth px)">
+                <span class="brush-letter">S</span>
+                <input type="color" value="@HexOf(Store.CurrentStroke)"
+                       @onchange="e => SetBrushStroke(e)" />
+            </label>
+        </div>
+        @if (!string.IsNullOrEmpty(_status))
+        {
+            <span class="status" title="@_status">@_status</span>
+        }
+        <span class="muted compact">@_activeTool</span>
+    </div>
+
+    <ToolPalette ActiveTool="_activeTool" ToolChanged="SetTool" />
+
+    <div class="canvas-stage" @ref="_stageRef">
+        <CanvasView @ref="_canvasView"
+                    ActiveTool="_activeTool"
+                    OnSelectShape="OnSelectFromCanvas"
+                    OnCommitShape="OnCommitFromCanvas"
+                    OnPolygonUpdated="OnPolygonUpdatedFromCanvas"
+                    OnBoundsUpdated="OnBoundsUpdatedFromCanvas"
+                    DeleteSelectedRequested="OnDeleteSelectedFromCanvas"
+                    UndoRequested="DoUndo"
+                    RedoRequested="DoRedo"
+                    CopyRequested="DoCopy"
+                    PasteRequested="DoPaste"
+                    ColorPicked="OnColorPickedFromCanvas"
+                    ShapesMoved="OnShapesMovedFromCanvas" />
+    </div>
+
+    <aside class="side-panel">
+        <div class="tab-bar">
+            <button class="tab @(_sideTab == "layers" ? "active" : "")"
+                    @onclick="@(() => _sideTab = "layers")">Layers &amp; Properties</button>
+            <button class="tab @(_sideTab == "history" ? "active" : "")"
+                    @onclick="@(() => _sideTab = "history")">
+                History
+                @if (Undo.UndoEntries.Count + Undo.RedoEntries.Count > 0)
+                {
+                    <span class="tab-badge">@(Undo.UndoEntries.Count + Undo.RedoEntries.Count)</span>
+                }
+            </button>
+        </div>
+        <div class="tab-content">
+            @if (_sideTab == "layers")
+            {
+                <LayerPanel />
+                <PropertyPanel />
+            }
+            else
+            {
+                <HistoryPanel />
+            }
+        </div>
+    </aside>
+</div>
+
+@if (_showExport)
+{
+    <ExportDialog OnClose="() => _showExport = false" />
+}
+
+@code {
+    private string _activeTool = "rect";
+    private CanvasView? _canvasView;
+    private ElementReference _stageRef;
+    private bool _showExport;
+    private bool _showImageMenu;
+    private void ToggleImageMenu() => _showImageMenu = !_showImageMenu;
+
+    // Active side-panel tab. Layers + Properties together, then History on its own
+    // since it has its own scroll behavior and benefits from full height.
+    private string _sideTab = "layers";
+
+    // Brush widget — color inputs only accept #rrggbb. Sanitize and provide
+    // a sensible fallback so the inputs still display something.
+    private static string HexOf(string? v)
+    {
+        if (string.IsNullOrEmpty(v) || v == "none") return "#000000";
+        if (v.StartsWith("#") && (v.Length == 4 || v.Length == 7)) return v;
+        return "#000000";
+    }
+
+    private void SetBrushFill(ChangeEventArgs e)
+    {
+        Store.CurrentFill = e.Value?.ToString() ?? Store.CurrentFill;
+        Store.Notify(); // also refreshes the canvas + propagates to property panel
+    }
+
+    private void SetBrushStroke(ChangeEventArgs e)
+    {
+        Store.CurrentStroke = e.Value?.ToString() ?? Store.CurrentStroke;
+        Store.Notify();
+    }
+
+    private void FlipBrush()
+    {
+        (Store.CurrentFill, Store.CurrentStroke) = (Store.CurrentStroke, Store.CurrentFill);
+        Store.Notify();
+    }
+    // Remembered between Save passes so the picker can suggest the same filename.
+    private string? _projectPath;
+    // Last-action status text shown in the toolbar so the user gets immediate
+    // visual feedback for save / open / import operations.
+    private string? _status;
+
+    protected override void OnInitialized()
+    {
+        Store.OnChange += OnSceneChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await TryRecoverAutoSaveAsync();
+    }
+
+    // On startup, if an autosave file exists from a previous session, offer to
+    // load it. Declining preserves the autosave file so the user has another
+    // chance later (in case they hit "No" by accident).
+    private async Task TryRecoverAutoSaveAsync()
+    {
+        try
+        {
+            var ts = AutoSaveService.GetAutosaveTimestamp();
+            if (ts is null) return;
+
+            var msg = $"An autosave from {ts:yyyy-MM-dd HH:mm:ss} was found.\n\n" +
+                      $"Path: {AutoSaveService.AutoSavePath}\n\n" +
+                      "Reload it now? (Press OK to recover, Cancel to start fresh — the autosave file is NOT deleted either way.)";
+            // Photino's ShowMessage is a single-button "OK" dialog. We don't yet
+            // have a yes/no native primitive, so the user confirms via JS confirm().
+            var ok = await JS.InvokeAsync<bool>("confirm", msg);
+            if (!ok) return;
+
+            var xml = await File.ReadAllTextAsync(AutoSaveService.AutoSavePath);
+            var scene = Projects.Load(xml);
+            Store.LoadScene(scene);
+            CrashLog.Write("Autosave recovered", $"from {AutoSaveService.AutoSavePath}");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("TryRecoverAutoSave", ex);
+        }
+    }
+
+    private async void OnSceneChanged()
+    {
+        // async void — exceptions here propagate to AppDomain.UnhandledException.
+        // Guard so a transient JS-interop failure (e.g. WebView disposed mid-update)
+        // doesn't kill the whole app.
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+            if (_canvasView != null) await _canvasView.PushStateAsync();
+        }
+        catch (Exception ex)
+        {
+            Services.CrashLog.Write("Editor.OnSceneChanged", ex);
+        }
+    }
+
+    private async Task SetTool(string tool)
+    {
+        _activeTool = tool;
+        if (_canvasView != null) await _canvasView.SetToolAsync(tool);
+    }
+
+    private void ResizeAndPush()
+    {
+        if (Store.Scene.Width < 8) Store.Scene.Width = 8;
+        if (Store.Scene.Height < 8) Store.Scene.Height = 8;
+        Store.Notify();
+    }
+
+    private void OnSelectFromCanvas(CanvasView.SelectArgs args)
+    {
+        if (args.ShapeId == 0)
+        {
+            Store.SelectMulti(null, args.AddMode);
+            return;
+        }
+        var shape = Store.Scene.Layers.OfType<ShapeLayer>()
+            .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == args.ShapeId);
+        Store.SelectMulti(shape, args.AddMode);
+    }
+
+    private async Task OnCommitFromCanvas(ShapeCommit commit)
+    {
+        // Inherit the editor's "brush" — last fill / stroke / stroke-width the
+        // user touched. Line / Polyline force fill=none and need a stroke, so
+        // they fall back to sane defaults if the brush has none.
+        var fill = Store.CurrentFill;
+        var stroke = Store.CurrentStroke;
+        var strokeW = Store.CurrentStrokeWidth;
+        var strokedDefault = string.IsNullOrEmpty(stroke) || stroke == "none" ? "#000000" : stroke;
+        var strokedWidthDefault = strokeW > 0 ? strokeW : 2;
+
+        Shape s = commit.Tool switch
+        {
+            "rect" => new Shape
+            {
+                Kind = ShapeKind.Rect,
+                X = Math.Min(commit.X, commit.EndX),
+                Y = Math.Min(commit.Y, commit.EndY),
+                Width = Math.Abs(commit.EndX - commit.X),
+                Height = Math.Abs(commit.EndY - commit.Y),
+                Fill = fill, Stroke = stroke, StrokeWidth = strokeW,
+            },
+            "circle" => new Shape
+            {
+                Kind = ShapeKind.Circle,
+                X = Math.Min(commit.X, commit.EndX),
+                Y = Math.Min(commit.Y, commit.EndY),
+                Width = Math.Abs(commit.EndX - commit.X),
+                Height = Math.Abs(commit.EndY - commit.Y),
+                Fill = fill, Stroke = stroke, StrokeWidth = strokeW,
+            },
+            "line" => new Shape
+            {
+                Kind = ShapeKind.Line,
+                X = commit.X, Y = commit.Y,
+                Width = commit.EndX - commit.X,
+                Height = commit.EndY - commit.Y,
+                Fill = "none",
+                Stroke = strokedDefault,
+                StrokeWidth = strokedWidthDefault,
+            },
+            "polygon" => BuildPolygonShape(commit.Points, fill, stroke, strokeW),
+            "polyline" => BuildPolylineShape(commit.Points, strokedDefault, strokedWidthDefault),
+            _ => null!,
+        };
+        if (s is null) return;
+        if (s.Kind == ShapeKind.Polygon)
+        {
+            if (s.Points.Count < 3) return;
+        }
+        else if (s.Kind == ShapeKind.Polyline)
+        {
+            if (s.Points.Count < 2) return;
+        }
+        else if (s.Kind != ShapeKind.Line)
+        {
+            if (Math.Abs(s.Width) < 0.5 || Math.Abs(s.Height) < 0.5) return;
+        }
+        Store.AddShape(s);
+
+        // After placing a shape, revert to the Select tool so the user can adjust
+        // it immediately without having to switch manually.
+        _activeTool = "select";
+        if (_canvasView != null) await _canvasView.SetToolAsync("select");
+    }
+
+    private void OnPolygonUpdatedFromCanvas(CanvasView.PolygonUpdate u)
+    {
+        var shape = Store.Scene.Layers.OfType<ShapeLayer>()
+            .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == u.ShapeId);
+        if (shape is null) return;
+        if (shape.Kind != ShapeKind.Polygon && shape.Kind != ShapeKind.Polyline) return;
+        // Polygons need a triangle (3 vertices = 6 doubles); polylines just a segment (2 vertices = 4 doubles).
+        var minDoubles = shape.Kind == ShapeKind.Polygon ? 6 : 4;
+        if (u.Points.Length < minDoubles) return;
+        shape.Points.Clear();
+        for (int i = 0; i + 1 < u.Points.Length; i += 2)
+            shape.Points.Add((u.Points[i], u.Points[i + 1]));
+        Store.Notify();
+    }
+
+    private void OnDeleteSelectedFromCanvas() => Store.DeleteSelected();
+
+    private void DoUndo()
+    {
+        Undo.Undo();
+        _status = Undo.CanUndo ? "Undone" : "Nothing more to undo";
+    }
+    private void DoRedo()
+    {
+        Undo.Redo();
+        _status = Undo.CanRedo ? "Redone" : "Nothing more to redo";
+    }
+    private void DoCopy()
+    {
+        Store.CopySelected();
+        var n = Store.GetSelectedShapes().Count();
+        _status = n > 0 ? $"Copied {n} shape{(n == 1 ? "" : "s")}" : "Nothing to copy";
+    }
+    private void DoPaste()
+    {
+        if (!Store.HasClipboard) { _status = "Clipboard empty"; return; }
+        Store.Paste();
+        _status = "Pasted";
+    }
+
+    private void OnShapesMovedFromCanvas(CanvasView.MoveShapes m)
+    {
+        if (m.Dx == 0 && m.Dy == 0) return;
+        var ids = new HashSet<int>(m.ShapeIds);
+        var allShapes = Store.Scene.Layers.OfType<ShapeLayer>()
+            .SelectMany(l => l.Shapes).Where(s => ids.Contains(s.Id));
+        foreach (var s in allShapes)
+        {
+            if (s.Kind == ShapeKind.Polygon || s.Kind == ShapeKind.Polyline)
+            {
+                for (int i = 0; i < s.Points.Count; i++)
+                    s.Points[i] = (s.Points[i].X + m.Dx, s.Points[i].Y + m.Dy);
+            }
+            else
+            {
+                s.X += m.Dx;
+                s.Y += m.Dy;
+            }
+        }
+        Store.Notify();
+    }
+
+    private async Task OnColorPickedFromCanvas(CanvasView.ColorPick pick)
+    {
+        // Always update the brush so the next new shape inherits the picked color
+        // — even if no shape was selected to apply it to right now.
+        var isStroke = pick.Target == "stroke";
+        if (isStroke) Store.CurrentStroke = pick.Hex;
+        else          Store.CurrentFill   = pick.Hex;
+
+        var n = 0;
+        foreach (var s in Store.GetSelectedShapes())
+        {
+            if (isStroke) s.Stroke = pick.Hex; else s.Fill = pick.Hex;
+            n++;
+        }
+        if (n > 0) Store.Notify();
+        else StateHasChanged();
+        var what = isStroke ? "stroke" : "fill";
+        _status = n > 0
+            ? $"{what} set to {pick.Hex} on {n} shape{(n == 1 ? "" : "s")}"
+            : $"Brush {what} set to {pick.Hex}";
+        _activeTool = "select";
+        if (_canvasView != null) await _canvasView.SetToolAsync("select");
+    }
+
+    private void OnBoundsUpdatedFromCanvas(CanvasView.BoundsUpdate u)
+    {
+        var shape = Store.Scene.Layers.OfType<ShapeLayer>()
+            .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == u.ShapeId);
+        if (shape is null || shape.Kind == ShapeKind.Polygon) return;
+        shape.X = u.X;
+        shape.Y = u.Y;
+        shape.Width = u.W;
+        shape.Height = u.H;
+        Store.Notify();
+    }
+
+    private static Shape BuildPolygonShape(double[] pts, string fill, string stroke, double strokeW)
+    {
+        var shape = new Shape { Kind = ShapeKind.Polygon, Fill = fill, Stroke = stroke, StrokeWidth = strokeW };
+        for (int i = 0; i + 1 < pts.Length; i += 2)
+            shape.Points.Add((pts[i], pts[i + 1]));
+        return shape;
+    }
+
+    private static Shape BuildPolylineShape(double[] pts, string stroke, double strokeW)
+    {
+        // Polyline is open — stroke-only by definition.
+        var shape = new Shape { Kind = ShapeKind.Polyline, Fill = "none", Stroke = stroke, StrokeWidth = strokeW };
+        for (int i = 0; i + 1 < pts.Length; i += 2)
+            shape.Points.Add((pts[i], pts[i + 1]));
+        return shape;
+    }
+
+    // ── File I/O via the in-WebView File System Access API ─────────────
+    //
+    // Photino's native dialogs proved unreliable in this WebView2 context (silent
+    // failures + dialog never returning), so all open / save flows now go through
+    // JS: window.showOpenFilePicker / showSaveFilePicker. These produce a real
+    // native Windows dialog when the API is available, and fall back to
+    // <input type=file> / <a download> when it isn't. Either path completes —
+    // unlike the Photino host-bridge calls.
+
+    private async Task<(string Name, byte[] Bytes)?> PickFileAsync(string desc, string ext)
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<System.Text.Json.JsonElement?>(
+                "iconStudio.openFilePicker", desc, ext);
+            if (result is null || result.Value.ValueKind == System.Text.Json.JsonValueKind.Null)
+                return null;
+            var name = result.Value.GetProperty("name").GetString() ?? "file";
+            var b64 = result.Value.GetProperty("base64").GetString() ?? "";
+            return (name, Convert.FromBase64String(b64));
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("PickFileAsync", ex);
+            return null;
+        }
+    }
+
+    private async Task<string?> SaveBytesAsync(string suggestedName, string desc, string ext, byte[] bytes)
+    {
+        try
+        {
+            var b64 = Convert.ToBase64String(bytes);
+            return await JS.InvokeAsync<string?>("iconStudio.saveFilePicker",
+                suggestedName, desc, ext, b64);
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("SaveBytesAsync", ex);
+            return null;
+        }
+    }
+
+    private async Task ImportPngAsReference()
+    {
+        var picked = await PickFileAsync("PNG image", "png");
+        if (picked is null) return;
+        try
+        {
+            PngImport.AddReferenceLayer(Store.Scene, picked.Value.Bytes);
+            Store.Notify();
+            _status = $"Imported {picked.Value.Name}";
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("ImportPngAsReference", ex);
+            _status = "PNG import failed: " + ex.Message;
+        }
+    }
+
+    private async Task ImportPngAsTrace()
+    {
+        var picked = await PickFileAsync("PNG image", "png");
+        if (picked is null) return;
+        try
+        {
+            PngImport.TraceToShapes(Store.Scene, picked.Value.Bytes);
+            Store.Notify();
+            _status = $"Traced {picked.Value.Name}";
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("ImportPngAsTrace", ex);
+            _status = "Trace failed: " + ex.Message;
+        }
+    }
+
+    private async Task OpenProject()
+    {
+        var picked = await PickFileAsync("IconStudio project", "xml");
+        if (picked is null) return;
+        try
+        {
+            var xml = System.Text.Encoding.UTF8.GetString(picked.Value.Bytes);
+            var scene = Projects.Load(xml);
+            Store.LoadScene(scene);
+            _projectPath = picked.Value.Name;
+            _status = $"Opened {picked.Value.Name}";
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("OpenProject", ex);
+            _status = "Open failed: " + ex.Message;
+        }
+    }
+
+    private async Task SaveProject()
+    {
+        CrashLog.Write("SaveProject", "begin");
+        string xml;
+        try { xml = Projects.Save(Store.Scene); }
+        catch (Exception ex)
+        {
+            CrashLog.Write("SaveProject.Serialize", ex);
+            _status = "Serialize failed: " + ex.Message;
+            return;
+        }
+
+        var suggested = _projectPath ?? "icon.iconstudio.xml";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(xml);
+        var result = await SaveBytesAsync(suggested, "IconStudio project", "xml", bytes);
+        CrashLog.Write("SaveProject.Result", result ?? "<null/cancel>");
+
+        if (result is null)
+        {
+            // Picker was cancelled — write to a timestamped emergency file just in
+            // case the user *meant* to save but ended up cancelling.
+            try
+            {
+                var emergency = Path.Combine(Path.GetTempPath(),
+                    $"IconStudio-recovery-{DateTime.Now:yyyyMMdd-HHmmss}.xml");
+                File.WriteAllText(emergency, xml);
+                _status = "Save cancelled — recovery copy at " + emergency;
+            }
+            catch { _status = "Save cancelled"; }
+            return;
+        }
+
+        _projectPath = result;
+        AutoSaveService.Clear();
+        _status = $"Saved: {result}";
+    }
+
+    private async Task OpenSvg()
+    {
+        var picked = await PickFileAsync("SVG file", "svg");
+        if (picked is null) return;
+        try
+        {
+            var text = System.Text.Encoding.UTF8.GetString(picked.Value.Bytes);
+            var importResult = SvgImport.Import(text);
+            Store.LoadScene(importResult.Scene);
+            _projectPath = null;
+            _status = $"Imported {picked.Value.Name}" +
+                (importResult.SkippedItems.Count > 0
+                    ? $" ({importResult.SkippedItems.Count} items skipped)"
+                    : "");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("OpenSvg", ex);
+            _status = "SVG import failed: " + ex.Message;
+        }
+    }
+
+    private void ToggleExport() => _showExport = !_showExport;
+
+    public void Dispose() => Store.OnChange -= OnSceneChanged;
+
+    public async ValueTask DisposeAsync()
+    {
+        Store.OnChange -= OnSceneChanged;
+        await ValueTask.CompletedTask;
+    }
+
+    public sealed record ShapeCommit(string Tool, double X, double Y, double EndX, double EndY, double[] Points);
+}

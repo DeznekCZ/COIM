@@ -1,0 +1,52 @@
+@inject UndoService Undo
+@implements IDisposable
+
+<div class="side-panel-section">
+    <h3>History</h3>
+    <div class="history-body">
+        <ul class="history-list">
+            @* Past actions — top of undo stack is the most recent, displayed at the
+               top of the list. Each click undoes (n) steps. *@
+            @foreach (var item in Undo.UndoEntries.Select((e, i) => new { Entry = e, N = i + 1 }))
+            {
+                <li class="history-item past" @onclick="() => Undo.Jump(item.N)"
+                    title="Undo @item.N step(s) — Ctrl+Z">
+                    <span class="hi-step">↶</span>
+                    <span class="hi-desc">@item.Entry.Description</span>
+                    <span class="hi-time">@item.Entry.At.ToString("HH:mm:ss")</span>
+                </li>
+            }
+            <li class="history-item current" title="Current state">
+                <span class="hi-step">●</span>
+                <span class="hi-desc"><b>Current</b></span>
+                <span class="hi-time">@(Undo.UndoEntries.Count) edit(s)</span>
+            </li>
+            @* Future actions — top of redo stack is the next redo. Stays in the
+               list until a new edit replaces it, so you can keep flipping between
+               Ctrl+Z and Ctrl+Y. *@
+            @foreach (var item in Undo.RedoEntries.Select((e, i) => new { Entry = e, N = i + 1 }))
+            {
+                <li class="history-item future" @onclick="() => Undo.Jump(-item.N)"
+                    title="Redo @item.N step(s) — Ctrl+Y">
+                    <span class="hi-step">↷</span>
+                    <span class="hi-desc">@item.Entry.Description</span>
+                    <span class="hi-time">@item.Entry.At.ToString("HH:mm:ss")</span>
+                </li>
+            }
+            @if (Undo.UndoEntries.Count == 0 && Undo.RedoEntries.Count == 0)
+            {
+                <li class="history-item empty muted">(no history yet)</li>
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized() => Undo.OnChange += OnUndoChange;
+    private async void OnUndoChange()
+    {
+        try { await InvokeAsync(StateHasChanged); }
+        catch (Exception ex) { CrashLog.Write("HistoryPanel.OnChange", ex); }
+    }
+    public void Dispose() => Undo.OnChange -= OnUndoChange;
+}

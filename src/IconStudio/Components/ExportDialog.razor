@@ -1,0 +1,172 @@
+@inject SceneStore Store
+@inject SvgExporter Exporter
+@inject PngPreviewService Preview
+@inject IJSRuntime JS
+
+<div class="modal-backdrop" @onclick="() => OnClose.InvokeAsync()">
+    <div class="modal" @onclick:stopPropagation="true">
+        <div class="modal-head">
+            <h2>Export icon</h2>
+            <button @onclick="() => OnClose.InvokeAsync()">×</button>
+        </div>
+        <div class="modal-body">
+            <div>
+                <div class="field">
+                    <label>Format</label>
+                    <select @bind="_format">
+                        <option value="svg">SVG (vector)</option>
+                        <option value="png">PNG (raster)</option>
+                    </select>
+                </div>
+                @if (_format == "png")
+                {
+                    <div class="field" title="Output PNG size in pixels. Matches the editor's ratio @SceneRatioLabel().">
+                        <label>Size (px)</label>
+                        <input type="number" min="1" max="4096" step="1" value="@_width"
+                               @onchange="e => OnWidthChange(e)" />
+                        <span class="muted">×</span>
+                        <input type="number" min="1" max="4096" step="1" value="@_height"
+                               @onchange="e => OnHeightChange(e)" />
+                    </div>
+                    <div class="field" style="margin-left:90px">
+                        <label style="width:auto"><input type="checkbox" @bind="_lockAspect" /> Lock to ratio @SceneRatioLabel()</label>
+                    </div>
+                    <div class="field">
+                        <label>Supersample</label>
+                        <input type="number" min="1" max="4" step="1" @bind="_supersample" @bind:after="Refresh" />
+                    </div>
+                }
+                <div class="field">
+                    <label>File name</label>
+                    <input type="text" @bind="_fileName" />
+                </div>
+                <p class="muted" style="margin-top:14px">
+                    @ShapeCount() shapes across @LayerCount() exportable layers will be written.<br/>
+                    Reference image layers are <b>not</b> exported.
+                </p>
+                @if (!string.IsNullOrEmpty(_status))
+                {
+                    <p class="muted">@_status</p>
+                }
+            </div>
+            <div>
+                <h3 style="margin-top:0">Preview</h3>
+                <div class="preview-grid" style="grid-template-columns:repeat(2, 1fr);">
+                    @foreach (var w in PreviewWidths)
+                    {
+                        var (pw, ph) = PreviewSize(w);
+                        <div class="preview-tile">
+                            <img src="@PreviewFor(pw, ph)" width="@pw" height="@ph" />
+                            <div class="label">@pw × @ph</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button @onclick="() => OnClose.InvokeAsync()">Cancel</button>
+            <button class="primary" @onclick="DoExport">Save as…</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string _format = "svg";
+    private int _width = 128;
+    private int _height = 128;
+    private bool _lockAspect = true;
+    private int _supersample = 2;
+    private string _fileName = "icon";
+    private string? _status;
+
+    // Fixed preview widths; heights are derived from the current scene aspect so
+    // the thumbnails mirror what the exported PNG will look like.
+    private static readonly int[] PreviewWidths = new[] { 32, 64, 128, 256 };
+
+    protected override void OnInitialized()
+    {
+        // Default output size mirrors the scene's coordinate units so what the user
+        // sees in the editor is exactly what the PNG renders at 1:1.
+        _width = Math.Max(1, (int)Math.Round(Store.Scene.Width));
+        _height = Math.Max(1, (int)Math.Round(Store.Scene.Height));
+    }
+
+    private (int W, int H) PreviewSize(int targetW)
+    {
+        var aspect = SceneAspect();
+        var w = targetW;
+        var h = Math.Max(1, (int)Math.Round(targetW / aspect));
+        return (w, h);
+    }
+
+    private double SceneAspect()
+    {
+        if (Store.Scene.Height <= 0) return 1.0;
+        return Store.Scene.Width / Store.Scene.Height;
+    }
+
+    private string SceneRatioLabel()
+        => $"{Store.Scene.Width:0.#} : {Store.Scene.Height:0.#}";
+
+    private string PreviewFor(int w, int h)
+        => Preview.RenderPngDataUrl(Store.Scene, w, h, _supersample);
+
+    private int LayerCount() => Store.Scene.Layers.OfType<ShapeLayer>().Count(l => l.Visible && l.Shapes.Count > 0);
+    private int ShapeCount() => Store.Scene.Layers.OfType<ShapeLayer>().Where(l => l.Visible).Sum(l => l.Shapes.Count);
+
+    private void OnWidthChange(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var v) || v <= 0) return;
+        _width = v;
+        if (_lockAspect) _height = Math.Max(1, (int)Math.Round(v / SceneAspect()));
+        StateHasChanged();
+    }
+
+    private void OnHeightChange(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var v) || v <= 0) return;
+        _height = v;
+        if (_lockAspect) _width = Math.Max(1, (int)Math.Round(v * SceneAspect()));
+        StateHasChanged();
+    }
+
+    private void Refresh() => StateHasChanged();
+
+    private async Task DoExport()
+    {
+        var ext = _format == "svg" ? "svg" : "png";
+        var suggested = _format == "png"
+            ? $"{_fileName}_{_width}x{_height}.{ext}"
+            : $"{_fileName}.{ext}";
+
+        byte[] bytes;
+        try
+        {
+            bytes = _format == "svg"
+                ? System.Text.Encoding.UTF8.GetBytes(Exporter.Export(Store.Scene))
+                : Preview.RenderPng(Store.Scene, _width, _height, _supersample);
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("Export.Render", ex);
+            _status = "Render failed: " + ex.Message;
+            return;
+        }
+
+        try
+        {
+            var b64 = Convert.ToBase64String(bytes);
+            var result = await JS.InvokeAsync<string?>("iconStudio.saveFilePicker",
+                suggested, _format == "svg" ? "SVG file" : "PNG image", ext, b64);
+            CrashLog.Write("Export.Picker", result ?? "<null/cancel>");
+            _status = result is null ? "Export cancelled" : $"Exported: {result}";
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("Export.Picker.Threw", ex);
+            _status = "Export failed: " + ex.Message;
+        }
+    }
+}

@@ -1,0 +1,26 @@
+<div class="tool-palette">
+    @foreach (var t in Tools)
+    {
+        <button class="@(t.Id == ActiveTool ? "active" : "")"
+                title="@t.Label"
+                @onclick="() => ToolChanged.InvokeAsync(t.Id)">
+            @t.Glyph
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string ActiveTool { get; set; } = "rect";
+    [Parameter] public EventCallback<string> ToolChanged { get; set; }
+
+    private static readonly (string Id, string Glyph, string Label)[] Tools = new[]
+    {
+        ("select",     "↖",  "Select / move (Ctrl+click to multi-select)"),
+        ("eyedropper", "💧", "Pick a color from the canvas → fill of selected shape"),
+        ("rect",       "▭",  "Rectangle"),
+        ("circle",     "◯",  "Circle / ellipse"),
+        ("line",       "╱",  "Line"),
+        ("polygon",    "△",  "Polygon — closed (double-click to finish)"),
+        ("polyline",   "∠",  "Polyline — open multi-segment line (double-click to finish)"),
+    };
+}

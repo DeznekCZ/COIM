@@ -6,7 +6,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <Version>0.1.9</Version> <!-- Update the project definition to standard from Mafi project. -->
+    <Version>0.1.10</Version> <!-- Update the project definition to standard from Mafi project. -->
     <LangVersion>latest</LangVersion>
       
     <!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->

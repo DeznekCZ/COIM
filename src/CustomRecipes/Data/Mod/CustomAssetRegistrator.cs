@@ -39,6 +39,24 @@ public class CustomAssetRegistrator : IModData {
 
 	private Dictionary<string, object> m_configValues = new Dictionary<string, object>();
 
+	// If `path` ends in ".svg", rewrite to ".png" — the build-time `ModBuilder svg2png` step
+	// produces a PNG next to every SVG, and the game's icon pipeline loads PNG faster and more
+	// reliably than going through its Unity.VectorGraphics SVG loader. If the .png is missing
+	// (e.g. modder forgot to run the build step), we leave the .svg path alone and let the
+	// game's loader try it — but we log a warning so they can fix it.
+	private string ResolveIconPath(string path) {
+		if (string.IsNullOrEmpty(path)) return path;
+		if (!path.EndsWith(".svg", System.StringComparison.OrdinalIgnoreCase)) return path;
+		string pngPath = path.Substring(0, path.Length - 4) + ".png";
+		string pngOnDisk = Path.Combine(m_modBasePath, pngPath);
+		if (!File.Exists(pngOnDisk)) {
+			Log.Warning($"ResolveIconPath: SVG '{path}' has no companion PNG at '{pngOnDisk}'. " +
+				"Build the mod with ModBuilder (which runs svg2png) or commit the PNG manually.");
+			return path;
+		}
+		return pngPath;
+	}
+
 	// Load a Texture2D from a mod-relative path, caching results in CustomAssetManager.Alternations.
 	// mipChain:true is required because pile albedos get copied into a Texture2DArray slice that
 	// has a full mip chain (without it the pile flickers as the camera moves).
@@ -562,12 +580,6 @@ public class CustomAssetRegistrator : IModData {
 							.ElseRequiredThrow(),
 						costMonths: args.GetArgument<int>("costs").ElseDefault(1));
 
-					builder.SetGridPosition(
-							args.GetArgument<Vector2i>("position")
-								.When<(int x, int y)>(pt => new Vector2i(pt.x, pt.y))
-								.ElseDefault(Vector2i.Zero)
-						);
-
 					if (args.GetArgument<List<ResearchNodeProto>>("parents")
 						.When<List<object>>(o => {
 							List<ResearchNodeProto> protosCollector = new List<ResearchNodeProto>();
@@ -593,10 +605,15 @@ public class CustomAssetRegistrator : IModData {
 					if (args.GetArgument<Tex>("icon")
 						.When<string>(s => new Tex { path = s })
 						.WhenExists(out Tex path)) {
-						builder.AddIcon(path.path);
+						builder.AddIcon(ResolveIconPath(path.path));
 					}
 
-					return builder.BuildAndAdd();
+					ResearchNodeProto node = builder.BuildAndAdd();
+					Vector2i position = args.GetArgument<Vector2i>("position")
+						.When<(int x, int y)>(pt => new Vector2i(pt.x, pt.y))
+						.ElseDefault(Vector2i.Zero);
+					node.GridPositionWherePossible(registrator.PrototypesDb, position);
+					return node;
 				}),
 
 			#endregion
@@ -908,9 +925,9 @@ public class CustomAssetRegistrator : IModData {
 							.When<int>(i => i.Upoints())
 							.ElseDefault(0.3.Upoints()),
 						edictImplementation: args.GetArgument<Type>("implementation").ElseRequiredThrow(),
-						graphics: new EdictProto.Gfx(args.GetArgument<Tex>("icon")
+						graphics: new EdictProto.Gfx(ResolveIconPath(args.GetArgument<Tex>("icon")
 							.When<string>(s => new Tex() { path = s })
-							.ElseRequiredThrow().path),
+							.ElseRequiredThrow().path)),
 						isGeneratingUnity: args.GetArgument<bool?>("isGeneratingUnity").ElseDefault(null),
 						previousTier: args.GetArgument<Option<EdictProto>>("previousTier")
 							.When<EdictProto>(Option.Some)
@@ -1026,10 +1043,10 @@ public class CustomAssetRegistrator : IModData {
 					.When<string>(ids => new ProductProto.ID(ids))
 					.ElseRequiredThrow();
 				var name = args.GetArgument<string>("name").ElseRequiredThrow();
-				var icon = args.GetArgument<Tex>("icon")
+				var icon = ResolveIconPath(args.GetArgument<Tex>("icon")
 					.When<string>(s => new Tex { path = s })
 					.ElseRequiredThrow()
-					.path;
+					.path);
 				var material = args.GetArgument<Mat>("material")
 					.When<string>(s => new Mat { path = s })
 					.ElseRequiredThrow();
@@ -1110,10 +1127,10 @@ public class CustomAssetRegistrator : IModData {
 					.When<string>(ids => new ProductProto.ID(ids))
 					.ElseRequiredThrow();
 				var name = args.GetArgument<string>("name").ElseRequiredThrow();
-				var icon = args.GetArgument<Tex>("icon")
+				var icon = ResolveIconPath(args.GetArgument<Tex>("icon")
 					.When<string>(s => new Tex { path = s })
 					.ElseRequiredThrow()
-					.path;
+					.path);
 				var prefab = args.GetArgument<string>("prefab")
 					.When<Prefab>(p => p.path)
 					.ElseRequiredThrow();
@@ -1156,10 +1173,10 @@ public class CustomAssetRegistrator : IModData {
 					.When<string>(ids => new ProductProto.ID(ids))
 					.ElseRequiredThrow();
 				var name = args.GetArgument<string>("name").ElseRequiredThrow();
-				var icon = args.GetArgument<Tex>("icon")
+				var icon = ResolveIconPath(args.GetArgument<Tex>("icon")
 					.When<string>(s => new Tex { path = s })
 					.ElseRequiredThrow()
-					.path;
+					.path);
 				var desc = args.GetArgument<string>("description").ElseDefault("");
 				var maxTransport = args.GetArgument<Quantity>("maxTransport")
 					.When<int>(i => new Quantity(i))
@@ -1284,10 +1301,10 @@ public class CustomAssetRegistrator : IModData {
 				string name = args.GetArgument<string>("name")
 					.ElseRequiredThrow();
 
-				string icon = args.GetArgument<Tex>("icon")
+				string icon = ResolveIconPath(args.GetArgument<Tex>("icon")
 					.When<string>(s => new Tex { path = s })
 					.ElseRequiredThrow()
-					.path;
+					.path);
 
 				ToolbarCategoryProto parent = args.GetArgument<ToolbarCategoryProto>("parent")
 					.When<Proto.ID>(s => registrator.PrototypesDb.GetOrThrow<ToolbarCategoryProto>(s))
@@ -1332,6 +1349,58 @@ public class CustomAssetRegistrator : IModData {
 		return context;
 	}
 }
+
+public static class ResearchPositionExtension {
+
+	public static void GridPositionWherePossible(this ResearchNodeProto proto, ProtosDb protos, params Vector2i[] options) {
+		Vector2i defaultOption = options[0];
+		Dict<int, Lyst<int>> usedOptions = protos.All<ResearchNodeProto>()
+			.SelectMany(p => yieldFrom(p.GridPosition)
+				.GroupBy(v => v.X, v => v.Y))
+			.GroupBy(g => g.Key, g => g)
+			.ToDict(p => p.Key, p => p.SelectMany(sg => sg).ToLyst());
+		foreach (Vector2i option in options) {
+			if (usedOptions.TryGetValue(option.X, out Lyst<int> yS)
+				&& (yS.Contains(option.Y)
+					|| yS.Contains(option.Y + 1)
+					|| yS.Contains(option.Y + 2))) {
+				continue;
+			}
+			proto.GridPosition = option;
+			break;
+		}
+		for (int yP = defaultOption.Y, yN = defaultOption.Y; ; yP++, yN--) {
+			bool positiveUsed = usedOptions.TryGetValue(defaultOption.X, out Lyst<int> yS)
+				&& yS.Contains(yP)
+				&& yS.Contains(yP + 1)
+				&& yS.Contains(yP + 2);
+			bool negativeUsed = usedOptions.TryGetValue(defaultOption.X, out yS)
+				&& yS.Contains(yN)
+				&& yS.Contains(yN + 1)
+				&& yS.Contains(yN + 2);
+			if (positiveUsed && negativeUsed) {
+				continue;
+			}
+			if (positiveUsed) {
+				proto.GridPosition = new Vector2i(defaultOption.X, yN);
+				break;
+			}
+			if (negativeUsed) {
+				proto.GridPosition = new Vector2i(defaultOption.X, yP);
+				break;
+			}
+		}
+	}
+
+	private static IEnumerable<Vector2i> yieldFrom(Vector2i gridPosition) {
+		for (int x = gridPosition.X; x < gridPosition.X + 4; x++) {
+			for (int y = gridPosition.Y; y < gridPosition.Y + 3; y++) {
+				yield return new Vector2i(x, y);
+			}
+		}
+	}
+}
+
 
 public static class CategoriesExtensions {
 	extension(LayoutEntityProto.Gfx graphics) {

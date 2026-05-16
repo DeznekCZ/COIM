@@ -193,6 +193,11 @@ def build_product_loose(
         productId:      unique product id.
         name:           display name.
         icon:           icon path (within the mod's Assets/, or a vanilla Assets.* path).
+                        SVG files are accepted: ModBuilder's `svg2png` step (run during
+                        the mod build) rasterizes them to PNG, and at load time any
+                        ".svg" icon path is transparently rewritten to ".png" of the
+                        same name. Pass `icon = "Assets/MyIcon.svg"` and ship both the
+                        .svg (source) and the generated .png in your mod.
         material:       pile material (Mat or asset path). Use add_texture_material(...,
                         reference=Assets.Base.Products.Loose.FilterMedia_mat, ...) to
                         produce one that matches the COI loose-pile look.

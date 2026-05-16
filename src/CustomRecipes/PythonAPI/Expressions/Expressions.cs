@@ -642,10 +642,13 @@ namespace PythonAPI.Expressions {
 
 		public static object __add__(object left, object right) {
 			if (left is null || right is null) {
-				throw new NotImplementedException($"Cannot divide null values");
+				throw new NotImplementedException($"Cannot add null values");
 			}
 			if (left.GetType() != right.GetType()) {
-				throw new NotImplementedException($"Types has no divide yet or never (different type)");
+				if (__add__base(left, right, out object result)) {
+					return result;
+				}
+				throw new NotImplementedException($"Types has no add yet or never (different type)");
 			}
 			if (left is Fix32 fix) {
 				return fix + (Fix32)right;
@@ -656,7 +659,94 @@ namespace PythonAPI.Expressions {
 			if (left is float f) {
 				return f + (float)right;
 			}
-			throw new NotImplementedException($"Types has no divide yet or never (same type)");
+			throw new NotImplementedException($"Types has no add yet or never (same type)");
+		}
+
+		private static bool __add__base(object left, object right, out object result) {
+			if (left is int leftI && right is Fix32 right32) {
+				result = leftI.ToFix32() + right32;
+				return true;
+			}
+			if (left is Fix32 left32 && right is int rightI) {
+				result = left32 + rightI.ToFix32();
+				return true;
+			}
+			if (left is float leftF && right is Fix32 right32_) {
+				result = leftF.ToFix32() + right32_;
+				return true;
+			}
+			if (left is Fix32 left32_ && right is float rightF) {
+				result = left32_ + rightF.ToFix32();
+				return true;
+			}
+			if (left is float leftF_ && right is int rightI_) {
+				result = leftF_ + rightI_;
+				return true;
+			}
+			if (left is int leftI_ && right is float rightF_) {
+				result = leftI_ + rightF_;
+				return true;
+			}
+			result = null;
+			return false;
+		}
+
+		public static object __sub__(object left, object right) {
+			if (left is null || right is null) {
+				throw new NotImplementedException($"Cannot subtract null values");
+			}
+			if (left.GetType() != right.GetType()) {
+				if (__sub__base(left, right, out object result)) {
+					return result;
+				}
+				throw new NotImplementedException($"Types has no subtract yet or never (different type)");
+			}
+			if (left is Fix32 fix) {
+				return fix - (Fix32)right;
+			}
+			if (left is int i) {
+				return i - (int)right;
+			}
+			if (left is float f) {
+				return f - (float)right;
+			}
+			throw new NotImplementedException($"Types has no subtract yet or never (same type)");
+		}
+
+		private static bool __sub__base(object left, object right, out object result) {
+			if (left is int leftI && right is Fix32 right32) {
+				result = leftI.ToFix32() - right32;
+				return true;
+			}
+			if (left is Fix32 left32 && right is int rightI) {
+				result = left32 - rightI.ToFix32();
+				return true;
+			}
+			if (left is float leftF && right is Fix32 right32_) {
+				result = leftF.ToFix32() - right32_;
+				return true;
+			}
+			if (left is Fix32 left32_ && right is float rightF) {
+				result = left32_ - rightF.ToFix32();
+				return true;
+			}
+			if (left is float leftF_ && right is int rightI_) {
+				result = leftF_ - rightI_;
+				return true;
+			}
+			if (left is int leftI_ && right is float rightF_) {
+				result = leftI_ - rightF_;
+				return true;
+			}
+			result = null;
+			return false;
+		}
+
+		public static object __and__(object v1, object v2) {
+			if (v1 is null && v2 is null) {
+				return 0;
+			}
+			return __int__(v1) & __int__(v2);
 		}
 	}
 }
