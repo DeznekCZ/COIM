@@ -165,12 +165,7 @@ public class VariableEntry : Row {
 	}
 
 	private void removeVariable() {
-		// Multiplayer-safe: schedule the cleanup through the command pipeline
-		// so every peer applies the same removal at the same simulation tick.
-		// Guard the local view in case the producer ticked again between hover
-		// and click (writer reappeared) — the button would re-enable visually
-		// shortly after but a fast double-click might have slipped through.
-		if (string.IsNullOrEmpty(m_variableName) || findWriter() != null) {
+		if (string.IsNullOrEmpty(m_variableName)) {
 			m_invalidOp.Play();
 			return;
 		}
