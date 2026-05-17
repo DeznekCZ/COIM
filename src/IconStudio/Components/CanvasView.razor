@@ -22,6 +22,10 @@
     [Parameter] public EventCallback PasteRequested { get; set; }
     [Parameter] public EventCallback<ColorPick> ColorPicked { get; set; }
     [Parameter] public EventCallback<MoveShapes> ShapesMoved { get; set; }
+    [Parameter] public EventCallback<ToggleSegment> SegmentToggled { get; set; }
+    [Parameter] public EventCallback<ControlPointUpdate> ControlPointUpdated { get; set; }
+    [Parameter] public EventCallback<VertexInsert> VertexInserted { get; set; }
+    [Parameter] public EventCallback<VertexRemove> VertexRemoved { get; set; }
 
     private ElementReference _canvas;
     private DotNetObjectReference<CanvasView>? _ref;
@@ -71,6 +75,12 @@
                         strokeWidth = s.StrokeWidth,
                         opacity = s.Opacity,
                         points = s.Points.SelectMany(p => new[] { p.X, p.Y }).ToArray(),
+                        segments = s.Segments?.Select(seg => new
+                        {
+                            kind = seg.Kind.ToString().ToLowerInvariant(),
+                            c1x = seg.Control1.X, c1y = seg.Control1.Y,
+                            c2x = seg.Control2.X, c2y = seg.Control2.Y,
+                        }).ToArray(),
                     }).ToArray(),
                 },
                 ReferenceImageLayer rl => new
@@ -129,11 +139,31 @@
     public Task OnMoveShapes(int[] shapeIds, double dx, double dy)
         => ShapesMoved.InvokeAsync(new MoveShapes(shapeIds, dx, dy));
 
+    [JSInvokable]
+    public Task OnToggleSegment(int shapeId, int segmentIndex)
+        => SegmentToggled.InvokeAsync(new ToggleSegment(shapeId, segmentIndex));
+
+    [JSInvokable]
+    public Task OnUpdateControlPoint(int shapeId, int segmentIndex, int controlIndex, double x, double y)
+        => ControlPointUpdated.InvokeAsync(new ControlPointUpdate(shapeId, segmentIndex, controlIndex, x, y));
+
+    [JSInvokable]
+    public Task OnInsertVertex(int shapeId, int afterIndex, double x, double y)
+        => VertexInserted.InvokeAsync(new VertexInsert(shapeId, afterIndex, x, y));
+
+    [JSInvokable]
+    public Task OnRemoveVertex(int shapeId, int vertexIndex)
+        => VertexRemoved.InvokeAsync(new VertexRemove(shapeId, vertexIndex));
+
     public sealed record SelectArgs(int ShapeId, bool AddMode);
     public sealed record MoveShapes(int[] ShapeIds, double Dx, double Dy);
     public sealed record ColorPick(string Hex, string Target);
+    public sealed record ToggleSegment(int ShapeId, int SegmentIndex);
+    public sealed record ControlPointUpdate(int ShapeId, int SegmentIndex, int ControlIndex, double X, double Y);
     public sealed record PolygonUpdate(int ShapeId, double[] Points);
     public sealed record BoundsUpdate(int ShapeId, double X, double Y, double W, double H);
+    public sealed record VertexInsert(int ShapeId, int AfterIndex, double X, double Y);
+    public sealed record VertexRemove(int ShapeId, int VertexIndex);
 
     public async ValueTask DisposeAsync()
     {

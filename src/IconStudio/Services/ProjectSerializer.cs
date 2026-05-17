@@ -105,11 +105,13 @@ public sealed class ProjectSerializer
             ShapeKind.Polygon => new XElement("Polygon",
                 s.Points.Select(p => new XElement("Point",
                     new XAttribute("x", p.X.ToString(Inv)),
-                    new XAttribute("y", p.Y.ToString(Inv))))),
+                    new XAttribute("y", p.Y.ToString(Inv)))),
+                SerializeSegments(s)),
             ShapeKind.Polyline => new XElement("Polyline",
                 s.Points.Select(p => new XElement("Point",
                     new XAttribute("x", p.X.ToString(Inv)),
-                    new XAttribute("y", p.Y.ToString(Inv))))),
+                    new XAttribute("y", p.Y.ToString(Inv)))),
+                SerializeSegments(s)),
             _ => new XElement("Unknown"),
         };
 
@@ -208,6 +210,7 @@ public sealed class ProjectSerializer
                         ParseD(p.Attribute("y")?.Value, 0)));
                 }
                 if (s.Points.Count < 3) return null;
+                DeserializeSegments(s, el);
                 break;
             case "Polyline":
                 s = new Shape { Kind = ShapeKind.Polyline, Fill = "none" };
@@ -218,6 +221,7 @@ public sealed class ProjectSerializer
                         ParseD(p.Attribute("y")?.Value, 0)));
                 }
                 if (s.Points.Count < 2) return null;
+                DeserializeSegments(s, el);
                 break;
             default:
                 return null;
@@ -227,6 +231,54 @@ public sealed class ProjectSerializer
         s.StrokeWidth = ParseD(el.Attribute("strokeWidth")?.Value, 0);
         s.Opacity = ParseD(el.Attribute("opacity")?.Value, 1.0);
         return s;
+    }
+
+    // Emits a <Segments> child element only when at least one segment is non-Line,
+    // so plain straight-edge polygons stay backward-compatible with older XML.
+    private static XElement? SerializeSegments(Shape s)
+    {
+        if (s.Segments == null || !s.HasCurves) return null;
+        return new XElement("Segments",
+            s.Segments.Select((seg, i) => new XElement("Seg",
+                new XAttribute("i", i),
+                new XAttribute("kind", seg.Kind.ToString()),
+                seg.Kind == SegmentKind.Cubic
+                    ? new XAttribute("c1x", seg.Control1.X.ToString(Inv))
+                    : null,
+                seg.Kind == SegmentKind.Cubic
+                    ? new XAttribute("c1y", seg.Control1.Y.ToString(Inv))
+                    : null,
+                seg.Kind == SegmentKind.Cubic
+                    ? new XAttribute("c2x", seg.Control2.X.ToString(Inv))
+                    : null,
+                seg.Kind == SegmentKind.Cubic
+                    ? new XAttribute("c2y", seg.Control2.Y.ToString(Inv))
+                    : null)));
+    }
+
+    private static void DeserializeSegments(Shape s, XElement shapeEl)
+    {
+        var segsEl = shapeEl.Element("Segments");
+        if (segsEl == null) return;
+        var segs = new List<SegmentData>();
+        // Allocate one slot per point. Segment i is the edge starting at Points[i].
+        for (int i = 0; i < s.Points.Count; i++) segs.Add(new SegmentData());
+        foreach (var segEl in segsEl.Elements("Seg"))
+        {
+            if (!int.TryParse(segEl.Attribute("i")?.Value, NumberStyles.Integer, Inv, out var i)) continue;
+            if (i < 0 || i >= segs.Count) continue;
+            var kindStr = segEl.Attribute("kind")?.Value ?? "Line";
+            var kind = string.Equals(kindStr, "Cubic", StringComparison.OrdinalIgnoreCase)
+                ? SegmentKind.Cubic
+                : SegmentKind.Line;
+            segs[i] = new SegmentData
+            {
+                Kind = kind,
+                Control1 = (ParseD(segEl.Attribute("c1x")?.Value, 0), ParseD(segEl.Attribute("c1y")?.Value, 0)),
+                Control2 = (ParseD(segEl.Attribute("c2x")?.Value, 0), ParseD(segEl.Attribute("c2y")?.Value, 0)),
+            };
+        }
+        s.Segments = segs;
     }
 
     private static double ParseD(string? v, double dflt)

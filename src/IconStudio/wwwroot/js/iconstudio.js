@@ -246,11 +246,33 @@
             return;
         }
 
-        // ── Handle / vertex drag on the selected shape ────────────────
+        // ── Alt+click on edge of a polygon/polyline: toggle segment type
+        // (Line ↔ Cubic). Works on the selected shape first; if no edge of
+        // the selected shape is under the cursor (or nothing is selected),
+        // fall back to scanning every polygon/polyline so the user doesn't
+        // have to "select first, then convert."
+        if (e.altKey && activeTool === "select") {
+            const hit = hitAnyEdge(p, state.selectedShapeId);
+            if (hit) {
+                if (hit.shapeId !== state.selectedShapeId) {
+                    dotnet.invokeMethodAsync("OnSelect", hit.shapeId, false);
+                }
+                dotnet.invokeMethodAsync("OnToggleSegment", hit.shapeId, hit.afterIndex);
+                return;
+            }
+        }
+
+        // ── Handle / vertex / control-point drag on the selected shape ─
         if (activeTool === "select" && state.selectedShapeId) {
             const sel = findShape(state.selectedShapeId);
             if (sel) {
                 if (sel.kind === "polygon" || sel.kind === "polyline") {
+                    // Control points first (sit on top of vertices visually).
+                    const cp = hitControlPoint(sel, p);
+                    if (cp) {
+                        drag = { tool: "control", shapeId: sel.id, segIdx: cp.segIdx, ctrlIdx: cp.ctrlIdx };
+                        return;
+                    }
                     const idx = hitVertex(sel, p);
                     if (idx >= 0) {
                         drag = { tool: "vertex", shapeId: sel.id, vertexIndex: idx };
@@ -338,6 +360,17 @@
             return;
         }
 
+        if (drag && drag.tool === "control") {
+            const sel = findShape(drag.shapeId);
+            if (sel && sel.segments && sel.segments[drag.segIdx]) {
+                const seg = sel.segments[drag.segIdx];
+                if (drag.ctrlIdx === 1) { seg.c1x = p.x; seg.c1y = p.y; }
+                else                    { seg.c2x = p.x; seg.c2y = p.y; }
+                paint();
+            }
+            return;
+        }
+
         if (drag && drag.tool === "move-or-select") {
             const dx = p.x - drag.startX;
             const dy = p.y - drag.startY;
@@ -389,6 +422,19 @@
             const sel = findShape(drag.shapeId);
             if (sel) {
                 dotnet.invokeMethodAsync("OnUpdateBounds", sel.id, sel.x, sel.y, sel.w, sel.h);
+            }
+            drag = null;
+            return;
+        }
+
+        if (drag.tool === "control") {
+            const sel = findShape(drag.shapeId);
+            if (sel && sel.segments && sel.segments[drag.segIdx]) {
+                const seg = sel.segments[drag.segIdx];
+                const cx = drag.ctrlIdx === 1 ? seg.c1x : seg.c2x;
+                const cy = drag.ctrlIdx === 1 ? seg.c1y : seg.c2y;
+                dotnet.invokeMethodAsync(
+                    "OnUpdateControlPoint", sel.id, drag.segIdx, drag.ctrlIdx, cx, cy);
             }
             drag = null;
             return;
@@ -454,9 +500,10 @@
                 const p = iconCoords(e);
                 const hit = hitEdge(sel, p);
                 if (hit) {
-                    const np = [...sel.points];
-                    np.splice((hit.afterIndex + 1) * 2, 0, hit.x, hit.y);
-                    dotnet.invokeMethodAsync("OnUpdatePolygon", sel.id, np);
+                    // Explicit insert keeps existing segment kinds intact;
+                    // only the split edge becomes two straight lines.
+                    dotnet.invokeMethodAsync(
+                        "OnInsertVertex", sel.id, hit.afterIndex, hit.x, hit.y);
                 }
             }
         }
@@ -490,6 +537,29 @@
         return best;
     }
 
+    // Scans every polygon/polyline edge in the scene and returns the closest one
+    // to `p`, or null. Used for Alt+click on an edge without the shape having to
+    // be selected first. Prefers the currently-selected shape when it ties, so
+    // the user's focus isn't yanked away.
+    function hitAnyEdge(p, preferredShapeId) {
+        let best = null;
+        for (const layer of state.layers) {
+            if (!layer.visible || layer.kind !== "shape") continue;
+            for (const s of layer.shapes) {
+                if (s.kind !== "polygon" && s.kind !== "polyline") continue;
+                const edge = hitEdge(s, p);
+                if (!edge) continue;
+                const isPreferred = s.id === preferredShapeId;
+                if (best === null ||
+                    edge.d < best.d ||
+                    (isPreferred && Math.abs(edge.d - best.d) < 1e-6)) {
+                    best = { d: edge.d, x: edge.x, y: edge.y, afterIndex: edge.afterIndex, shapeId: s.id };
+                }
+            }
+        }
+        return best;
+    }
+
     // Right-click. Either pops the last polygon vertex (during drawing) or removes
     // a vertex from a selected polygon (when in select mode). Otherwise just
     // suppresses the native menu.
@@ -508,14 +578,13 @@
         if (activeTool === "select" && state.selectedShapeId) {
             const sel = findShape(state.selectedShapeId);
             if (sel && (sel.kind === "polygon" || sel.kind === "polyline")) {
-                // Polygon needs at least 3 vertices (6 doubles), polyline at least 2 (4 doubles).
-                const minDoubles = sel.kind === "polygon" ? 8 : 6; // current length must exceed minimum
+                // Polygon needs at least 3 vertices, polyline at least 2.
                 if (sel.points.length > (sel.kind === "polygon" ? 6 : 4)) {
                     const idx = hitVertex(sel, p);
                     if (idx >= 0) {
-                        const np = [...sel.points];
-                        np.splice(idx * 2, 2);
-                        dotnet.invokeMethodAsync("OnUpdatePolygon", sel.id, np);
+                        // Explicit remove keeps the rest of the segment list
+                        // (and therefore the curves on every other edge) intact.
+                        dotnet.invokeMethodAsync("OnRemoveVertex", sel.id, idx);
                     }
                 }
             }
@@ -669,6 +738,21 @@
             s.w = Math.max(0.5, Math.abs(nx2 - nx1));
             s.h = Math.max(0.5, Math.abs(ny2 - ny1));
         }
+    }
+
+    // Returns { segIdx, ctrlIdx (1 or 2) } for the control point under `p`, or
+    // null. Only cubic segments have control points.
+    function hitControlPoint(s, p) {
+        if (!s.segments) return null;
+        const screenScale = iconToScreenScale();
+        const tol = HIT_PX / screenScale;
+        for (let i = 0; i < s.segments.length; i++) {
+            const seg = s.segments[i];
+            if (!seg || seg.kind !== "cubic") continue;
+            if (Math.hypot(seg.c1x - p.x, seg.c1y - p.y) < tol) return { segIdx: i, ctrlIdx: 1 };
+            if (Math.hypot(seg.c2x - p.x, seg.c2y - p.y) < tol) return { segIdx: i, ctrlIdx: 2 };
+        }
+        return null;
     }
 
     // Returns the index (0-based, in vertex units) of a polygon / polyline point
@@ -840,24 +924,35 @@
                 ctx.lineTo(s.x + s.w, s.y + s.h);
                 break;
             case "polygon":
-                if (s.points && s.points.length >= 4) {
-                    ctx.moveTo(s.points[0], s.points[1]);
-                    for (let i = 2; i < s.points.length; i += 2)
-                        ctx.lineTo(s.points[i], s.points[i + 1]);
-                    ctx.closePath();
-                }
-                break;
             case "polyline":
                 if (s.points && s.points.length >= 4) {
-                    ctx.moveTo(s.points[0], s.points[1]);
-                    for (let i = 2; i < s.points.length; i += 2)
-                        ctx.lineTo(s.points[i], s.points[i + 1]);
-                    // No closePath — polyline stays open.
+                    drawPolyPath(s, s.kind === "polygon");
                 }
                 break;
         }
         if (s.fill && s.fill !== "none") ctx.fill();
         if (s.strokeWidth > 0 && s.stroke && s.stroke !== "none") ctx.stroke();
+    }
+
+    // Shared path builder for polygon (closed=true) and polyline (closed=false).
+    // Honors per-segment `kind: "cubic"` to emit bezierCurveTo, otherwise lineTo.
+    function drawPolyPath(s, closed) {
+        const pts = s.points;
+        const segs = s.segments;
+        const n = pts.length / 2;
+        const segCount = closed ? n : n - 1;
+        ctx.moveTo(pts[0], pts[1]);
+        for (let i = 0; i < segCount; i++) {
+            const ni = ((i + 1) % n) * 2;
+            const ex = pts[ni], ey = pts[ni + 1];
+            const seg = segs && segs[i];
+            if (seg && seg.kind === "cubic") {
+                ctx.bezierCurveTo(seg.c1x, seg.c1y, seg.c2x, seg.c2y, ex, ey);
+            } else {
+                ctx.lineTo(ex, ey);
+            }
+        }
+        if (closed) ctx.closePath();
     }
 
     function roundRect(c, x, y, w, h, r) {
@@ -968,6 +1063,40 @@
         // Polygon / polyline vertex handles — yellow squares, distinct from the
         // blue bounding-box corner handles.
         if ((s.kind === "polygon" || s.kind === "polyline") && s.points) {
+            // Bezier control points first, so vertex squares overlap them when adjacent.
+            if (s.segments) {
+                const n = s.points.length / 2;
+                ctx.strokeStyle = "rgba(245, 158, 11, 0.55)";
+                ctx.setLineDash([3, 3]);
+                ctx.lineWidth = 1;
+                for (let i = 0; i < s.segments.length; i++) {
+                    const seg = s.segments[i];
+                    if (!seg || seg.kind !== "cubic") continue;
+                    const ni = (i + 1) % n;
+                    const v1 = iconToCanvas(s.points[i * 2], s.points[i * 2 + 1]);
+                    const v2 = iconToCanvas(s.points[ni * 2], s.points[ni * 2 + 1]);
+                    const c1 = iconToCanvas(seg.c1x, seg.c1y);
+                    const c2 = iconToCanvas(seg.c2x, seg.c2y);
+                    ctx.beginPath();
+                    ctx.moveTo(v1.x, v1.y); ctx.lineTo(c1.x, c1.y);
+                    ctx.moveTo(v2.x, v2.y); ctx.lineTo(c2.x, c2.y);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+                // Round orange handles for control points.
+                ctx.fillStyle = "#f59e0b";
+                ctx.strokeStyle = "#0a0a0c";
+                for (let i = 0; i < s.segments.length; i++) {
+                    const seg = s.segments[i];
+                    if (!seg || seg.kind !== "cubic") continue;
+                    const c1 = iconToCanvas(seg.c1x, seg.c1y);
+                    const c2 = iconToCanvas(seg.c2x, seg.c2y);
+                    ctx.beginPath(); ctx.arc(c1.x, c1.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(c2.x, c2.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                }
+            }
+
+            // Vertex squares — yellow.
             ctx.fillStyle = "#fcd34d";
             ctx.strokeStyle = "#0a0a0c";
             ctx.lineWidth = 1;
@@ -992,6 +1121,24 @@
                 maxX = Math.max(maxX, s.points[i]);
                 minY = Math.min(minY, s.points[i + 1]);
                 maxY = Math.max(maxY, s.points[i + 1]);
+            }
+            // Cubic segments can bulge past the endpoint polygon. The control
+            // points sit on the convex hull that bounds the curve, so expanding
+            // by them is a safe (slightly loose) bound — and matches what the
+            // user can grab with the orange handles.
+            if (s.segments) {
+                for (let i = 0; i < s.segments.length; i++) {
+                    const seg = s.segments[i];
+                    if (!seg || seg.kind !== "cubic") continue;
+                    if (typeof seg.c1x === "number") {
+                        minX = Math.min(minX, seg.c1x); maxX = Math.max(maxX, seg.c1x);
+                        minY = Math.min(minY, seg.c1y); maxY = Math.max(maxY, seg.c1y);
+                    }
+                    if (typeof seg.c2x === "number") {
+                        minX = Math.min(minX, seg.c2x); maxX = Math.max(maxX, seg.c2x);
+                        minY = Math.min(minY, seg.c2y); maxY = Math.max(maxY, seg.c2y);
+                    }
+                }
             }
             return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
         }

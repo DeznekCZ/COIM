@@ -71,7 +71,11 @@
                     CopyRequested="DoCopy"
                     PasteRequested="DoPaste"
                     ColorPicked="OnColorPickedFromCanvas"
-                    ShapesMoved="OnShapesMovedFromCanvas" />
+                    ShapesMoved="OnShapesMovedFromCanvas"
+                    SegmentToggled="OnSegmentToggledFromCanvas"
+                    ControlPointUpdated="OnControlPointUpdatedFromCanvas"
+                    VertexInserted="OnVertexInsertedFromCanvas"
+                    VertexRemoved="OnVertexRemovedFromCanvas" />
     </div>
 
     <aside class="side-panel">
@@ -299,16 +303,125 @@
 
     private void OnPolygonUpdatedFromCanvas(CanvasView.PolygonUpdate u)
     {
+        // Vertex DRAG path — point count must match. Insert / remove go through
+        // OnVertexInserted / OnVertexRemoved so segments stay aligned.
         var shape = Store.Scene.Layers.OfType<ShapeLayer>()
             .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == u.ShapeId);
         if (shape is null) return;
         if (shape.Kind != ShapeKind.Polygon && shape.Kind != ShapeKind.Polyline) return;
-        // Polygons need a triangle (3 vertices = 6 doubles); polylines just a segment (2 vertices = 4 doubles).
         var minDoubles = shape.Kind == ShapeKind.Polygon ? 6 : 4;
         if (u.Points.Length < minDoubles) return;
+
+        var newCount = u.Points.Length / 2;
+        if (newCount != shape.Points.Count)
+        {
+            // Defensive: should be unreachable now — log and rebuild segments.
+            CrashLog.Write("OnPolygonUpdated.unexpected-count-change",
+                $"old={shape.Points.Count} new={newCount}");
+            if (shape.Segments != null)
+                shape.Segments = Enumerable.Range(0, newCount)
+                    .Select(_ => new SegmentData()).ToList();
+        }
         shape.Points.Clear();
         for (int i = 0; i + 1 < u.Points.Length; i += 2)
             shape.Points.Add((u.Points[i], u.Points[i + 1]));
+        Store.Notify();
+    }
+
+    private void OnVertexInsertedFromCanvas(CanvasView.VertexInsert v)
+    {
+        var shape = Store.Scene.Layers.OfType<ShapeLayer>()
+            .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == v.ShapeId);
+        if (shape is null) return;
+        if (shape.Kind != ShapeKind.Polygon && shape.Kind != ShapeKind.Polyline) return;
+        if (v.AfterIndex < 0 || v.AfterIndex >= shape.Points.Count) return;
+
+        var insertAt = v.AfterIndex + 1;
+        shape.Points.Insert(insertAt, (v.X, v.Y));
+
+        // Keep segments aligned: the edge that was at v.AfterIndex is now split
+        // into two. Both halves become straight lines (preserving a Cubic across
+        // an arbitrary split point would need de Casteljau subdivision; for now
+        // the user re-curves with Alt+click if they want to).
+        if (shape.Segments != null)
+        {
+            while (shape.Segments.Count < shape.Points.Count - 1)
+                shape.Segments.Add(new SegmentData());
+            if (v.AfterIndex < shape.Segments.Count)
+                shape.Segments[v.AfterIndex] = new SegmentData(); // Line
+            shape.Segments.Insert(insertAt, new SegmentData()); // Line
+        }
+        Store.Notify();
+    }
+
+    private void OnVertexRemovedFromCanvas(CanvasView.VertexRemove v)
+    {
+        var shape = Store.Scene.Layers.OfType<ShapeLayer>()
+            .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == v.ShapeId);
+        if (shape is null) return;
+        if (shape.Kind != ShapeKind.Polygon && shape.Kind != ShapeKind.Polyline) return;
+        var min = shape.Kind == ShapeKind.Polygon ? 3 : 2;
+        if (shape.Points.Count <= min) return;
+        if (v.VertexIndex < 0 || v.VertexIndex >= shape.Points.Count) return;
+
+        shape.Points.RemoveAt(v.VertexIndex);
+
+        // The segment that STARTED at the removed vertex is gone; the segment
+        // that ENDED at it now extends to what used to be the next vertex,
+        // keeping its kind and control points. That's the correct behavior:
+        // existing curves on every other edge stay intact.
+        if (shape.Segments != null && v.VertexIndex < shape.Segments.Count)
+        {
+            shape.Segments.RemoveAt(v.VertexIndex);
+        }
+        Store.Notify();
+    }
+
+    private void OnSegmentToggledFromCanvas(CanvasView.ToggleSegment t)
+    {
+        var shape = Store.Scene.Layers.OfType<ShapeLayer>()
+            .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == t.ShapeId);
+        if (shape is null) return;
+        if (shape.Kind != ShapeKind.Polygon && shape.Kind != ShapeKind.Polyline) return;
+
+        // Ensure Segments list exists and is sized to one entry per vertex.
+        if (shape.Segments == null)
+        {
+            shape.Segments = Enumerable.Range(0, shape.Points.Count)
+                .Select(_ => new SegmentData())
+                .ToList();
+        }
+        while (shape.Segments.Count < shape.Points.Count)
+            shape.Segments.Add(new SegmentData());
+
+        if (t.SegmentIndex < 0 || t.SegmentIndex >= shape.Segments.Count) return;
+        var seg = shape.Segments[t.SegmentIndex];
+        if (seg.Kind == SegmentKind.Line)
+        {
+            // Convert to cubic — initial control points at 1/3 and 2/3 along the
+            // segment. User can then drag them to bend the curve.
+            var p1 = shape.Points[t.SegmentIndex];
+            var p2 = shape.Points[(t.SegmentIndex + 1) % shape.Points.Count];
+            seg.Kind = SegmentKind.Cubic;
+            seg.Control1 = (p1.X + (p2.X - p1.X) / 3.0, p1.Y + (p2.Y - p1.Y) / 3.0);
+            seg.Control2 = (p1.X + (p2.X - p1.X) * 2.0 / 3.0, p1.Y + (p2.Y - p1.Y) * 2.0 / 3.0);
+        }
+        else
+        {
+            seg.Kind = SegmentKind.Line;
+        }
+        Store.Notify();
+    }
+
+    private void OnControlPointUpdatedFromCanvas(CanvasView.ControlPointUpdate u)
+    {
+        var shape = Store.Scene.Layers.OfType<ShapeLayer>()
+            .SelectMany(l => l.Shapes).FirstOrDefault(s => s.Id == u.ShapeId);
+        if (shape?.Segments is null) return;
+        if (u.SegmentIndex < 0 || u.SegmentIndex >= shape.Segments.Count) return;
+        var seg = shape.Segments[u.SegmentIndex];
+        if (u.ControlIndex == 1) seg.Control1 = (u.X, u.Y);
+        else if (u.ControlIndex == 2) seg.Control2 = (u.X, u.Y);
         Store.Notify();
     }
 

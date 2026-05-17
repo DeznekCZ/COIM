@@ -66,8 +66,16 @@
                 <p class="muted" style="font-size:11px;margin:6px 0">
                     Drag yellow vertex handles to move them.<br/>
                     Double-click an edge to insert a new vertex.<br/>
-                    Right-click a vertex to remove it (min @(s.Kind == ShapeKind.Polygon ? 3 : 2) vertices).
+                    Right-click a vertex to remove it (min @(s.Kind == ShapeKind.Polygon ? 3 : 2) vertices) — other edges keep their curves.<br/>
+                    <b>Alt+click any edge to toggle Line ↔ Curve.</b> Drag the orange handles to bend.
                 </p>
+                <div class="field">
+                    <label>Edges</label>
+                    <span style="display:flex;gap:6px;flex-wrap:wrap">
+                        <button @onclick="() => CurveAllEdges(s)" title="Convert every edge to a Bezier curve">Curve all</button>
+                        <button @onclick="() => StraightenAllEdges(s)" title="Convert every edge back to a straight line">Straighten all</button>
+                    </span>
+                </div>
             }
             @if (CanConvert(s))
             {
@@ -252,6 +260,31 @@
         s.Points.Clear();
         s.Points.AddRange(corners);
         s.X = s.Y = s.Width = s.Height = s.CornerRadius = 0;
+        Store.Notify();
+    }
+
+    private void CurveAllEdges(Shape s)
+    {
+        if (s.Kind != ShapeKind.Polygon && s.Kind != ShapeKind.Polyline) return;
+        s.Segments ??= new List<SegmentData>();
+        while (s.Segments.Count < s.Points.Count) s.Segments.Add(new SegmentData());
+        var segCount = s.Kind == ShapeKind.Polygon ? s.Points.Count : s.Points.Count - 1;
+        for (int i = 0; i < segCount; i++)
+        {
+            var p1 = s.Points[i];
+            var p2 = s.Points[(i + 1) % s.Points.Count];
+            var seg = s.Segments[i];
+            seg.Kind = SegmentKind.Cubic;
+            seg.Control1 = (p1.X + (p2.X - p1.X) / 3.0, p1.Y + (p2.Y - p1.Y) / 3.0);
+            seg.Control2 = (p1.X + (p2.X - p1.X) * 2.0 / 3.0, p1.Y + (p2.Y - p1.Y) * 2.0 / 3.0);
+        }
+        Store.Notify();
+    }
+
+    private void StraightenAllEdges(Shape s)
+    {
+        if (s.Segments == null) return;
+        foreach (var seg in s.Segments) seg.Kind = SegmentKind.Line;
         Store.Notify();
     }
 

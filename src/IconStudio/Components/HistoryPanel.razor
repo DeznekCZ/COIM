@@ -5,35 +5,48 @@
     <h3>History</h3>
     <div class="history-body">
         <ul class="history-list">
-            @* Past actions — top of undo stack is the most recent, displayed at the
-               top of the list. Each click undoes (n) steps. *@
-            @foreach (var item in Undo.UndoEntries.Select((e, i) => new { Entry = e, N = i + 1 }))
+            @* Chronological — oldest action at top, most recent past just above
+               the Current marker. Then future (redo) entries flow downward, with
+               the next redo immediately below current. Click any row to jump to
+               that point in history. *@
+            @{
+                var undoList = Undo.UndoEntries; // top-first = most recent first
+                var undoCount = undoList.Count;
+            }
+            @* Iterate undo stack from bottom (oldest) to top (newest past). *@
+            @for (int origIdx = undoCount - 1; origIdx >= 0; origIdx--)
             {
-                <li class="history-item past" @onclick="() => Undo.Jump(item.N)"
-                    title="Undo @item.N step(s) — Ctrl+Z">
+                var entry = undoList[origIdx];
+                var stepsBack = origIdx + 1;
+                <li class="history-item past" @onclick="() => Undo.Jump(stepsBack)"
+                    title="Undo @stepsBack step(s) — revert this action">
                     <span class="hi-step">↶</span>
-                    <span class="hi-desc">@item.Entry.Description</span>
-                    <span class="hi-time">@item.Entry.At.ToString("HH:mm:ss")</span>
+                    <span class="hi-desc">@entry.Description</span>
+                    <span class="hi-time">@entry.At.ToString("HH:mm:ss")</span>
                 </li>
             }
             <li class="history-item current" title="Current state">
                 <span class="hi-step">●</span>
                 <span class="hi-desc"><b>Current</b></span>
-                <span class="hi-time">@(Undo.UndoEntries.Count) edit(s)</span>
+                <span class="hi-time">@undoCount edit(s)</span>
             </li>
-            @* Future actions — top of redo stack is the next redo. Stays in the
-               list until a new edit replaces it, so you can keep flipping between
-               Ctrl+Z and Ctrl+Y. *@
-            @foreach (var item in Undo.RedoEntries.Select((e, i) => new { Entry = e, N = i + 1 }))
+            @* Future actions: redo stack top-first (next redo just below current),
+               so iteration order matches display order chronologically. *@
+            @{
+                var redoList = Undo.RedoEntries;
+            }
+            @for (int i = 0; i < redoList.Count; i++)
             {
-                <li class="history-item future" @onclick="() => Undo.Jump(-item.N)"
-                    title="Redo @item.N step(s) — Ctrl+Y">
+                var entry = redoList[i];
+                var stepsForward = i + 1;
+                <li class="history-item future" @onclick="() => Undo.Jump(-stepsForward)"
+                    title="Redo @stepsForward step(s) — re-apply this action">
                     <span class="hi-step">↷</span>
-                    <span class="hi-desc">@item.Entry.Description</span>
-                    <span class="hi-time">@item.Entry.At.ToString("HH:mm:ss")</span>
+                    <span class="hi-desc">@entry.Description</span>
+                    <span class="hi-time">@entry.At.ToString("HH:mm:ss")</span>
                 </li>
             }
-            @if (Undo.UndoEntries.Count == 0 && Undo.RedoEntries.Count == 0)
+            @if (undoCount == 0 && redoList.Count == 0)
             {
                 <li class="history-item empty muted">(no history yet)</li>
             }
