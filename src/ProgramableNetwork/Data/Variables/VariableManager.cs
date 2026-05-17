@@ -85,16 +85,8 @@ namespace ProgramableNetwork.Data.Variables
         /// </summary>
         public void SetVariable(string name, Fix32 value, EntityId writer)
         {
-            if (value == Fix32.Zero)
-            {
-                m_variables.TryRemove(name, out _);
-                m_writers.TryRemove(name, out _);
-            }
-            else
-            {
-                m_variables[name] = value;
-                m_writers[name] = writer;
-            }
+            m_variables[name] = value;
+            m_writers[name] = writer;
         }
 
         public Fix32 GetVariable(string name)

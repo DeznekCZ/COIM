@@ -1,4 +1,7 @@
-v1.1.2 | 2026-07-15:
+v1.1.2a | 2026-05-17:
+- hotfix after change of variable was not possible to remove unused variables
+
+v1.1.2 | 2026-05-16:
 - added calculation optimization for copying of connected signals
 - updated actions to be done with commands for potential multiplayer
 - added read for computation on Mainframe and DataCenter

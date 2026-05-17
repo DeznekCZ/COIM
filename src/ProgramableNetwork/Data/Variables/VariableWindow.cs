@@ -111,7 +111,6 @@ public class VariableEntry : Row {
 		m_removeBtn = AddAndReturn(new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png));
 		m_removeBtn.LaterText<ButtonIcon>(() => NewTr.Inspector.VariableRemove, this, (b, v) => b.Tooltip(v));
 		m_removeBtn.OnClick(removeVariable);
-		m_removeBtn.ObserveEnabled(() => findWriter() == null);
 
 		this.Margin(5);
 	}
