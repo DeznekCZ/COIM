@@ -184,7 +184,8 @@ def build_product_loose(
         pinToHomeScreen = False,
         maxTransport: Quantity | int = None,
         prefabPath: str = None,
-        dumpsAs: Proto.ID | str = None
+        dumpsAs: Proto.ID | str = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None
     ) -> LooseProductProto:
     """
     Register a loose (pile) product.
@@ -229,6 +230,12 @@ def build_product_loose(
                           Ids.TerrainMaterials.Slag         — slag piles
                           Ids.TerrainMaterials.Compost      — organic
                           Ids.TerrainMaterials.Landfill     — waste
+        research:       optional research node that unlocks this product. When set, the
+                        product is locked-on-init by default and appended to the research
+                        node's Units list as a ProductUnlock. Equivalent to calling
+                        add_unlock_product(research, productId) after build_product_loose
+                        with isLocked=True. The research node must already be registered
+                        (define it earlier in the load order, e.g. via build_research).
     """
     pass
 
@@ -293,7 +300,8 @@ def build_product_unit(
         isWaste = False,
         packingMode = None,
         allowPackingNoise: bool = False,
-        rotateSecondPackedItem90Degs: bool = False
+        rotateSecondPackedItem90Degs: bool = False,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None
     ) -> LooseProductProto:
     """
     Register a unit (countable) product.
@@ -323,6 +331,12 @@ def build_product_unit(
         rotateSecondPackedItem90Degs:
             When True, every other packed item is rotated 90° (useful for items that look
             better with alternating orientation, e.g. boxes that visually tile when paired).
+        research:
+            Optional research node that unlocks this product. When set, the product is
+            locked-on-init by default and appended to the research's Units list as a
+            ProductUnlock — equivalent to add_unlock_product(research, productId) plus
+            isLocked=True. The research must already be registered (define it earlier in
+            the load order, e.g. via build_research).
     """
     pass
 
@@ -391,6 +405,67 @@ def edit_recipe(
         ingredients: list - none, empty or at least one Product in case products are empty
         products: list - none, empty or at least one Product in case ingredients are empty
         power: optional - Percent value defining power consumption modification
+    """
+    pass
+
+def build_generator(
+        id: str | MachineProto.ID,
+        name: str,
+        inputProduct: Product,
+        outputElectricityKw: int,
+        outputProduct: Product | None = None,
+        description: str = "",
+        source: str | MachineProto.ID = "DieselGeneratorT2",
+        duration: Duration | int | None = None,
+        generationPriority: int | None = None,
+        bufferCapacityMultiplier: int | None = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool | None = None
+    ):
+    """
+    Register a new electricity generator that consumes a product and produces electricity.
+
+    Backed by Mafi.Base.Prototypes.Machines.PowerGenerators.ElectricityGeneratorFromProductProto
+    — the same proto family as DieselGenerator / DieselGeneratorT2. Each instance hard-codes
+    a SINGLE InputProduct -> Electricity (+ optional OutputProduct waste) mapping; the proto is
+    not recipe-list-driven. Create one instance per fuel/chemistry.
+
+    The implementation clones non-customizable plumbing (layout, costs, graphics, animation,
+    destroy-reason) from a source generator (default: DieselGeneratorT2) and substitutes the
+    fuel-relevant fields. The resulting machine looks like the source visually but consumes
+    a different product.
+
+    Parameters:
+        id:                       new generator id (string or MachineProto.ID).
+        name:                     display name shown in-game.
+        inputProduct:             required. Product(...) describing the fuel and per-cycle quantity.
+        outputElectricityKw:      required. kW generated per cycle.
+        outputProduct:            optional. Product(...) for a waste byproduct (e.g. spent battery).
+        description:              optional. Short description.
+        source:                   id of a vanilla generator to clone non-customizable fields from.
+                                  Default 'DieselGeneratorT2'. Must be an existing
+                                  ElectricityGeneratorFromProductProto in the prototypes DB.
+        duration:                 cycle time. Duration or int (seconds). Defaults to source's.
+        generationPriority:       priority within the electricity grid. Defaults to source's.
+        bufferCapacityMultiplier: internal buffer size factor. Defaults to source's.
+        research:                 optional research node that unlocks this generator. When set,
+                                  the generator is locked-on-init by default and added to the
+                                  research node's Units list.
+        lockedOnInit:             override the auto-lock behavior (default True when research is
+                                  provided, False otherwise).
+
+    Example:
+        build_generator(
+            id                  = "BatteryDischarger_LeadAcid",
+            name                = "Battery discharger (lead-acid)",
+            description         = "Discharges charged lead-acid batteries; returns the empty cells.",
+            source              = "DieselGeneratorT2",
+            inputProduct        = Product("Product_LeadAcidBatteryCharged", 1),
+            outputProduct       = Product("Product_LeadAcidBatteryEmpty",   1),
+            outputElectricityKw = 160,
+            duration            = Duration.FromSec(20),
+            research            = "CustomResearch_LeadAcidBattery"
+        )
     """
     pass
 

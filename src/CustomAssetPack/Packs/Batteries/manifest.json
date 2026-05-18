@@ -1,0 +1,16 @@
+{
+  "id": "CustomAssets_Batteries",
+  "display_name": "Batteries [CAL]",
+  "version": "0.0.1",
+  "description_short": "Adds Lead-acid and Lithium-ion battery production chains using existing game resources.",
+  "description_long": "Adds two battery production chains using existing game resources:\n\nLead-acid: unlocked near Sulfur Processing research. Lead is recovered from copper scrap in an acid bath (Chemical Plant), then combined with Acid and Plastic in an Assembler to produce Lead-acid batteries.\n\nLithium-ion: unlocked after Robotic Assembly research. Lithium is extracted from Brine in the Tier-2 Electrolyzer (with a Salt by-product), then assembled with Copper, Plastic and Electronics in the Robotic Assembler.\n\nBatteries integrate as consumer electronics via alternate recipes: feeding batteries into the standard Consumer Electronics line lets settlements consume them through the existing demand.\n\nNote: a dedicated 'battery power-storage building' and a new 'battery-consuming maintenance type' are intentionally NOT included — those require extending the CustomAssets C# framework (new static-entity / new maintenance-type builders), which is beyond a Python recipe pack.",
+  "authors": [ "DeznekCZ" ],
+  "mod_dependencies": [
+    "CustomAssets>=0.1.9"
+  ],
+  "can_add_to_saved_game": true,
+  "can_remove_from_saved_game": true,
+  "non_locking_dll_load": true,
+  "min_game_version": "0.8.4",
+  "primary_dlls": [ "CustomAssets_Batteries.dll" ]
+}
