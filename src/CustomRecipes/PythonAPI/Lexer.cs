@@ -59,6 +59,22 @@ namespace CustomAssets.Python {
 					RequireNext(PythonTokens.newline);
 					break;
 
+				case PythonTokens.import:
+					// Top-level `import <name>` — sugar for dependencies("name"). Used by
+					// Definitions/__init__.py to declare which sibling .py modules to load
+					// and in what order. (Compare with `from X import ...` above, which
+					// pulls symbols from Mafi / CustomAssets into the current context.)
+					Token moduleNameTok = RequireNext(PythonTokens.name);
+					tree.Add(new LocalImportStatement(moduleNameTok.value));
+					// Tolerate end-of-file: the tokenizer doesn't emit a newline after the
+					// last non-empty line of a file (see Tokenizer.cs line 134), so a final
+					// `import X` with no trailing content goes straight to EOF.
+					if (enumerator.Count > 0 && enumerator.First.Value.type == PythonTokens.eof) {
+						break;
+					}
+					RequireNext(PythonTokens.newline);
+					break;
+
 				case PythonTokens.classp:
 					ParseClass(tree);
 					break;

@@ -39,14 +39,30 @@ public class CustomAssetRegistrator : IModData {
 
 	private Dictionary<string, object> m_configValues = new Dictionary<string, object>();
 
-	// If `path` ends in ".svg", rewrite to ".png" — the build-time `ModBuilder svg2png` step
-	// produces a PNG next to every SVG, and the game's icon pipeline loads PNG faster and more
-	// reliably than going through its Unity.VectorGraphics SVG loader. If the .png is missing
-	// (e.g. modder forgot to run the build step), we leave the .svg path alone and let the
-	// game's loader try it — but we log a warning so they can fix it.
+	// Resolve an icon path. Two distinct cases:
+	//   1. A raw string path like `Assets/Base/Products/Icons/Iron.svg` is a REFERENCE to an
+	//      asset that lives in the base game's asset bundle (or another mod's). The framework
+	//      does NOT attempt to load it from disk — the game's icon pipeline resolves it from
+	//      the bundle at render time. Just pass it through.
+	//   2. A path produced by add_texture(...) points at a file inside this mod's folder. For
+	//      `.svg` we look for the build-time-generated companion `.png` (svg2png step in
+	//      ModBuilder) and rewrite to that, since PNG loads faster than vector at runtime.
+	//      If the PNG is missing we warn — the modder probably forgot to rebuild.
+	//
+	// The disambiguator is whether the file (svg or png) actually exists under m_modBasePath.
+	// If neither does, we treat the path as a reference and stay quiet.
 	private string ResolveIconPath(string path) {
 		if (string.IsNullOrEmpty(path)) return path;
 		if (!path.EndsWith(".svg", System.StringComparison.OrdinalIgnoreCase)) return path;
+
+		string svgOnDisk = Path.Combine(m_modBasePath, path);
+		if (!File.Exists(svgOnDisk)) {
+			// Not a mod-local asset — it's a reference (vanilla bundle or external mod).
+			// Use add_texture(...) when you want a real load from the mod folder.
+			return path;
+		}
+
+		// Mod-local SVG: rewrite to its companion PNG produced by svg2png at build time.
 		string pngPath = path.Substring(0, path.Length - 4) + ".png";
 		string pngOnDisk = Path.Combine(m_modBasePath, pngPath);
 		if (!File.Exists(pngOnDisk)) {
@@ -80,6 +96,55 @@ public class CustomAssetRegistrator : IModData {
 		CustomAssetManager.Alternations[texPath] = tex;
 		tex.name = texPath;
 		return tex;
+	}
+
+	// Cached reflection handle for ProductType.m_protoType (private field carrying the
+	// System.Type that tells us whether a product is Fluid / Loose / Countable / Molten).
+	private static readonly FieldInfo s_productTypeProtoTypeField = typeof(Mafi.Core.Products.ProductType)
+		.GetField("m_protoType", BindingFlags.NonPublic | BindingFlags.Instance);
+
+	// PortSpec is a struct with readonly fields, so it can't be constructed via object-
+	// initializer syntax. We build one by boxing default(PortSpec) and writing each
+	// field through reflection (which bypasses the readonly check). The boxed struct
+	// is unboxed back to PortSpec on return.
+	private static Mafi.Core.Ports.Io.PortSpec makePortSpec(
+		char name,
+		Mafi.IoPortType type,
+		Mafi.Core.Ports.Io.IoPortShapeProto shape,
+		bool canOnlyConnectToTransports)
+	{
+		object boxed = default(Mafi.Core.Ports.Io.PortSpec);
+		typeof(Mafi.Core.Ports.Io.PortSpec).GetField("Name").SetValue(boxed, name);
+		typeof(Mafi.Core.Ports.Io.PortSpec).GetField("Type").SetValue(boxed, type);
+		typeof(Mafi.Core.Ports.Io.PortSpec).GetField("Shape").SetValue(boxed, shape);
+		typeof(Mafi.Core.Ports.Io.PortSpec).GetField("CanOnlyConnectToTransports")
+			.SetValue(boxed, canOnlyConnectToTransports);
+		return (Mafi.Core.Ports.Io.PortSpec)boxed;
+	}
+
+	// Map a product to the IoPortShapeProto a conveyor/pipe needs in order to physically
+	// connect to it. Used by build_generator to override port shapes after cloning the
+	// source generator (since the source's ports are typed for ITS product, not ours).
+	private static Mafi.Core.Ports.Io.IoPortShapeProto portShapeForProduct(
+		ProtosDb db, Mafi.Core.Products.ProductProto product)
+	{
+		var protoType = s_productTypeProtoTypeField != null
+			? (Type)s_productTypeProtoTypeField.GetValue(product.Type)
+			: null;
+
+		string shapeId;
+		if (protoType == null) {
+			throw new ArgumentException($"portShapeForProduct: cannot classify product '{product.Id.Value}' — m_protoType missing.");
+		}
+		if (typeof(Mafi.Core.Products.FluidProductProto).IsAssignableFrom(protoType))         shapeId = "IoPortShape_Pipe";
+		else if (typeof(Mafi.Core.Products.MoltenProductProto).IsAssignableFrom(protoType))   shapeId = "IoPortShape_MoltenMetalChannel";
+		else if (typeof(Mafi.Core.Products.LooseProductProto).IsAssignableFrom(protoType))    shapeId = "IoPortShape_LooseMaterialConveyor";
+		else if (typeof(Mafi.Core.Products.CountableProductProto).IsAssignableFrom(protoType)) shapeId = "IoPortShape_FlatConveyor";
+		else throw new ArgumentException(
+			$"portShapeForProduct: unknown product type '{protoType.Name}' for '{product.Id.Value}'.");
+
+		return db.GetOrThrow<Mafi.Core.Ports.Io.IoPortShapeProto>(
+			new Mafi.Core.Ports.Io.IoPortShapeProto.ID(shapeId));
 	}
 
 	// Resolve a single Tex/string OR a list of them into List<Texture2D>. Returns null when the
@@ -149,6 +214,9 @@ public class CustomAssetRegistrator : IModData {
 		m_modBasePath = registrator.ActiveMod.Manifest.RootDirectoryPath;
 		m_configValues = ConfigLoader.Load(m_modBasePath);
 
+		string modId = registrator.ActiveMod?.Manifest?.Id ?? "unknown-mod";
+		DiagnosticTrace.Step($"RegisterData: start (mod={modId}, base={m_modBasePath})");
+
 		DirectoryInfo modules = new DirectoryInfo($"{m_modBasePath}/Definitions");
 		Log.Info("Location of modules: " + modules.FullName);
 
@@ -157,30 +225,54 @@ public class CustomAssetRegistrator : IModData {
 
 		StringBuilder failedLog = new StringBuilder();
 
-		foreach (FileInfo enumerateFile in modules.EnumerateFiles("*.py")) {
+		// If an __init__.py is present at the Definitions root, load it FIRST so it can
+		// declare the explicit load order for the rest (via dependencies("...") calls or
+		// any other initialization the pack wants). Files explicitly pulled in by
+		// __init__.py end up in `loaded`, and the EnumerateFiles loop below skips them.
+		// Legacy packs without __init__.py continue to work via auto-enumerate + each
+		// file's own dependencies() declarations.
+		// FAIL-FAST: if the first definition file fails to load (whether __init__.py or any
+		// other), surface the error immediately as a CheckException instead of logging it
+		// and pressing on with cascading failures. The log gets one clear root-cause entry
+		// and the mod loader sees the exception at the right place.
+		FileInfo initFile = new FileInfo(Path.Combine(modules.FullName, "__init__.py"));
+		if (initFile.Exists) {
+			DiagnosticTrace.Step($"RegisterData[{modId}]: __init__.py exists, loading");
 			try {
-				if (loaded.Contains(enumerateFile.FullName)) {
-					continue;
-				}
-				if (failed.Contains(enumerateFile.FullName)) {
-					continue;
-				}
-				register(loaded, failed, registrator, enumerateFile, modules);
+				register(loaded, failed, registrator, initFile, modules);
+				DiagnosticTrace.Step($"RegisterData[{modId}]: __init__.py loaded");
 			} catch (Exception e) {
-				failedLog.AppendLine(
-					$"Failed to load definition: {enumerateFile.FullName.Remove(0, modules.FullName.Length)}");
-				failedLog.AppendLine(e.Message);
-				failedLog.AppendLine(e.StackTrace);
-				Log.Error($"Failed to load definition: {enumerateFile.FullName.Remove(0, modules.FullName.Length)}");
+				DiagnosticTrace.Step($"RegisterData[{modId}]: __init__.py FAILED: {e.GetType().Name}: {e.Message}");
+				Log.Error("Failed to load __init__.py");
 				Log.Exception(e);
-				failed.Add(enumerateFile.FullName);
+				failed.Add(initFile.FullName);
+				throw new CheckException(
+					$"Failed to load __init__.py: {e.Message}\n{e.StackTrace}", e);
 			}
 		}
 
-		if (failed.Count > 0) {
-			throw new CheckException("Modules was not loaded, see log (maybe is wrong order load only): " + failed.Count
-				+ "\n" + failedLog);
+		foreach (FileInfo enumerateFile in modules.EnumerateFiles("*.py")) {
+			if (loaded.Contains(enumerateFile.FullName)) {
+				continue;
+			}
+			if (failed.Contains(enumerateFile.FullName)) {
+				continue;
+			}
+			DiagnosticTrace.Step($"RegisterData[{modId}]: enumerate-loading {enumerateFile.Name}");
+			try {
+				register(loaded, failed, registrator, enumerateFile, modules);
+				DiagnosticTrace.Step($"RegisterData[{modId}]: enumerate-loaded {enumerateFile.Name}");
+			} catch (Exception e) {
+				string relPath = enumerateFile.FullName.Remove(0, modules.FullName.Length);
+				DiagnosticTrace.Step($"RegisterData[{modId}]: {enumerateFile.Name} FAILED: {e.GetType().Name}: {e.Message}");
+				Log.Error($"Failed to load definition: {relPath}");
+				Log.Exception(e);
+				failed.Add(enumerateFile.FullName);
+				throw new CheckException(
+					$"Failed to load definition '{relPath}': {e.Message}\n{e.StackTrace}", e);
+			}
 		}
+		DiagnosticTrace.Step($"RegisterData[{modId}]: complete (loaded={loaded.Count}, failed={failed.Count})");
 
 		// Note: we do NOT call CustomAssetManager.Instance.RunInjection() here. CAM may not yet
 		// be constructed (it's lazy DI), and even if it were, it can't run before LPMM/
@@ -191,8 +283,10 @@ public class CustomAssetRegistrator : IModData {
 
 	private void register(Set<string> loaded, Set<string> failed, ProtoRegistrator registrator, FileInfo file,
 		DirectoryInfo modules) {
+		DiagnosticTrace.Step($"register: parsing {file.Name}");
 		Token[] tokens = Tokenizer.ParseFile(file.FullName);
 		Block block = Lexer.Parse(tokens);
+		DiagnosticTrace.Step($"register: parsed {file.Name} ({tokens.Length} tokens, {block.statements.Count} statements)");
 
 		Dictionary<string, object> context = resolvers(registrator);
 		context["dependencies"] = new Constructor([
@@ -200,27 +294,42 @@ public class CustomAssetRegistrator : IModData {
 		], (args => {
 			foreach (object collection in args.Values()) {
 				if (collection is string filename) {
+					DiagnosticTrace.Step($"  dependencies: '{file.Name}' -> '{filename}'");
 					FileInfo path = new FileInfo(Path.Combine(file.DirectoryName, filename + ".py"));
 
 					if (false == path.Exists) {
+						DiagnosticTrace.Step($"  dependencies: '{filename}' NOT FOUND at {path.FullName}");
 						Log.Error($"Failed to load Custom Assets dependency: {file.Name} -> {filename}");
 						throw new FileNotFoundException(
 							$"Failed to load Custom Assets dependency: {file.Name} -> {filename}", path.FullName);
 					}
 
+					if (loaded.Contains(path.FullName)) {
+						DiagnosticTrace.Step($"  dependencies: '{filename}' already loaded, skip");
+						continue;
+					}
+					if (failed.Contains(path.FullName)) {
+						// A previous dependency-load already failed and recorded this file.
+						// Surface the situation as an exception so the OUTER file (the one
+						// calling dependencies()) aborts too — otherwise we silently
+						// continue with an incomplete prototype graph and the game hangs
+						// later trying to resolve missing IDs.
+						string relPath = path.FullName.Remove(0, modules.FullName.Length);
+						Log.Error($"Invalid or missing dependency: {relPath}");
+						throw new InvalidOperationException(
+							$"Dependency '{relPath}' previously failed to load; cannot continue '{file.Name}'.");
+					}
 					try {
-						if (loaded.Contains(path.FullName)) {
-							continue;
-						}
-						if (failed.Contains(path.FullName)) {
-							Log.Error($"Invalid or missing dependency: {path.FullName.Remove(0, modules.FullName.Length)}");
-							break;
-						}
 						register(loaded, failed, registrator, path, modules);
 					} catch (Exception e) {
-						Log.Error($"Failed to load definition: {path.FullName.Remove(0, modules.FullName.Length)}");
+						Log.Error($"Failed to load dependency '{path.FullName.Remove(0, modules.FullName.Length)}' " +
+							$"(referenced from '{file.Name}'): {e.Message}");
 						Log.Exception(e);
 						failed.Add(path.FullName);
+						// Rethrow so the calling file's load aborts. The outer RegisterData
+						// loop will record this file as failed too and report all failures
+						// via the CheckException at the end.
+						throw;
 					}
 				} else {
 					throw new ArgumentException($"Type is not string: {collection.GetType()}", "dependencies");
@@ -229,11 +338,21 @@ public class CustomAssetRegistrator : IModData {
 			return null; // TODO dependencies as YIELD action in python context
 		}));
 
+		DiagnosticTrace.Step($"register: executing {block.statements.Count} statements in {file.Name}");
+		int stmtIndex = 0;
 		foreach (IStatement variable in block.statements) {
-			variable.Execute(context);
+			DiagnosticTrace.Step($"register: {file.Name} statement[{stmtIndex}] {variable.GetType().Name}");
+			try {
+				variable.Execute(context);
+			} catch (Exception ex) {
+				DiagnosticTrace.Step($"register: {file.Name} statement[{stmtIndex}] THREW {ex.GetType().Name}: {ex.Message}");
+				throw;
+			}
+			stmtIndex++;
 		}
 
 		loaded.Add(file.FullName);
+		DiagnosticTrace.Step($"register: COMPLETED {file.Name}");
 	}
 
 	private Dictionary<string, object> resolvers(ProtoRegistrator registrator) {
@@ -1037,7 +1156,7 @@ public class CustomAssetRegistrator : IModData {
 			["build_product_loose"] = new Constructor([
 				"productId", "name", "description", "icon", "color", "particleColor", "isDumped",
 				"isStorable", "isRecyclable", "material", "isWaste", "isRough", "isLocked",
-				"pinToHomeScreen", "maxTransport", "prefabPath", "dumpsAs"
+				"pinToHomeScreen", "maxTransport", "prefabPath", "dumpsAs", "research"
 			], (args) => {
 				var id = args.GetArgument<ProductProto.ID>("productId")
 					.When<string>(ids => new ProductProto.ID(ids))
@@ -1114,14 +1233,31 @@ public class CustomAssetRegistrator : IModData {
 					product.AddParam(new Mafi.Core.Buildings.Farms.LooseProductParam(dumpsAsId));
 				}
 
-				registrator.PrototypesDb.Add(product, args.GetArgument<bool>("isLocked").ElseDefault(false));
+				// Resolve optional research first so it can both lock the product on
+				// init (default for research-gated products) and append the product
+				// to the research's Units list as a ProductUnlock.
+				ResearchNodeProto researchLoose = args.GetArgument<ResearchNodeProto>("research")
+					.When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+					.When<string>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
+					.ElseNull();
+
+				bool lockedLoose = args.GetArgument<bool>("isLocked").ElseDefault(researchLoose != null);
+				registrator.PrototypesDb.Add(product, lockedLoose);
+
+				if (researchLoose != null) {
+					typeof(ResearchNodeProto).GetField("<Units>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+						?.SetValue(researchLoose, researchLoose.Units
+							.AsEnumerable()
+							.Concat(new IUnlockNodeUnit[] { new ProductUnlock(product, false) })
+							.ToImmutableArray());
+				}
 				return product;
 			}),
 
 			["build_product_unit"] = new Constructor([
 				"productId", "name", "icon", "prefab", "maxTransport", "packingMode",
 				"allowPackingNoise", "rotateSecondPackedItem90Degs",
-				"description", "isStorable", "isWaste", "isLocked"
+				"description", "isStorable", "isWaste", "isLocked", "research"
 			], (args) => {
 				var id = args.GetArgument<ProductProto.ID>("productId")
 					.When<string>(ids => new ProductProto.ID(ids))
@@ -1160,7 +1296,23 @@ public class CustomAssetRegistrator : IModData {
 							),
 						isWaste: isWaste
 					);
-				registrator.PrototypesDb.Add(product, args.GetArgument<bool>("isLocked").ElseDefault(false));
+				// Optional research: lock product on init (default when research is set)
+				// and append a ProductUnlock so the research node displays it.
+				ResearchNodeProto researchUnit = args.GetArgument<ResearchNodeProto>("research")
+					.When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+					.When<string>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
+					.ElseNull();
+
+				bool lockedUnit = args.GetArgument<bool>("isLocked").ElseDefault(researchUnit != null);
+				registrator.PrototypesDb.Add(product, lockedUnit);
+
+				if (researchUnit != null) {
+					typeof(ResearchNodeProto).GetField("<Units>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+						?.SetValue(researchUnit, researchUnit.Units
+							.AsEnumerable()
+							.Concat(new IUnlockNodeUnit[] { new ProductUnlock(product, false) })
+							.ToImmutableArray());
+				}
 				return product;
 			}),
 
@@ -1285,6 +1437,198 @@ public class CustomAssetRegistrator : IModData {
 
 			#endregion
 
+			#region build_generator
+
+			// Register a new ElectricityGeneratorFromProductProto by cloning an existing
+			// vanilla generator (DieselGeneratorT2 by default) and overriding the fuel
+			// mapping. ElectricityGeneratorFromProductProto has ONE built-in InputProduct
+			// / OutputProduct / OutputElectricity / Duration tuple per instance — it isn't
+			// recipe-list-driven — so each custom fuel needs its own generator instance.
+			//
+			// We clone non-customizable plumbing (layout, costs, graphics, animation,
+			// destroyReason, electricity-proto reference) from the source generator and
+			// substitute our own input/output/electricity/duration.
+			["build_generator"] = new Constructor([
+				"id",                          // str — required, new generator id
+				"name",                        // str — required, display name
+				"description",                 // str — optional
+				"source",                      // str — id of generator to clone from, default "DieselGeneratorT2"
+				"inputProduct",                // Product — required, the fuel
+				"outputProduct",               // Product — optional, waste byproduct
+				"outputElectricityKw",         // int — required, kW generated per cycle
+				"duration",                    // Duration | int — optional, cycle time (default: source's)
+				"generationPriority",          // int — optional (default: source's)
+				"bufferCapacityMultiplier",    // int — optional (default: source's)
+				"research",                    // ResearchNodeProto | ID | str — optional
+				"lockedOnInit"                 // bool — optional (default: research != null)
+			], args => {
+				string id = args.GetArgument<string>("id")
+					.When<Mafi.Core.Prototypes.Proto.ID>(p => p.Value)
+					.ElseRequiredThrow();
+				string name = args.GetArgument<string>("name").ElseRequiredThrow();
+				string desc = args.GetArgument<string>("description").ElseDefault("");
+				DiagnosticTrace.Step($"build_generator[{id}]: start (name='{name}')");
+
+				// 1) Locate the source generator (template).
+				string sourceIdStr = args.GetArgument<string>("source")
+					.When<Mafi.Core.Prototypes.Proto.ID>(p => p.Value)
+					.ElseDefault("DieselGeneratorT2");
+
+				var sourceProto = registrator.PrototypesDb
+					.All<Mafi.Base.Prototypes.Machines.PowerGenerators.ElectricityGeneratorFromProductProto>()
+					.FirstOrDefault(p => p.Id.Value == sourceIdStr);
+				if (sourceProto == null) {
+					throw new ArgumentException(
+						$"build_generator: source generator '{sourceIdStr}' not found " +
+						"in PrototypesDb (must be an ElectricityGeneratorFromProductProto).");
+				}
+
+				// 2) Required fuel. Product.product is already a resolved ProductProto
+				//    (the build_recipe Product class enforces that).
+				Product inputProductArg = args.GetArgument<Product>("inputProduct").ElseRequiredThrow();
+				ProductQuantity inputProductQuantity = new ProductQuantity(
+					inputProductArg.product, inputProductArg.quantity);
+
+				// 3) Optional waste byproduct (Nullable<ProductQuantity>).
+				ProductQuantity? outputProductQuantity = null;
+				if (args.GetArgument<Product>("outputProduct").WhenExists(out Product outArg)) {
+					outputProductQuantity = new ProductQuantity(outArg.product, outArg.quantity);
+				}
+
+				// 4) Numerics. Defaults come from the source so missing args still produce
+				//    a sensible machine (e.g. a "rename only" clone).
+				int electricityKw = args.GetNumberArgument<int>("outputElectricityKw")
+					.ElseDefault((int)sourceProto.OutputElectricity.Value);
+				Duration duration = args.GetArgument<Duration>("duration")
+					.When<int>(Duration.FromSec)
+					.ElseDefault(sourceProto.Duration);
+				int genPriority = args.GetNumberArgument<int>("generationPriority")
+					.ElseDefault(sourceProto.GenerationPriority);
+				int bufferCap = args.GetNumberArgument<int>("bufferCapacityMultiplier")
+					.ElseDefault(sourceProto.BufferCapacityMultiplier);
+
+				// 5) The virtual Electricity product. Reuse the source's reference so we
+				//    don't have to know the literal id of Product_Virtual_Electricity here.
+				FieldInfo electricityProtoField = sourceProto.GetType()
+					.GetField("electricityProto", BindingFlags.NonPublic | BindingFlags.Instance)
+					?? sourceProto.GetType()
+						.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+						.FirstOrDefault(f => f.FieldType == typeof(ProductProto)
+							&& f.Name.IndexOf("electric", StringComparison.OrdinalIgnoreCase) >= 0);
+				ProductProto electricityProto = electricityProtoField != null
+					? (ProductProto)electricityProtoField.GetValue(sourceProto)
+					: registrator.PrototypesDb.GetOrThrow<ProductProto>(new ProductProto.ID("Product_Virtual_Electricity"));
+
+				// 6) Resolve port shapes for the new input/output products. These must be
+				//    baked into the LAYOUT before the ctor runs — the ctor validates port
+				//    shapes against the inputProduct/outputProduct it receives, so a layout
+				//    still carrying the source's pipe-shaped ports (when our products are
+				//    unit) makes the ctor throw "No output port found for ...".
+				var inputShape = portShapeForProduct(registrator.PrototypesDb, inputProductQuantity.Product);
+				var outputShape = outputProductQuantity.HasValue
+					? portShapeForProduct(registrator.PrototypesDb, outputProductQuantity.Value.Product)
+					: null;
+				DiagnosticTrace.Step($"build_generator[{id}]: port shapes resolved (in={inputShape.Id.Value}, out={(outputShape != null ? outputShape.Id.Value : "(keep)")})");
+
+				// Build a new layout from the source's SourceLayoutStr by substituting each
+				// port's existing IoPortShape LayoutChar with the LayoutChar of the shape we
+				// actually want for that port. Then re-parse via the live EntityLayoutParser
+				// so all derived state (tiles, port positions, etc.) stays internally
+				// consistent — much cleaner than reflection-cloning the EntityLayout and
+				// patching its Ports field.
+				var srcLayout = sourceProto.Layout;
+				var charSubstitutions = new Dictionary<char, char>();
+				foreach (var srcPort in srcLayout.Ports) {
+					char oldChar = srcPort.Spec.Shape.LayoutChar;
+					Mafi.Core.Ports.Io.IoPortShapeProto newShape;
+					switch (srcPort.Spec.Type) {
+						case Mafi.IoPortType.Input:  newShape = inputShape;                       break;
+						case Mafi.IoPortType.Output: newShape = outputShape ?? srcPort.Spec.Shape; break;
+						default:                     newShape = srcPort.Spec.Shape;               break;
+					}
+					char newChar = newShape.LayoutChar;
+					if (oldChar == newChar) continue;
+					if (charSubstitutions.TryGetValue(oldChar, out char prior) && prior != newChar) {
+						// Same LayoutChar would have to map to two different new shapes — happens
+						// when the source's input and output use the same shape but we want
+						// different shapes for them. Layout-string substitution can't disambiguate
+						// in that case. For our typical pattern (both ports same shape in source,
+						// both go to the same new shape) this doesn't trigger.
+						Log.Warning($"build_generator[{id}]: ambiguous LayoutChar substitution for '{oldChar}' " +
+							$"(both '{prior}' and '{newChar}' requested) — pick a source generator " +
+							$"whose I/O port shapes differ if both directions need different new shapes.");
+						continue;
+					}
+					charSubstitutions[oldChar] = newChar;
+				}
+
+				string newLayoutSrc = srcLayout.SourceLayoutStr;
+				foreach (var kv in charSubstitutions) {
+					newLayoutSrc = newLayoutSrc.Replace(kv.Key, kv.Value);
+				}
+				string[] layoutLines = newLayoutSrc.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+				var layoutClone = registrator.LayoutParser.ParseLayoutOrThrow(srcLayout.LayoutParams, layoutLines);
+				DiagnosticTrace.Step($"build_generator[{id}]: layout parsed (substitutions={charSubstitutions.Count}, " +
+					$"ports={layoutClone.Ports.Length})");
+
+				// 7) Construct the new proto directly. The layout we built above already
+				//    carries the right port shapes, so the ctor's port-validation passes.
+				DiagnosticTrace.Step($"build_generator[{id}]: invoking ctor (source={sourceIdStr}, kw={electricityKw})");
+				var newProto = new Mafi.Base.Prototypes.Machines.PowerGenerators.ElectricityGeneratorFromProductProto(
+					new StaticEntityProto.ID(id),
+					Mafi.Core.Prototypes.Proto.CreateStr(
+						new StaticEntityProto.ID(id),
+						name, desc, /*translationComment*/ null),
+					layoutClone,
+					sourceProto.Costs,
+					Mafi.Electricity.FromKw(electricityKw),
+					genPriority,
+					inputProductQuantity,
+					outputProductQuantity,
+					electricityProto,
+					bufferCap,
+					duration,
+					sourceProto.ProductDestroyReason,
+					sourceProto.AnimationParams,
+					sourceProto.Graphics);
+				DiagnosticTrace.Step($"build_generator[{id}]: ctor returned");
+
+				// 8) Optional research wiring (lock + append unlock).
+				ResearchNodeProto research = args.GetArgument<ResearchNodeProto>("research")
+					.When<ResearchNodeProto.ID>(rid => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(rid))
+					.When<string>(rid => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(rid)))
+					.ElseNull();
+
+				bool locked = args.GetArgument<bool>("lockedOnInit").ElseDefault(research != null);
+				DiagnosticTrace.Step($"build_generator[{id}]: PrototypesDb.Add (locked={locked})");
+				registrator.PrototypesDb.Add(newProto, locked);
+				DiagnosticTrace.Step($"build_generator[{id}]: Add completed");
+
+				if (research != null) {
+					DiagnosticTrace.Step($"build_generator[{id}]: wiring research unlock ({research.Id.Value})");
+					typeof(ResearchNodeProto).GetField("<Units>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+						?.SetValue(research, research.Units
+							.AsEnumerable()
+							.Concat(new IUnlockNodeUnit[] { new ProtoWithIconUnlock(newProto, false) })
+							.ToImmutableArray());
+					// Match the build_recipe pattern: append the new proto to IconsProtos
+					// via .AsEnumerable() (Mafi's ImmutableArray doesn't directly implement
+					// System.Collections.Generic.IEnumerable<T>).
+					typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
+							BindingFlags.NonPublic | BindingFlags.Instance)
+						?.SetValue(research.Graphics, research.Graphics.IconsProtos
+							.AsEnumerable()
+							.Concat(new[] { newProto })
+							.Distinct()
+							.ToImmutableArray());
+				}
+
+				DiagnosticTrace.Step($"build_generator[{id}]: complete");
+				return newProto;
+			}),
+
+			#endregion
+
 			#region add_toolbar_category
 
 			["add_toolbar_category"] = new Constructor([
@@ -1359,6 +1703,10 @@ public static class ResearchPositionExtension {
 				.GroupBy(v => v.X, v => v.Y))
 			.GroupBy(g => g.Key, g => g)
 			.ToDict(p => p.Key, p => p.SelectMany(sg => sg).ToLyst());
+
+		// First pass: try each requested option as-is. If any is free, place there
+		// and we're done — no need to enter the fallback search loop below.
+		bool placed = false;
 		foreach (Vector2i option in options) {
 			if (usedOptions.TryGetValue(option.X, out Lyst<int> yS)
 				&& (yS.Contains(option.Y)
@@ -1367,9 +1715,19 @@ public static class ResearchPositionExtension {
 				continue;
 			}
 			proto.GridPosition = option;
+			placed = true;
 			break;
 		}
-		for (int yP = defaultOption.Y, yN = defaultOption.Y; ; yP++, yN--) {
+		if (placed) return;
+
+		// Fallback: walk outward (yP increases, yN decreases) from defaultOption.Y
+		// looking for a free Y slot in the defaultOption.X column. Bounded with a
+		// hard iteration cap so a bug (or an empty-column case) can't infinite-loop
+		// the mod loader — this is what previously hung the game.
+		const int FALLBACK_MAX_ITER = 1000;
+		for (int yP = defaultOption.Y, yN = defaultOption.Y, iter = 0;
+			iter < FALLBACK_MAX_ITER;
+			yP++, yN--, iter++) {
 			bool positiveUsed = usedOptions.TryGetValue(defaultOption.X, out Lyst<int> yS)
 				&& yS.Contains(yP)
 				&& yS.Contains(yP + 1)
@@ -1383,13 +1741,23 @@ public static class ResearchPositionExtension {
 			}
 			if (positiveUsed) {
 				proto.GridPosition = new Vector2i(defaultOption.X, yN);
-				break;
+				return;
 			}
 			if (negativeUsed) {
 				proto.GridPosition = new Vector2i(defaultOption.X, yP);
-				break;
+				return;
 			}
+			// Both Y slots free at this column position — just take the defaultOption
+			// (which would have been preferable in the first place but we missed in
+			// the first loop above; this is the case that used to infinite-loop).
+			proto.GridPosition = defaultOption;
+			return;
 		}
+		// Safety net: if the iteration cap was hit, fall back to defaultOption rather
+		// than leaving GridPosition at its default value.
+		Log.Warning($"GridPositionWherePossible: iteration cap reached for '{proto.Id.Value}', " +
+			$"using default position {defaultOption}.");
+		proto.GridPosition = defaultOption;
 	}
 
 	private static IEnumerable<Vector2i> yieldFrom(Vector2i gridPosition) {

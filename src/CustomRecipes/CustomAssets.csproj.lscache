@@ -60,7 +60,9 @@ Data/
   CustomAssetManager.cs
   CustomAssetRegistrator.cs
   CustomUnitPrefabHook.cs
+  DiagnosticTrace.cs
   GlobalDependencyResolver.cs
+  MachinePortsDumper.cs
   MiniJson.cs
   ObjLoader.cs
  Modules/Fields/Reference.cs
@@ -159,6 +161,7 @@ PythonAPI/
   IfStatement.cs
   ImportStatement.cs
   IStatement.cs
+  LocalImportStatement.cs
   ReturnStatement.cs
  Token.cs
  Tokenizer.cs
