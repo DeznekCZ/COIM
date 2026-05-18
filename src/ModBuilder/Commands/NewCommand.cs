@@ -35,6 +35,7 @@ OUTPUT LAYOUT
         manifest.json          (filled with sensible defaults)
         config.json            (two example fields; player-tunable settings)
         Definitions/
+            __init__.py        (explicit load order via dependencies())
             example.py         (commented-out build_recipe template)
         .gitignore             (ignores build artifacts)
 ";
@@ -134,6 +135,16 @@ OUTPUT LAYOUT
                 WriteFile(
                     Path.Combine(modDir, "Definitions", "example.py"),
                     Render("NewMod.example.tmpl", new Dictionary<string, string>
+                    {
+                        ["{{ID}}"] = modId,
+                    }));
+
+                // __init__.py declares explicit load order. Only meaningful with at least
+                // one module to load, so it ships alongside example.py (controlled by the
+                // same --no-example flag).
+                WriteFile(
+                    Path.Combine(modDir, "Definitions", "__init__.py"),
+                    Render("NewMod.init.tmpl", new Dictionary<string, string>
                     {
                         ["{{ID}}"] = modId,
                     }));

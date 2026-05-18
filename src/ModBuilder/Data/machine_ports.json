@@ -1,0 +1,124 @@
+{
+  "schema": {
+    "version": 2,
+    "description": "Curated catalog of COI machine port shapes. Each input/output is a named port mapped to its product type. Every COI machine port has a real name (except special 'VIRTUAL' outputs used for products like Electricity). The 'in1/in2/out1' placeholders below are stubs to be replaced with the real names from MachineProto.Ports at runtime. Planned: runtime auto-discovery by the CustomAssets framework writes the catalog back to disk on first mod load.",
+    "portTypes": ["fluid", "unit", "loose", "molten"]
+  },
+  "machines": {
+    "ChemicalPlant": {
+      "displayName": "Chemical Plant",
+      "inputs": {
+        "in1": "fluid",
+        "in2": "fluid",
+        "in3": "fluid",
+        "in4": "unit",
+        "in5": "loose",
+        "in6": "loose"
+      },
+      "outputs": {
+        "out1": "fluid",
+        "out2": "fluid",
+        "out3": "unit",
+        "out4": "loose"
+      },
+      "notes": "Most flexible chemistry host. Real port names TBD - fill in from MachineProto.Ports at runtime."
+    },
+    "ChemicalPlant2": {
+      "displayName": "Chemical Plant II",
+      "inputs": {
+        "in1": "fluid",
+        "in2": "fluid",
+        "in3": "fluid",
+        "in4": "unit",
+        "in5": "loose",
+        "in6": "loose"
+      },
+      "outputs": {
+        "out1": "fluid",
+        "out2": "fluid",
+        "out3": "unit",
+        "out4": "loose"
+      },
+      "notes": "Same matrix as Chemical Plant, higher throughput."
+    },
+    "ElectrolyzerT2": {
+      "displayName": "Electrolyzer II (Copper Electrolysis)",
+      "inputs": {
+        "in1": "fluid",
+        "in2": "unit"
+      },
+      "outputs": {
+        "out1": "unit"
+      },
+      "notes": "Strict 1F + 1U -> 1U. Vanilla recipe: ImpureCopper + Acid -> Copper."
+    },
+    "AssemblyManual": {
+      "displayName": "Assembler I (Manual)",
+      "inputs": {
+        "in1": "unit",
+        "in2": "unit",
+        "in3": "unit"
+      },
+      "outputs": {
+        "out1": "unit"
+      },
+      "notes": "Assemblers: 3 unit inputs, 1 unit output. No fluid or loose ports."
+    },
+    "AssemblyElectrified": {
+      "displayName": "Assembler II (Electrified)",
+      "inputs": {
+        "in1": "unit",
+        "in2": "unit",
+        "in3": "unit"
+      },
+      "outputs": {
+        "out1": "unit"
+      },
+      "notes": "Same shape as AssemblyManual."
+    },
+    "AssemblyElectrifiedT2": {
+      "displayName": "Assembler III",
+      "inputs": {
+        "in1": "unit",
+        "in2": "unit",
+        "in3": "unit"
+      },
+      "outputs": {
+        "out1": "unit"
+      }
+    },
+    "AssemblyRoboticT1": {
+      "displayName": "Assembler IV (Robotic)",
+      "inputs": {
+        "in1": "unit",
+        "in2": "unit",
+        "in3": "unit"
+      },
+      "outputs": {
+        "out1": "unit"
+      }
+    },
+    "AssemblyRoboticT2": {
+      "displayName": "Assembler V (Robotic)",
+      "inputs": {
+        "in1": "unit",
+        "in2": "unit",
+        "in3": "unit"
+      },
+      "outputs": {
+        "out1": "unit"
+      }
+    },
+    "BasicDieselDistiller": {
+      "displayName": "Basic Diesel Distiller",
+      "inputs": {
+        "in1": "fluid",
+        "in2": "unit"
+      },
+      "outputs": {
+        "Z": "fluid"
+      },
+      "notes": "Output port 'Z' is referenced explicitly in coal_liquification.py (Product(Ids.Products.FuelGas, 24, \"Z\")). Confirm by introspecting at runtime."
+    }
+  }
+}

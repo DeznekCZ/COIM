@@ -55,8 +55,10 @@ TemporaryDependencyNodeTargetIdentifier=net48
 [sourceFiles]
 Commands/
  BuildCommand.cs
+ IntrospectCommand.cs
  NewCommand.cs
  Png2SvgCommand.cs
+ ReflectCommand.cs
  Svg2PngCommand.cs
 Manifest.cs
 obj/Debug/

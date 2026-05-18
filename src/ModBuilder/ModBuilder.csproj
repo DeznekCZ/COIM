@@ -36,7 +36,14 @@
     <EmbeddedResource Include="Templates\Mod.csproj.tmpl" />
     <EmbeddedResource Include="Templates\NewMod.manifest.tmpl" />
     <EmbeddedResource Include="Templates\NewMod.example.tmpl" />
+    <EmbeddedResource Include="Templates\NewMod.init.tmpl" />
     <EmbeddedResource Include="Templates\NewMod.gitignore.tmpl" />
     <EmbeddedResource Include="Templates\NewMod.config.tmpl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Data\machine_ports.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

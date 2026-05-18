@@ -19,6 +19,10 @@ COMMANDS
                          or a directory (scanned recursively). Incremental.
     png2svg <input>      Vectorize PNG icons to polygonal SVG (quantize +
                          contour-trace). Reverse of svg2png; lossy.
+    introspect ...       Inspect COI machine port shapes (from the curated catalog)
+                         and product types (live reflection on Mafi.Base.dll).
+    reflect ...          General-purpose reflection over the COI assemblies (types,
+                         fields, methods, static values, name search).
 
 GLOBAL
     -h, --help           Show this help.
@@ -49,6 +53,10 @@ Run 'ModBuilder.exe <command> --help' for command-specific options.
                         return Commands.Svg2PngCommand.Run(rest);
                     case "png2svg":
                         return Commands.Png2SvgCommand.Run(rest);
+                    case "introspect":
+                        return Commands.IntrospectCommand.Run(rest);
+                    case "reflect":
+                        return Commands.ReflectCommand.Run(rest);
                     default:
                         Console.Error.WriteLine($"[ModBuilder] Unknown command '{args[0]}'. Use --help.");
                         return 1;

@@ -1,0 +1,17 @@
+# Explicit load order for {{ID}}.
+#
+# The CustomAssets framework loads __init__.py first when it exists. List each
+# sibling .py module via `import <name>` — sugar for dependencies("name"). The
+# framework recursively loads each module in this order, then skips them in the
+# auto-enumerate pass.
+#
+# Add a line per module as your pack grows. Order matters: list each file
+# after the modules it depends on (products before recipes that reference them,
+# research before charging/discharging recipes, etc.).
+#
+# Legacy: packs without __init__.py still work via per-file dependencies()
+# declarations and filesystem-order enumeration.
+
+import example
+# import products
+# import recipes
