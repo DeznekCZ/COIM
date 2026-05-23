@@ -1,0 +1,215 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net48</TargetFramework>
+		<Configurations>Debug;Release</Configurations>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<WarningLevel>9999</WarningLevel>
+		<LangVersion>latest</LangVersion>
+		<!-- Version, AssemblyVersion and AssemblyFileVersion is automatically generated from 'manifest.json' -->
+		<COI_MODS>$(APPDATA)\Captain of Industry\Mods</COI_MODS>
+
+		<!-- Set to true to automatically deploy to the mods folder on build -->
+		<DeployToModsFolder>true</DeployToModsFolder>
+
+		<!-- Require DLC -->
+		<RequiresSupporterDlc>false</RequiresSupporterDlc>
+		<RequiresTrainsDlc>false</RequiresTrainsDlc>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<DefineConstants>DEBUG</DefineConstants>
+		<OutputPath>bin\Debug\</OutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<DefineConstants></DefineConstants>
+		<Optimize>true</Optimize>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<OutputPath>bin\Release\</OutputPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<UpToDateCheckInput Include="manifest.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</UpToDateCheckInput>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="mscorlib">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\mscorlib.dll</HintPath>
+		</Reference>
+		<Reference Include="netstandard">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\netstandard.dll</HintPath>
+		</Reference>
+		<Reference Include="System">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Core">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Core">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Base">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Base.dll</HintPath>
+		</Reference>
+		<Reference Include="Mafi.Unity">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Unity.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.IMGUIModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UIElementsModule">
+			<HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\UnityEngine.UIElementsModule.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<!-- Version generator -->
+	<UsingTask TaskName="ProcessManifest" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.Core">
+
+		<ParameterGroup>
+			<Manifest ParameterType="System.String" Required="true" />
+			<DefaultTitle ParameterType="System.String" Required="true" />
+			<NormalizedVersion Output="true" ParameterType="System.String" />
+			<ManifestVersion Output="true" ParameterType="System.String" />
+			<AuthorName Output="true" ParameterType="System.String" />
+			<DisplayTitle Output="true" ParameterType="System.String" />
+		</ParameterGroup>
+
+		<Task>
+			<Reference Include="System.Text.Json" />
+			<Reference Include="System.Memory" />
+			<Using Namespace="System.IO" />
+			<Using Namespace="System.Text.Json" />
+			<Using Namespace="System.Text.RegularExpressions" />
+
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+					JsonDocument doc = null;
+					try {
+						var json = File.ReadAllText(Manifest);
+						doc = JsonDocument.Parse(json);
+					}
+					catch (Exception ex)
+					{
+						Console.Error.WriteLine("Failed to read version from manifest.json: " + ex.Message);
+						NormalizedVersion = "0.0.0";
+						AuthorName = "Unknown";
+						return false;
+					}
+					try {
+						ManifestVersion = doc.RootElement.GetProperty("version").GetString();
+
+						// Match: major.minor.patch + optional letter
+						var match = Regex.Match(ManifestVersion, @"^(\d+)\.(\d+)(\.(\d+)([a-z]?))?$");
+						if (!match.Success)
+						{
+							throw new Exception("Invalid version format: " + ManifestVersion);
+						}
+
+						var major = match.Groups[1].Value;
+						var minor = match.Groups[2].Value;
+						var patch = match.Groups[4].Success ? match.Groups[4].Value : "0";
+						var suffix = match.Groups[5].Value;
+
+						// Convert letter to number (a=1, b=2, … z=26)
+						int revision = 0;
+						if (!string.IsNullOrEmpty(suffix))
+						{
+						  revision = char.ToLower(suffix[0]) - 'a' + 1;
+						}
+
+						NormalizedVersion = string.Join(".", major, minor, patch, revision);
+					}
+					catch (Exception ex)
+					{
+						Console.Error.WriteLine("Failed to read version from manifest.json: " + ex.Message);
+						NormalizedVersion = "0.0.0";
+					}
+					try {
+						JsonElement authors;
+						if (doc.RootElement.TryGetProperty("authors", out authors)
+							&& authors.ValueKind == JsonValueKind.Array) {
+							AuthorName = string.Join(", ", authors.EnumerateArray().Select(s => s.GetString()));
+						} else if (doc.RootElement.TryGetProperty("authors", out authors)) {
+							AuthorName = authors.GetString();
+						} else {
+							AuthorName = "Unknown";
+						}
+					}
+					catch (Exception ex)
+					{
+						Console.Error.WriteLine("Failed to read author from manifest.json: " + ex.Message);
+						AuthorName = "Unknown";
+					}
+					try {
+						JsonElement displayName;
+						if (doc.RootElement.TryGetProperty("display_name", out displayName)) {
+							DisplayTitle = displayName.GetString();
+						} else {
+							DisplayTitle = DefaultTitle;
+						}
+					}
+					catch (Exception ex)
+					{
+						Console.Error.WriteLine("Failed to read display_name from manifest.json: " + ex.Message);
+						// keep default product name
+					}
+				]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<Target Name="ReadJsonVersion" BeforeTargets="GetAssemblyVersion">
+		<Error Condition="'$(COI_ROOT)' == ''" Text="Environment or project variable 'COI_ROOT' is not set." />
+		<Error Condition="'$(COI_MODS)' == ''" Text="Environment or project variable 'COI_MODS' is not set." />
+
+		<ProcessManifest Manifest="manifest.json" DefaultTitle="$(TargetName)">
+			<Output TaskParameter="NormalizedVersion" PropertyName="VersionNormalized" />
+			<Output TaskParameter="AuthorName" PropertyName="AuthorName" />
+			<Output TaskParameter="DisplayTitle" PropertyName="DisplayTitle" />
+			<Output TaskParameter="ManifestVersion" PropertyName="ManifestVersion" />
+		</ProcessManifest>
+
+		<PropertyGroup>
+			<Version>$(VersionNormalized)</Version>
+			<FileVersion>$(VersionNormalized)</FileVersion>
+			<AssemblyVersion>$(VersionNormalized)</AssemblyVersion>
+			<AssemblyTitle>$(DisplayTitle)</AssemblyTitle>
+			<Product>$(DisplayTitle)</Product>
+			<Company>$(AuthorName)</Company>
+			<Copyright>$(AuthorName)</Copyright>
+		</PropertyGroup>
+	</Target>
+
+	<ProjectExtensions>
+		<VisualStudio>
+			<UserProperties
+				manifest_1json__JsonSchema="manifest.schema.json"
+				config_1json__JsonSchema="config.schema.json" />
+		</VisualStudio>
+	</ProjectExtensions>
+
+	<!-- Copies data to mod release folder. For skipping this part, comment out the full target element -->
+	<Target Name="DeployToModsFolder" AfterTargets="PostBuildEvent" Condition=" '$(DeployToModsFolder)' == 'true' AND '$(ProjectDir)' != '*Undefined*' ">
+		<Copy SourceFiles="$(ProjectDir)\manifest.json" DestinationFolder="$(COI_MODS)\$(TargetName)\" />
+		<Copy SourceFiles="$(ProjectDir)\config.json" DestinationFolder="$(COI_MODS)\$(TargetName)" ContinueOnError="true" />
+		<Copy SourceFiles="$(ProjectDir)\readme.txt" DestinationFolder="$(COI_MODS)\$(TargetName)" ContinueOnError="true" />
+		<Copy SourceFiles="$(ProjectDir)\thumbnail.png" DestinationFolder="$(COI_MODS)\$(TargetName)\" ContinueOnError="true" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(COI_MODS)\$(TargetName)\" />
+		<Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(COI_MODS)\$(TargetName)\" Condition="'$(Configuration)' == 'Debug'" />
+		<!-- Compress-Archive on a directory path (without \*) includes the directory name as root in the zip. -->
+		<Exec Command="powershell -NoProfile -Command &quot;Compress-Archive -Path '$(COI_MODS)\$(TargetName)' -DestinationPath '$(COI_MODS)\$(TargetName)_$(ManifestVersion).zip' -Force&quot;" />
+	</Target>
+</Project>

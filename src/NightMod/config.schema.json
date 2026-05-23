@@ -1,0 +1,114 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "COI Mod config schema",
+  "description": "This format allow direct write of configuration fields for mod settings.",
+
+  "type": "object",
+
+  "propertyNames": {
+    "pattern": "^[a-z][a-z0-9_]*$",
+    "description": "Configuration fields must be writen in 'snake_case' format"
+  },
+
+  "additionalProperties": {
+    "oneOf": [
+      {
+        "description": "Configure a boolean value that displays as checkbox, ideal for enabling of specific features",
+        "type": "object",
+        "properties": {
+          "default": {
+            "type": "boolean",
+            "description": "Default value of this configuration field\n\nSupported types: bool, string, integer, float\nFor numeric types must be defined: \"is_integer\""
+          },
+          "description": {
+            "type": "string",
+            "description": "Describe shortly what this field configures"
+          }
+        },
+        "required": [ "default" ]
+      },
+      {
+        "description": "Configure a text value, ideal for custom display names of entities, recipe names, ...",
+        "type": "object",
+        "properties": {
+          "default": {
+            "type": "string",
+            "description": "Default value of this configuration field\n\nSupported types: bool, string, integer, float\nFor numeric types must be defined: \"is_integer\""
+          },
+          "description": {
+            "type": "string",
+            "description": "Describe shortly what this field configures"
+          },
+          "max_length": {
+            "type": "integer",
+            "description": "Maximum allowed length of text",
+            "minimum": 0
+          },
+          "regex": {
+            "type": "string",
+            "format": "regex",
+            "description": "Regular expression that the text must fullfill",
+            "minimum": 0
+          }
+        },
+        "required": [ "default" ]
+      },
+      {
+        "description": "Configure a full number value, ideal for editing of production numbers of recipes or bonuses",
+        "type": "object",
+        "properties": {
+          "default": {
+            "type": "integer",
+            "description": "Default value of this configuration field\n\nSupported types: bool, string, integer, float\nFor numeric types must be defined: \"is_integer\""
+          },
+          "description": {
+            "type": "string",
+            "description": "Describe shortly what this field configures"
+          },
+          "min": {
+            "type": "integer",
+            "description": "Minimum allowed value"
+          },
+          "max": {
+            "type": "integer",
+            "description": "Maximum allowed value"
+          },
+          "is_integer": {
+            "type": "boolean",
+            "const": true,
+            "description": "Must be set to true for integer fields, must be set to false for float fields"
+          }
+        },
+        "required": [ "default", "is_integer" ]
+      },
+      {
+        "description": "Configure a floating number value, ideal for editing bonuses, maintenance values",
+        "type": "object",
+        "properties": {
+          "default": {
+            "type": "number",
+            "description": "Default value of this configuration field\n\nSupported types: bool, string, integer, float\nFor numeric types must be defined: \"is_integer\""
+          },
+          "description": {
+            "type": "string",
+            "description": "Describe shortly what this field configures"
+          },
+          "min": {
+            "type": "number",
+            "description": "Minimum allowed value"
+          },
+          "max": {
+            "type": "number",
+            "description": "Maximum allowed value"
+          },
+          "is_integer": {
+            "type": "boolean",
+            "const": false,
+            "description": "Must be set to true for integer fields, must be set to false for float fields"
+          }
+        },
+        "required": [ "default" ]
+      }
+    ]
+  }
+}

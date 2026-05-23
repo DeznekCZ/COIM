@@ -1,0 +1,70 @@
+{
+	"enabled": {
+		"default": true,
+		"description": "Master switch for the day-night cycle. Toggle this before loading a game to enable or disable the mod for that session."
+	},
+	"cycle_length_minutes": {
+		"default": 3,
+		"min": 0.5,
+		"max": 60,
+		"description": "Real-time length of one full day -> night -> day cycle, in minutes. Measured at normal game speed; higher game speeds shorten it proportionally."
+	},
+	"min_brightness": {
+		"default": 0.12,
+		"min": 0.0,
+		"max": 1.0,
+		"description": "How dark the deepest night gets. 0 = almost pitch black, 1 = no darkening at all."
+	},
+	"affect_solar": {
+		"default": true,
+		"description": "When enabled, solar panel output follows the cycle and drops close to zero during the night (the night is only visual appearence)."
+	},
+	"vehicle_headlights": {
+		"default": true,
+		"description": "When enabled, vehicles cast headlight cones that light up the ground around them, switched on from sundown to sunrise."
+	},
+	"latitude": {
+		"default": 28.0,
+		"min": -90.0,
+		"max": 90.0,
+		"description": "Observer latitude used to place the sun and moon. Default is a northern-Africa zone. Higher values give a lower sun and longer seasonal swings."
+	},
+	"longitude": {
+		"default": 15.0,
+		"min": -180.0,
+		"max": 180.0,
+		"description": "Observer longitude. Default is a northern-Africa zone. Reserved for future time-zone offsetting; the sun/moon arc is driven by latitude."
+	},
+	"sun_azimuth": {
+		"default": 35.0,
+		"min": 0.0,
+		"max": 360.0,
+		"description": "Compass direction the sun's arc is oriented along, in degrees - it sets which way the sun rises and sets. Stored here so it persists across loads and can be changed."
+	},
+	"moon_phase_from_sun": {
+		"default": true,
+		"description": "How the moon's phase (crescent, half, full) is decided. Enabled: the lit fraction follows the real angle between the sun and moon in the sky, so the shape morphs as the moon crosses. Disabled: the moon runs its own ~30-day phase cycle independent of the sun. Either way the lit side always faces the sun."
+	},
+	"override_sun_position": {
+		"default": false,
+		"description": "Override the sun's position. When enabled, the sun is frozen at the elevation and azimuth set below instead of following the day-night cycle."
+	},
+	"override_sun_elevation": {
+		"default": 30.0,
+		"min": -90.0,
+		"max": 90.0,
+		"description": "Fixed sun height above the horizon, in degrees, used when 'override_sun_position' is enabled. Negative values put the sun below the horizon (night)."
+	},
+	"override_sun_azimuth": {
+		"default": 135.0,
+		"min": 0.0,
+		"max": 360.0,
+		"description": "Fixed sun compass direction, in degrees, used when 'override_sun_position' is enabled."
+	},
+	"solar_cutoff_elevation": {
+		"default": 3.0,
+		"min": -10.0,
+		"max": 18.0,
+		"description": "Sun height above the horizon, in degrees, at which solar panels stop producing. Higher values cut solar power off earlier, before the sun visually sets; negative values keep panels running past sunset."
+	}
+}

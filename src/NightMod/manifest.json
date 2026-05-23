@@ -1,0 +1,12 @@
+{
+	"id": "NightMod",
+	"version": "0.1.0",
+	"display_name": "Night Mod - Day & Night Cycle",
+	"description_short": "Adds a configurable day-to-night lighting cycle by gently dimming the game's original weather conditions.",
+	"description_long": "NightMod introduces a day-to-night cycle to Captain of Industry. It does not add new weather types and does not interfere with weather selection - instead it snapshots the game's original weather conditions on load and smoothly dims their lighting (and, optionally, solar panel output) on a repeating cycle. The cycle length, darkness depth and solar effect are configurable, and the whole mod can be toggled on or off before each game load.",
+	"authors": "DeznekCZ",
+	"primary_dlls": [ "NightMod.dll" ],
+	"non_locking_dll_load": true,
+	"can_add_to_saved_game": true,
+	"can_remove_from_saved_game": true
+}
