@@ -110,8 +110,15 @@ namespace CustomAssets.Python {
 					//   1) plain assignment   "x = expr"
 					//   2) augmented assign   "x += expr" / -= *= /= <<= >>=
 					//   3) evaluate-only      "foo()", "x.bar"
+					int stmtStartLine = token.line;
 					Revert(token);
 					IExpression leftExpression = ParseExpression();
+					// Snapshot the last NON-TRIVIAL token of the just-parsed
+					// expression. m_lastNonTrivialToken ignores newline/indent/
+					// dedent dequeues, so it's stable even though ParseExpression
+					// (and the IsNext probes below) peek and revert trailing
+					// whitespace tokens that would otherwise corrupt the read.
+					Token expressionLastToken = m_lastNonTrivialToken;
 					if (IsNext(PythonTokens.set, out Token _)) {
 						tree.Add(ParseAssignment(leftExpression));
 					} else if (IsNextOf(new PythonTokens[] {
@@ -124,7 +131,13 @@ namespace CustomAssets.Python {
 							}, out Token augOp, defaultIgnore)) {
 						tree.Add(ParseAugmentedAssignment(leftExpression, augOp));
 					} else {
-						tree.Add(new EvaluateStatement(leftExpression));
+						// Record source line range so the recipe editor can splice this
+						// statement back out by line number on save. EndLine = last token
+						// of the expression (captured before the IsNext probes above).
+						var ev = new EvaluateStatement(leftExpression);
+						ev.StartLine = stmtStartLine;
+						ev.EndLine = expressionLastToken != null ? expressionLastToken.line : stmtStartLine;
+						tree.Add(ev);
 					}
 					IsNext(PythonTokens.newline, out Token _);
 					break;
@@ -729,7 +742,33 @@ namespace CustomAssets.Python {
 		private Token Dequeue() {
 			Token token = enumerator.First();
 			enumerator.RemoveFirst();
+			m_lastDequeued = token;
+			// Track the last "interesting" token separately. Newline/indent/
+			// dedent tokens get consumed by peek-and-revert probes deep inside
+			// ParseExpression (e.g. primary()'s IsNextOf dot/lparen/llist after
+			// arguments() returns), which would pollute m_lastDequeued. Worse,
+			// the tokenizer emits NEWLINE with line=i (zero-based) while every
+			// other token uses line=i+1 (one-based) — so reading EndLine off
+			// a stray newline yields a value one less than the real source
+			// line, leaving the trailing `)` orphaned on save-splice and
+			// producing the duplicate-close-paren bug seen in pack files.
+			if (token.type != PythonTokens.newline
+				&& token.type != PythonTokens.indent
+				&& token.type != PythonTokens.dedent) {
+				m_lastNonTrivialToken = token;
+			}
 			return token;
 		}
+
+		// Tracks the most recently consumed token (any kind). Kept for legacy
+		// callers; new line-range bookkeeping should use m_lastNonTrivialToken
+		// to dodge the newline off-by-one and the peek-revert race described
+		// in Dequeue's comment above.
+		private Token m_lastDequeued;
+
+		// Most recent non-whitespace token consumed. Stable across
+		// IsNext/IsNextOf probes that peek then revert a newline/indent/
+		// dedent — so EndLine reads off this stay correct.
+		private Token m_lastNonTrivialToken;
 	}
 }

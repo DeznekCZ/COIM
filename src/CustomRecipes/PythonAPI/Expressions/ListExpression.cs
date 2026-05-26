@@ -9,6 +9,11 @@ namespace PythonAPI.Expressions {
 		private List<IExpression> listItems;
 		public string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");
 
+		/// Read-only view of the list's element expressions. Exposed so the recipe-editor
+		/// loader can walk `ingredients=[Product(...), ...]` literals at AST level without
+		/// having to execute them.
+		public IReadOnlyList<IExpression> Items => listItems;
+
 		public ListExpression(List<IExpression> listItems) {
 			this.listItems = listItems;
 		}

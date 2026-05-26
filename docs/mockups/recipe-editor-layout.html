@@ -1,0 +1,1800 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Recipe Editor — Layout Mockup</title>
+<style>
+  /* ------------------------------------------------------------------------ */
+  /*  Goal: faithfully model the layout sketch so we can iterate on            */
+  /*  proportions before porting to Mafi's UI Toolkit. Visual style is a       */
+  /*  rough approximation of COI's dark UI; the focus is structure, not skin.  */
+  /* ------------------------------------------------------------------------ */
+
+  :root {
+    --bg-screen: #2b2c2e;          /* outside the window (gameplay background) */
+    --bg-window: #353638;          /* window body */
+    --bg-pane:   #2f3032;          /* sub-panels inside the window */
+    --bg-card:   #3b3c3e;          /* tree rows / pack card */
+    --bg-card-hover: #46474a;
+    --bg-card-selected: #5a6b8a;
+    --border:    #1c1d1f;
+    --text:      #d9dde0;
+    --text-dim:  #9aa0a6;
+    --accent:    #ffb84d;
+    --accent-dim:#7a623b;
+    --safety-gap: 100px;           /* minimum margin around the window */
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg-screen);
+  }
+
+  /* The "fullscreen" window with a 100px safety gap on every side. */
+  .window {
+    position: fixed;
+    top:    var(--safety-gap);
+    right:  var(--safety-gap);
+    bottom: var(--safety-gap);
+    left:   var(--safety-gap);
+    min-width:  640px;
+    min-height: 400px;
+    background: var(--bg-window);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: grid;
+    /* title bar + optional legacy-warning banner + body */
+    grid-template-rows: auto auto 1fr;
+    overflow: hidden;
+  }
+
+  /* ---- Legacy-structure warning banner ----------------------------------- */
+  /* Shown ONLY when the selected pack uses the old layout: no Definitions/  */
+  /* __init__.py and statements rely on top-level dependencies("...") calls  */
+  /* inside individual .py files instead of imports + a central __init__.    */
+  /* The editor's parsing is built around the new shape, so we warn and     */
+  /* link the docs rather than pretending everything will work cleanly.     */
+  .legacy-warning {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, #6e5418 0%, #5a4214 100%);
+    border-bottom: 1px solid var(--border);
+    color: #f7e8c0;
+    font-size: 12px;
+  }
+  .legacy-warning .icon { font-size: 16px; }
+  .legacy-warning .msg { flex: 1; line-height: 1.4; }
+  .legacy-warning a {
+    color: #ffd56e;
+    font-weight: 600;
+    text-decoration: underline;
+    white-space: nowrap;
+  }
+  .legacy-warning a:hover { color: #ffec9d; }
+  .legacy-warning .dismiss {
+    cursor: pointer;
+    padding: 2px 8px;
+    border: 1px solid #8a6a26;
+    border-radius: 3px;
+    background: rgba(0,0,0,0.2);
+    color: #f7e8c0;
+    font-size: 11px;
+  }
+  .legacy-warning .dismiss:hover { background: rgba(0,0,0,0.4); }
+
+  .titlebar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    background: linear-gradient(180deg, #444 0%, #333 100%);
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+  }
+  .titlebar h1 { font-size: 14px; font-weight: 500; margin: 0; }
+  .titlebar .filler { flex: 1; }
+  .titlebar .btn-icon {
+    width: 22px; height: 22px; display: inline-flex;
+    align-items: center; justify-content: center;
+    background: #444; border: 1px solid #1c1d1f; border-radius: 3px;
+    cursor: pointer;
+  }
+  .titlebar .btn-icon:hover { background: #555; }
+
+  /* ---- Body: two columns, 30% / 70% per sketch ---------------------------- */
+  .body {
+    display: grid;
+    grid-template-columns: 30% 70%;
+    min-height: 0;                    /* allow children to scroll properly */
+  }
+
+  /* ---- Left column: tree (top, scrollable) + pack card (bottom, fixed) ---- */
+  .left {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    border-right: 1px solid var(--border);
+    min-height: 0;
+  }
+
+  .tree {
+    overflow-y: auto;
+    padding: 6px;
+    background: var(--bg-pane);
+  }
+
+  /* Tree header bar — sticky, hosts pack-wide actions like "+ new file". */
+  .tree-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 4px 6px;
+    position: sticky;
+    top: 0;
+    background: var(--bg-pane);
+    z-index: 5;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .tree-header .label {
+    flex: 1;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .tree-header .new-file {
+    padding: 3px 8px;
+    font-size: 11px;
+    background: none;
+    border: 1px dashed #666;
+    color: var(--text-dim);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .tree-header .new-file:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+  /* Comment field on each statement form — emitted as `# …` lines above the
+     statement in the .py file. Multi-line; preserved across save/reload via
+     the loader attaching leading `#` lines to the statement they precede. */
+  .field.comment textarea {
+    font-family: ui-monospace, "Consolas", monospace;
+    font-size: 12px;
+    color: #d6e0c0;
+    background: #2a2c2a;
+    border-left: 3px solid var(--accent-dim);
+  }
+  .field.comment label::before { content: "💬 "; }
+
+  /* Cls.group equivalent: a header you click to expand/collapse, indented body. */
+  .group {
+    margin: 2px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .group > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 5px 8px;
+    display: flex; align-items: center; gap: 6px;
+    user-select: none;
+  }
+  .group > summary::-webkit-details-marker { display: none; }
+  .group > summary::before {
+    content: "▶";
+    font-size: 9px;
+    width: 10px;
+    transition: transform 0.12s;
+    color: var(--text-dim);
+  }
+  .group[open] > summary::before { transform: rotate(90deg); }
+  .group > summary:hover { background: var(--bg-card-hover); }
+  .group > .group-body { padding: 4px 8px 6px 22px; }
+
+  /* Nested groups go inside .group-body. */
+  .group .group { margin-left: 0; background: #444547; }
+
+  /* A leaf row (a single recipe / product / import line — selectable). */
+  .leaf {
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .leaf:hover { background: var(--bg-card-hover); }
+  .leaf.selected { background: var(--bg-card-selected); color: white; }
+  .leaf .kind {
+    font-size: 10px;
+    padding: 1px 5px;
+    background: #555;
+    border-radius: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .leaf .kind.recipe       { background: #4a6d3a; color: #d6f0c4; }
+  .leaf .kind.product      { background: #6a5d3a; color: #f0e0b8; }
+  .leaf .kind.research     { background: #3a566d; color: #b8d0f0; }
+  /* Asset definitions from add_texture / add_texture_material /
+     add_loose_product_material / add_unit_prefab / add_prefab_box.
+     These register textures, materials, and prefabs the modder can
+     reference by canonical asset path from any later statement. */
+  .leaf .kind.asset        { background: #6d3a5a; color: #f0c4e0; }
+  /* Three import flavours, distinguished so the editor knows what's actually
+     being brought into scope:
+        - api      : Mafi modder-facing API helpers (build_recipe, Product, …)
+        - phys-val : Mafi physical-value wrappers around scalars (Duration,
+                     Percent, Quantity, Vector3f, ColorRgba). These never need
+                     a proto picker — they're just typed scalar literals.
+        - id-ns    : Mafi.Base Ids namespaces (Ids.Machines, Ids.Products, …)
+                     used to write typed proto refs. Treated as a namespace,
+                     not a leaf value.
+     This colouring drives editor behaviour later: e.g. a recipe duration
+     field uses a scalar input (phys-val), not a picker. */
+  .leaf .kind.api          { background: #555;    color: #ccc; }
+  .leaf .kind.phys-val     { background: #5e4a6d; color: #e0c8f0; }
+  .leaf .kind.id-ns        { background: #455a6d; color: #c8d8f0; }
+  .leaf .kind.unknown      { background: #5a3a3a; color: #f0b8b8; }
+  .leaf .id { flex: 1; font-family: ui-monospace, "Consolas", monospace; font-size: 12px; }
+  .leaf .name { color: var(--text-dim); }
+
+  /* Pack card at the bottom of the left column. Relative-positioned so the
+     dependency-icon can dock to the top-right corner. */
+  .pack-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 10px;
+    padding: 10px;
+    background: var(--bg-pane);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Small icon button anchored to the pack card's top-right corner.
+     Opens the Pack Dependencies dialog. Matches the visual weight of the
+     titlebar icons. */
+  .pack-card .deps-icon {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #444;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 13px;
+    user-select: none;
+  }
+  .pack-card .deps-icon:hover { background: #555; color: var(--accent); }
+  .pack-card .thumb {
+    width: 64px; height: 64px;
+    background: #1c1d1f;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim);
+    font-size: 10px;
+  }
+  .pack-card .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .pack-card .name { font-weight: 600; }
+  .pack-card .desc {
+    font-size: 11px; color: var(--text-dim);
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .pack-card .pack-switch {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline dotted;
+    user-select: none;
+  }
+  .pack-card .pack-switch:hover { color: #ffc97a; }
+
+  /* ---- Right column: statement editor fills the pane (deps moved to dialog) -- */
+  .right {
+    display: grid;
+    grid-template-rows: 1fr;
+    min-height: 0;
+  }
+
+  .editor {
+    overflow-y: auto;
+    padding: 12px 16px;
+    background: var(--bg-window);
+  }
+  .editor h2 {
+    font-size: 13px; font-weight: 600;
+    margin: 0 0 8px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .editor .empty-hint {
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 24px 0;
+    text-align: center;
+  }
+
+  /* Form field row used inside the statement editor. */
+  .field { display: grid; grid-template-columns: 160px 1fr; gap: 10px; align-items: start; margin: 6px 0; }
+  .field > label { color: var(--text-dim); font-size: 12px; padding-top: 6px; }
+  .field input[type="text"],
+  .field input[type="number"],
+  .field textarea,
+  .field select {
+    width: 100%;
+    padding: 5px 8px;
+    background: var(--bg-pane);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .field textarea { min-height: 60px; resize: vertical; }
+
+  /* Row of "Product(x, 5, port)" pickers — placeholder shape only.        */
+  /* Columns: product picker (icon+name baked in) · qty · port · remove.  */
+  /* Port dropdown is populated from the selected machine's port layout    */
+  /* (see MachinePortsDumper). When the recipe's machine changes, every    */
+  /* row's port options refresh — invalid stale values fall back to "*".  */
+  .product-list { display: flex; flex-direction: column; gap: 4px; }
+  .product-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 140px 24px;
+    gap: 6px;
+    align-items: center;
+    padding: 4px;
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .product-row select { padding: 3px 4px; }
+  .product-row .remove { color: #e58383; cursor: pointer; text-align: center; }
+  .product-list .add {
+    align-self: flex-start;
+    background: none; border: 1px dashed #666;
+    color: var(--text-dim); padding: 4px 10px;
+    border-radius: 3px; cursor: pointer; font-size: 12px;
+  }
+  .product-list .add:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+  /* Generic list of proto references — used for research prerequisites,
+     unlock chains, and anywhere else we need "a list of single picker rows".
+     Each row is picker-btn (icon + name) + remove. No qty/port (those are
+     ingredient/product specific). The picker popup uses the same searchable
+     UI as products and machines. */
+  .proto-list { display: flex; flex-direction: column; gap: 4px; }
+  .proto-row {
+    display: grid;
+    grid-template-columns: 1fr 24px;
+    gap: 6px;
+    align-items: center;
+    padding: 4px;
+    background: var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .proto-row .remove { color: #e58383; cursor: pointer; text-align: center; }
+  .proto-list .add {
+    align-self: flex-start;
+    background: none; border: 1px dashed #666;
+    color: var(--text-dim); padding: 4px 10px;
+    border-radius: 3px; cursor: pointer; font-size: 12px;
+  }
+  .proto-list .add:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+  /* Dependency editor — now a stand-alone modal dialog opened from the pack
+     card. Sits over a dimmed backdrop so the editor focuses one task at a time.
+     Keeps the recipe form uncluttered when the user isn't editing deps. */
+  .dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dialog {
+    width: min(720px, 80vw);
+    max-height: 80vh;
+    background: var(--bg-window);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+  }
+  .dialog .dialog-titlebar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, #444 0%, #333 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .dialog .dialog-titlebar h2 { font-size: 13px; margin: 0; font-weight: 600; }
+  .dialog .dialog-titlebar .filler { flex: 1; }
+  .dialog .dialog-body {
+    overflow-y: auto;
+    padding: 14px 18px;
+    background: var(--bg-pane);
+  }
+  .dialog .dialog-footer {
+    display: flex; gap: 6px; align-items: center;
+    padding: 8px 14px;
+    background: var(--bg-window);
+    border-top: 1px solid var(--border);
+  }
+  .dialog .dialog-footer .filler { flex: 1; }
+
+  .dependency-editor {
+    padding: 0;
+  }
+  .dependency-editor h2 {
+    font-size: 12px; font-weight: 600;
+    margin: 0 0 6px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .dependency-editor .dep-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .dependency-editor .dep-list { display: flex; flex-direction: column; gap: 3px; }
+  .dependency-editor .dep,
+  .dep {
+    display: grid;
+    grid-template-columns: 16px 1fr 80px 24px;
+    gap: 6px;
+    padding: 3px 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 12px;
+    align-items: center;
+  }
+  .dependency-editor .dep .id { font-family: ui-monospace, "Consolas", monospace; }
+  .dependency-editor .dep .ver { color: var(--text-dim); font-size: 11px; text-align: right; }
+  .dependency-editor .dep .remove,
+  .dep .remove { color: #e58383; cursor: pointer; text-align: center; }
+
+  /* Reorder handle — drag-to-reorder cue. Up/down arrows appear on hover
+     for explicit keyboard-friendly reordering (no need to remember drag
+     gestures). The same pattern is used for every list in the editor:
+       - load order (Definitions/__init__.py file list)
+       - manifest mod_dependencies / optional
+       - phys-val and id-ns import symbol lists
+       - research prerequisites
+       - ingredient / product rows (order matters for port assignment)
+  */
+  .dep .reorder, .proto-row .reorder, .product-row .reorder {
+    display: flex; flex-direction: column; align-items: center;
+    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1;
+    cursor: grab;
+    user-select: none;
+  }
+  .dep .reorder:hover, .proto-row .reorder:hover, .product-row .reorder:hover {
+    color: var(--accent);
+  }
+  .dep .reorder .up, .dep .reorder .down,
+  .proto-row .reorder .up, .proto-row .reorder .down,
+  .product-row .reorder .up, .product-row .reorder .down {
+    display: block;
+    padding: 0 2px;
+  }
+  .dep .reorder .up:hover, .dep .reorder .down:hover,
+  .proto-row .reorder .up:hover, .proto-row .reorder .down:hover,
+  .product-row .reorder .up:hover, .product-row .reorder .down:hover {
+    color: white;
+  }
+  .dependency-editor .add {
+    align-self: flex-start; margin-top: 4px;
+    background: none; border: 1px dashed #666;
+    color: var(--text-dim); padding: 3px 8px;
+    border-radius: 3px; cursor: pointer; font-size: 11px;
+  }
+  .dependency-editor .label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+
+  /* Action buttons on the bottom row of the window. */
+  .actions {
+    display: flex; gap: 6px; align-items: center;
+    margin: 10px 0 4px;
+  }
+  .actions .btn {
+    padding: 6px 14px; background: #4d4e50; color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    cursor: pointer; font-size: 12px;
+  }
+  .actions .btn:hover { background: #5a5b5d; }
+  .actions .btn.primary { background: var(--accent); color: #2a1f0a; border-color: var(--accent-dim); }
+  .actions .btn.primary:hover { background: #ffc97a; }
+  .actions .status { margin-left: auto; color: var(--text-dim); font-size: 11px; }
+
+  /* ---- Proto picker (machines / research / products) ---------------------- */
+  /* Closed state: a button that displays the picked proto's icon + name.    */
+  /* Stored value (the proto Id string, e.g. "Product_Battery_Charged") is   */
+  /* held in the editor's model only — never surfaced in the picker button   */
+  /* itself. Clicking opens a searchable popup of available protos.         */
+  .picker-btn {
+    display: grid;
+    grid-template-columns: 32px 1fr 14px;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 3px 6px;
+    background: var(--bg-pane);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .picker-btn:hover { background: #3a3b3d; }
+  .picker-btn.empty .name { color: var(--text-dim); font-style: italic; }
+  .picker-btn .picker-icon {
+    width: 28px; height: 28px;
+    background: #1c1d1f;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 9px;
+    flex-shrink: 0;
+  }
+  .picker-btn .chevron { color: var(--text-dim); font-size: 11px; text-align: right; }
+
+  /* Popup that opens above/below the picker button. Search field on top,    */
+  /* scrolling list of "icon + name + (dim id)" rows below.                  */
+  .picker-popup {
+    position: absolute;
+    z-index: 50;
+    width: 320px;
+    max-height: 340px;
+    background: var(--bg-window);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    display: grid;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+  }
+  .picker-popup .search {
+    display: flex; gap: 6px; align-items: center;
+    padding: 6px 8px;
+    background: #2a2b2d;
+    border-bottom: 1px solid var(--border);
+  }
+  .picker-popup .search-icon { color: var(--text-dim); font-size: 13px; }
+  .picker-popup .search input {
+    flex: 1;
+    padding: 4px 8px;
+    background: var(--bg-pane);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .picker-popup .search .count {
+    font-size: 10px; color: var(--text-dim);
+    padding: 0 4px;
+  }
+  .picker-popup .list {
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .picker-popup .opt {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .picker-popup .opt:hover { background: var(--bg-card-hover); }
+  .picker-popup .opt.selected { background: var(--bg-card-selected); color: white; }
+  .picker-popup .opt .picker-icon { width: 28px; height: 28px; }
+  .picker-popup .opt .name { font-size: 12px; }
+  .picker-popup .opt .id { font-size: 10px; color: var(--text-dim); font-family: ui-monospace, "Consolas", monospace; }
+  .picker-popup .opt.selected .id { color: rgba(255,255,255,0.6); }
+
+  /* Provenance chip on each picker option. Tells the user which pack
+     provides the product, and whether the current pack's manifest already
+     depends on it. The chip is the second-line annotation alongside the id.
+     Variants:
+       .from-base   — base game / vanilla, always available
+       .from-self   — defined by the pack currently being edited
+       .from-dep    — defined by a pack listed in this pack's mod_dependencies
+       .from-missing — defined by a pack NOT in mod_dependencies (warning)
+  */
+  .picker-popup .opt .meta { display: flex; gap: 6px; align-items: center; font-size: 10px; margin-top: 1px; }
+  .picker-popup .opt .chip {
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .picker-popup .opt .chip.from-base    { background: #45494f; color: #c8d0d8; }
+  .picker-popup .opt .chip.from-self    { background: #3a566d; color: #b8d0f0; }
+  .picker-popup .opt .chip.from-dep     { background: #4a6d3a; color: #d6f0c4; }
+  .picker-popup .opt .chip.from-missing { background: #6d3a3a; color: #f0c4c4; }
+  /* Raw file under <pack>/Assets/... — no add_texture(...) registration
+     needed for it to be picked, the loader will infer the type from the
+     extension (.png/.svg → texture, .obj → mesh, .mat → material). */
+  .picker-popup .opt .chip.from-file    { background: #6d5a3a; color: #f0e0b8; }
+  .picker-popup .opt .add-dep-link {
+    color: var(--accent);
+    text-decoration: underline dotted;
+    cursor: pointer;
+  }
+  .picker-popup .opt .add-dep-link:hover { color: #ffc97a; }
+
+  /* Optional filter toggle in the popup header so the user can hide */
+  /* missing-dep items entirely once they don't care to see them.    */
+  .picker-popup .filter-row {
+    display: flex; gap: 10px; align-items: center;
+    padding: 4px 8px;
+    background: #2a2b2d;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .picker-popup .filter-row label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .picker-popup .none-hit {
+    padding: 16px; text-align: center; color: var(--text-dim);
+    font-size: 12px; font-style: italic;
+  }
+
+  /* ---- Mockup-only control panel ----------------------------------------- */
+  /* Floats above the game-UI mockup. Lets the reviewer flip through editor */
+  /* states (which kind of statement is selected) and toggle overlays       */
+  /* (legacy warning, deps dialog, picker popup) without manual interaction. */
+  /* Not part of the design that ports to the game UI.                      */
+  .mock-controls {
+    position: fixed;
+    top: 10px; left: 10px;
+    z-index: 200;
+    background: rgba(20, 22, 24, 0.92);
+    border: 1px solid #1c1d1f;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--text);
+    display: grid;
+    gap: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  }
+  .mock-controls .ctrl-title {
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    user-select: none;
+  }
+  .mock-controls .row { display: flex; gap: 6px; align-items: center; }
+  .mock-controls label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
+  .mock-controls select {
+    padding: 3px 6px;
+    background: var(--bg-pane);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font: inherit;
+  }
+
+  /* Example editor bodies are hidden by default; JS reveals the selected one. */
+  .editor .example { display: none; }
+  .editor .example.active { display: block; }
+
+  /* Research-node position picker.
+     2D grid mirroring the in-game research tree's layout space. Existing
+     nodes from the proto-origin index render as small icons at their
+     declared positions; the current research being edited highlights.
+     Clicking anywhere on the grid sets the (x, y) of the current node;
+     dragging the highlighted dot does the same. The two numeric inputs
+     below provide precise nudging. */
+  .research-grid-wrap {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 8px;
+    align-items: start;
+  }
+  .research-grid {
+    position: relative;
+    width: 360px;
+    height: 220px;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 19px, #2a2c2e 19px 20px),
+      repeating-linear-gradient(90deg, transparent 0 29px, #2a2c2e 29px 30px),
+      var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: crosshair;
+    overflow: hidden;
+  }
+  .research-grid .axis-x,
+  .research-grid .axis-y {
+    position: absolute; font-size: 9px; color: var(--text-dim); pointer-events: none;
+  }
+  .research-grid .axis-x { bottom: 2px; }
+  .research-grid .axis-y { left: 2px; }
+  .research-node {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #1c1d1f;
+    border: 1px solid #555;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+  .research-node:hover { border-color: var(--accent); }
+  .research-node.current {
+    background: var(--accent);
+    border-color: #ffd56e;
+    box-shadow: 0 0 0 3px rgba(255, 184, 77, 0.25);
+    z-index: 2;
+  }
+  .research-node .label {
+    position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; color: var(--text-dim); white-space: nowrap;
+  }
+  .research-position-inputs {
+    display: grid; grid-template-columns: auto 70px auto 70px; gap: 4px;
+    align-items: center; font-size: 12px; color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .research-position-inputs input { width: 100%; }
+  .research-position-legend {
+    font-size: 11px; color: var(--text-dim); line-height: 1.5;
+    max-width: 200px;
+  }
+
+  /* ---- Asset preview pane (texture / mesh / material) -------------------- */
+  /* Shown when the user selects an asset node in the tree — either an */
+  /* add_*-registered asset or a raw file under <pack>/Assets/.       */
+  /* The preview pulls from disk, so a "Reload from disk" button is   */
+  /* prominent: modders frequently regen .png from .svg or re-export */
+  /* an .obj from Blender, and the editor needs to pick that up      */
+  /* without restart.                                                 */
+  /* Two-column layout: fixed 256-thumb on the left, metadata fills right. */
+  .asset-preview {
+    display: grid;
+    grid-template-columns: 256px 1fr;
+    gap: 16px;
+    align-items: start;
+    margin: 6px 0;
+  }
+  /* 256×256 max — large enough to assess texture detail / mesh silhouette,
+     small enough to leave room for the metadata sidebar and the texture
+     gallery below. Square aspect; never stretches beyond 256 on either
+     axis even if the asset-preview grid's left column grows wider. */
+  .asset-thumb-wrap {
+    background:
+      conic-gradient(#2a2c2e 0 25%, #3a3c3e 0 50%, #2a2c2e 0 75%, #3a3c3e 0) 0 0/20px 20px,
+      var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    width: 256px;
+    height: 256px;
+    max-width: 256px;
+    max-height: 256px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .asset-thumb-wrap img {
+    max-width: 100%; max-height: 100%; object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+  }
+  .asset-thumb-wrap .thumb-overlay {
+    position: absolute;
+    bottom: 4px; left: 4px;
+    background: rgba(0,0,0,0.6);
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: ui-monospace, "Consolas", monospace;
+  }
+  /* OBJ wireframe — pure CSS preview that resembles a low-poly silhouette.
+     Real implementation would render the mesh; this is just a visual cue. */
+  .asset-thumb-wrap.mesh::after {
+    content: "";
+    position: absolute; inset: 20%;
+    background:
+      linear-gradient(45deg, transparent 48%, #6f8fb0 48% 52%, transparent 52%),
+      linear-gradient(-45deg, transparent 48%, #6f8fb0 48% 52%, transparent 52%),
+      linear-gradient(90deg, transparent 48%, #6f8fb0 48% 52%, transparent 52%),
+      radial-gradient(circle, #6f8fb0 1px, transparent 2px) 0 0 / 20% 20%;
+    opacity: 0.85;
+  }
+
+  .asset-meta {
+    display: grid; grid-template-columns: auto 1fr; gap: 4px 10px;
+    font-size: 12px; color: var(--text);
+  }
+  .asset-meta dt { color: var(--text-dim); font-size: 11px; }
+  .asset-meta dd { margin: 0; font-family: ui-monospace, "Consolas", monospace; font-size: 12px; }
+
+  .asset-reload-row {
+    display: flex; gap: 6px; align-items: center;
+    margin: 6px 0 2px;
+  }
+  .asset-reload-row .last-loaded { color: var(--text-dim); font-size: 11px; }
+
+  /* Small grid of texture thumbnails for the "tex gallery" sub-view —
+     a quick visual index of every texture asset in the current pack. */
+  .asset-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 6px;
+    margin: 6px 0;
+  }
+  .asset-gallery .cell {
+    background:
+      conic-gradient(#2a2c2e 0 25%, #3a3c3e 0 50%, #2a2c2e 0 75%, #3a3c3e 0) 0 0/12px 12px,
+      var(--bg-pane);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    aspect-ratio: 1 / 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text-dim);
+    position: relative;
+    overflow: hidden;
+  }
+  .asset-gallery .cell:hover { border-color: var(--accent); }
+  .asset-gallery .cell .filename {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.55);
+    color: var(--text);
+    font-size: 9px;
+    padding: 1px 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: ui-monospace, "Consolas", monospace;
+  }
+  .asset-gallery .cell.mesh { color: #6f8fb0; }
+</style>
+</head>
+<body>
+
+<!--
+  Mockup-only controls. Lets the reviewer flip through editor states
+  (recipe / product / research / import / deps / empty selection) and
+  toggle the legacy-warning banner, the deps dialog, and the picker
+  popup on and off. These overlays would normally appear in response
+  to user actions in the game UI — here they're forced for visibility.
+-->
+<div class="mock-controls">
+  <div class="ctrl-title">Mockup controls</div>
+  <div class="row">
+    <span>Selection:</span>
+    <select id="mock-example">
+      <option value="recipe" selected>Recipe</option>
+      <option value="product">Product</option>
+      <option value="research">Research</option>
+      <option value="asset">Asset (texture / mesh)</option>
+      <option value="import">Import (phys-val)</option>
+      <option value="deps">Load order (__init__.py)</option>
+      <option value="empty">Nothing selected</option>
+    </select>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="mock-legacy" checked> Legacy warning</label>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="mock-popup" checked> Picker popup</label>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="mock-dialog"> Deps dialog</label>
+  </div>
+</div>
+
+<div class="window" role="dialog" aria-label="Recipe Editor">
+
+  <!-- Title bar with the window's name and Verify/Save shortcuts. -->
+  <div class="titlebar">
+    <h1>Recipe Editor</h1>
+    <span class="filler"></span>
+    <span class="btn-icon" title="Pin">📌</span>
+    <span class="btn-icon" title="Close">✕</span>
+  </div>
+
+  <!--
+    LEGACY-STRUCTURE WARNING BANNER
+
+    Visible only when the currently selected pack matches the "old" shape:
+      - No  <pack>/Definitions/__init__.py file present, AND
+      - At least one .py file contains a top-level `dependencies(...)` call
+        instead of using `import <module>` for sibling files.
+
+    Detection lives in PackRegistry.IsLegacyStructure(LoadedPack) — see todos.
+    Dismissing it is per-pack (cached in the editor's transient state); the
+    warning reappears next time the editor opens unless we persist the dismissal.
+  -->
+  <!--
+    The "Migrate to new structure" button runs LegacyMigrator (see todos):
+      1. Walk every non-__init__ .py file in Definitions/.
+      2. For each top-level `dependencies("a", "b", ...)` call, collect the
+         referenced module names in source order.
+      3. Build a topologically-stable union of all those lists (preserve
+         first-seen order; dedupe).
+      4. Create or rewrite Definitions/__init__.py with a single canonical
+         `dependencies(...)` call holding the consolidated list.
+      5. Strip the original top-level `dependencies(...)` calls from each
+         source file via PackEmitter's line-range splice.
+      6. Mark the pack as no-longer-legacy so the warning hides next open.
+
+    If the user just hits Save without migrating, the same migration runs
+    implicitly — but the explicit button gives modders a chance to review
+    the file diff before any other edits land on the same save.
+  -->
+  <div class="legacy-warning" role="alert">
+    <span class="icon" aria-hidden="true">⚠️</span>
+    <span class="msg">
+      This pack uses the legacy load-order convention — no <code>__init__.py</code>
+      and <code>dependencies(...)</code> calls inside individual <code>.py</code> files.
+      The editor will <strong>auto-migrate on the next save</strong>: a
+      <code>Definitions/__init__.py</code> file is created with the consolidated
+      load order, and the inline <code>dependencies(...)</code> calls are removed
+      from each source file.
+      See the documentation:
+      <a href="https://hub.coigame.com/Mod/60/Custom-Assets-Loader" target="_blank" rel="noopener noreferrer">
+        Custom Assets Loader docs
+      </a>
+    </span>
+    <button class="dismiss" type="button" title="Run the migration now without other edits">Migrate now</button>
+    <span class="dismiss" title="Hide for this session">Dismiss</span>
+  </div>
+
+  <div class="body">
+
+    <!-- ============================== LEFT COLUMN ============================== -->
+    <div class="left">
+
+      <!-- Tree of pack contents. Each file is a group; each file expands to show
+           its imports + recipes + (later) products / research / unlocks. Anything
+           the loader can't classify becomes "unknown" — visible but flagged. -->
+      <div class="tree">
+
+        <!-- Tree header pinned to the top. "+ new file" prompts for a filename
+             and scaffolds an empty Definitions/<name>.py file on disk, then
+             refreshes the tree. __init__.py cannot be created here — it's
+             generated/managed by the deps dialog instead. -->
+        <div class="tree-header">
+          <span class="label">Pack contents</span>
+          <button class="new-file" type="button" title="Create a new .py file in Definitions/">+ new file</button>
+        </div>
+
+        <!--
+          __init__.py is ALWAYS sorted to the top of the tree, regardless of
+          its filesystem position. It's the load-order entry point for the
+          pack — pinning it first matches the runtime's behaviour (which
+          loads it first) and lets the modder see/edit pack-level wiring
+          before scrolling through individual content files.
+        -->
+        <details class="group">
+          <summary>📄 __init__.py <span style="color: var(--text-dim); font-size: 11px;">(load order)</span></summary>
+          <div class="group-body">
+            <div class="leaf"><span class="kind api">deps</span><span class="id">dependencies("battery_products", "battery_research", "battery_charger")</span></div>
+          </div>
+        </details>
+
+        <details class="group" open>
+          <summary>📄 battery_charger.py <span style="color: var(--text-dim); font-size: 11px;">(4 statements)</span></summary>
+          <div class="group-body">
+
+            <!--
+              Imports group: only NON-API imports are shown. The editor knows
+              which CustomAssets helpers (build_recipe, Product, build_product_*,
+              etc.) and which Mafi.Core type refs the file uses based on the
+              statements it emits, and regenerates the corresponding "from … import …"
+              lines on save. Surfacing them in the tree would be noise — modders
+              never edit those imports by hand once the editor is in charge.
+
+              Physical-value imports (Duration, Percent, …) and id-namespace
+              imports (Ids) ARE shown because the modder may want to control
+              which physical types and namespaces are in scope.
+            -->
+            <details class="group" open>
+              <summary>
+                Imports <span style="color: var(--text-dim); font-size: 11px;">(2 shown · API imports auto-managed)</span>
+              </summary>
+              <div class="group-body">
+                <div class="leaf" title="Physical-value wrappers around scalars (Duration, Percent, Quantity, …). Used as literals in recipe fields.">
+                  <span class="kind phys-val">phys-val</span>
+                  <span class="id">from Mafi import Duration, Percent, Quantity</span>
+                </div>
+                <div class="leaf" title="ID namespaces — Ids.Machines.*, Ids.Products.*, Ids.Research.* — used to reference base-game protos by typed name.">
+                  <span class="kind id-ns">id-ns</span>
+                  <span class="id">from Mafi.Base import Ids</span>
+                </div>
+              </div>
+            </details>
+
+            <details class="group" open>
+              <summary>Recipes <span style="color: var(--text-dim); font-size: 11px;">(2)</span></summary>
+              <div class="group-body">
+                <div class="leaf selected"><span class="kind recipe">recipe</span><span class="id">battery_charge</span><span class="name">— Battery Charging</span></div>
+                <div class="leaf"><span class="kind recipe">recipe</span><span class="id">battery_discharge</span><span class="name">— Battery Discharging</span></div>
+              </div>
+            </details>
+
+          </div>
+        </details>
+
+        <details class="group">
+          <summary>📄 battery_products.py <span style="color: var(--text-dim); font-size: 11px;">(5 statements)</span></summary>
+          <div class="group-body">
+            <!-- No phys-val / id-ns imports in this file; only the auto-managed
+                 `from CustomAssets import build_product_unit` line, which the
+                 editor hides. So the Imports group is omitted entirely. -->
+
+            <!--
+              Assets group — every add_texture / add_texture_material /
+              add_loose_product_material / add_unit_prefab / add_prefab_box
+              call lands here. The registered asset path is shown as the
+              leaf id; the optional human label (if any) on the right.
+              Asset rows are pickable as references from other statements
+              in the same pack (or from packs that depend on this one).
+            -->
+            <details class="group" open>
+              <summary>Assets <span style="color: var(--text-dim); font-size: 11px;">(2)</span></summary>
+              <div class="group-body">
+                <div class="leaf" title="add_texture('Assets/CustomAssets/Icons/battery_charged.svg')">
+                  <span class="kind asset">tex</span>
+                  <span class="id">Assets/CustomAssets/Icons/battery_charged.svg</span>
+                </div>
+                <div class="leaf" title="add_unit_prefab('Assets/CustomAssets/Prefabs/battery.prefab', …)">
+                  <span class="kind asset">prefab</span>
+                  <span class="id">Assets/CustomAssets/Prefabs/battery.prefab</span>
+                </div>
+              </div>
+            </details>
+
+            <details class="group">
+              <summary>Products <span style="color: var(--text-dim); font-size: 11px;">(2)</span></summary>
+              <div class="group-body">
+                <div class="leaf"><span class="kind product">product</span><span class="id">Battery_Charged</span><span class="name">— Charged Battery</span></div>
+                <div class="leaf"><span class="kind product">product</span><span class="id">Battery_Empty</span><span class="name">— Empty Battery</span></div>
+              </div>
+            </details>
+          </div>
+        </details>
+
+        <details class="group">
+          <summary>📄 battery_research.py <span style="color: var(--text-dim); font-size: 11px;">(2 statements)</span></summary>
+          <div class="group-body">
+            <details class="group">
+              <summary>Research <span style="color: var(--text-dim); font-size: 11px;">(1)</span></summary>
+              <div class="group-body">
+                <div class="leaf"><span class="kind research">research</span><span class="id">Research_Batteries</span><span class="name">— Batteries</span></div>
+              </div>
+            </details>
+            <div class="leaf"><span class="kind unknown">other</span><span class="id">helper_fn_locals = {...}</span></div>
+          </div>
+        </details>
+
+      </div>
+
+      <!-- Pack info card: thumbnail + display name + description + a switch
+           link. The "open dependencies" action lives as an icon button in the
+           top-right corner of this card (see .deps-icon). Putting it there
+           keeps the action close to the pack identity while keeping the recipe
+           form full-height in the right pane. -->
+      <div class="pack-card">
+        <div class="thumb" title="From <pack>/Thumbnail.png — falls back to ModLarge.svg">
+          IMG
+        </div>
+        <div class="info">
+          <div class="name">CustomAssets_Batteries</div>
+          <div class="desc">Adds rechargeable battery products and the recipes that charge/discharge them. Ships a custom research node and a unit-product prefab.</div>
+          <div class="pack-switch">switch pack ▾</div>
+        </div>
+        <!-- Dependency-editor entry point: top-right icon button on the card. -->
+        <span class="deps-icon" title="Pack dependencies (manifest + load order)">🔗</span>
+      </div>
+
+    </div>
+
+    <!-- ============================== RIGHT COLUMN ============================= -->
+    <div class="right">
+
+      <!-- Statement editor — polymorphic. The form below switches by the selected
+           node's kind: recipe, product, research, import, deps, or unknown.
+           Each example is wrapped in <div class="example" data-example="..."> so
+           the mockup-controls panel can flip between them. -->
+      <div class="editor">
+
+      <!-- ============================ EXAMPLE: RECIPE ============================ -->
+      <div class="example active" data-example="recipe">
+        <h2>Recipe — battery_charge</h2>
+
+        <div class="field comment"><label>comment</label><textarea placeholder="Optional. Emitted as `# …` lines above the statement.">Charges empty batteries by consuming electricity.
+Tier 3 recipe — requires Batteries research.</textarea></div>
+
+        <div class="field"><label>id</label><input type="text" value="battery_charge"></div>
+        <div class="field"><label>name</label><input type="text" value="Battery Charging"></div>
+        <div class="field"><label>description</label><textarea>Charges empty batteries by consuming electricity.</textarea></div>
+        <!--
+          Machine picker — displays icon + display name. The Id (e.g.
+          "Custom_Machine_BatteryCharger") is held in the editor's RecipeDef
+          but never shown in the picker button itself; the in-game proto's
+          Strings.Name is what the user sees.
+        -->
+        <div class="field"><label>machine</label>
+          <div style="position: relative;">
+            <button class="picker-btn" type="button">
+              <span class="picker-icon">⚙</span>
+              <span class="name">Battery Charger</span>
+              <span class="chevron">▾</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Research picker — same icon + name pattern; "(none)" when null. -->
+        <div class="field"><label>research</label>
+          <div style="position: relative;">
+            <button class="picker-btn" type="button">
+              <span class="picker-icon">🔬</span>
+              <span class="name">Batteries</span>
+              <span class="chevron">▾</span>
+            </button>
+          </div>
+        </div>
+        <div class="field"><label>duration (seconds)</label><input type="number" value="30"></div>
+        <div class="field"><label>power (%)</label><input type="number" value="100"></div>
+
+        <!--
+          Ingredient and product rows: each uses the same product picker
+          (icon + display name) as machine/research above. The first
+          ingredient row below shows an OPEN popup with the search field
+          to demonstrate the picker UI in expanded form. The popup's
+          actual position would attach to the picker-btn that opened it.
+        -->
+        <div class="field"><label>ingredients</label>
+          <div class="product-list">
+
+            <div class="product-row">
+              <button class="picker-btn" type="button">
+                <span class="picker-icon">🔋</span>
+                <span class="name">Empty Battery</span>
+                <span class="chevron">▾</span>
+              </button>
+              <input type="number" value="1" placeholder="qty">
+              <!-- Port options are the input ports of the currently selected machine,
+                   prefixed with "*" for "any matching port". The list is provided by
+                   MachinePortsDumper (Data/Mod/MachinePortsDumper.cs) — it dumps each
+                   machine's port layout to <mod>/machine_ports.json at game start. -->
+              <select title="Routes this ingredient to a specific input port. * = any matching port.">
+                <option value="*">* (any matching port)</option>
+                <option value="in1">in1 — fluid in</option>
+                <option value="in2">in2 — unit in</option>
+                <option value="in3">in3 — unit in</option>
+              </select>
+              <span class="remove" title="Remove">✕</span>
+
+              <!--
+                Picker popup for this row, shown OPEN to illustrate the design.
+                Real impl would (a) anchor below the picker-btn, (b) close on
+                outside click / Esc, (c) live-filter the list as the user types.
+              -->
+              <div class="picker-popup" style="grid-column: 1 / -1; margin-top: 4px; position: relative; width: 100%; max-width: 540px;">
+                <!--
+                  Search field + provenance filter row.
+                  Provenance comes from PackRegistry: every product ID is mapped
+                  to its source pack at scan time. Then for each candidate the
+                  picker compares against the CURRENT pack's manifest mod_dependencies:
+                    - product source == base game           → from-base (always OK)
+                    - product source == current pack itself → from-self (always OK)
+                    - product source in mod_dependencies    → from-dep   (OK)
+                    - product source NOT in mod_dependencies → from-missing (warn)
+                  The "Add dep on X" link offers a one-click manifest mutation
+                  to declare the missing dependency directly from the picker.
+                -->
+                <div class="search">
+                  <span class="search-icon">🔎</span>
+                  <input type="text" placeholder="Search products by name…" value="batt">
+                  <span class="count">4 / 217</span>
+                </div>
+                <div class="filter-row">
+                  <label><input type="checkbox" checked> Hide products from missing dependencies</label>
+                  <span style="flex:1"></span>
+                  <span title="3 hidden because their source pack isn't in this pack's mod_dependencies">3 hidden</span>
+                </div>
+                <div class="list">
+                  <div class="opt selected">
+                    <span class="picker-icon">🔋</span>
+                    <div>
+                      <div class="name">Empty Battery</div>
+                      <div class="meta">
+                        <span class="id">Battery_Empty</span>
+                        <span class="chip from-self">this pack</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="opt">
+                    <span class="picker-icon">🔋</span>
+                    <div>
+                      <div class="name">Charged Battery</div>
+                      <div class="meta">
+                        <span class="id">Battery_Charged</span>
+                        <span class="chip from-self">this pack</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="opt">
+                    <span class="picker-icon">🔋</span>
+                    <div>
+                      <div class="name">Battery Pack (industrial)</div>
+                      <div class="meta">
+                        <span class="id">Battery_Industrial</span>
+                        <span class="chip from-dep">via CustomAssets_IndustrialBatteries</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="opt">
+                    <span class="picker-icon">🔋</span>
+                    <div>
+                      <div class="name">Battery Backup Cell</div>
+                      <div class="meta">
+                        <span class="id">Battery_Backup</span>
+                        <span class="chip from-missing">missing dep: CustomAssets_BackupPower</span>
+                        <span class="add-dep-link">+ add dep</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="product-row">
+              <button class="picker-btn" type="button">
+                <span class="picker-icon">⚡</span>
+                <span class="name">Electricity</span>
+                <span class="chevron">▾</span>
+              </button>
+              <input type="number" value="5" placeholder="qty">
+              <select title="Routes this ingredient to a specific input port. * = any matching port.">
+                <option value="*" selected>* (any matching port)</option>
+                <option value="in1">in1 — fluid in</option>
+                <option value="in2">in2 — unit in</option>
+                <option value="in3">in3 — unit in</option>
+              </select>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+
+            <button class="add" type="button">+ add ingredient</button>
+          </div>
+        </div>
+
+        <div class="field"><label>products</label>
+          <div class="product-list">
+            <div class="product-row">
+              <button class="picker-btn" type="button">
+                <span class="picker-icon">🔋</span>
+                <span class="name">Charged Battery</span>
+                <span class="chevron">▾</span>
+              </button>
+              <input type="number" value="1" placeholder="qty">
+              <select title="Routes this product to a specific output port. * = any matching port.">
+                <option value="*" selected>* (any matching port)</option>
+                <option value="out1">out1 — unit out</option>
+                <option value="out2">out2 — unit out</option>
+              </select>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <button class="add" type="button">+ add product</button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" type="button">Verify Round-Trip</button>
+          <button class="btn" type="button">Delete recipe</button>
+          <span class="status">source: battery_charger.py (lines 12–34)</span>
+          <button class="btn primary" type="button">Save pack to disk</button>
+        </div>
+      </div>
+
+      <!-- ============================ EXAMPLE: PRODUCT =========================== -->
+      <div class="example" data-example="product">
+        <h2>Product (unit) — Battery_Charged</h2>
+        <div class="field comment"><label>comment</label><textarea placeholder="Optional. Emitted as `# …` lines above the statement."></textarea></div>
+        <div class="field"><label>id</label><input type="text" value="Battery_Charged"></div>
+        <div class="field"><label>name</label><input type="text" value="Charged Battery"></div>
+        <div class="field"><label>description</label><textarea>A rechargeable battery, fully charged.</textarea></div>
+        <!-- Icon, prefab, and material fields all use the same asset picker.
+             Sources merged in the popup, each with a provenance chip:
+               - assets registered via add_texture / add_*_material /
+                 add_unit_prefab / add_prefab_box in this pack (chip: this pack)
+               - assets registered in a pack we depend on             (chip: via X)
+               - raw files in <pack>/Assets/... that the loader can
+                 import on the fly                                    (chip: inner file)
+               - vanilla base-game asset paths (Assets.Base.*)        (chip: base)
+             Picker scopes by asset-kind, so an icon field only shows
+             textures, a prefab field only prefabs, a material field
+             only materials. -->
+        <div class="field"><label>icon</label>
+          <button class="picker-btn" type="button" title="Pick from registered textures, raw files in Assets/, or vanilla assets">
+            <span class="picker-icon">🖼</span>
+            <span class="name">battery_charged.svg</span>
+            <span class="chevron">▾</span>
+          </button>
+        </div>
+        <div class="field"><label>prefab</label>
+          <button class="picker-btn" type="button">
+            <span class="picker-icon">📦</span>
+            <span class="name">Battery prefab (32×20×32mm)</span>
+            <span class="chevron">▾</span>
+          </button>
+        </div>
+        <div class="field"><label>maxTransport</label><input type="number" value="3"></div>
+        <div class="field"><label>isStorable</label><label><input type="checkbox" checked> stored on belts/silos</label></div>
+        <div class="field"><label>research</label>
+          <button class="picker-btn" type="button">
+            <span class="picker-icon">🔬</span>
+            <span class="name">Batteries</span>
+            <span class="chevron">▾</span>
+          </button>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button">Delete product</button>
+          <span class="status">source: battery_products.py (lines 8–24)</span>
+          <button class="btn primary" type="button">Save pack to disk</button>
+        </div>
+      </div>
+
+      <!-- ============================ EXAMPLE: RESEARCH ========================== -->
+      <div class="example" data-example="research">
+        <h2>Research — Research_Batteries</h2>
+        <div class="field comment"><label>comment</label><textarea placeholder="Optional. Emitted as `# …` lines above the statement."></textarea></div>
+        <div class="field"><label>id</label><input type="text" value="Research_Batteries"></div>
+        <div class="field"><label>name</label><input type="text" value="Batteries"></div>
+        <div class="field"><label>description</label><textarea>Unlocks rechargeable battery products and their charging recipes.</textarea></div>
+        <!-- Icon uses the same asset picker as Product.icon — texture-kind only. -->
+        <div class="field"><label>icon</label>
+          <button class="picker-btn" type="button">
+            <span class="picker-icon">🖼</span>
+            <span class="name">research_batteries.svg</span>
+            <span class="chevron">▾</span>
+          </button>
+        </div>
+        <!--
+          Tier picker: 1..9. Same picker-btn UI as proto pickers for visual
+          consistency. The popup is shorter (no search field needed for a
+          fixed list of 9) and the option label includes the tier's typical
+          progression band so modders pick deliberately rather than guessing
+          a number. Stored as an int in the editor's model.
+        -->
+        <div class="field"><label>tier</label>
+          <button class="picker-btn" type="button">
+            <span class="picker-icon">3</span>
+            <span class="name">Tier 3 — Early industry</span>
+            <span class="chevron">▾</span>
+          </button>
+        </div>
+        <div class="field"><label>cost (research points)</label><input type="number" value="120"></div>
+
+        <!--
+          Position picker for the research-tree screen. Existing research
+          nodes from the current pack + its dependencies + the base game
+          are plotted at their declared positions so the modder can place
+          the new node deliberately rather than blind-typing coordinates.
+          The current node draws highlighted; clicking the grid moves it,
+          dragging it has the same effect. X/Y inputs below give precise
+          nudging when alignment matters.
+        -->
+        <div class="field"><label>position</label>
+          <div class="research-grid-wrap">
+            <div>
+              <div class="research-grid" title="Click to move the current research; drag the highlighted dot for fine control.">
+                <span class="axis-x" style="right: 4px;">x →</span>
+                <span class="axis-y" style="top: 4px;">↑ y</span>
+                <!-- Existing nodes (base + deps + this pack). -->
+                <div class="research-node" style="left: 30px;  top: 180px;" title="Basic Electronics — x=1, y=1">⚙<span class="label">Basic Electronics</span></div>
+                <div class="research-node" style="left: 100px; top: 140px;" title="Power Distribution — x=3, y=3">⚡<span class="label">Power Distrib.</span></div>
+                <div class="research-node" style="left: 170px; top: 100px;" title="Advanced Electronics — x=6, y=5">🔌<span class="label">Adv. Electronics</span></div>
+                <div class="research-node current" style="left: 260px; top: 60px;" title="Batteries (this) — x=9, y=8">🔋<span class="label">Batteries (this)</span></div>
+                <div class="research-node" style="left: 320px; top: 30px;" title="High-Capacity Storage — x=11, y=10">📦<span class="label">High-Cap. Storage</span></div>
+              </div>
+              <div class="research-position-inputs">
+                <label>x:</label><input type="number" value="9" min="0">
+                <label>y:</label><input type="number" value="8" min="0">
+              </div>
+            </div>
+            <div class="research-position-legend">
+              Click or drag in the grid to place this research node. Existing nodes are shown for context — your dependencies' nodes and base-game nodes always render here when accessible.
+            </div>
+          </div>
+        </div>
+        <!-- Prerequisites use the same searchable proto picker as machine /
+             research / products — icon + display name, popup with search,
+             provenance chip per option, missing-dep "+ add dep" inline link.
+             The picker scopes to ResearchNodeProto (base game + any pack
+             dependencies declaring research). Stored as research IDs in the
+             editor's model; emitted as typed Ids.Research.X or string id. -->
+        <div class="field"><label>prerequisites</label>
+          <div class="proto-list">
+            <div class="proto-row">
+              <button class="picker-btn" type="button">
+                <span class="picker-icon">🔬</span>
+                <span class="name">Advanced Electronics</span>
+                <span class="chevron">▾</span>
+              </button>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <div class="proto-row">
+              <button class="picker-btn empty" type="button">
+                <span class="picker-icon">🔬</span>
+                <span class="name">(pick a research…)</span>
+                <span class="chevron">▾</span>
+              </button>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <button class="add" type="button">+ add prerequisite</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button">Delete research</button>
+          <span class="status">source: battery_research.py (lines 5–18)</span>
+          <button class="btn primary" type="button">Save pack to disk</button>
+        </div>
+      </div>
+
+      <!-- ============================ EXAMPLE: ASSET ============================ -->
+      <!--
+        Asset editor — opens when the user selects an asset node from the
+        tree (either an add_texture/add_*_material/add_*_prefab registration
+        or a raw file under <pack>/Assets/...). Shows a live preview pulled
+        from disk + a "Reload from disk" button so external changes (svg2png
+        rebuild, .obj re-export from Blender, texture re-save in GIMP) get
+        picked up without restarting COI.
+
+        The "Texture gallery" at the bottom is a quick visual index of every
+        texture asset in the current pack — clicking a cell selects it in
+        the tree. Equivalent gallery for meshes uses the .mesh cell variant.
+      -->
+      <div class="example" data-example="asset">
+        <h2>Asset — battery_charged.svg</h2>
+
+        <div class="field comment"><label>comment</label><textarea placeholder="Optional. Emitted as `# …` lines above the add_texture() call."></textarea></div>
+
+        <div class="asset-preview">
+          <div>
+            <div class="asset-thumb-wrap">
+              <!--
+                Real preview would be Texture2D loaded from disk via the same
+                File.ReadAllBytes + Texture2D.LoadImage path PackThumbnailCache
+                already uses. Static placeholder here.
+              -->
+              <span style="font-size: 60px; color: var(--accent);">🔋</span>
+              <span class="thumb-overlay">SVG · 128×128 · 3.2 KiB</span>
+            </div>
+            <div class="asset-reload-row">
+              <button class="btn" type="button">↻ Reload from disk</button>
+              <span class="last-loaded">last loaded 12s ago</span>
+            </div>
+          </div>
+          <div>
+            <dl class="asset-meta">
+              <dt>kind</dt>        <dd>Texture (.svg)</dd>
+              <dt>registered by</dt><dd>add_texture(...)</dd>
+              <dt>asset path</dt>  <dd>Assets/CustomAssets/Icons/battery_charged.svg</dd>
+              <dt>file path</dt>   <dd>&lt;pack&gt;/Assets/Icons/battery_charged.svg</dd>
+              <dt>svg2png .png</dt><dd>present · 4.1 KiB</dd>
+              <dt>references</dt>  <dd>Battery_Charged.icon · Research_Batteries.icon</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="field"><label>asset path</label><input type="text" value="Assets/CustomAssets/Icons/battery_charged.svg"></div>
+        <div class="field"><label>replace (optional)</label><input type="text" placeholder="e.g. Assets/Base/Products/Icons/Battery.svg — leave blank for none"></div>
+
+        <!-- Texture gallery — small thumbnail grid of every texture in the pack. -->
+        <h2 style="margin-top: 18px;">Pack textures</h2>
+        <div class="asset-gallery">
+          <div class="cell" title="battery_charged.svg — current">🔋<div class="filename">battery_charged.svg</div></div>
+          <div class="cell" title="battery_empty.svg">🪫<div class="filename">battery_empty.svg</div></div>
+          <div class="cell" title="research_batteries.svg">🔬<div class="filename">research_batt.svg</div></div>
+          <div class="cell" title="charger_albedo.png">🟨<div class="filename">charger_albedo.png</div></div>
+          <div class="cell" title="charger_normals.png">🟪<div class="filename">charger_normals.png</div></div>
+          <div class="cell mesh" title="battery.obj — mesh"><span style="font-size:24px;">🧊</span><div class="filename">battery.obj</div></div>
+          <div class="cell mesh" title="charger.obj — mesh"><span style="font-size:24px;">🧊</span><div class="filename">charger.obj</div></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" type="button">↻ Reload all textures</button>
+          <button class="btn" type="button">Delete asset</button>
+          <span class="status">source: battery_products.py (line 5)</span>
+          <button class="btn primary" type="button">Save pack to disk</button>
+        </div>
+      </div>
+
+      <!-- ============================ EXAMPLE: IMPORT (phys-val) ================= -->
+      <div class="example" data-example="import">
+        <h2>Import — physical values</h2>
+        <p style="color: var(--text-dim); font-size: 12px;">
+          Imports of Mafi physical-value wrappers bring scalar types into scope so
+          recipe/product fields can use literals like <code>Duration(60)</code> or
+          <code>Percent(20)</code>. This statement is editable — pick which types
+          you want exposed in the current file.
+        </p>
+        <div class="field"><label>module</label><input type="text" value="Mafi" readonly></div>
+        <div class="field"><label>symbols</label>
+          <!-- Each row carries a reorder handle (▲▼) so the modder can pin
+               import order — useful when readability matters and Python
+               doesn't enforce alphabetical. -->
+          <div class="dep-list">
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">Duration</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">Percent</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">Quantity</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <button class="add" type="button">+ add symbol</button>
+          </div>
+        </div>
+        <div class="actions">
+          <span class="status">source: battery_charger.py (line 3)</span>
+          <button class="btn primary" type="button">Save pack to disk</button>
+        </div>
+      </div>
+
+      <!-- ============================ EXAMPLE: DEPS FILE ========================= -->
+      <div class="example" data-example="deps">
+        <h2>Load order — __init__.py</h2>
+        <p style="color: var(--text-dim); font-size: 12px;">
+          Controls the order in which <code>.py</code> files in this pack's Definitions
+          folder are loaded by the runtime. Earlier files run first; later files can
+          reference earlier ones.
+        </p>
+        <div class="field"><label>files</label>
+          <!-- Order here is load order at runtime — drag/▲▼ to change. -->
+          <div class="dep-list">
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">battery_products</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">battery_research</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">battery_charger</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <button class="add" type="button">+ add file</button>
+          </div>
+        </div>
+        <div class="actions">
+          <span class="status">source: __init__.py</span>
+          <button class="btn primary" type="button">Save pack to disk</button>
+        </div>
+      </div>
+
+      <!-- ============================ EXAMPLE: EMPTY ============================= -->
+      <div class="example" data-example="empty">
+        <div class="empty-hint">Select a node in the tree on the left to start editing.</div>
+      </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!--
+  PACK DEPENDENCIES DIALOG
+
+  Opened by clicking the 🔗 icon on the pack card. Shown OPEN here for
+  the mockup so the design is visible. In the game UI this lives in its
+  own Mafi.Unity.UiToolkit.Library.Window subclass and is registered as
+  a sibling controller to the main editor (so it can be toggled, pinned
+  by its own pin button, etc.).
+
+  Contents:
+    • Manifest dependencies (manifest.json → mod_dependencies)
+    • Optional manifest dependencies (manifest.json → optional_mod_dependencies)
+    • Python load order (Definitions/__init__.py → dependencies("...") call)
+
+  Save commits BOTH JSON and the .py file in one click. Cancel reverts in-memory edits.
+-->
+<div class="dialog-backdrop">
+  <div class="dialog" role="dialog" aria-label="Pack dependencies">
+    <div class="dialog-titlebar">
+      <h2>🔗 Pack dependencies — CustomAssets_Batteries</h2>
+      <span class="filler"></span>
+      <span class="btn-icon" title="Close">✕</span>
+    </div>
+
+    <div class="dialog-body">
+      <div class="dep-section">
+
+        <div>
+          <!-- Order in mod_dependencies is preserved on save so modders who
+               organise their manifest deliberately (alphabetical, by tier,
+               etc.) don't get reshuffled. -->
+          <div class="label">Mod dependencies (manifest.json → <code>mod_dependencies</code>)</div>
+          <div class="dep-list">
+            <div class="dep">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">CustomAssets</span>
+              <span class="ver">≥ 0.1.10</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <div class="dep">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">CustomAssets_AirFiltering</span>
+              <span class="ver">≥ 0.0.1</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <button class="add" type="button">+ add dependency</button>
+          </div>
+
+          <div class="label" style="margin-top: 12px;">Optional (manifest.json → <code>optional_mod_dependencies</code>)</div>
+          <div class="dep-list">
+            <button class="add" type="button">+ add optional</button>
+          </div>
+        </div>
+
+        <div>
+          <!-- Python load order: this list IS the order. Reorder ▲▼ here
+               directly mutates what dependencies("a", "b", "c") emits. -->
+          <div class="label">Python load order (Definitions/__init__.py → <code>dependencies(...)</code>)</div>
+          <div class="dep-list">
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">battery_products</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">battery_research</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <div class="dep" style="grid-template-columns: 16px 1fr 24px;">
+              <span class="reorder" title="Reorder"><span class="up">▲</span><span class="down">▼</span></span>
+              <span class="id">battery_charger</span>
+              <span class="remove" title="Remove">✕</span>
+            </div>
+            <button class="add" type="button">+ add file</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <span class="filler"></span>
+      <button class="btn" type="button">Cancel</button>
+      <button class="btn primary" type="button">Save dependencies</button>
+    </div>
+  </div>
+</div>
+
+<!--
+  Minimal JS — interaction only. No data model, no persistence. Purely so
+  the static mockup feels close to the live UI when reviewing in a browser:
+    • Dialog opens by clicking the 🔗 deps-icon on the pack card.
+    • Dialog closes by ✕, Cancel, backdrop click, or Escape.
+    • The pre-shown picker popup closes by clicking outside or pressing Escape;
+      clicking any picker-btn toggles a fresh popup (cloned from the example).
+    • Legacy-warning Dismiss hides the banner.
+  None of this corresponds to the C# port — game UI uses Mafi's
+  Window/FloatingColumn open/close + InputMgr controllers, not DOM events.
+-->
+<script>
+(() => {
+  const dialog        = document.querySelector('.dialog-backdrop');
+  const depsIcon      = document.querySelector('.deps-icon');
+  const dialogClose   = dialog && dialog.querySelector('.dialog-titlebar .btn-icon');
+  const dialogCancel  = dialog && dialog.querySelector('.dialog-footer .btn:not(.primary)');
+  const legacyWarn    = document.querySelector('.legacy-warning');
+  const legacyDismiss = legacyWarn && legacyWarn.querySelector('.dismiss');
+
+  // Initial state from the controls panel.
+  const mockDialogChk = document.getElementById('mock-dialog');
+  const mockPopupChk  = document.getElementById('mock-popup');
+  const mockLegacyChk = document.getElementById('mock-legacy');
+  const mockExample   = document.getElementById('mock-example');
+
+  const setDialog = (on) => {
+    if (!dialog) return;
+    dialog.style.display = on ? 'flex' : 'none';
+    if (mockDialogChk) mockDialogChk.checked = on;
+  };
+  const setPopup = (on) => {
+    document.querySelectorAll('.editor .picker-popup').forEach(
+      (p) => p.style.display = on ? '' : 'none');
+    if (mockPopupChk) mockPopupChk.checked = on;
+  };
+  const setLegacy = (on) => {
+    if (legacyWarn) legacyWarn.style.display = on ? '' : 'none';
+    if (mockLegacyChk) mockLegacyChk.checked = on;
+  };
+  const setExample = (name) => {
+    document.querySelectorAll('.editor .example').forEach(
+      (el) => el.classList.toggle('active', el.dataset.example === name));
+    if (mockExample) mockExample.value = name;
+  };
+
+  // Initialise: dialog hidden by default, popup + legacy visible, recipe example.
+  setDialog(false);
+  setPopup(true);
+  setLegacy(true);
+  setExample('recipe');
+
+  // Controls panel — drive the four toggles.
+  mockExample  && mockExample.addEventListener('change', (e) => setExample(e.target.value));
+  mockLegacyChk && mockLegacyChk.addEventListener('change', (e) => setLegacy(e.target.checked));
+  mockPopupChk  && mockPopupChk.addEventListener('change', (e) => setPopup(e.target.checked));
+  mockDialogChk && mockDialogChk.addEventListener('change', (e) => setDialog(e.target.checked));
+
+  // In-UI close paths still work and keep the controls panel in sync.
+  depsIcon       && depsIcon.addEventListener('click',  () => setDialog(true));
+  dialogClose    && dialogClose.addEventListener('click', () => setDialog(false));
+  dialogCancel   && dialogCancel.addEventListener('click', () => setDialog(false));
+  dialog && dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) setDialog(false);
+  });
+
+  legacyDismiss && legacyDismiss.addEventListener('click', () => setLegacy(false));
+
+  // Picker popup: clicking outside closes it; clicking the picker-btn
+  // re-opens it. Keep the controls panel checkbox in sync.
+  document.addEventListener('click', (e) => {
+    if (e.target.closest && e.target.closest('.mock-controls')) return;
+    const isOnBtn = e.target.closest && e.target.closest('.picker-btn');
+    if (isOnBtn) { setPopup(true); return; }
+    const popups = document.querySelectorAll('.editor .picker-popup');
+    let anyOpen = false;
+    popups.forEach((p) => {
+      const isInside = p.contains(e.target);
+      if (!isInside) p.style.display = 'none';
+      else if (p.style.display !== 'none') anyOpen = true;
+    });
+    if (!anyOpen && mockPopupChk) mockPopupChk.checked = false;
+  });
+
+  // Esc closes whichever overlay is on top: dialog wins over picker popup.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (dialog && dialog.style.display !== 'none') { setDialog(false); return; }
+    setPopup(false);
+  });
+})();
+</script>
+
+</body>
+</html>

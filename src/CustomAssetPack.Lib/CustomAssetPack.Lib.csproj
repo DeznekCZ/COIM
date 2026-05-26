@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net48</TargetFramework>
+		<Configurations>Debug;Release;Debug_Pack</Configurations>
+		<!-- Output DLL is CustomAssetPack.dll regardless of csproj name so pack manifests
+		     and the DeployNewPatternPacks target can reference 'CustomAssetPack.dll'. -->
+		<AssemblyName>CustomAssetPack</AssemblyName>
+		<RootNamespace>CustomAssets</RootNamespace>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<WarningLevel>9999</WarningLevel>
+		<!-- C# 12 for collection expressions [...] used in CustomAssetPack.cs. -->
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' ">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<DefineConstants>DEBUG</DefineConstants>
+		<OutputPath>bin\Debug\</OutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<Optimize>true</Optimize>
+		<OutputPath>bin\Release\</OutputPath>
+	</PropertyGroup>
+
+	<!-- Build dependency on the base mod so CustomAssets.dll is up to date when this
+	     project compiles. The pack-stub DLL references CustomAssetRegistrator and
+	     other base-mod types at compile time; at runtime those references resolve to
+	     the base CustomAssets mod's already-loaded assembly (mod_dependencies forces
+	     CustomAssets to load before any pack). -->
+	<ItemGroup>
+		<ProjectReference Include="..\CustomRecipes\CustomAssets.csproj" />
+	</ItemGroup>
+
+	<!-- Mafi assemblies required to compile CustomAssetPack + EmittedPackMod
+	     (DataOnlyMod, ModManifest, ProtoRegistrator, DependencyResolverBuilder,
+	     Log, Option<>, ModJsonConfig, Dict, VersionSlim, etc.). ProjectReference
+	     above does not transitively flow HintPath references in SDK-style net48. -->
+	<ItemGroup>
+		<Reference Include="mscorlib"><HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\mscorlib.dll</HintPath></Reference>
+		<Reference Include="netstandard"><HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\netstandard.dll</HintPath></Reference>
+		<Reference Include="System"><HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.dll</HintPath></Reference>
+		<Reference Include="System.Core"><HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\System.Core.dll</HintPath></Reference>
+		<Reference Include="Mafi"><HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.dll</HintPath></Reference>
+		<Reference Include="Mafi.Core"><HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.Core.dll</HintPath></Reference>
+	</ItemGroup>
+
+	<!-- Stage CustomAssetPack.dll inside the deployed base CustomAssets mod
+	     folder so the in-progress pack generator can pick it up from there
+	     when scaffolding a new pack. The base mod's manifest.json keeps
+	     primary_dlls=["CustomAssets.dll"] — Mafi never tries to load this
+	     extra DLL, it just sits in the folder as a build artifact. -->
+	<Target Name="StagePackStubInBaseMod" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Debug_Pack'">
+		<PropertyGroup>
+			<_BaseModDeployDir>$(APPDATA)\Captain of Industry\Mods\CustomAssets</_BaseModDeployDir>
+		</PropertyGroup>
+		<MakeDir Directories="$(_BaseModDeployDir)" />
+		<Copy SourceFiles="$(OutputPath)\CustomAssetPack.dll" DestinationFolder="$(_BaseModDeployDir)" />
+		<Copy SourceFiles="$(OutputPath)\CustomAssetPack.pdb" DestinationFolder="$(_BaseModDeployDir)" Condition="'$(Configuration)' == 'Debug' And Exists('$(OutputPath)\CustomAssetPack.pdb')" />
+		<Message Text="CustomAssetPack.dll staged into base mod folder ($(_BaseModDeployDir)) for the pack generator." Importance="high" />
+	</Target>
+</Project>

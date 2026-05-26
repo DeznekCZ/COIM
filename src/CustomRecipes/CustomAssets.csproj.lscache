@@ -52,6 +52,7 @@ TemporaryDependencyNodeTargetIdentifier=net48
 /warnaserror+:NU1605
 
 [sourceFiles]
+CustomAssetPackBase.cs
 CustomAssetsMod.cs
 Data/
  AValidatedData.cs
@@ -62,15 +63,24 @@ Data/
   CustomUnitPrefabHook.cs
   DiagnosticTrace.cs
   GlobalDependencyResolver.cs
+  LegacyMigrator.cs
   MachinePortsDumper.cs
   MiniJson.cs
+  MiniJsonWriter.cs
   ObjLoader.cs
+  PackRegistry.cs
  Modules/Fields/Reference.cs
  MyExtensions.cs
  Tabs/
   MyTabContainer.cs
   ProductTab.cs
   ProtoTab.cs
+Editor/Io/
+ PackEmitter.cs
+ PackLoader.cs
+ RoundTripTester.cs
+Editor/Model/PackModel.cs
+EmittedPackMod.cs
 FixSaveGames.cs
 ModuleParser/Registrator/
  Mat.cs
@@ -165,6 +175,17 @@ PythonAPI/
   ReturnStatement.cs
  Token.cs
  Tokenizer.cs
+Ui/Components/
+ CollapsibleGroup.cs
+ LegacyBanner.cs
+ PackCardView.cs
+ PackDepsDialog.cs
+ ProtoPicker.cs
+ TypedRefResolver.cs
+Ui/
+ PackManifestCache.cs
+ PackThumbnailCache.cs
+ RecipeEditorWindow.cs
 Utils/
  EntityInspector.cs
  IEntitySelector.cs

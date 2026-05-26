@@ -12,5 +12,6 @@
   "can_remove_from_saved_game": true,
   "non_locking_dll_load": true,
   "min_game_version": "0.8.4",
-  "primary_dlls": [ "CustomAssets_AirFiltering.dll" ]
+  "primary_dlls": [ "CustomAssetPack.dll" ],
+  "primary_mod_class_name": "CustomAssetPack"
 }

@@ -18,6 +18,7 @@ namespace CustomAssets
 		public override void RegisterPrototypes(ProtoRegistrator registrator) {
 			Log.Info($"{Manifest.Id}: registering prototypes");
 			CustomAssetManager.Clear();
+			PackRegistry.Clear();
 			m_modBasePath = registrator.ActiveMod?.Manifest?.RootDirectoryPath ?? Manifest?.RootDirectoryPath;
 
 			// Synchronous trace file so we can localize hangs even if Mafi.Log buffers.

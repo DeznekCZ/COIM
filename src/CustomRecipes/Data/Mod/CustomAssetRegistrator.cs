@@ -36,6 +36,7 @@ namespace CustomAssets.Data.Mod;
 public class CustomAssetRegistrator : IModData {
 
 	private string m_modBasePath = ""; // SET IN RUNTIME, because of mod loading order
+	private string m_modId = "";       // SET IN RUNTIME alongside m_modBasePath
 
 	private Dictionary<string, object> m_configValues = new Dictionary<string, object>();
 
@@ -212,10 +213,14 @@ public class CustomAssetRegistrator : IModData {
 
 	public void RegisterData(ProtoRegistrator registrator) {
 		m_modBasePath = registrator.ActiveMod.Manifest.RootDirectoryPath;
+		m_modId = registrator.ActiveMod?.Manifest?.Id ?? "unknown-mod";
 		m_configValues = ConfigLoader.Load(m_modBasePath);
 
-		string modId = registrator.ActiveMod?.Manifest?.Id ?? "unknown-mod";
-		DiagnosticTrace.Step($"RegisterData: start (mod={modId}, base={m_modBasePath})");
+		// Open the registry entry for this pack so register() can append parsed files as
+		// they load. The editor reads this registry — it does not scan disk independently.
+		PackRegistry.GetOrAdd(m_modId, m_modBasePath);
+
+		DiagnosticTrace.Step($"RegisterData: start (mod={m_modId}, base={m_modBasePath})");
 
 		DirectoryInfo modules = new DirectoryInfo($"{m_modBasePath}/Definitions");
 		Log.Info("Location of modules: " + modules.FullName);
@@ -237,12 +242,12 @@ public class CustomAssetRegistrator : IModData {
 		// and the mod loader sees the exception at the right place.
 		FileInfo initFile = new FileInfo(Path.Combine(modules.FullName, "__init__.py"));
 		if (initFile.Exists) {
-			DiagnosticTrace.Step($"RegisterData[{modId}]: __init__.py exists, loading");
+			DiagnosticTrace.Step($"RegisterData[{m_modId}]: __init__.py exists, loading");
 			try {
 				register(loaded, failed, registrator, initFile, modules);
-				DiagnosticTrace.Step($"RegisterData[{modId}]: __init__.py loaded");
+				DiagnosticTrace.Step($"RegisterData[{m_modId}]: __init__.py loaded");
 			} catch (Exception e) {
-				DiagnosticTrace.Step($"RegisterData[{modId}]: __init__.py FAILED: {e.GetType().Name}: {e.Message}");
+				DiagnosticTrace.Step($"RegisterData[{m_modId}]: __init__.py FAILED: {e.GetType().Name}: {e.Message}");
 				Log.Error("Failed to load __init__.py");
 				Log.Exception(e);
 				failed.Add(initFile.FullName);
@@ -258,13 +263,13 @@ public class CustomAssetRegistrator : IModData {
 			if (failed.Contains(enumerateFile.FullName)) {
 				continue;
 			}
-			DiagnosticTrace.Step($"RegisterData[{modId}]: enumerate-loading {enumerateFile.Name}");
+			DiagnosticTrace.Step($"RegisterData[{m_modId}]: enumerate-loading {enumerateFile.Name}");
 			try {
 				register(loaded, failed, registrator, enumerateFile, modules);
-				DiagnosticTrace.Step($"RegisterData[{modId}]: enumerate-loaded {enumerateFile.Name}");
+				DiagnosticTrace.Step($"RegisterData[{m_modId}]: enumerate-loaded {enumerateFile.Name}");
 			} catch (Exception e) {
 				string relPath = enumerateFile.FullName.Remove(0, modules.FullName.Length);
-				DiagnosticTrace.Step($"RegisterData[{modId}]: {enumerateFile.Name} FAILED: {e.GetType().Name}: {e.Message}");
+				DiagnosticTrace.Step($"RegisterData[{m_modId}]: {enumerateFile.Name} FAILED: {e.GetType().Name}: {e.Message}");
 				Log.Error($"Failed to load definition: {relPath}");
 				Log.Exception(e);
 				failed.Add(enumerateFile.FullName);
@@ -272,7 +277,7 @@ public class CustomAssetRegistrator : IModData {
 					$"Failed to load definition '{relPath}': {e.Message}\n{e.StackTrace}", e);
 			}
 		}
-		DiagnosticTrace.Step($"RegisterData[{modId}]: complete (loaded={loaded.Count}, failed={failed.Count})");
+		DiagnosticTrace.Step($"RegisterData[{m_modId}]: complete (loaded={loaded.Count}, failed={failed.Count})");
 
 		// Note: we do NOT call CustomAssetManager.Instance.RunInjection() here. CAM may not yet
 		// be constructed (it's lazy DI), and even if it were, it can't run before LPMM/
@@ -287,6 +292,11 @@ public class CustomAssetRegistrator : IModData {
 		Token[] tokens = Tokenizer.ParseFile(file.FullName);
 		Block block = Lexer.Parse(tokens);
 		DiagnosticTrace.Step($"register: parsed {file.Name} ({tokens.Length} tokens, {block.statements.Count} statements)");
+
+		// Record the parsed AST so the in-game editor can walk it later without
+		// re-tokenising. Done before execution so even a file that throws during
+		// Execute() leaves its parse tree visible to the editor.
+		PackRegistry.RecordFile(m_modId, file.FullName, block);
 
 		Dictionary<string, object> context = resolvers(registrator);
 		context["dependencies"] = new Constructor([

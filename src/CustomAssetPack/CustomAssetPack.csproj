@@ -73,6 +73,74 @@
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildPack" Properties="ModPack=%(ModFolders.RecursiveDir);Configuration=Debug;Platform=AnyCPU" />
 	</Target>
 
+	<!-- Deploys "new-pattern" packs (Batteries for now). A new-pattern pack does not
+	     generate a per-pack DLL; instead it ships a copy of CustomAssets.dll alongside
+	     manifest.json + data, and the pack's manifest selects the CustomAssetPack IMod
+	     class via primary_mod_class_name. Per-pack Type identity comes from the
+	     non_locking_dll_load assembly isolation Mafi gives free.
+	     Listed pack folders are also excluded from <ModFolders> above so BuildAll
+	     does not try to generate a csproj for them. -->
+	<ItemGroup>
+		<NewPatternPack Include="Batteries">
+			<ModId>CustomAssets_Batteries</ModId>
+		</NewPatternPack>
+		<NewPatternPack Include="AirFiltering">
+			<ModId>CustomAssets_AirFiltering</ModId>
+		</NewPatternPack>
+	</ItemGroup>
+
+	<Target Name="DeployNewPatternPacks" AfterTargets="PostBuildEvent" DependsOnTargets="EnsureModBuilder" Condition="'$(ModPack)' == ''">
+		<Error Condition="'$(COI_MODS)' == ''" Text="Environment or project variable 'COI_MODS' is not set." />
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="DeployOneNewPatternPack"
+		         Properties="NewPatternPackName=%(NewPatternPack.Identity);NewPatternPackId=%(NewPatternPack.ModId);Configuration=$(Configuration);Platform=AnyCPU" />
+	</Target>
+
+	<Target Name="DeployOneNewPatternPack" Condition="'$(NewPatternPackName)' != ''">
+		<PropertyGroup>
+			<_NPPackDir>$(MSBuildThisFileDirectory)Packs\$(NewPatternPackName)</_NPPackDir>
+			<_NPDeployDir>$(COI_MODS)\$(NewPatternPackId)</_NPDeployDir>
+			<!-- Pack-stub DLL (~5 KB), built from src/CustomAssetPack.Lib/.
+			     References CustomAssets.dll at compile time; at runtime resolves
+			     to the base mod's already-loaded CustomAssets.dll via the pack's
+			     mod_dependencies. -->
+			<_NPStubDll>$(MSBuildThisFileDirectory)..\CustomAssetPack.Lib\bin\$(Configuration)\net48\CustomAssetPack.dll</_NPStubDll>
+			<_NPStubPdb>$(MSBuildThisFileDirectory)..\CustomAssetPack.Lib\bin\$(Configuration)\net48\CustomAssetPack.pdb</_NPStubPdb>
+			<!-- Stale artifacts to clean up: legacy per-pack DLL from the
+			     pre-CustomAssetPack pattern, and full CustomAssets.dll/.pdb
+			     from the intermediate pattern that shipped the full base mod
+			     copy in each pack folder. None should remain after deploy. -->
+			<_NPLegacyDll>$(_NPDeployDir)\$(NewPatternPackId).dll</_NPLegacyDll>
+			<_NPLegacyPdb>$(_NPDeployDir)\$(NewPatternPackId).pdb</_NPLegacyPdb>
+			<_NPStaleFullDll>$(_NPDeployDir)\CustomAssets.dll</_NPStaleFullDll>
+			<_NPStaleFullPdb>$(_NPDeployDir)\CustomAssets.pdb</_NPStaleFullPdb>
+		</PropertyGroup>
+
+		<Error Condition="!Exists('$(_NPStubDll)')" Text="CustomAssetPack.dll not found at $(_NPStubDll). Build CustomAssetPack.Lib.csproj first." />
+
+		<Message Text="Deploying $(NewPatternPackName) (new pattern: $(NewPatternPackId), ships CustomAssetPack.dll stub only)" Importance="high" />
+
+		<!-- Clean up any DLLs/PDBs from prior pattern variants so Mafi's
+		     GetExportedTypes scan only sees the intended pack-stub. -->
+		<Delete Files="$(_NPLegacyDll);$(_NPLegacyPdb);$(_NPStaleFullDll);$(_NPStaleFullPdb)" Condition="Exists('$(_NPLegacyDll)') Or Exists('$(_NPLegacyPdb)') Or Exists('$(_NPStaleFullDll)') Or Exists('$(_NPStaleFullPdb)')" />
+
+		<!-- Rasterize SVGs before copying assets (same pre-deploy step as old pattern). -->
+		<Exec Command="&quot;$(ModBuilderExe)&quot; svg2png &quot;$(_NPPackDir)\Assets&quot;" Condition="Exists('$(_NPPackDir)\Assets')" />
+		<Exec Command="&quot;$(ModBuilderExe)&quot; svg2png &quot;$(_NPPackDir)\thumbnail.svg&quot;" Condition="Exists('$(_NPPackDir)\thumbnail.svg')" />
+
+		<Copy SourceFiles="$(_NPPackDir)\manifest.json" DestinationFolder="$(_NPDeployDir)" />
+		<Copy SourceFiles="$(_NPPackDir)\config.json" DestinationFolder="$(_NPDeployDir)" ContinueOnError="true" />
+		<Copy SourceFiles="$(_NPPackDir)\thumbnail.png" DestinationFolder="$(_NPDeployDir)" Condition="Exists('$(_NPPackDir)\thumbnail.png')" />
+		<Copy SourceFiles="$(_NPStubDll)" DestinationFolder="$(_NPDeployDir)" />
+		<Copy SourceFiles="$(_NPStubPdb)" DestinationFolder="$(_NPDeployDir)" Condition="'$(Configuration)' == 'Debug' And Exists('$(_NPStubPdb)')" />
+
+		<ItemGroup>
+			<_NPAssets Include="$(_NPPackDir)\Assets\**\*" Exclude="$(_NPPackDir)\Assets\**\*.svg" />
+			<_NPDefs Include="$(_NPPackDir)\Definitions\**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(_NPAssets)" DestinationFolder="$(_NPDeployDir)\Assets\%(RecursiveDir)" />
+		<Copy SourceFiles="@(_NPDefs)" DestinationFolder="$(_NPDeployDir)\Definitions\%(RecursiveDir)" />
+	</Target>
+
 	<Target Name="EnsureModBuilder">
 		<MSBuild Projects="$(ModBuilderProject)" Targets="Restore;Build" Properties="Configuration=Release" Condition="!Exists('$(ModBuilderExe)')" />
 		<Error Condition="!Exists('$(ModBuilderExe)')" Text="ModBuilder.exe was not produced at $(ModBuilderExe)." />
@@ -114,6 +182,19 @@
 		<ModFolders Remove="Packs\HydrogenGenerator\**" />
 		<None Remove="Generated\**" />
 		<None Remove="Packs\HydrogenGenerator\**" />
+
+		<!-- New-pattern packs: ship a copy of CustomAssets.dll inside the pack folder
+		     and select the pack-entry IMod via primary_mod_class_name=CustomAssetPack.
+		     No per-pack DLL is generated by ModBuilder. Deploy is handled by the
+		     DeployNewPatternPacks target below — these packs are excluded from BuildAll. -->
+		<Compile Remove="Packs\Batteries\**" />
+		<EmbeddedResource Remove="Packs\Batteries\**" />
+		<ModFolders Remove="Packs\Batteries\**" />
+		<None Remove="Packs\Batteries\**" />
+		<Compile Remove="Packs\AirFiltering\**" />
+		<EmbeddedResource Remove="Packs\AirFiltering\**" />
+		<ModFolders Remove="Packs\AirFiltering\**" />
+		<None Remove="Packs\AirFiltering\**" />
 	</ItemGroup>
 
 	<ItemGroup>
