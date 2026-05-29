@@ -8,6 +8,7 @@ using Mafi.Core.Buildings.Cargo.Modules;
 using Mafi.Core.Buildings.Farms;
 using Mafi.Core.Buildings.Mine;
 using Mafi.Core.Buildings.Offices;
+using Mafi.Core.Buildings.ResearchLab;
 using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities;
@@ -30,6 +31,7 @@ using Mafi.Core.Population;
 using Mafi.Core.Population.Edicts;
 using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
+using Mafi.Core.Research;
 using Mafi.Core.Trains;
 using Mafi.Core.Vehicles;
 using Mafi.Localization;
@@ -59,6 +61,23 @@ namespace ProgramableNetwork;
 
 // TODO splip-up the implementations
 public class Modules : ModuleGroup, IModuleGroup {
+
+	// Display-color prefixes in the StatusText "#CRRGGBB" dialect (see ModuleView):
+	// custom RGB applied to LED icons and trend arrows.
+	private const string ColorGreen = "#C00FF00";
+	private const string ColorRed = "#CFF0000";
+	private const string ColorGray = "#C808080";
+
+	// Pre-composed "color prefix + icon" display strings — the prefix sits
+	// immediately before the asset path, the layout StatusText expects.
+	private static readonly string TrendUp = ColorGreen + UserInterface.General.MoveUp_svg;
+	private static readonly string TrendDown = ColorRed + UserInterface.General.MoveDown_svg;
+	private static readonly string TrendNeutral = UserInterface.General.Minus128_png;
+	private static readonly string IconRunning = ColorGreen + UserInterface.EntityIcons.Gears_png;
+	private static readonly string IconPaused = "#CFFDD00" + UserInterface.Toolbar.Pause128_png;
+	private static readonly string PassTrough = "⬇";
+	private static readonly string PassTroughOn = ColorGreen + "⬇";
+	private static readonly string PassTroughOff = ColorRed + "⬇";
 
 	public override void RegisterData(ProtoRegistrator registrator) {
 
@@ -112,6 +131,43 @@ public class Modules : ModuleGroup, IModuleGroup {
 		Deprecation.RegisterDeprecation(
 			new ModuleProto.ID("Decision_Select_8".ModuleId()),
 			new ModuleProto.ID("Decision_Select".ModuleId()), inputExt: 4);
+
+		// Runtime_Max_N fixed-arity min/max combiners → unified extensible
+		// Runtime_Max (now defined in C#, see Arithmetic()).  Base 2 inputs (A, B)
+		// + input extensions reproduce each old pin count.  Output pin ids (min,
+		// max) and input ids (A, B, C..) are unchanged so no id remap is needed.
+		// The replacement Runtime_Max keeps the same proto id as the old Python
+		// module, so plain Runtime_Max saves load directly with no entry here.
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Runtime_Max_2".ModuleId()),
+			new ModuleProto.ID("Runtime_Max".ModuleId()), inputExt: 0);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Runtime_Max_3".ModuleId()),
+			new ModuleProto.ID("Runtime_Max".ModuleId()), inputExt: 1);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Runtime_Max_4".ModuleId()),
+			new ModuleProto.ID("Runtime_Max".ModuleId()), inputExt: 2);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Runtime_Max_6".ModuleId()),
+			new ModuleProto.ID("Runtime_Max".ModuleId()), inputExt: 4);
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Runtime_Max_8".ModuleId()),
+			new ModuleProto.ID("Runtime_Max".ModuleId()), inputExt: 6);
+		// Prerelease Runtime_MaxI already exposed indexmin/indexmax as 2 output
+		// extensions; migrate with outputExt: 2 so those pins (and their cables)
+		// survive the swap to the unified Runtime_Max.
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Runtime_MaxI".ModuleId()),
+			new ModuleProto.ID("Runtime_Max".ModuleId()), outputExt: 2);
+		// Compare_Int_Max ("Maximum: A or B") → Runtime_Max.  Its pin ids differ from
+		// the new module, so remap to preserve cables: inputs a/b → A/B; outputs
+		// "a" (High = larger) → "max" and "b" (Low = smaller) → "min".  The old
+		// field_b constant has no equivalent on Runtime_Max and is dropped.
+		Deprecation.RegisterDeprecation(
+			new ModuleProto.ID("Compare_Int_Max".ModuleId()),
+			new ModuleProto.ID("Runtime_Max".ModuleId()),
+			inputIdMap: new Dictionary<string, string> { { "a", "A" }, { "b", "B" } },
+			outputIdMap: new Dictionary<string, string> { { "a", "max" }, { "b", "min" } });
 
 		Constants(registrator);
 		Buttons(registrator);
@@ -280,7 +336,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Control)
 			.AddInput("value", "Value")
 			.AddOutput("value", "Value")
-			.AddDisplay("toggle", "Toggle", 1, toggle: new string[] { "⬇" })
+			.AddDisplay("toggle", "Toggle", 1, toggle: [PassTrough])
 			.Action(m => m.Output["value"] = (m.Display["toggle", ""].Length > 0) ? m.Input["value"] : Fix32.Zero)
 			.AddControllerDevice()
 			.BuildAndAdd();
@@ -379,7 +435,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		registrator
 			.ModuleBuilderStart("Modulo", "C = A modulo B", "A%B")
-			.SetDescription("Outputs <b>a</b> % <b>b</b> to <b>c</b>. If <b>b</b> is zero, sets output <b>error</b> to 1 and <b>c</b> to 0; otherwise <b>error</b> is 0. <b>field_b</b> switches <b>b</b> to the constant field.")
+			.SetDescription("Outputs rest of division between <b>a</b> and <b>b</b> to <b>c</b>. If <b>b</b> is zero, sets output <b>error</b> to 1 and <b>c</b> to 0; otherwise <b>error</b> is 0. <b>field_b</b> switches <b>b</b> to the constant field.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
@@ -421,6 +477,97 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Output["count"] = Min(desiredCount, m.Output["count", 0] + 1.ToFix32());
 				m.Output["average"] = (average / m.Output["count"]);
 				return ModuleStatus.Running;
+			})
+			.AddControllerDevice()
+			.BuildAndAdd();
+
+		// Extensible min/max combiner — ported from the old Python Runtime_Max
+		// (Custom/max.py, now fully commented out).  Base 2 inputs (A, B) grow by
+		// up to 6 extensions (C..H) for 8 total; min/max outputs plus 2 optional
+		// output extensions exposing the 0-based input index that produced the min
+		// (indexmin) and the max (indexmax).  Each input has an LED below it: green
+		// = this input is the current max, red = the current min, gray = neither.
+		// Unconnected inputs count as zero in the comparison.
+		registrator
+			.ModuleBuilderStart("Runtime_Max", "Max", "MAX")
+			.SetDescription("Outputs the smallest of all connected inputs (<b>A</b>, <b>B</b>, plus any added extensions) on <b>min</b> and the largest on <b>max</b>. Add more input pins (up to 8) from the right edge of the module. The optional output extensions expose the 0-based input index of the minimum (<b>indexmin</b>) and the maximum (<b>indexmax</b>). The LED below each input lights green for the input holding the maximum, red for the minimum, and stays gray when the input is neither. Unconnected inputs count as zero.")
+			.AddCategory(Category.Arithmetic)
+			.AddInput("A", "A")
+			.AddInput("B", "B")
+			.AddOutput("min", "Min")
+			.AddOutput("max", "Max")
+			.Width(2)
+			// 2 static + up to 6 extensions = 8 inputs total — covers the full range
+			// of the deprecated Runtime_Max_2/3/4/6/8 set.  Auto-namer continues the
+			// alphabet from "B": C, D, E, F, G, H.
+			.AllowInputExtensions(6)
+			// 1st output extension = indexmin, 2nd = indexmax (matches the prerelease
+			// Runtime_MaxI layout migrated in via Deprecation).
+			.AllowOutputExtensions(2, i => i == 0
+				? ("indexmin", "Index Min")
+				: ("indexmax", "Index Max"))
+			// One LED per input, linked to the Input side so the extension LEDs appear
+			// and disappear in lock-step with the C..H input pins.  Static LEDs (A, B)
+			// are declared as normal displays; the 6 extension LEDs follow.
+			.AddDisplay("A", "A", 1, image: true)
+			.AddDisplay("B", "B", 1, image: true)
+			.AllowExtensionDisplays(ExtensionSide.Input, [
+				b => b.AddDisplay("C", "C", 1, image: true),
+				b => b.AddDisplay("D", "D", 1, image: true),
+				b => b.AddDisplay("E", "E", 1, image: true),
+				b => b.AddDisplay("F", "F", 1, image: true),
+				b => b.AddDisplay("G", "G", 1, image: true),
+				b => b.AddDisplay("H", "H", 1, image: true),
+			])
+			.Action(m => {
+				var inputs = m.EffectiveInputs;
+				Fix32 minVal = Fix32.Zero;
+				Fix32 maxVal = Fix32.Zero;
+				int minIdx = 0;
+				int maxIdx = 0;
+				for (int i = 0; i < inputs.Count; i++) {
+					// Unconnected pins read as zero (the Input indexer default), so
+					// every input participates in the min/max comparison.
+					Fix32 v = m.Input[inputs[i].Id];
+					if (i == 0) {
+						minVal = v;
+						maxVal = v;
+						continue;
+					}
+					if (v < minVal) {
+						minVal = v;
+						minIdx = i;
+					}
+					if (v > maxVal) {
+						maxVal = v;
+						maxIdx = i;
+					}
+				}
+
+				m.Output["min"] = minVal;
+				m.Output["max"] = maxVal;
+				// Always written (even when the index output extensions are off) so the
+				// Display below can read the indices back without re-scanning.
+				m.Output.Integer["indexmin"] = minIdx;
+				m.Output.Integer["indexmax"] = maxIdx;
+			})
+			.Display(m => {
+				var inputs = m.EffectiveInputs;
+				int minIdx = m.Output["indexmin"].IntegerPart;
+				int maxIdx = m.Output["indexmax"].IntegerPart;
+				for (int i = 0; i < inputs.Count; i++) {
+					// Green takes precedence over red so when every input is equal
+					// (e.g. all zero) the first input reads as "the max".
+					string color;
+					if (i == maxIdx) {
+						color = TrendUp;
+					} else if (i == minIdx) {
+						color = TrendDown;
+					} else {
+						color = TrendNeutral;
+					}
+					m.Display[inputs[i].Id] = color;
+				}
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
@@ -487,13 +634,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					Fix32 diff = m.Output["diff", Fix32.Zero];
 					bool up = diff > Fix32.Zero;
 					bool down = diff < Fix32.Zero;
-					string color = up ? "#C00FF00" : down ? "#CFF0000" : "";
-					string arrow = up
-						? UserInterface.General.MoveUp_svg
-						: down
-							? UserInterface.General.MoveDown_svg
-							: UserInterface.General.Minus128_png;
-					m.Display["direction"] = $"{color}{arrow}";
+					m.Display["direction"] = up ? TrendUp : down ? TrendDown : TrendNeutral;
 				} else {
 					m.Display["direction"] = "";
 				}
@@ -536,6 +677,97 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Output["m"] = 0 - Math.Min(0, m.Context.WorkersManager.AmountOfFreeWorkersOrMissing);
 				m.Output["u"] = m.Output["t", 0] - m.Output["a", 0];
 				return ModuleStatus.Running;
+			})
+			.AddControllerDevice()
+			.BuildAndAdd();
+
+		PopsHealthManager popsHealthManager = null;
+		registrator
+			.ModuleBuilderStart("Stats_Health", "Statistic: Health", "HLT")
+			.SetDescription("Reads colony-wide health stats from PopsHealthManager.HealthStats. Main output <b>v</b> is the current month's health percent (0–100). Extension outputs expose <b>diff</b> (this month minus last month, positive when improving), <b>last</b> (last month's percent), and <b>disease</b> (months remaining on the active disease, 0 when none). Display shows the health icon, a trend arrow when the diff extension is on, and a colour-coded current percent. Errors if neither a Hospital nor a Captain's Office is linked.")
+			.AddCategory(Category.Connection)
+			.AddCategory(Category.ConnectionRead)
+			.AddCategory(Category.Stats)
+			.AddOutput("v", "Health %")
+			.AllowOutputExtensionsShared(3, x => x switch {
+				0 => ("diff", "Difference".Shared()),
+				1 => ("disease", "Disease months left".Shared()),
+				2 => ("disease_strength", "Disease strength".Shared())
+			})
+			.AddEntityField<LayoutEntity>("entity", "Hospital or Captain's Office",
+				"Cable-connectable Hospital, or the Captain's Office — both surface the same"
+				+ " colony-wide health snapshot since PopsHealthManager is a global service",
+				filter: (m, e) => e is Hospital || e is CaptainOffice)
+			.Width(1)
+			.Action(m => {
+				if (m.Field.Entity<LayoutEntity>("entity") is null) {
+					m.SetError("No connected Hospital or Captain's Office");
+					return ModuleStatus.Error;
+				}
+				// PopsHealthManager is the authoritative source for health metrics —
+				// Hospital exposes its own per-building stats but those don't roll up
+				// the way the manager's monthly snapshot does.  Same lazy-resolve
+				// pattern as the other stats modules in this file.
+				popsHealthManager ??= m.Controller.Resolver.Resolve<PopsHealthManager>();
+				HealthStatistics stats = popsHealthManager.HealthStats;
+				Percent current = stats.HealthLastMonth;
+				Percent diff = stats.HealthThisMonth;
+				Fix32 hundred = 100.ToFix32();
+				m.Output["v"] = current.ToFix32() * hundred;
+				if (m.OutputExtensionCount >= 1) {
+					m.Output["diff"] = diff.ToFix32() * hundred;
+				}
+				if (m.OutputExtensionCount >= 2) {
+					// Disease as months-left is a cheap, MP-safe summary: zero means
+					// "no disease", positive integer means "disease active, this many
+					// months remaining".  No FixSavedGames id encoding needed; the
+					// user can drive a notification on diff > 0 / disease > 0 etc.
+					m.Output["disease"] = popsHealthManager.CurrentDisease.HasValue
+						? popsHealthManager.CurrentDiseaseMonthsLeft
+						: 0;
+				}
+				if (m.OutputExtensionCount >= 4) {
+					// Disease as months-left is a cheap, MP-safe summary: zero means
+					// "no disease", positive integer means "disease active, this many
+					// months remaining".  No FixSavedGames id encoding needed; the
+					// user can drive a notification on diff > 0 / disease > 0 etc.
+					m.Output["disease_strength"] = popsHealthManager.CurrentDisease.HasValue
+						? popsHealthManager.CurrentDiseaseMortality.ToFix32() * 100
+						: 0;
+				}
+				return ModuleStatus.Running;
+			})
+			.AddDisplay("health", "Health", 1, image: true)
+			.AllowExtensionDisplays(ExtensionSide.Output, [
+				b => b.AddDisplay("value", "Value", 1, "00"),
+				b => b.AddDisplay("direction", "Trend", 1, image: true),
+				b => b.AddDisplay("disease_strength", "Disease strength", 1, "00")
+			])
+			.Display(m => {
+				// Static heart icon — at-a-glance "this module is about Health" cue.
+				m.Display["health"] = UserInterface.General.Health_svg;
+
+				// Trend arrow only meaningful when the diff extension is active —
+				// otherwise blank so the cell visually reads as "no data".
+				if (m.OutputExtensionCount >= 1) {
+					Fix32 diff = m.Output["diff", Fix32.Zero];
+					bool up = diff > Fix32.Zero;
+					bool down = diff < Fix32.Zero;
+					m.Display["direction"] = up ? TrendUp : down ? TrendDown : TrendNeutral;
+					m.Display["disease_strength"]
+						= m.OutputExtensionCount >= 2
+						? $"{m.Output.Integer["disease_strength"]:D02}"
+						: "00";
+				} else {
+					m.Display["direction"] = "";
+					m.Display["disease_strength"] = "";
+				}
+
+				// Value cell mirrors the Stats_Unity colour-band convention:
+				// red <25, orange <50, default <75, green >=75.
+				int v = m.Output["v"].IntegerPart;
+				string state = v < 25 ? "#E" : v < 50 ? "#W" : v < 75 ? "" : "#P";
+				m.Display["value"] = $"{state}{v}";
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
@@ -782,13 +1014,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 				bool surplus = m.Output["u"] > Fix32.Zero;
 				bool deficit = m.Output["u"] < Fix32.Zero;
 
-				string color = surplus ? "#C00FF00" : deficit ? "#CFF0000" : "";
-				string direction = surplus ? UserInterface.General.MoveUp_svg : deficit ? UserInterface.General.MoveDown_svg : UserInterface.General.Minus128_png;
 				Fix32 value = m.Output["p"];
 				string state = value < 25 ? "#E" : value < 50 ? "#W" : value < 75 ? "" : "#E";
 
 				m.Display["product"] = m.Field.Product("m")?.IconPath;
-				m.Display["direction"] = $"{color}{direction}";
+				m.Display["direction"] = surplus ? TrendUp : deficit ? TrendDown : TrendNeutral;
 				m.Display["value"] = $"{state}{value.ToStringRounded(0)} %";
 			})
 			.AddControllerDevice()
@@ -1428,6 +1658,81 @@ public class Modules : ModuleGroup, IModuleGroup {
 		}
 
 		builder.BuildAndAdd();
+
+		// Gated pass-through: every input is mirrored to the same-position
+		// output when `enable` is on.  LinkInputOutputExtensions keeps the two
+		// ranks lock-step — adding an input from the inspector also grows the
+		// output side so pin pairs stay paired.  Single static output "a" +
+		// baseWidth = max(inputs, outputs) = 2 right-aligns it to column 1,
+		// leaving column 0 blank under the `enable` input.
+		registrator
+			.ModuleBuilderStart("Control_Relay", "Relay", "RELAY")
+			.SetDescription("Gated pass-through: when <b>enable</b> is non-zero (or unconnected — the input defaults to enabled) each input is copied to its same-position output; when <b>enable</b> is 0 every output is held at 0. Base pair is <b>A</b>; input and output extensions grow in lock-step, so the Nth input always pairs with the Nth output regardless of how many you add. The first output column is intentionally blank — it sits under the <b>enable</b> input, which has no corresponding output.")
+			.AddCategory(Category.Decision)
+			.AddCategory(Category.Control)
+			.AddInput("enable", "Enable")
+			.AddInput("a", "A".Shared())
+			.AddOutput("a", "A".Shared())
+			.AllowInputExtensions(6)
+			.AllowOutputExtensions(6)
+			// Lock-step extensions: a single SetExtensionCountLinked mirrors the
+			// new count to the other side.  Default extension namer continues the
+			// alphabet from the last static id, so both ranks produce
+			// "b", "c", "d", ... — input ext i pairs by id with output ext i.
+			.LinkInputOutputExtensions()
+			.Action(m => {
+				// Default 1 on the enable read means "no signal connected →
+				// enabled".  Drive 0 (or any field that resolves to 0) to gate
+				// the pass-through off; any non-zero value passes signals
+				// through.
+				bool enabled = m.Input["enable", Fix32.One] != Fix32.Zero;
+				m.Output["a"] = enabled ? m.Input["a", 0] : Fix32.Zero;
+				int activeCount = System.Math.Min(m.OutputExtensionCount, m.Prototype.MaxOutputExtensions);
+				for (int i = 0; i < activeCount; i++) {
+					string inId = m.Prototype.InputExtensions[i].Id;
+					string outId = m.Prototype.OutputExtensions[i].Id;
+					m.Output[outId] = enabled ? m.Input[inId, 0] : Fix32.Zero;
+				}
+				return ModuleStatus.Running;
+			})
+			// Display row: an LED at column 0 (under the `enable` input) lights
+			// when the gate is open; the cell under each pin pair shows a green
+			// downward arrow when signals are flowing through (visually mirrors
+			// the input→output passthrough direction), and stays empty when the
+			// gate is off.  Six extension flows are lock-stepped to the input
+			// side, so each added pin pair gets its own arrow underneath.
+			.AddDisplay("active", "Active", 1, led: true)
+			.AddDisplay("a", "A", 1)
+			.AllowExtensionDisplays(ExtensionSide.Input, [
+				b => b.AddDisplay("b", "B", 1),
+				b => b.AddDisplay("c", "C", 1),
+				b => b.AddDisplay("d", "D", 1),
+				b => b.AddDisplay("e", "E", 1),
+				b => b.AddDisplay("f", "F", 1),
+				b => b.AddDisplay("g", "G", 1)
+			])
+			.Display(m => {
+				// Same enable read as the action — runs every UI frame so the
+				// indicators react immediately when the player wires a signal
+				// in or out.
+				bool enabled = m.Input["enable", Fix32.One] != Fix32.Zero;
+				m.Display["active"] = enabled ? "1" : "";
+				// Green down-arrow when active, blank when gated off.  No
+				// pre-composed constant exists for green-down (TrendUp is green
+				// up, TrendDown is red down), so build the colour+icon pair
+				// inline — it's only formed once per UI tick.
+				string flow = enabled ? PassTroughOn : "";
+				int activeCount = System.Math.Min(m.InputExtensionCount, m.Prototype.MaxInputExtensions);
+				for (int i = -1; i < activeCount; i++) {
+					// Extension display ids run b..g in lock-step with
+					// the input extensions named b..g by the default extension
+					// namer (continues from the last static input id "a").
+					string id = ((char)('b' + i)).ToString();
+					m.Display[id] = flow;
+				}
+			})
+			.AddControllerDevice()
+			.BuildAndAdd();
 	}
 
 	// Configurable multi-tick delay was moved to Python — see Runtime_Delay_1
@@ -1520,11 +1825,19 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		SettlementsManager settlementsManager = null; // lazy init in action to avoid circular dependency
 		IComputingManager computingManager = null;   // same lazy-init pattern for the network-wide computing snapshot
+		ResearchManager researchManager = null;       // resolved on first use; reads global current-research state
 		Fix32 neg1 = (-1).ToFix32();
 		Fix32 neg2 = (-2).ToFix32();
+		// neg3 is the sentinel the display reads to mean "look the icon up from
+		// StringData["research_icon"] rather than from ProductProto.SlimId" — used
+		// when the source entity surfaces a non-product proto (e.g., a research
+		// node).  Keeping the resolved icon path inline in StringData makes the
+		// display lambda a single dictionary lookup instead of a per-frame
+		// ProtosDb scan.
+		Fix32 neg3 = (-3).ToFix32();
 		registrator
 			.ModuleBuilderStart("Connection_Storage", "Connection: Storage", "STOCK")
-			.SetDescription("Reads the linked storage <b>entity</b> (storages, in/out buffers, virtual miners, FlyWheels, ThermalStorage, Settlements, Captain Office, or any computing generator — Mainframe / DataCenter — which surfaces network-wide computing totals). Outputs <b>quantity</b>, <b>capacity</b>, <b>fullness</b> (%), and stored <b>product</b> slim-id. With <b>field_product</b> set, filters buffers by the chosen <b>product</b>.")
+			.SetDescription("Reads the linked storage <b>entity</b> (storages, in/out buffers, virtual miners, FlyWheels, ThermalStorage, Settlements, Captain Office, any computing generator — Mainframe / DataCenter — which surfaces network-wide computing totals, or a Research Lab which surfaces the global current research from the ResearchManager). Outputs <b>quantity</b>, <b>capacity</b>, <b>fullness</b> (%), and stored <b>product</b> slim-id (research node id when connected to a lab). With <b>field_product</b> set, filters buffers by the chosen <b>product</b>.")
 			.AddCategory(Category.Connection)
 			.AddCategory(Category.ConnectionRead)
 			.AddInput("product", "Product")
@@ -1546,6 +1859,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					or SettlementHousingModule
 					or CaptainOffice
 					or IComputingGenerator
+					or ResearchLab
 				)
 			.AddProductField("product", "Product", "Select filter for product", overrideInput: true)
 			.Width(4)
@@ -1658,6 +1972,82 @@ public class Modules : ModuleGroup, IModuleGroup {
 					return ModuleStatus.Running;
 				}
 
+				if (entity is ResearchLab) {
+					// Connecting to ANY research lab surfaces the global current research
+					// from the ResearchManager — same pattern as IComputingGenerator above:
+					// the actual lab is just the cable-connection point, the data is the
+					// network-wide snapshot.  Outputs map to the existing Stock pins:
+					//   quantity = science steps already done
+					//   capacity = total science cost
+					//   fullness = % completed
+					//   product  = research node id (encoded via FixSavedGames, not a
+					//              ProductProto SlimId — see the neg3 sentinel handling
+					//              in the display below).  The display icon is resolved
+					//              here once per sim tick and stashed in
+					//              StringData["product_icon"] so the per-frame display
+					//              lambda doesn't have to walk the ProtosDb.
+					researchManager ??= m.Controller.Resolver.Resolve<ResearchManager>();
+					Option<ResearchNode> current = researchManager.CurrentResearch;
+					if (current.HasValue) {
+						ResearchNode node = current.Value;
+						m.Output["quantity"] = (int)node.StepsDone;
+						m.Output["capacity"] = (int)node.ScienceCost;
+						m.Output["fullness"] = node.ScienceCost > 0
+							? (int)(100f * node.StepsDone / node.ScienceCost)
+							: 0;
+						m.Output["product"] = neg3;
+						// Cache the resolved icon path keyed by the research proto id.
+						// As long as the global research target hasn't changed since
+						// last tick we skip the Icons / IconsProtos scan entirely —
+						// research nodes don't swap their gfx mid-research, so the
+						// cached entry stays valid.  Cache key is "research_id"; the
+						// resolved icon path (if any) is "research_icon".  A research
+						// with no usable icon stores the id but leaves the icon key
+						// removed, so subsequent ticks short-circuit on the id match
+						// without scanning again.
+						string currentResearchId = node.Proto.Id.Value;
+						m.StringData.TryGetValue("research_id", out string cachedId);
+						if (currentResearchId != cachedId)
+						{
+							// "First non-null" semantics for both arrays: skip empty /
+							// null entries and pick the first one with a usable path.
+							// Matches the in-game research-tree rendering: prefer the
+							// research's explicitly authored icon, otherwise borrow
+							// the icon of the first thing it unlocks.
+							string icon = null;
+							if (node.Proto.Graphics is ResearchNodeProto.Gfx gfx)
+							{
+								foreach (string i in gfx.Icons) {
+									if (!string.IsNullOrEmpty(i)) { icon = i; break; }
+								}
+								if (icon == null) {
+									foreach (IProtoWithIcon p in gfx.IconsProtos) {
+										if (!string.IsNullOrEmpty(p?.IconPath)) { icon = p.IconPath; break; }
+									}
+								}
+							}
+							m.StringData["research_id"] = currentResearchId;
+							if (string.IsNullOrEmpty(icon)) {
+								m.StringData.TryRemove("research_icon", out _);
+							} else {
+								m.StringData["research_icon"] = icon;
+							}
+						}
+					} else {
+						// No research active globally — match the inactive convention
+						// the other branches use (ThermalStorage / final fallback):
+						// quantity and capacity zeroed, fullness reads 100 (i.e., the
+						// "nothing to do" reading rather than "starved at 0%").
+						m.Output["quantity"] = 0;
+						m.Output["capacity"] = 0;
+						m.Output["fullness"] = 100;
+						m.Output["product"] = neg1;
+						m.StringData.TryRemove("research_id", out _);
+						m.StringData.TryRemove("research_icon", out _);
+					}
+					return ModuleStatus.Running;
+				}
+
 				m.Output["quantity"] = 0;
 				m.Output["capacity"] = 0;
 				m.Output["fullness"] = 100;
@@ -1674,6 +2064,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 					m.Display["product"] = null;
 				} else if (m.Output["product", 0] == neg2) {
 					m.Display["product"] = UserInterface.General.Population_svg;
+				} else if (m.Output["product", 0] == neg3) {
+					// Research-lab path — the action resolved the icon and stashed it
+					// in StringData["research_icon"] so this lambda doesn't scan the
+					// ProtosDb every UI frame.
+					m.StringData.TryGetValue("research_icon", out string icon);
+					m.Display["product"] = icon;
 				} else {
 					m.Display["product"] = m.Output.Product("product")?.IconPath;
 				}
@@ -2597,9 +2993,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					m.Output["constructed"] = e.IsConstructed ? 1 : 0;
 					m.Display["constructed"] = e.IsConstructed ? "1" : "";
 					m.Output["pause"] = (e.CanBePaused && e.IsPaused) ? 1 : 0;
-					m.Display["pause"] = (e.CanBePaused && e.IsPaused)
-						? $"#CFFDD00{UserInterface.Toolbar.Pause128_png}"
-						: $"#C00FF00{UserInterface.EntityIcons.Gears_png}";
+					m.Display["pause"] = (e.CanBePaused && e.IsPaused) ? IconPaused : IconRunning;
 					return ModuleStatus.Running;
 				} else {
 					m.Output["power"] = 0;
@@ -2609,7 +3003,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 					m.Display["power"] = $"#I{UserInterface.EntityIcons.Electricity_png}";
 					m.Display["workers"] = $"#I{UserInterface.EntityIcons.Worker_png}";
 					m.Display["constructed"] = "";
-					m.Display["pause"] = $"#C00FF00{UserInterface.EntityIcons.Gears_png}";
+					m.Display["pause"] = IconRunning;
 					return ModuleStatus.Error;
 				}
 			})
@@ -3062,32 +3456,9 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddControllerDevice()
 			.BuildAndAdd();
 
-		registrator
-			.ModuleBuilderStart("Compare_Int_Max", "Maximum: A or B", "MAX")
-			.SetDescription("Routes the larger of <b>a</b> and <b>b</b> (input or <b>field_b</b> constant when enabled) to output <b>a</b> (High) and the smaller to output <b>b</b> (Low).")
-			.AddCategory(Category.Boolean)
-			.AddCategory(Category.Arithmetic)
-			.AddCategory(Category.Decision)
-			.AddCategory(Category.Control)
-			.AddInput("a", "A")
-			.AddInput("b", "B")
-			.AddFix32Field("b", "B", overrideInput: true)
-			.AddOutput("b", "Low")
-			.AddOutput("a", "High")
-			.Action(m => {
-				Fix32 a = m.Input["a", 0];
-				Fix32 b = m.FieldOrInput["b", 0];
-				if (a > b) {
-					m.Output["a"] = a;
-					m.Output["b"] = b;
-				} else {
-					m.Output["a"] = b;
-					m.Output["b"] = a;
-				}
-
-			})
-			.AddControllerDevice()
-			.BuildAndAdd();
+		// Compare_Int_Max ("Maximum: A or B") superseded by the extensible Runtime_Max.
+		// Migration registered in RegisterData remaps its pins (a/b → A/B inputs,
+		// High/Low outputs → max/min).
 	}
 
 	private void Display(ProtoRegistrator registrator) {

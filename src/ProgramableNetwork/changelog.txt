@@ -1,3 +1,12 @@
+v1.1.3 | 2026-06-05:
+- Max module reworked: a single extensible module (2 base inputs A/B, extend up to 8) replaces the fixed-size variants and the old "Maximum: A or B" module; optional output extensions expose the input index of the minimum (indexmin) and maximum (indexmax), and each input now has an LED below it lighting green for the current maximum, red for the minimum, and gray otherwise — old Max saves migrate automatically
+- Connection: Storage (STOCK) module now also reads Research Labs — outputs the global current research's node id (display falls back to the research's own icon, or the first thing it unlocks if no explicit icon is set) along with steps done / total cost / completion percent
+- Added Statistic: Health (HLTH) module — reads PopsHealthManager.HealthStats from a Hospital or Captain's Office; main output is the current health percent, extension outputs add this-vs-last-month diff, last month's percent, and remaining months on the active disease
+- Added Relay (RLY) module — gated pass-through that mirrors each input to its same-position output when the enable input is non-zero (defaults to enabled when unconnected); base pair is A, and input/output extensions grow in lock-step so the Nth input always pairs with the Nth output
+
+v1.1.2c | 2026-05-23:
+- added translation for Brazilian Portuguese by @Raffaelmjr
+
 v1.1.2b | 2026-05-17:
 - hotfix after change of variable was not possible to remove unused variables
 
