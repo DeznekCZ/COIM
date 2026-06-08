@@ -92,7 +92,15 @@ namespace ProgramableNetwork
 		// result anyway, so dropped scratch values are recoverable.
 		public const int MODULE_PLC_CONTEXT = 9;
 
-		// Controller serialization version where module ids switched from a
+		// Module serialization version where input connections (InputModules) gained
+		// an explicit ConnectorKind (Module vs Bus) and are written INLINE
+		// (count + per-entry key/kind/moduleId/outputId) instead of via
+		// Dict<string,ModuleConnector>.Serialize — the inline form lets the kind byte
+		// be version-gated.  Pre-v10 saves are read with the old Dict format and load
+		// as all-Module connections (the bus feature didn't exist before v10).
+		public const int MODULE_BUS_CONNECTOR_KIND = 10;
+
+		// Controller serialization where module ids switched from a
 		// time-based source (DateTime.UtcNow.Ticks + Thread.Sleep(1)) to a
 		// per-controller pool counter persisted on the controller itself.
 		// Pre-v6 saves don't carry the counter; on load, initContexts seeds
@@ -100,6 +108,15 @@ namespace ProgramableNetwork
 		// allocations stay unique within the controller.  Existing modules
 		// keep their original time-based ids — the migration is additive.
 		public const int CONTROLLER_MODULE_ID_POOL = 6;
+
+		// Controller serialization version where the per-controller variable bus
+		// was added — a list of ControllerBus strips (each = 4 named bidirectional
+		// Fix32 pins) appended at the very END of the controller's data block, so
+		// pre-v7 saves (which stop after the module-id pool long) still load with
+		// an empty bus list.  Separate constant from the Module-side versions even
+		// though it shares the numeric sequence; the controller stream is read in
+		// DeserializeData against CONTROLLER_* gates only.
+		public const int CONTROLLER_VARIABLE_BUS = 7;
 
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 		{
@@ -138,6 +155,154 @@ namespace ProgramableNetwork
 		// has the live module list appended via <see cref="GetFullDescription"/> —
 		// only the user-supplied prefix is persisted here.
 		public Option<string> CustomDescription { get; set; }
+
+		// Player-defined variable buses living in the left gutter of the controller
+		// view.  Each bus is a 4-pin strip whose pins are read/written from PLC-PY
+		// as self.Bus.<bus_name>.<pin_name>.  Initialized empty for fresh controllers
+		// and re-populated in DeserializeData (v7+ saves); pre-v7 saves load empty.
+		public Lyst<ControllerBus> Buses { get; private set; } = new Lyst<ControllerBus>();
+
+		// Finds a bus by its name, or null when none matches (or the name is blank).
+		// Used by the PLC-PY Bus wrapper and the IntelliSense completion builder.
+		public ControllerBus GetBus(string busName)
+		{
+			if (string.IsNullOrEmpty(busName) || Buses == null)
+			{
+				return null;
+			}
+			foreach (ControllerBus bus in Buses)
+			{
+				if (bus.Name == busName)
+				{
+					return bus;
+				}
+			}
+			return null;
+		}
+
+		public ControllerBus GetBusById(long busId)
+		{
+			if (Buses == null)
+			{
+				return null;
+			}
+			foreach (ControllerBus bus in Buses)
+			{
+				if (bus.Id == busId)
+				{
+					return bus;
+				}
+			}
+			return null;
+		}
+
+		// ---- Variable bus mutation -------------------------------------------------
+		// Direct mutators used by the gutter UI for now; these get wrapped in
+		// serialized InputCommands at the end of Phase 2 (per plan) so multiplayer
+		// hosts/clients stay in lock-step.  Each touches only the Buses list, which
+		// the signal plan doesn't depend on yet (no bus edges until 2b), so no
+		// InvalidateTopology is needed for name edits; CreateBus invalidates anyway
+		// to be safe once bus edges land.
+		public ControllerBus CreateBus(string name, ControllerBus.BusSide side = ControllerBus.BusSide.Left)
+		{
+			ControllerBus bus = new ControllerBus(AllocateModuleId(), name ?? "");
+			bus.Side = side;
+			Buses.Add(bus);
+			InvalidateTopology();
+			return bus;
+		}
+
+		public void SetBusSide(long busId, ControllerBus.BusSide side)
+		{
+			ControllerBus bus = GetBusById(busId);
+			if (bus != null)
+			{
+				bus.Side = side;
+			}
+		}
+
+		public void RenameBus(long busId, string name)
+		{
+			ControllerBus bus = GetBusById(busId);
+			if (bus != null)
+			{
+				bus.Name = name ?? "";
+			}
+		}
+
+		public void SetBusPinName(long busId, int pinIndex, string name)
+		{
+			ControllerBus bus = GetBusById(busId);
+			if (bus != null && pinIndex >= 0 && pinIndex < ControllerBus.PinCount)
+			{
+				bus.PinNames[pinIndex] = name ?? "";
+			}
+		}
+
+		public void SetBusPinType(long busId, int pinIndex, ControllerBus.BusPinType type)
+		{
+			ControllerBus bus = GetBusById(busId);
+			if (bus != null && pinIndex >= 0 && pinIndex < ControllerBus.PinCount)
+			{
+				bus.PinTypes[pinIndex] = type;
+				// Changing type invalidates any source that no longer matches; clearing
+				// it keeps stale wiring from leaking across a type change.  (Stage-2
+				// connect logic repopulates the source for the new type.)
+				bus.PinSources[pinIndex] = null;
+				// A type change also resets the pin's downstream wiring: drop any module
+				// inputs that read this pin, since their validity depends on the (now
+				// changed) type — e.g. an Input-type pin must never drive a module input.
+				disconnectModuleInputsFromBusPin(busId, pinIndex);
+				InvalidateTopology();
+			}
+		}
+
+		// Removes every module-input cable that reads the given bus pin.  Used when a pin
+		// is retyped (its meaning changes) so no stale bus→module-input connection lingers.
+		private void disconnectModuleInputsFromBusPin(long busId, int pinIndex)
+		{
+			foreach (Module m in Modules)
+			{
+				if (m?.InputModules == null)
+				{
+					continue;
+				}
+				foreach (var kv in m.InputModules.ToArray())
+				{
+					if (kv.Value.IsBus && kv.Value.ModuleId == busId
+						&& kv.Value.TryGetPinIndex(out int pi) && pi == pinIndex)
+					{
+						m.InputModules.Remove(kv.Key);
+						m.InputNumberData.TryRemove(kv.Key, out _);
+					}
+				}
+			}
+		}
+
+		public bool RemoveBus(long busId)
+		{
+			ControllerBus bus = GetBusById(busId);
+			if (bus == null)
+			{
+				return false;
+			}
+			Buses.RemoveFirst(b => b.Id == busId);
+			InvalidateTopology();
+			return true;
+		}
+
+		// Sets (or clears, when source == null) the input source feeding a bus pin.
+		// Used by the gutter connect flow for Input pins (module output) and later by
+		// Controller / NetworkRead pin config.
+		public void SetBusPinSource(long busId, int pinIndex, BusPinSource source)
+		{
+			ControllerBus bus = GetBusById(busId);
+			if (bus != null && pinIndex >= 0 && pinIndex < ControllerBus.PinCount)
+			{
+				bus.PinSources[pinIndex] = source;
+				InvalidateTopology();
+			}
+		}
 
 		/// <summary>
 		/// Returns the user-supplied description (if any) followed by an auto-generated
@@ -575,6 +740,57 @@ namespace ProgramableNetwork
 			}
 		}
 
+		// Bus signal-plan caches (Input-type pin dataflow, stage 2a).  Bus pin values
+		// live in ControllerBus.PinValues[] (Fix32[] per bus), so these edges carry a
+		// bus reference + pin index instead of a Dict like CopyEdge.
+		[DoNotSave(0, null)]
+		private BusFeedEdge[] m_busFeedPlan;   // module output -> Input bus pin
+		[DoNotSave(0, null)]
+		private BusReadEdge[] m_busReadPlan;   // bus pin -> module input
+		[DoNotSave(0, null)]
+		private BusPinRef[] m_busClearPlan;    // Input-type pins cleared each tick
+
+		private readonly struct BusFeedEdge
+		{
+			public readonly Dict<string, Fix32> SrcOutputs;
+			public readonly string SrcKey;
+			public readonly ControllerBus Bus;
+			public readonly int PinIdx;
+			public BusFeedEdge(Dict<string, Fix32> srcOutputs, string srcKey, ControllerBus bus, int pinIdx)
+			{
+				SrcOutputs = srcOutputs;
+				SrcKey = srcKey;
+				Bus = bus;
+				PinIdx = pinIdx;
+			}
+		}
+
+		private readonly struct BusReadEdge
+		{
+			public readonly ControllerBus Bus;
+			public readonly int PinIdx;
+			public readonly Dict<string, Fix32> DstInputs;
+			public readonly string DstKey;
+			public BusReadEdge(ControllerBus bus, int pinIdx, Dict<string, Fix32> dstInputs, string dstKey)
+			{
+				Bus = bus;
+				PinIdx = pinIdx;
+				DstInputs = dstInputs;
+				DstKey = dstKey;
+			}
+		}
+
+		private readonly struct BusPinRef
+		{
+			public readonly ControllerBus Bus;
+			public readonly int PinIdx;
+			public BusPinRef(ControllerBus bus, int pinIdx)
+			{
+				Bus = bus;
+				PinIdx = pinIdx;
+			}
+		}
+
 		/// <summary>
 		/// Marks the cached signal-copy plan as stale.  Call after any change to
 		/// the module list or to any module's InputModules connections.  The plan
@@ -592,6 +808,7 @@ namespace ProgramableNetwork
 			m_moduleCache = cache;
 
 			var copyEdges = new List<CopyEdge>();
+			var busReadEdges = new List<BusReadEdge>();
 			var clearPlan = new InputClear[Modules.Count];
 			int moduleIdx = 0;
 
@@ -603,7 +820,24 @@ namespace ProgramableNetwork
 				HashSet<string> connected = null;
 				foreach (var item in module.InputModules.ToArray())
 				{
-					if (cache.TryGetValue(item.Value.ModuleId, out Module srcMod))
+					if (item.Value.IsBus)
+					{
+						// Source is a bus pin on this controller (ModuleId = bus id,
+						// OutputId = pin index).
+						if (GetBusById(item.Value.ModuleId) is ControllerBus srcBus
+							&& item.Value.TryGetPinIndex(out int pinIdx)
+							&& pinIdx >= 0 && pinIdx < ControllerBus.PinCount)
+						{
+							busReadEdges.Add(new BusReadEdge(srcBus, pinIdx, module.InputNumberData, item.Key));
+							(connected ??= new HashSet<string>()).Add(item.Key);
+						}
+						else
+						{
+							module.InputModules.Remove(item.Key);
+							module.InputNumberData.TryRemove(item.Key, out _);
+						}
+					}
+					else if (cache.TryGetValue(item.Value.ModuleId, out Module srcMod))
 					{
 						copyEdges.Add(new CopyEdge(
 							srcMod.OutputNumberData, item.Value.OutputId,
@@ -630,9 +864,118 @@ namespace ProgramableNetwork
 				clearPlan[moduleIdx++] = new InputClear(module.InputNumberData, unconnected.ToArray());
 			}
 
+			// Bus pins: per-tick clear list for every Input pin + the module-output
+			// feeds for Input pins whose source is a local module output.  (Controller
+			// and NetworkRead pin behaviors are added in stage 2b.)
+			var busFeedEdges = new List<BusFeedEdge>();
+			var busClears = new List<BusPinRef>();
+			if (Buses != null)
+			{
+				foreach (ControllerBus bus in Buses)
+				{
+					for (int i = 0; i < ControllerBus.PinCount; i++)
+					{
+						if (bus.PinTypes[i] != ControllerBus.BusPinType.Output)
+						{
+							continue;
+						}
+						busClears.Add(new BusPinRef(bus, i));
+						BusPinSource src = bus.PinSources[i];
+						if (src != null && src.Kind == BusPinSource.SourceKind.LocalModule)
+						{
+							if (cache.TryGetValue(src.ModuleId, out Module srcMod))
+							{
+								busFeedEdges.Add(new BusFeedEdge(srcMod.OutputNumberData, src.OutputId, bus, i));
+							}
+							else
+							{
+								bus.PinSources[i] = null; // prune invalid source
+							}
+						}
+					}
+				}
+			}
+
 			m_copyPlan = copyEdges.ToArray();
 			m_inputClearPlan = clearPlan;
+			m_busReadPlan = busReadEdges.ToArray();
+			m_busFeedPlan = busFeedEdges.ToArray();
+			m_busClearPlan = busClears.ToArray();
 			m_topologyDirty = false;
+		}
+
+		// Per-tick read for Controller-type bus pins: resolve the referenced controller
+		// (this one or another) live and copy its module-output / bus-pin value into the
+		// pin.  Latches to 0 when the reference can't be resolved or the target is out
+		// of bus-link range.  Not part of the cached signal plan because the remote can
+		// appear/disappear/move without changing THIS controller's topology.
+		private void updateControllerPins()
+		{
+			if (Buses == null)
+			{
+				return;
+			}
+			IEntitiesManager entities = null;
+			foreach (ControllerBus bus in Buses)
+			{
+				for (int i = 0; i < ControllerBus.PinCount; i++)
+				{
+					if (bus.PinTypes[i] != ControllerBus.BusPinType.Controller)
+					{
+						continue;
+					}
+					BusPinSource src = bus.PinSources[i];
+					Fix32 value = Fix32.Zero;
+					if (src != null && src.IsExternalController)
+					{
+						entities = entities ?? Resolver.Resolve<IEntitiesManager>();
+						if (entities.TryGetEntity(src.ControllerId, out Controller remote)
+							&& (remote == this || IsInBusLinkRange(remote)))
+						{
+							value = readExternalSource(src, remote);
+						}
+					}
+					bus.PinValues[i] = value;
+				}
+			}
+		}
+
+		private static Fix32 readExternalSource(BusPinSource src, Controller remote)
+		{
+			if (src.Kind == BusPinSource.SourceKind.ExternalModule)
+			{
+				Module rm = remote.Modules?.Find(m => m.Id == src.ModuleId);
+				if (rm != null)
+				{
+					// The picker only binds Controller-pins to a "Connection: Controller
+					// (output)" endpoint, whose published values are its cabled INPUTS.
+					// Read those; fall back to OutputNumberData for any legacy source that
+					// referenced a real module output.
+					if (rm.InputNumberData.TryGetValue(src.OutputId, out Fix32 vi))
+					{
+						return vi;
+					}
+					if (rm.OutputNumberData.TryGetValue(src.OutputId, out Fix32 vo))
+					{
+						return vo;
+					}
+				}
+			}
+			else if (src.Kind == BusPinSource.SourceKind.ExternalControllerBus)
+			{
+				// Resolve by id first; fall back to the remembered name when the id no
+				// longer matches (the remote bus's id can change on copy/paste / reorder).
+				ControllerBus rb = remote.GetBusById(src.BusId);
+				if (rb == null && !string.IsNullOrEmpty(src.BusName) && remote.Buses != null)
+				{
+					rb = remote.Buses.Find(b => b.Name == src.BusName);
+				}
+				if (rb != null && src.PinIndex >= 0 && src.PinIndex < ControllerBus.PinCount)
+				{
+					return rb.PinValues[src.PinIndex];
+				}
+			}
+			return Fix32.Zero;
 		}
 
 		public void AddToConfig(EntityConfigData data)
@@ -650,6 +993,13 @@ namespace ProgramableNetwork
 			if (CustomDescription.HasValue) {
 				data.SetString("controller_description", CustomDescription.Value);
 			}
+
+			// Variable buses (names, pin names + latched values, per-pin sources).
+			// External pin sources are re-validated by distance on ApplyConfig.  Use the
+			// INLINE config serializer (not ControllerBus.Serialize) — the deferred
+			// class-ref path doesn't round-trip pin names through the clone/blueprint
+			// config; the inline form mirrors how entity-field / string-list data is stored.
+			data.SetArray<ControllerBus>("controller_buses", Buses.ToImmutableArray(), ControllerBus.WriteConfig);
 		}
 
 		public void ApplyConfig(EntityConfigData data)
@@ -703,6 +1053,66 @@ namespace ProgramableNetwork
 			{
 				this.Color = (uint)color.Value;
 			}
+
+			// Variable buses.  Copy them in, then drop any external pin source whose
+			// target controller is gone or out of range relative to THIS (pasted)
+			// controller's position.  Older blueprints have no entry — leave Buses as-is.
+			ImmutableArray<ControllerBus>? newBuses = data.GetArray("controller_buses", ControllerBus.ReadConfig);
+			if (newBuses.HasValue)
+			{
+				Buses = new Lyst<ControllerBus>();
+				Buses.AddRange(newBuses.Value.AsEnumerable());
+				validateBusExternalSources();
+			}
+		}
+
+		// Maximum tile distance between two controllers for a bus pin's external
+		// source (another controller's module or bus) to survive a clone/blueprint
+		// paste.  Out-of-range or missing targets are dropped on ApplyConfig so a
+		// pasted blueprint can't silently re-link to a far-away or vanished
+		// controller.  Tunable.
+		private static readonly Fix32 MAX_BUS_LINK_DISTANCE = Fix32.FromInt(40);
+
+		// Drops external bus-pin sources that no longer resolve to an in-range
+		// controller.  Local-module and network-variable sources are left untouched
+		// (local module ids travel with the blueprint; network names are global).
+		private void validateBusExternalSources()
+		{
+			if (Buses == null)
+			{
+				return;
+			}
+			IEntitiesManager entities = Resolver.Resolve<IEntitiesManager>();
+			foreach (ControllerBus bus in Buses)
+			{
+				for (int i = 0; i < ControllerBus.PinCount; i++)
+				{
+					BusPinSource source = bus.PinSources[i];
+					if (source != null && source.IsExternalController
+						&& !isExternalControllerInRange(entities, source.ControllerId))
+					{
+						bus.PinSources[i] = null;
+					}
+				}
+			}
+		}
+
+		private bool isExternalControllerInRange(IEntitiesManager entities, EntityId otherId)
+		{
+			if (!entities.TryGetEntity(otherId, out Controller other) || other == this)
+			{
+				return false;
+			}
+			return (Position3f - other.Position3f).Length <= MAX_BUS_LINK_DISTANCE;
+		}
+
+		// Public range check used by the bus-pin Controller-source picker to list only
+		// controllers a pin may legally link to (excludes self).
+		public bool IsInBusLinkRange(Controller other)
+		{
+			return other != null
+				&& other != this
+				&& (Position3f - other.Position3f).Length <= MAX_BUS_LINK_DISTANCE;
 		}
 
 		private void MigrateLegacyRowsIntoModules(IEnumerable<Lyst<ModulePlacement>> legacyRows)
@@ -853,6 +1263,22 @@ namespace ProgramableNetwork
 					}
 					foreach (var kv in m.InputModules.ToList())
 					{
+						// Bus connections reference a BUS by id (ModuleId = bus id), not a
+						// module, so they must be validated against the bus list + pin range
+						// — not moduleById, which would otherwise strip every bus→input cable
+						// on load (leaving the bus pins disconnected).
+						if (kv.Value.IsBus)
+						{
+							bool busOk = GetBusById(kv.Value.ModuleId) != null
+								&& kv.Value.TryGetPinIndex(out int busPin)
+								&& busPin >= 0 && busPin < ControllerBus.PinCount
+								&& m.HasInput(kv.Key);
+							if (!busOk)
+							{
+								m.InputModules.Remove(kv.Key);
+							}
+							continue;
+						}
 						if (!moduleById.TryGetValue(kv.Value.ModuleId, out var src))
 						{
 							m.InputModules.Remove(kv.Key);
@@ -932,7 +1358,7 @@ namespace ProgramableNetwork
 		{
 			base.SerializeData(writer);
 			writer.WriteString(m_protoId.Value);
-			writer.WriteInt(/*Version*/ CONTROLLER_MODULE_ID_POOL);
+			writer.WriteInt(/*Version*/ CONTROLLER_VARIABLE_BUS);
 
 			writer.WriteString(ErrorMessage ?? "");
 			Option<string>.Serialize(CustomTitle, writer);
@@ -961,6 +1387,11 @@ namespace ProgramableNetwork
 			// counter.  Old saves load with 0 here and the post-load init seeds it
 			// from max(existing module ids) before any AllocateModuleId call.
 			writer.WriteLong(m_nextModuleId);
+
+			// CONTROLLER_VARIABLE_BUS (v7+): variable buses, appended LAST so a
+			// pre-v7 reader (which stops after the long above) is byte-aligned.
+			// Uses the same Lyst<T> class-serialization path as Modules above.
+			Lyst<ControllerBus>.Serialize(Buses, writer);
 		}
 
 		protected override void DeserializeData(BlobReader reader)
@@ -1042,6 +1473,18 @@ namespace ProgramableNetwork
 			else
 			{
 				m_nextModuleId = 0;
+			}
+
+			// CONTROLLER_VARIABLE_BUS (v7+): per-controller variable buses.  Pre-v7
+			// saves carry nothing here — load an empty list.  v7+ uses the same
+			// Lyst<T> class-deserialization path as Modules above.
+			if (version >= CONTROLLER_VARIABLE_BUS)
+			{
+				Buses = Lyst<ControllerBus>.Deserialize(reader);
+			}
+			else
+			{
+				Buses = new Lyst<ControllerBus>();
 			}
 
 			Log.Info($"Deserialized with {Modules.Count} modules" +
@@ -1266,6 +1709,44 @@ namespace ProgramableNetwork
 				CopyEdge e = plan[i];
 				e.DstInputs[e.DstKey] = e.SrcOutputs.TryGetValue(e.SrcKey, out Fix32 v)
 					? v : Fix32.Zero;
+			}
+
+			// --- Variable bus dataflow (Input-type pins) -----------------------------
+			// 1) Input bus pins reset each tick (matches module-input clearing).
+			BusPinRef[] busClears = m_busClearPlan;
+			if (busClears != null)
+			{
+				for (int i = 0; i < busClears.Length; i++)
+				{
+					busClears[i].Bus.PinValues[busClears[i].PinIdx] = Fix32.Zero;
+				}
+			}
+			// 2) Feed Input bus pins from their module-output source (last tick's
+			//    outputs, same as CopyEdge — so a module→bus→module hop is 1-tick).
+			BusFeedEdge[] busFeed = m_busFeedPlan;
+			if (busFeed != null)
+			{
+				for (int i = 0; i < busFeed.Length; i++)
+				{
+					BusFeedEdge e = busFeed[i];
+					e.Bus.PinValues[e.PinIdx] = e.SrcOutputs.TryGetValue(e.SrcKey, out Fix32 bv)
+						? bv : Fix32.Zero;
+				}
+			}
+			// 2b) Controller-type pins read a specific pin on another (or this)
+			//     controller — resolved LIVE each tick since the remote can change
+			//     independently of this controller's topology.  Latches to 0 when the
+			//     reference is missing or out of range.
+			updateControllerPins();
+			// 3) Copy bus pin values into the module inputs that read them.
+			BusReadEdge[] busRead = m_busReadPlan;
+			if (busRead != null)
+			{
+				for (int i = 0; i < busRead.Length; i++)
+				{
+					BusReadEdge e = busRead[i];
+					e.DstInputs[e.DstKey] = e.Bus.PinValues[e.PinIdx];
+				}
 			}
 
 			// Execute all modules

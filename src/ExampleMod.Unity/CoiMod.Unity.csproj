@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\DLLs\Mafi.UnityCore.dll" />
+    <None Include="Assets\Scripts\UI.uxml" />
     <None Include="Assets\DLLs\Mafi.Unity.dll" />
     <None Include="Assets\DLLs\ProgramableNetwork.xml" />
     <None Include="Assets\DLLs\Mafi.dll" />

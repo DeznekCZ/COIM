@@ -50,6 +50,21 @@ namespace ProgramableNetwork
 
         public AMOperation Operation { get => m_operation; set => m_operation = value; }
 
+        /// <summary>
+        /// Raw source-entity id (WorldMapMine or BattleShip) currently bound to this channel,
+        /// or 0 when unbound.  Exposed for <see cref="Antena.AddToConfig"/> /
+        /// <see cref="Antena.ApplyConfig"/> so the entity-level clone (game-side
+        /// Ctrl+C/V on the antena building) can round-trip the per-channel routing
+        /// without needing to peek at <see cref="m_sourceId"/> directly.  Setter
+        /// goes through <see cref="UpdateAntenaReference"/> so <see cref="m_mine"/>
+        /// / <see cref="m_ship"/> stay consistent with the resolved entity kind.
+        /// </summary>
+        public int SourceIdForConfig
+        {
+            get => m_sourceId.Value;
+            set => m_sourceId = new EntityId(value);
+        }
+
         private WorldMapMine m_mine;
         private BattleShip m_ship;
         // Single saved source-entity ID; resolved at load time to either a WorldMapMine

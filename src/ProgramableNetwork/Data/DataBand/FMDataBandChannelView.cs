@@ -5,6 +5,7 @@ using Mafi.Unity.Ui.Library;
 using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
+using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -233,6 +234,57 @@ namespace ProgramableNetwork.Ui.DataBand
 					reference.Value = newIndex;
 				}
 			}
+
+            // Third row: a single "Pick reachable" button.  Opens a floater
+            // populated from FMManager.Signals(controllerPosition) so the player
+            // can jump straight to a broadcast that's actually in range — sorted
+            // by channel and labelled with both the frequency and the ID3 name
+            // the broadcaster tagged the stream with.  Selecting an entry sets
+            // the channel through the existing Reference (MP-safe ModuleSet
+            // Fix32FieldCmd round-trip via CustomField).
+            Row thirdRow = Body.AddAndReturn(new Row());
+            ButtonText pickBtn = thirdRow.AddAndReturn(new ButtonText(NewTr.Inspector.PickReachableSignal))
+                .TextAlign(TextAlignment.CenterMiddle)
+                .TextOverflow(TextOverflow.Clip)
+                .Height(Sizes.BLOCK_SIZE)
+                .FlexGrow(1);
+
+            // Built fresh per click so the list reflects the CURRENT broadcasts
+            // (signals time out after ~60 ticks of no Update, so even a cached
+            // floater would go stale almost immediately).
+            pickBtn.OnClick(() => {
+                FloatingColumn picker = new FloatingColumn(new DropdownPositionPolicy(), false, false, true);
+                picker.Width(420.px());
+                picker.Gap(2.px());
+
+                Data.Antene.FMManager fmManager = controllerInspector.Entity.Resolver.Resolve<Data.Antene.FMManager>();
+                Tile3i pos = controllerInspector.Entity.Position3f.Tile3i;
+                var reachable = fmManager.Signals(pos);
+
+                if (reachable.Count == 0) {
+                    picker.Add(new Label(NewTr.Inspector.NoReachableSignals).TextCenterMiddle().Padding(4.pt()));
+                } else {
+                    // Order by channel index so the list reads left-to-right like the
+                    // frequency dial (low to high).
+                    foreach (var kv in reachable.OrderBy(x => x.Key)) {
+                        int channelIdx = kv.Key;
+                        Fix32 strength = kv.Value.Item1;
+                        FMDataBandChannel channelInfo = kv.Value.Item2;
+                        Fix32 freq = (171 + channelIdx).ToFix32() * 0.5f.ToFix32();
+                        string id3 = string.IsNullOrEmpty(channelInfo.Id3) ? "—" : channelInfo.Id3;
+                        int strengthPct = (strength * 100).ToIntRounded();
+                        string label = $"FM {freq.ToStringRounded(1)} MHz — {id3} ({strengthPct}%)";
+                        picker.Add(new ButtonText(label.AsLoc())
+                            .TextAlign(TextAlignment.LeftMiddle)
+                            .Height(Sizes.BLOCK_SIZE)
+                            .OnClick(() => {
+                                reference.Value = channelIdx;
+                                picker.Close();
+                            }));
+                    }
+                }
+                picker.Open(pickBtn);
+            });
         }
 
         /// <summary>Resolves a channel's current position in its band's redirected list. -1 if not found.</summary>

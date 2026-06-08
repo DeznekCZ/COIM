@@ -60,6 +60,10 @@ namespace ProgramableNetwork
             // Registers all research from this assembly. See ExampleResearchData.cs for examples.
             registrator.RegisterDataWithInterface<IResearchNodesData>();
 
+            // Starter goal: place a controller once the Programable Network research is unlocked.
+            // Must run after Entities (controller proto) and Research (research node) registered above.
+            registrator.RegisterData<GoalsData>();
+
             // To dump every mod-registered en-US string to <modRoot>/Translations/en.json, run the
             // `pn_exportTranslations` console command (see ModConsoleCommands).
         }

@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 1; align-items: flex-start;">
+        <ui:TextField label="Text Field" placeholder-text="filler text" />
+        <ui:RadioButton label="Radio Button" />
+        <ui:SliderInt label="SliderInt" value="42" high-value="100" style="width: 320px; flex-direction: row; flex-grow: 0;" />
+    </ui:VisualElement>
+</ui:UXML>

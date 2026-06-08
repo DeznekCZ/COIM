@@ -110,6 +110,20 @@ public class PlcPyCodeEditorWindowController : WindowController<PlcPyCodeEditorW
 			code ?? ""));
 	}
 
+	// Restarts the PLC-PY runtime: scheduled as a command so multiplayer
+	// hosts and clients stay in sync.  The executor clears PlcContext and
+	// the cached compile / run error so the next sim tick re-runs the
+	// preamble + init sections against a fresh state.  Source code is
+	// untouched — same script, fresh execution.
+	public void Reset() {
+		if (m_currentModule == null) {
+			return;
+		}
+		m_uiContext.InputScheduler.ScheduleInputCmd(new ModulePlcResetCmd(
+			m_currentModule.Controller.Id,
+			m_currentModule.Id));
+	}
+
 	// Back button — delegated to OnDeactivate, which handles the inspector
 	// restore for every close path.
 	public void Back() {

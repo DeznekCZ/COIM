@@ -36,7 +36,6 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	private readonly AudioSource m_invalidOpSound;
 	private bool m_highlightSearched;
 	private IRenderedEntity m_hoveredEntity;
-	private readonly PanelWithHeader m_modulesPanel;
 	private readonly LinesFactory m_linesFactory;
 	private readonly List<LineMb> m_lines = new List<LineMb>();
 	private readonly Material m_movingArrowsLineMaterialShared;
@@ -113,7 +112,7 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		m_plcPyCodeEditorWindowController = plcPyCodeEditorWindowController;
 
 		// Wider than the default 650px inspector so the module grid + cable corridors
-		// + side connections panel all have room without crowding.
+		// + the left bus gutter + side connections panel all have room without
 		WindowSize(750.px(), Px.Auto);
 
 		ProgressBar bar;
@@ -213,44 +212,26 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
         // Show main body, there is no AddPanel method used, must be set manually
 		this.MainBody.Show();
 
-        Row panels = this.MainBody.AddAndReturn(new Row())
-			.HeightAuto()
-			.Gap(5.px());
-		// align to top so the connections panel doesn't end up in the middle when there are few modules
-		panels.JustifyItemsStart();
-		panels.AlignItemsStart();
-
-		// UI
-		m_modulesPanel = panels.AddAndReturn(new PanelWithHeader().Fill().HeightAuto());
-		m_modulesPanel.Header.Add(
-			new Label()
-				.LaterText(() => NewTr.Inspector.Modules, this)
-				.FlexGrow(1)
-				.TextAlign(TextAlignment.CenterMiddle)
-			);
-		// "Show hints" checkbox sits flush at the right end of the header.  Both
-		// floaters (slot "+ click to add" helper and per-module keybind tooltip)
-		// observe m_showHints and return Option<UiComponent>.None when off, so a
-		// single bool flip silences every hint at once.
+		// "Show hints" control — kept from the old module-panel header (headers are
+		// gone now).  Both floaters observe m_showHints, so this single flip silences
+		// every hint at once.
 		Toggle hintsToggle = new Toggle();
 		hintsToggle.Value(m_showHints);
 		hintsToggle.LaterText<Toggle>(() => NewTr.Inspector.ShowHints, this, (t, v) => t.Tooltip(v));
 		hintsToggle.OnValueChanged(v => m_showHints = v);
-		m_modulesPanel.Header.Add(
-			new Label().LaterText(() => NewTr.Inspector.ShowHints, this).TinyFontSize().TextAlign(TextAlignment.RightMiddle),
-			hintsToggle
-		);
-		m_modulesPanel.BodyAdd(m_view = new ControllerView(this, refresh));
-
-		PanelWithHeader connectionsPanel = panels.AddAndReturn(new PanelWithHeader().Fill().HeightAuto());
-		connectionsPanel.Header.Add(
-			new Label()
-				.LaterText(() => NewTr.Inspector.Connections, this)
-				.FlexGrow(1)
-				.TextAlign(TextAlignment.CenterMiddle)
+		StatusRow.Add(
+				new Label().LaterText(() => NewTr.Inspector.ShowHints, this).TinyFontSize().TextAlign(TextAlignment.RightMiddle),
+				hintsToggle
 			);
+
+        // Module view + connections live DIRECTLY in the main body — no panel
+		// headers.  An outer Row keeps a link icon (the same Connect image as the
+		// header button) visible on the LEFT; the content stacks to its right with
+		// the module grid (+ its bus gutters) on top and the connections beneath.
+		this.MainBody.Add(m_view = new ControllerView(this, refresh));
+
 		EntityConnectionsView connectionsView = new EntityConnectionsView(this);
-		connectionsPanel.BodyAdd(connectionsView);
+		this.MainBody.Add(connectionsView);
 
 		HeaderButtons.AddAndReturn(new ButtonIcon(Button.Header, UserInterface.General.Connect128_png))
 			.OnClick(() => Entity.Resolver.Resolve<ConnectionInfo>().Open(context.UiRoot))
@@ -502,20 +483,73 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		return false;
 	}
 
+	// Bus-linked controllers are highlighted in a lighter azure than the CornflowerBlue
+	// used for module entity-field connections, so the two kinds of link read apart when
+	// the connection button is hovered.
+	private static readonly ColorRgba BUS_LINK_HIGHLIGHT = new ColorRgba(0.45f, 0.80f, 1.0f, 1.0f);
+
 	private void addPreviewHighlightAll() {
-		Dictionary<EntityId, IEntity> entities = new Dictionary<EntityId, IEntity>();
+		// Each module brings its own highlight color (default CornflowerBlue), so
+		// loop per-module — pooling entities into a single dict would lose the
+		// per-module color assignment when two modules share an entity.  When the
+		// same entity is referenced by multiple modules, the last call wins (the
+		// EntityHighlighter only stores one color per entity); that mirrors what
+		// the inspector did before this change but is now visible to the player as
+		// "whichever module's color is loaded last".
 		foreach (var module in Entity.Modules) {
+			Dictionary<EntityId, IEntity> entities = new Dictionary<EntityId, IEntity>();
 			getEntitiesOfModule(entities, module);
+			addPreviewHighlightOfEntities(entities.Values, GetModuleHighlightColor(module));
 		}
-		addPreviewHighlightOfEntities(entities.Values);
+		addBusControllerHighlights();
 		m_showsLinks = true;
+	}
+
+	// Highlights every OTHER controller this controller's bus pins read from (Controller-
+	// type pins whose source points at a remote controller).  Uses the shared
+	// EntityHighlighter so ClearPreviewHighlight tears them down with the rest.
+	private void addBusControllerHighlights() {
+		if (Entity.Buses == null) {
+			return;
+		}
+		HashSet<EntityId> seen = new HashSet<EntityId>();
+		foreach (ControllerBus bus in Entity.Buses) {
+			for (int i = 0; i < ControllerBus.PinCount; i++) {
+				BusPinSource src = bus.PinSources[i];
+				if (src == null || !src.IsExternalController || !seen.Add(src.ControllerId)) {
+					continue;
+				}
+				if (Context.EntitiesManager.TryGetEntity(src.ControllerId, out Controller remote)
+					&& remote != Entity && remote is IRenderedEntity rendered) {
+					EntityHighlighter.Highlight(rendered, BUS_LINK_HIGHLIGHT);
+				}
+			}
+		}
 	}
 
 	internal void AddPreviewHighlight(Module module) {
 		Dictionary<EntityId, IEntity> entities = new Dictionary<EntityId, IEntity>();
 		getEntitiesOfModule(entities, module);
-		addPreviewHighlightOfEntities(entities.Values);
+		addPreviewHighlightOfEntities(entities.Values, GetModuleHighlightColor(module));
 	}
+
+	/// <summary>
+	/// Per-module highlight tint applied to entities the module references in its
+	/// EntityField/EntityTypeField fields. Stored as a hex string in
+	/// <c>StringData["field___highlightColor"]</c> via <c>ModuleSetStringFieldCmd</c>
+	/// (id <c>"_highlightColor"</c>) so MP peers and saves see the same value;
+	/// defaults to <see cref="ColorRgba.CornflowerBlue"/> (the original hardcoded
+	/// tint) when not set or when the hex fails to parse.
+	/// </summary>
+	internal static ColorRgba GetModuleHighlightColor(Module module) {
+		string hex = module.Field[HIGHLIGHT_COLOR_FIELD_ID, ""];
+		if (!string.IsNullOrEmpty(hex) && ColorRgba.TryParseHex(hex, out ColorRgba color)) {
+			return color;
+		}
+		return ColorRgba.CornflowerBlue;
+	}
+
+	internal const string HIGHLIGHT_COLOR_FIELD_ID = "_highlightColor";
 
 	internal void ClearPreviewHighlight() {
 		EntityHighlighter.ClearAllHighlights();
@@ -531,17 +565,18 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		}
 	}
 
-	private void addPreviewHighlightOfEntities(IEnumerable<IEntity> entities) {
+	private void addPreviewHighlightOfEntities(IEnumerable<IEntity> entities, ColorRgba color) {
+		Color lineColor = color.SetA(255).ToColor();
 		foreach (var entity in entities) {
-			EntityHighlighter.Highlight(entity as IRenderedEntity, ColorRgba.CornflowerBlue);
+			EntityHighlighter.Highlight(entity as IRenderedEntity, color);
 
 			if (entity is Transport transport) {
-				var line = m_linesFactory.CreateLine(transport.StartPosition.ToCenterVector3(), Entity.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+				var line = m_linesFactory.CreateLine(transport.StartPosition.ToCenterVector3(), Entity.Position3f.ToVector3(), 1.5f, lineColor, m_movingArrowsLineMaterialShared);
 				line.SetTextureMode(LineTextureMode.Tile);
 				m_lines.Add(line);
 			} else {
 				entity.HasPosition(out Tile3f position);
-				var line = m_linesFactory.CreateLine(position.ToVector3(), Entity.Position3f.ToVector3(), 1.5f, Color.red, m_movingArrowsLineMaterialShared);
+				var line = m_linesFactory.CreateLine(position.ToVector3(), Entity.Position3f.ToVector3(), 1.5f, lineColor, m_movingArrowsLineMaterialShared);
 				line.SetTextureMode(LineTextureMode.Tile);
 				m_lines.Add(line);
 			}
@@ -553,5 +588,28 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 			UnityEngine.Object.Destroy(line.gameObject);
 		}
 		m_lines.Clear();
+	}
+
+	// Highlights a source controller and draws a moving-arrows line FROM it TO this
+	// controller (the data flows source -> here), used by the bus source picker on hover
+	// so the player sees which controller a value would be read from.
+	public void ShowBusSourceArrow(Controller source) {
+		ClearBusSourceArrow();
+		if (source == null || source == Entity) {
+			return;
+		}
+		EntityHighlighter.Highlight(source as IRenderedEntity, BUS_LINK_HIGHLIGHT);
+		if (source.HasPosition(out Tile3f pos)) {
+			var line = m_linesFactory.CreateLine(
+				pos.ToVector3(), Entity.Position3f.ToVector3(), 1.5f,
+				BUS_LINK_HIGHLIGHT.SetA(255).ToColor(), m_movingArrowsLineMaterialShared);
+			line.SetTextureMode(LineTextureMode.Tile);
+			m_lines.Add(line);
+		}
+	}
+
+	public void ClearBusSourceArrow() {
+		EntityHighlighter.ClearAllHighlights();
+		clearAllLines();
 	}
 }

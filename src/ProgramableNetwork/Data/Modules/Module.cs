@@ -527,6 +527,23 @@ namespace ProgramableNetwork
 		[DoNotSave(0, null)]
 		public Dict<string, object> PlcContext { get; set; }
 
+		// Reads the v10+ inline InputModules block: count + per entry
+		// (key, kind byte, moduleId, outputId).  Mirrors the write in SerializeData.
+		private static Dict<string, ModuleConnector> readInputModulesInline(BlobReader reader)
+		{
+			Dict<string, ModuleConnector> dict = new Dict<string, ModuleConnector>();
+			int count = reader.ReadInt();
+			for (int i = 0; i < count; i++)
+			{
+				string key = reader.ReadString();
+				ModuleConnector.ConnectorKind kind = (ModuleConnector.ConnectorKind)reader.ReadByte();
+				long moduleId = reader.ReadLong();
+				string outputId = reader.ReadString();
+				dict[key] = new ModuleConnector(moduleId, outputId, kind);
+			}
+			return dict;
+		}
+
 		protected void SerializeData(BlobWriter writer)
 		{
 			if (m_protoId == null) {
@@ -535,7 +552,7 @@ namespace ProgramableNetwork
 
 			writer.WriteLong(Id);
 			writer.WriteString(m_protoId);
-			writer.WriteInt(/*Version*/ Controller.MODULE_PLC_CONTEXT);
+			writer.WriteInt(/*Version*/ Controller.MODULE_BUS_CONNECTOR_KIND);
 			writer.WriteBool(IsPaused);
 			writer.WriteInt((int)Status);
 
@@ -560,7 +577,19 @@ namespace ProgramableNetwork
 			if ((flags & DataFlags.OutputNumberData) != 0) Dict<string, Fix32>.Serialize(OutputNumberData, writer);
 			if ((flags & DataFlags.FieldNumberData)  != 0) Dict<string, Fix32>.Serialize(FieldNumberData, writer);
 			if ((flags & DataFlags.StringData)       != 0) Dict<string, string>.Serialize(StringData, writer);
-			if ((flags & DataFlags.InputModules)     != 0) Dict<string, ModuleConnector>.Serialize(InputModules, writer);
+			// v10+ (MODULE_BUS_CONNECTOR_KIND): InputModules written INLINE with the
+			// per-connection kind byte, so bus vs module sources persist explicitly.
+			if ((flags & DataFlags.InputModules) != 0)
+			{
+				writer.WriteInt(InputModules.Count);
+				foreach (var kv in InputModules)
+				{
+					writer.WriteString(kv.Key);
+					writer.WriteByte((byte)kv.Value.Kind);
+					writer.WriteLong(kv.Value.ModuleId);
+					writer.WriteString(kv.Value.OutputId);
+				}
+			}
 			writer.WriteInt(Row);
 			writer.WriteInt(Column);
 			if ((flags & DataFlags.ArrayData) != 0) {
@@ -614,7 +643,13 @@ namespace ProgramableNetwork
 				OutputNumberData = (flags & DataFlags.OutputNumberData) != 0 ? Dict<string, Fix32>.Deserialize(reader)          : new Dict<string, Fix32>();
 				FieldNumberData  = (flags & DataFlags.FieldNumberData)  != 0 ? Dict<string, Fix32>.Deserialize(reader)          : new Dict<string, Fix32>();
 				StringData       = (flags & DataFlags.StringData)       != 0 ? Dict<string, string>.Deserialize(reader)         : new Dict<string, string>();
-				InputModules     = (flags & DataFlags.InputModules)     != 0 ? Dict<string, ModuleConnector>.Deserialize(reader): new Dict<string, ModuleConnector>();
+				// v10+ reads InputModules inline (with kind byte); pre-v10 reads the
+				// old Dict format (all connections load as Kind=Module).
+				InputModules     = (flags & DataFlags.InputModules)     != 0
+					? (loadedVersion >= Controller.MODULE_BUS_CONNECTOR_KIND
+						? readInputModulesInline(reader)
+						: Dict<string, ModuleConnector>.Deserialize(reader))
+					: new Dict<string, ModuleConnector>();
 				Row = reader.ReadInt();
 				Column = reader.ReadInt();
 				ArrayData = (flags & DataFlags.ArrayData) != 0

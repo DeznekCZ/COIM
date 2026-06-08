@@ -3,6 +3,7 @@ using Mafi.Core;
 using Mafi.Core.Syncers;
 using Mafi.Localization;
 using Mafi.Unity.Ui;
+using Mafi.Unity.Ui.Library;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Library.FloatingPanel;
@@ -89,6 +90,34 @@ namespace ProgramableNetwork.Ui
 				SaveBlueprintDialog.ForModule(m_module, saveBp, uiContext, resolver);
 			});
 			row.Add(saveBp);
+
+			// Per-module entity-highlight color.  Default (CornflowerBlue) matches
+			// the pre-change hardcoded tint, so unchanged modules look the same.
+			// MP / save path: ModuleSetStringFieldCmd writes the hex string into
+			// StringData["field___highlightColor"], where ControllerInspector.
+			// GetModuleHighlightColor reads it for both hover-one and hover-all
+			// preview highlights.
+			ButtonIcon colorBtn = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.Cursors.Paint32_png)
+				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)
+				.Margin(Px.Zero)
+				.IconSize(Sizes.IMAGE_SIZE, Sizes.IMAGE_SIZE)
+				.Icon.Padding(Sizes.IMAGE_PADDING)
+					 .Margin(Px.Zero)
+				.Parent.As<ButtonIcon>().Value;
+			colorBtn.Tooltip(NewTr.Inspector.ModuleHighlightColor);
+			colorBtn.Observe(() => ControllerInspector.GetModuleHighlightColor(m_module))
+					.Do(c => colorBtn.Icon.Color(c));
+
+			RgbColorPicker colorPicker = new RgbColorPicker()
+				.LaterText<RgbColorPicker>(() => NewTr.Inspector.ModuleHighlightColor, this, (cp, v) => cp.Title(v));
+			colorPicker.Observe(() => ControllerInspector.GetModuleHighlightColor(m_module))
+					   .Do(c => colorPicker.Value(c));
+			colorPicker.OnColorChanged(c => uiContext.InputScheduler.ScheduleInputCmd(
+				new ModuleSetStringFieldCmd(
+					m_module.Controller.Id, m_module.Id,
+					ControllerInspector.HIGHLIGHT_COLOR_FIELD_ID, c.ToHex())));
+			colorBtn.FloaterInteractive(colorPicker);
+			row.Add(colorBtn);
 
 			ButtonIcon remove = new ButtonIcon(Mafi.Unity.Assets.Unity.UserInterface.General.Trash128_png)
 				.Size(Sizes.BLOCK_SIZE * 1.5f, Sizes.BLOCK_SIZE)

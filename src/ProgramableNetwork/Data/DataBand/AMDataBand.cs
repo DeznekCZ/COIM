@@ -5,6 +5,7 @@ using Mafi.Core.Prototypes;
 using Mafi.Serialization;
 using System.Collections.Generic;
 using System.Linq;
+using Mafi.Collections.ImmutableCollections;
 
 namespace ProgramableNetwork
 {
@@ -147,6 +148,35 @@ namespace ProgramableNetwork
         public void RemoveChannel(IDataBandChannel channel)
         {
             m_redirected.Remove(channel as AMDataBandChannel);
+        }
+
+        /// <summary>
+        /// Rebuilds <c>m_redirected</c> from a flat (index, sourceId, operation) triplet
+        /// array produced by <see cref="Antena.AddToConfig"/>.  Used when the player
+        /// game-side clones an AM antena building so the new antena keeps the same
+        /// per-channel mine/ship routing instead of starting with an empty redirected
+        /// list.  Cross-entity references (mine / ship ids) only resolve when the
+        /// source entity still exists in this save — missing entities just leave the
+        /// channel unbound, same fallback path the loader uses.
+        /// </summary>
+        public void RestoreFromConfig(ImmutableArray<int> packed, IEntitiesManager entitiesManager)
+        {
+            m_redirected.Clear();
+            // Each channel = three ints (index, source id, operation enum). A
+            // partial triplet at the tail is treated as corrupt input and dropped
+            // — same defensive shape as the save-deserialization path.
+            for (int i = 0; i + 2 < packed.Length; i += 3)
+            {
+                var channel = new AMDataBandChannel
+                {
+                    Index = packed[i],
+                    OriginalDataBand = this,
+                    Operation = (AMDataBandChannel.AMOperation)packed[i + 2],
+                    SourceIdForConfig = packed[i + 1],
+                };
+                channel.UpdateAntenaReference(this, entitiesManager);
+                m_redirected.Add(channel);
+            }
         }
     }
 }

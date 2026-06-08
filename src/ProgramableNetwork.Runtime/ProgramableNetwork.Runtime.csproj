@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <!-- IMPORTANT: must NOT be "ProgramableNetwork" — ImportStatement's `from Mafi import X`
+         branch excludes an assembly literally named "ProgramableNetwork" from its reflection
+         scan, and we WANT our Mafi.Fix32 shim to be discoverable there. -->
+    <AssemblyName>ProgramableNetwork.Runtime</AssemblyName>
+    <RootNamespace>ProgramableNetwork.Runtime</RootNamespace>
+    <!-- The source-linked parser carries some stray/unused fields & hidden-member patterns. -->
+    <NoWarn>$(NoWarn);CS0414;CS0169;CS0649;CS0108;CS0162;CS0219;CS0660;CS0661;CS0252;CS0253</NoWarn>
+  </PropertyGroup>
+
+  <!-- Single source of truth: source-link the PURE interpreter engine from the mod.
+       Excludes the COI-bound files (they reference ProtoRegistrator / Mafi.Core / Mafi
+       serialization and are replaced by the Sim host + ModuleLoader in this library). -->
+  <ItemGroup>
+    <Compile Include="..\ProgramableNetwork\ModuleParser\**\*.cs"
+             Exclude="..\ProgramableNetwork\ModuleParser\Registrator\ModuleRegistrator.cs;..\ProgramableNetwork\ModuleParser\Registrator\TemplateRegistrator.cs;..\ProgramableNetwork\ModuleParser\Runtime\Wrappers\ModuleWrapper.cs;..\ProgramableNetwork\ModuleParser\Runtime\Wrappers\ControllerWrapper.cs;..\ProgramableNetwork\ModuleParser\Runtime\PlcContextSerializer.cs;..\ProgramableNetwork\ModuleParser\Runtime\PlcBusValidator.cs;..\ProgramableNetwork\ModuleParser\Statements\ImportStatement.cs">
+      <Link>Parser\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+    <!-- Reference<T> is the AST's value-cell type; self-contained (only needs Fix32), so link it too. -->
+    <Compile Include="..\ProgramableNetwork\Data\Modules\Fields\Reference.cs">
+      <Link>Parser\Reference.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>

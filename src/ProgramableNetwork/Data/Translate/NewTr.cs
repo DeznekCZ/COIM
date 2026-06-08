@@ -117,6 +117,12 @@ namespace ProgramableNetwork
                 "Controller color:", "controller inspector: title of the color picker floater");
             public static readonly LocStr LightColor = Loc.Str("ProgramableNetwork_Inspector_LightColor",
                 "Light color:", "display-entity light inspector: title of the color picker floater");
+            public static readonly LocStr ModuleHighlightColor = Loc.Str("ProgramableNetwork_Inspector_ModuleHighlightColor",
+                "Highlight color:", "module edit dialog: title of the color picker floater for entity highlight tint");
+            public static readonly LocStr PickReachableSignal = Loc.Str("ProgramableNetwork_Inspector_PickReachableSignal",
+                "Pick reachable signal", "FM receiver module: button that opens a floater listing all currently reachable FM broadcasts (channel + ID3 name + strength)");
+            public static readonly LocStr NoReachableSignals = Loc.Str("ProgramableNetwork_Inspector_NoReachableSignals",
+                "No reachable signals", "FM receiver module: placeholder shown in the reachable-signals picker when nothing is in range");
             public static readonly LocStr PickModule = Loc.Str("ProgramableNetwork_Inspector_PickModule",
                 "Pick module", "controller inspector: heading for the module picker dialog");
             public static readonly LocStr PickTemplate = Loc.Str("ProgramableNetwork_Inspector_PickTemplate",

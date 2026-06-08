@@ -97,6 +97,7 @@ public static class PlcPySyntax {
 					new Completion("Array",        "Persistent Fix32[] scratch buffer."),
 					new Completion("NumberData",   "Persistent int dictionary."),
 					new Completion("StringData",   "Persistent string dictionary."),
+					new Completion("Bus",          "Controller variable buses — self.Bus.<bus>.<pin>."),
 				};
 			case "self.Input":
 				return BuildPinSide(module, isOutput: false, includeWriters: true);
@@ -124,6 +125,10 @@ public static class PlcPySyntax {
 				return new[] {
 					new Completion("(any name)", "Persistent dictionary — any name works as a key."),
 				};
+			case "self.Bus":
+				// Level 2: the bus names defined on this controller, plus the
+				// get(name) accessor.
+				return BuildBusList(module);
 			case "Fix32":
 				return new[] {
 					new Completion("Zero",     "Fix32 zero."),
@@ -138,8 +143,61 @@ public static class PlcPySyntax {
 					new Completion("Error",   "Module is in an error state — red LED."),
 				};
 			default:
+				// Level 3: self.Bus.<bus_name> → that bus's named pins.  Handled
+				// here rather than as a switch case because the bus name is
+				// dynamic.  WalkBackDottedPath in the editor returns the full
+				// dotted prefix, so this fires on `self.Bus.main.`.
+				string p = parent ?? "";
+				if (p.StartsWith("self.Bus.", StringComparison.Ordinal))
+				{
+					return BuildBusPins(module, p.Substring("self.Bus.".Length));
+				}
 				return EMPTY;
 		}
+	}
+
+	// Level 2 — the buses configured on the module's controller.  Each entry is
+	// a bus name; unnamed buses are skipped (they can't be addressed from a
+	// script).  The get(name) accessor is always offered.  When no module /
+	// controller is resolvable the list still carries get() so the floater
+	// isn't empty.
+	private static IReadOnlyList<Completion> BuildBusList(Module module) {
+		List<Completion> list = new List<Completion>();
+		Controller controller = module?.Controller;
+		if (controller?.Buses != null) {
+			foreach (ControllerBus bus in controller.Buses) {
+				if (bus == null || string.IsNullOrEmpty(bus.Name)) {
+					continue;
+				}
+				list.Add(new Completion(bus.Name, "Variable bus \"" + bus.Name + "\"."));
+			}
+		}
+		list.Add(new Completion("get", "get(bus_name) — bus accessor by name."));
+		return list;
+	}
+
+	// Level 3 — the named pins of a specific bus, plus the typed get/set helpers
+	// (matching the Input/Output shape).  A pin with no name is skipped; reads of
+	// such a slot would return 0 anyway and it can't be addressed by name.
+	private static IReadOnlyList<Completion> BuildBusPins(Module module, string busName) {
+		List<Completion> list = new List<Completion>();
+		ControllerBus bus = module?.Controller?.GetBus(busName);
+		if (bus != null) {
+			for (int i = 0; i < ControllerBus.PinCount; i++) {
+				string pinName = bus.PinNames[i];
+				if (string.IsNullOrEmpty(pinName)) {
+					continue;
+				}
+				list.Add(new Completion(pinName, "Bus pin \"" + busName + "." + pinName + "\" — bidirectional Fix32."));
+			}
+		}
+		list.Add(new Completion("get",      "get(pin, default) — read as Fix32."));
+		list.Add(new Completion("set",      "set(pin, value) — write Fix32."));
+		list.Add(new Completion("get_int",  "get_int(pin, default) — read as int."));
+		list.Add(new Completion("set_int",  "set_int(pin, value) — write int."));
+		list.Add(new Completion("get_bool", "get_bool(pin, default) — read as bool."));
+		list.Add(new Completion("set_bool", "set_bool(pin, value) — write bool."));
+		return list;
 	}
 
 	// Pin id → completion entry for self.Input / self.Output.  Statics first,
@@ -280,6 +338,7 @@ public static class PlcPySyntax {
 		{ "self.Array",    "Persistent Fix32[] scratch buffer. .get(i, default), .set(i, v), .resize(n), .shift_left_with(v)." },
 		{ "self.NumberData", "Persistent int dictionary. ['key'] / .key indexer + dotted access." },
 		{ "self.StringData", "Persistent string dictionary. Same shape as NumberData." },
+		{ "self.Bus",        "Controller variable buses. self.Bus.<bus>.<pin> reads/writes a named bidirectional pin (latches across ticks, last-writer-wins). Also .get(bus) / .get(pin, default)." },
 		{ "fix",           "fix(value) — convert int/float to Fix32 (value-preserving). Inverse of int(...)." },
 		{ "int",           "int(value) — Fix32 → int (truncates toward zero via Fix32.IntegerPart). Inverse of fix(...)." },
 		{ "raw",           "raw(value) — Fix32 → underlying raw int (Fix32.RawValue). Inverse of hex(...). Use for save round-trips or bit-level inspection." },

@@ -30,9 +30,9 @@ namespace ProgramableNetwork.Ui
 		// fill) and the cables themselves — the cell stays transparent so the
 		// underlying row colour shows through.  Hover flashes the port-kind colour
 		// briefly to confirm the cursor target.
-		private static readonly ColorRgba INPUT_BG_IDLE   = ColorRgba.Empty; // transparent
+		private static readonly ColorRgba INPUT_BG_IDLE   = ColorRgba.DarkGreen; // transparent
 		private static readonly ColorRgba INPUT_BG_HOVER  = ColorRgba.Green;
-		private static readonly ColorRgba OUTPUT_BG_IDLE  = ColorRgba.Empty; // transparent
+		private static readonly ColorRgba OUTPUT_BG_IDLE  = ColorRgba.DarkRed; // transparent
 		private static readonly ColorRgba OUTPUT_BG_HOVER = ColorRgba.Red;
 
 		// Border colour is always black.  The pinhole stays opaque even when the
@@ -56,6 +56,9 @@ namespace ProgramableNetwork.Ui
 		private bool m_open;
 		private bool m_hovered;
 		private ColorRgba m_dotFill = DOT_DEFAULT_FILL;
+		private bool m_hasAccent;
+		private ColorRgba m_accentIdle;
+		private ColorRgba m_accentHover;
 
 		public PortPinButton(PortKind kind, bool connected)
 		{
@@ -115,10 +118,22 @@ namespace ProgramableNetwork.Ui
 			return this;
 		}
 
+		// Overrides the port-kind-derived cell colour with a custom accent — used by the
+		// variable bus to colour pins by their role (e.g. a Controller-type pin reads
+		// from a different controller, so it is painted red instead of the input green).
+		public PortPinButton Accent(ColorRgba idle, ColorRgba hover)
+		{
+			m_hasAccent = true;
+			m_accentIdle = idle;
+			m_accentHover = hover;
+			applyVisual();
+			return this;
+		}
+
 		private void applyVisual()
 		{
-			ColorRgba bgIdle  = m_kind == PortKind.Input ? INPUT_BG_IDLE  : OUTPUT_BG_IDLE;
-			ColorRgba bgHover = m_kind == PortKind.Input ? INPUT_BG_HOVER : OUTPUT_BG_HOVER;
+			ColorRgba bgIdle  = m_hasAccent ? m_accentIdle  : (m_kind == PortKind.Input ? INPUT_BG_IDLE  : OUTPUT_BG_IDLE);
+			ColorRgba bgHover = m_hasAccent ? m_accentHover : (m_kind == PortKind.Input ? INPUT_BG_HOVER : OUTPUT_BG_HOVER);
 			this.Background(m_hovered ? bgHover : bgIdle);
 
 			int dotPx     = m_open ? DOT_PX_OPEN : DOT_PX_CLOSED;

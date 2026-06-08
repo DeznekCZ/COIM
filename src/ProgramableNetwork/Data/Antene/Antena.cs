@@ -4,6 +4,8 @@ using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Ports.Io;
 using System;
+using System.Linq;
+using Mafi.Collections.ImmutableCollections;
 using Mafi.Serialization;
 using Mafi.Core.Population;
 using Mafi.Core.Prototypes;
@@ -75,6 +77,27 @@ namespace ProgramableNetwork
         public void AddToConfig(EntityConfigData data)
         {
             data.SetString("databand_type", DataBand.Prototype.Id.Value);
+
+            // AM channel routing (mine/ship → channel-slot mappings) used to be
+            // dropped on the floor by the game's "copy entity config" Ctrl+C/V flow
+            // because only the band TYPE was stored — the new antena came up with
+            // an empty redirected list.  Pack each redirected channel as a flat
+            // (index, sourceEntityId, operation) triplet so ApplyConfig can rebuild
+            // m_redirected and re-resolve the WorldMapMine / BattleShip refs.
+            if (DataBand is AMDataBand am)
+            {
+                var channels = am.Channels.OfType<AMDataBandChannel>().ToList();
+                int[] packed = new int[channels.Count * 3];
+                for (int i = 0; i < channels.Count; i++)
+                {
+                    var c = channels[i];
+                    packed[i * 3 + 0] = c.Index;
+                    packed[i * 3 + 1] = c.SourceIdForConfig;
+                    packed[i * 3 + 2] = (int)c.Operation;
+                }
+                data.SetArray<int>("am_channels", ImmutableArray.Create(packed),
+                    (v, w) => w.WriteInt(v));
+            }
         }
 
         public void ApplyConfig(EntityConfigData data)
@@ -83,6 +106,19 @@ namespace ProgramableNetwork
             Proto.ID dataBandType = new Proto.ID(id);
             DataBandProto dataBandProto = Context.ProtosDb.Get<DataBandProto>(dataBandType).ValueOrNull;
             DataBand = dataBandProto.Constructor(this, Context, dataBandProto);
+
+            // Restore AM channel routing if the source antena was an AM band (see
+            // AddToConfig).  When cloning across band types (e.g. FM source → AM
+            // destination) the key is absent and m_redirected stays empty, which is
+            // the correct fallback.
+            if (DataBand is AMDataBand am)
+            {
+                var packed = data.GetArray<int>("am_channels", r => r.ReadInt());
+                if (packed.HasValue)
+                {
+                    am.RestoreFromConfig(packed.Value, Context.EntitiesManager);
+                }
+            }
         }
 
         public static void Serialize(Antena value, BlobWriter writer)

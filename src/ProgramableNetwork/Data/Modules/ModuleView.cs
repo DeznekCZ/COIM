@@ -175,17 +175,21 @@ public partial class ControllerView
 				});
 
 				// Cable-style highlight when this module is hovered from the connections panel,
-				// or when it has been picked up in Move mode.
+				// when it has been picked up in Move mode, or — while ALL links are shown
+				// (connection-button hover) — for modules that own an entity field, so the
+				// tint points at the modules actually driving a world connection.
 				fieldsPanel.Observe(() => m_controller.m_controller.HighlightedFromSidePanel)
 					.Observe(() => m_controller.m_controller.PickedUpModule)
-					.Do((highlighted, picked) =>
+					.Observe(() => m_controller.m_controller.m_showsLinks)
+					.Do((highlighted, picked, showsLinks) =>
 					{
 						bool isHovered = highlighted != null && highlighted.Id == module.Id;
 						bool isPicked = picked != null && picked.Id == module.Id;
+						bool isLinked = showsLinks && moduleHasEntityField(module);
 						ColorRgba color;
 						if (isPicked) {
 							color = ColorRgba.Gold;
-						} else if (isHovered) {
+						} else if (isHovered || isLinked) {
 							color = ColorRgba.CornflowerBlue;
 						} else {
 							color = ColorRgba.CornflowerBlue.SetA(0);
@@ -632,10 +636,25 @@ public partial class ControllerView
 									btn, refresh);
 								return;
 							}
-							// Otherwise attach (overwrites any other prior source).
+							// A bus INPUT pin is itself fed by a module output — it must never
+							// drive a module input.  Reject that wiring (only Plc / Controller
+							// / NetworkRead pins, which hold a readable value, may feed inputs).
+							if (held.IsBus
+								&& held.TryGetPinIndex(out int heldPin)
+								&& module.Controller?.GetBusById(held.ModuleId) is ControllerBus heldBus
+								&& heldPin >= 0 && heldPin < ControllerBus.PinCount
+								&& heldBus.PinTypes[heldPin] == ControllerBus.BusPinType.Output)
+							{
+								uiContext.AudioDb.InvalidOp(true).Play();
+								return;
+							}
+							// Otherwise attach (overwrites any other prior source).  Carry the
+							// connector kind so a held BUS pin is stored as a bus connection
+							// (else the executor would build a module-kind connector and the
+							// signal plan would prune it — no module has the bus's id).
 							uiContext.InputScheduler.ScheduleAndOnApplied(
 								new ModuleSetInputConnectionCmd(
-									module.Controller.Id, module.Id, input.Id, held.ModuleId, held.OutputId),
+									module.Controller.Id, module.Id, input.Id, held.ModuleId, held.OutputId, held.IsBus),
 								btn, refresh);
 						})
 						// Inputs are "open" (enlarged circle) while an output is picked,
@@ -761,6 +780,14 @@ public partial class ControllerView
 							() => { m_controller.m_controller.m_higlightedOutput = new ModuleConnector(module.Id, output.Id); },
 							() => { m_controller.m_controller.m_higlightedOutput = null; }
 						);
+						// Enlarge THIS output pin while it's the one picked for connection
+						// (mirrors the inputs' "open" state when an output is held), so the
+						// player can see which output the next input-click will wire to.
+						btn.Observe(() =>
+								m_controller.m_controller.OutputConnection != null
+								&& m_controller.m_controller.OutputConnection.ModuleId == module.Id
+								&& m_controller.m_controller.OutputConnection.OutputId == capturedOutId)
+							.Do(open => btn.Open(open));
 				}
 			}
 			if (outerFiller > 0)
@@ -769,6 +796,22 @@ public partial class ControllerView
 					.Width(outerFiller * Sizes.BLOCK_SIZE)
 					.Height(Sizes.BLOCK_SIZE);
 			}
+		}
+
+		// True when the module's prototype declares at least one entity field (i.e. it can
+		// be wired to a world entity).  Used to limit the "links shown" settings-button
+		// tint to modules that actually own a world connection.
+		private static bool moduleHasEntityField(Module module)
+		{
+			if (module?.Prototype == null) {
+				return false;
+			}
+			foreach (IField field in module.Prototype.Fields) {
+				if (field is EntityField) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		private static bool outputIsConnected(Module module, string capturedOutId)
@@ -781,6 +824,24 @@ public partial class ControllerView
 					if (connection.Value.ModuleId == module.Id && connection.Value.OutputId == capturedOutId)
 					{
 						return true;
+					}
+				}
+			}
+			// Also connected if this output feeds a variable-bus Input pin — that wiring
+			// lives on the bus (PinSources), not in any module's InputModules, so the
+			// loop above would otherwise miss it and the pin would look unconnected.
+			if (module.Controller.Buses != null)
+			{
+				foreach (ControllerBus bus in module.Controller.Buses)
+				{
+					for (int i = 0; i < ControllerBus.PinCount; i++)
+					{
+						BusPinSource s = bus.PinSources[i];
+						if (s != null && s.Kind == BusPinSource.SourceKind.LocalModule
+							&& s.ModuleId == module.Id && s.OutputId == capturedOutId)
+						{
+							return true;
+						}
 					}
 				}
 			}

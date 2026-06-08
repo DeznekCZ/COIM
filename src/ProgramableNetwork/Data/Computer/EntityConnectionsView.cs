@@ -31,23 +31,28 @@ namespace ProgramableNetwork.Ui
 	/// Hovering a row highlights the bound world entity and the corresponding module box
 	/// in the controller view.
 	/// </summary>
-	public class EntityConnectionsView : Row
+	public class EntityConnectionsView : PanelRow
 	{
 		// Most recently picked entity across any slot; survives panel rebuilds and inspector re-opens.
 		private static IEntity s_lastPickedEntity;
 
 		private readonly ControllerInspector m_inspector;
-		private readonly Column m_childrenContainer;
+		private readonly Row m_childrenContainer;
 
 		public EntityConnectionsView(ControllerInspector inspector)
 			: base()
 		{
 			m_inspector = inspector;
 
-			this.m_childrenContainer = this.AddAndReturn(new ScrollColumn())
-				.Fill()
-				.AddAndReturn(new Column())
-				.Width(58.px())
+			// Left: link icon — opens the cross-controller connections window, mirroring
+			// the Connect button in the header.
+			BodyAdd(new Icon(UserInterface.General.Connect128_png));
+
+			ScrollRow scrollable = new ScrollRow().Fill();
+			BodyAdd(scrollable);
+			this.m_childrenContainer = scrollable
+				.AddAndReturn(new Row())
+				.Height(58.px())
 				//.Class(Cls.group)
 				.Padding(5.px())
 				.Margin(2.px())

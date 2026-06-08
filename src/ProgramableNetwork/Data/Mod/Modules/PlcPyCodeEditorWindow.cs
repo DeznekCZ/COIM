@@ -391,6 +391,25 @@ public class PlcPyCodeEditorWindow : Window {
 		ButtonText revertButton = new ButtonText(Button.General, "Revert".ToDoLoc())
 			.OnClick(() => LoadFromModule(m_controller.CurrentModule))
 			.MarginLeft(8.px());
+		// Reset — clears the PLC's persistent context and cached error
+		// strings so the next tick re-runs init: against a fresh state.
+		// Useful when a script's accumulator / latch state got stuck and
+		// the player wants a clean restart without re-saving the source.
+		// Tooltip spells it out so the button doesn't look like a code
+		// reset (it isn't — Revert handles that).
+		ButtonText resetButton = new ButtonText(Button.General, "Reset".ToDoLoc())
+			.Tooltip("Restart the compiled script: clears variables stored in PlcContext and any run / compile error. Source code is untouched.".ToDoLoc())
+			.OnClick(() => {
+				m_controller.Reset();
+				// Local UI mirror — the executor clears the persisted
+				// error strings on next sim sync, but the editor
+				// otherwise won't repaint until the player Reverts /
+				// reopens.  Hide the strip immediately so the click
+				// feels responsive instead of leaving a stale red
+				// banner above a freshly-reset module.
+				HideError();
+			})
+			.MarginLeft(8.px());
 		ButtonText backButton = new ButtonText(Button.General, "Back".ToDoLoc())
 			.OnClick(() => m_controller.Back())
 			.MarginLeft(Px.Auto);
@@ -405,7 +424,7 @@ public class PlcPyCodeEditorWindow : Window {
 			row => row.PaddingTopBottom(6.px())
 			          .MinHeight(48.px())
 			          .AlignItemsCenter(),
-			saveButton, compileButton, revertButton, backButton);
+			saveButton, compileButton, revertButton, resetButton, backButton);
 		body.Add(footer.RootElement);
 
 		// No periodic poll of the module's state.  The editor is independent
@@ -1015,6 +1034,13 @@ public class PlcPyCodeEditorWindow : Window {
 		try {
 			Token[] tokens = Tokenizer.ParseString(source, "PLC_PY.preview");
 			Lexer.Parse(tokens);
+			// Validate bus direction against the current controller's bus
+			// config — same check the runtime compile performs, surfaced
+			// here so the editor's Compile / Save flow catches mismatches
+			// before the player closes the window.  Falls back to a
+			// runtime check when the module isn't bound to a controller
+			// (offline preview, brand-new placement).
+			PlcBusValidator.Validate(tokens, m_controller.CurrentModule?.Controller);
 			HideError();
 			m_statsLabel.text = "Tokens: " + tokens.Length + "  (compile OK)";
 			return true;

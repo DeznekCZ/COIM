@@ -32,6 +32,7 @@ namespace ProgramableNetwork
 		ICommandProcessor<ModulePasteCmd>,
 		ICommandProcessor<ModulePlaceFromBlueprintCmd>,
 		ICommandProcessor<ControllerApplyTemplateCmd>,
+		ICommandProcessor<ModulePlcResetCmd>,
 		ICommandProcessor<VariableRemoveCmd>
 	{
 		private readonly IEntitiesManager m_entitiesManager;
@@ -130,7 +131,9 @@ namespace ProgramableNetwork
 			if (cmd.IsDisconnect) {
 				module.InputModules.TryRemove(cmd.InputId, out _);
 			} else {
-				module.InputModules[cmd.InputId] = new ModuleConnector(cmd.SourceModuleId, cmd.SourceOutputId);
+				module.InputModules[cmd.InputId] = new ModuleConnector(
+					cmd.SourceModuleId, cmd.SourceOutputId,
+					cmd.SourceIsBus ? ModuleConnector.ConnectorKind.Bus : ModuleConnector.ConnectorKind.Module);
 			}
 			module.Controller?.InvalidateTopology();
 			cmd.SetResultSuccess();
@@ -265,6 +268,31 @@ namespace ProgramableNetwork
 				cmd.SetResultError($"Could not place blueprint module '{cmd.ProtoId}' at ({cmd.TargetRow}, {cmd.TargetColumn}) on controller {cmd.ControllerId}.");
 				return;
 			}
+			cmd.SetResultSuccess();
+		}
+
+		// Restart the PLC-PY runtime: clear persistent context (PlcContext)
+		// and wipe the cached run-error / compile-error strings.  The
+		// compiled AST stays — clearing PlcContext alone is enough to make
+		// PlcPy.Action re-fire the preamble register-pass and the init
+		// dispatch on the next tick (both gate on `m.PlcContext.Count == 0`),
+		// so reset is cheap: no re-tokenise, no re-parse.  Code field and
+		// non-PLC StringData / NumberData entries stay put.  Used by the
+		// editor's Reset button — same shape works for any future "restart
+		// PLC instance" entry points (e.g. inspector shortcut).
+		public void Invoke(ModulePlcResetCmd cmd)
+		{
+			if (!tryGetModule(cmd.ControllerId, cmd.ModuleId, out _, out Module module, out string error)) {
+				cmd.SetResultError(error);
+				return;
+			}
+			module.PlcContext = new Mafi.Collections.Dict<string, object>();
+			module.StringData.TryRemove("__run_error", out _);
+			module.StringData.TryRemove("__compile_error", out _);
+			module.NumberData.TryRemove("__last_us", out _);
+			// Empty string is the "no error" sentinel — matches the field's
+			// default-init and the cleared paths inside Module.cs.
+			module.SetError("");
 			cmd.SetResultSuccess();
 		}
 

@@ -773,6 +773,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.BuildAndAdd();
 
 		EdictsManager edictsManager = null;
+		UnlockedProtosDb unlockedProtosDb = null;
 		registrator
 			.ModuleBuilderStart("Connection_Office_Edict", "Connection: Office - Edict", "EDICT")
 			.SetDescription("Drives the level of a selected <b>edict</b> on the linked Captain's Office toward the <b>level</b> input/field. Level 0 disables the edict; higher levels enable successive tiers along the edict's chain. Outputs the current <b>level</b> and <b>active</b> (1 when the highest-enabled tier is actually in effect, 0 when blocked by prerequisites such as Unity, research, or an advanced-office requirement). Enable the <b>max</b> output extension to also expose the chain length and switch the display to <b>x|n</b> format.")
@@ -819,6 +820,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 
 				edictsManager ??= m.Controller.Resolver.Resolve<EdictsManager>();
+				unlockedProtosDb ??= m.Controller.Resolver.Resolve<UnlockedProtosDb>();
 
 				// Walk the chain starting from the picked base tier so the index in
 				// `chain` matches the slider semantics: chain[0] is the base, level=N
@@ -833,7 +835,16 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 				Edict[] chain = chainList.ToArray();
 
-				int maxLevel = chain.Length;
+				// Max level is the number of CONSECUTIVELY-unlocked tiers from the
+				// base — past the first locked tier the chain is unreachable, so the
+				// player should see (and the target should clamp to) that wall.  Edict
+				// .CanBeEnabled doesn't check unlock status; only the inspector layered
+				// the UnlockedProtosDb.IsLocked test on top, so we replicate that here.
+				int maxLevel = 0;
+				for (int i = 0; i < chain.Length; i++) {
+					if (!unlockedProtosDb.IsUnlocked(chain[i].Prototype)) break;
+					maxLevel = i + 1;
+				}
 				int currentLevel = 0;
 				for (int i = 0; i < chain.Length; i++) {
 					if (!chain[i].IsEnabled) break;
@@ -2357,6 +2368,127 @@ public class Modules : ModuleGroup, IModuleGroup {
 							crop.Value.ProductProduced.Product.IconPath;
 					}
 				}
+			})
+			.AddControllerDevice()
+			.BuildAndAdd();
+
+		// Animal farms (chicken farm, cattle ranch, …) are AnimalFarm, NOT the crop
+		// Farm handled above, so Connection_Farm can't touch them.  Most of what a
+		// player wants is already reachable generically: pure logistics (food/water
+		// import, egg/meat export), pause, priority and power/worker status via the
+		// Connection_Import_*, Connection_Export_*, Connection_SwitchOff,
+		// Connection_Priority_* and Connection_IsActive modules; and the animals,
+		// food, water and produce are all (virtual) products, so their counts /
+		// levels are read with Connection_Storage by setting its watched product.
+		// This module therefore sticks to the animal-farm-specific bits no other
+		// module can express: operating state, the slaughter slider and growth
+		// (breeding) control, plus the born / carcass-per-month rates and the
+		// starving / missing-water flags.
+		registrator
+			.ModuleBuilderStart("Connection_AnimalFarm", "Connection: Animal Farm", "A-FARM")
+			.SetDescription("Drives and reads the linked animal <b>farm</b> (chicken farm, cattle ranch, …). Outputs the operating <b>state</b> (0 paused, 1 working, 2 missing workers, 3 missing food, 4 missing water, 5 no animals, 6 full output), the current <b>slaughter</b> slider step (-1 when slaughtering is off) and the <b>starving</b> / <b>nowater</b> (missing-water) flags. Writes the slaughter slider step from the <b>slaughter</b> input/field (0–10, &lt;0 turns slaughtering off) and breeding from the <b>growth</b> input/field (0 allow, &gt;0 pause); each write only happens while its pin is wired or its override toggle is on, so an unconnected module never fights the manual UI. Optional output extensions expose animals <b>born</b> and <b>carcass</b> produced per month. Animal head-count / capacity and the food / water / produce levels are intentionally omitted — read them with the Connection: Storage (STOCK) module by setting its watched product. Errors if no animal farm is linked.")
+			.AddCategory(Category.Connection)
+			.AddCategory(Category.ConnectionRead)
+			.AddCategory(Category.ConnectionWrite)
+			.AddInput("slaughter", "Slaughter step (0-10, <0 = off)")
+			.AddInput("growth", "Breeding (0 allow, >0 pause)")
+			.AddInt32Field("slaughter", "Slaughter step (0-10, <0 = off)", overrideInput: true, defaultValue: -1)
+			.AddInt32Field("growth", "Breeding (0 allow, >0 pause)", overrideInput: true, defaultValue: 0)
+			.AddOutput("state", "State (0-6)")
+			.AddOutput("slaughter", "Slaughter step")
+			.AddOutput("starving", "Animals starving (0/1)")
+			.AddOutput("nowater", "Missing water (0/1)")
+			.Width(4)
+			.AllowOutputExtensions(2, i => i switch {
+				0 => ("born", "Animals born / month"),
+				_ => ("carcass", "Carcass / month")
+			})
+			.AddEntityField<AnimalFarm>("farm", "Managed animal farm", "Animal farm connected by cable (40 metres)")
+			.Action(m => {
+				AnimalFarm farm = m.Field.Entity<AnimalFarm>("farm");
+				if (farm is null) {
+					m.SetError("Animal farm is not set");
+					return ModuleStatus.Error;
+				}
+
+				// Slaughter control — applied only when the player explicitly opted
+				// in (override toggle on or a wire connected), so a read-only module
+				// doesn't override the building's manual slaughter slider every tick.
+				bool slaughterControlled = m.Field.Bool["field_slaughter"] || m.InputModules.ContainsKey("slaughter");
+				if (slaughterControlled) {
+					int step = m.FieldOrInput.Integer["slaughter"];
+					if (step >= 0) {
+						step = Math.Min(step, AnimalFarm.MAX_SLIDES_STEPS);
+						// SetSlaughterStep(int) is idempotent; guard only to skip the
+						// redundant call when the limit already matches.
+						if (!farm.IsSlaughteringEnabled || farm.SlaughterStep != step) {
+							farm.SetSlaughterStep(step);
+						}
+					} else if (farm.IsSlaughteringEnabled) {
+						// SetSlaughterStep(null) toggles, so only fire it when
+						// slaughtering is currently on (otherwise it would re-enable it).
+						farm.SetSlaughterStep(null);
+					}
+				}
+
+				// Growth (breeding) control — same opt-in rule.  ToggleGrowthPause()
+				// flips state, so only call it when the current state differs from the
+				// requested one to keep the write idempotent.
+				bool growthControlled = m.Field.Bool["field_growth"] || m.InputModules.ContainsKey("growth");
+				if (growthControlled) {
+					int growth = m.FieldOrInput.Integer["growth"];
+					if (growth >= 0) {
+						bool wantPaused = growth > 0;
+						if (farm.IsGrowthPaused != wantPaused) {
+							farm.ToggleGrowthPause();
+						}
+					}
+				}
+
+				m.Output.Integer["state"] = (int)farm.CurrentState;
+				m.Output.Integer["slaughter"] = farm.IsSlaughteringEnabled ? farm.SlaughterStep : -1;
+				m.Output["starving"] = farm.AreAnimalsStarving ? Fix32.One : Fix32.Zero;
+				m.Output["nowater"] = farm.AreAnimalsMissingWater ? Fix32.One : Fix32.Zero;
+
+				if (m.OutputExtensionCount >= 1) {
+					m.Output["born"] = farm.AnimalsBornPerMonth;
+				}
+				if (m.OutputExtensionCount >= 2) {
+					m.Output["carcass"] = farm.CarcassPerMonth;
+				}
+
+				m.Warning = farm.AreAnimalsStarving || farm.AreAnimalsMissingWater;
+				return ModuleStatus.Running;
+			})
+			.AddDisplay("animal", "Animals", 1, image: true)
+			.AddDisplay("count", "Count", 1)
+			.AddDisplay("slaughter", "Slaughter", 1)
+			.AddDisplay("feed", "Animal feed", 0.5f.ToFix32(), image: true)
+			.AddDisplay("water", "Water", 0.5f.ToFix32(), image: true)
+			.Display(m => {
+				AnimalFarm farm = m.Field.Entity<AnimalFarm>("farm");
+				if (farm is null) {
+					return;
+				}
+
+				m.Display["animal"] = farm.Prototype.Animal.IconPath;
+
+				int count = farm.AnimalsCount;
+				int capacity = farm.Prototype.AnimalsCapacity;
+				Fix32 fill = capacity > 0 ? (100f * count / capacity).ToFix32() : Fix32.Zero;
+				// Colour the head-count green when full, red when starving / out of
+				// water — same #E/#W/#P state-prefix convention as the other modules.
+				string countState = farm.AreAnimalsStarving || farm.AreAnimalsMissingWater ? "#E" : fill >= 75 ? "#P" : "";
+				m.Display["count"] = $"{countState}{count}";
+
+				// Slaughter slider as a percentage of capacity to keep (step 0-10 →
+				// 0-100 %); "off" when slaughtering is disabled and the herd grows free.
+				m.Display["slaughter"] = farm.IsSlaughteringEnabled ? $"{farm.SlaughterStep * 10}%" : "off";
+
+				// Feed / water status lights: the resource's own icon, green (#P) while
+				// satisfied, red (#E) the moment the animals start missing it.
+				m.Display["feed"] = $"{(farm.AreAnimalsStarving ? "#E" : "#P")}{farm.FoodInputBuffer.Product.IconPath}";
+				m.Display["water"] = $"{(farm.AreAnimalsMissingWater ? "#E" : "#P")}{farm.WaterInputBuffer.Product.IconPath}";
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();

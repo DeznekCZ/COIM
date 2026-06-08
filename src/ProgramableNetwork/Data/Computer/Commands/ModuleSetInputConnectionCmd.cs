@@ -21,15 +21,21 @@ namespace ProgramableNetwork
 		public readonly string InputId;
 		public readonly long SourceModuleId;
 		public readonly string SourceOutputId;
+		// True when the source is a variable-bus pin (SourceModuleId = bus id,
+		// SourceOutputId = pin index) rather than a module output.  Without this the
+		// executor would build a Module-kind connector and the signal plan would prune
+		// the connection (no module has the bus's id).
+		public readonly bool SourceIsBus;
 
 		public ModuleSetInputConnectionCmd(EntityId controllerId, long moduleId, string inputId,
-			long sourceModuleId, string sourceOutputId)
+			long sourceModuleId, string sourceOutputId, bool sourceIsBus = false)
 		{
 			ControllerId = controllerId;
 			ModuleId = moduleId;
 			InputId = inputId;
 			SourceModuleId = sourceModuleId;
 			SourceOutputId = sourceOutputId ?? string.Empty;
+			SourceIsBus = sourceIsBus;
 		}
 
 		public bool IsDisconnect => SourceModuleId == 0 && string.IsNullOrEmpty(SourceOutputId);
@@ -49,6 +55,7 @@ namespace ProgramableNetwork
 			writer.WriteString(InputId);
 			writer.WriteLong(SourceModuleId);
 			writer.WriteString(SourceOutputId ?? string.Empty);
+			writer.WriteBool(SourceIsBus);
 		}
 
 		public new static ModuleSetInputConnectionCmd Deserialize(BlobReader reader)
@@ -70,6 +77,7 @@ namespace ProgramableNetwork
 			reader.SetField(this, nameof(InputId), reader.ReadString());
 			reader.SetField(this, nameof(SourceModuleId), reader.ReadLong());
 			reader.SetField(this, nameof(SourceOutputId), reader.ReadString());
+			reader.SetField(this, nameof(SourceIsBus), reader.ReadBool());
 		}
 
 		private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction =

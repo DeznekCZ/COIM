@@ -437,6 +437,171 @@ namespace ProgramableNetwork.Python
                 module.StringData[name] = Expressions.__str__(value);
             }
         }
+        // Per-controller variable bus access: self.Bus.<bus_name>.<pin_name>.
+        // Two levels of dotted resolution — BusNamespace.__getattr__ picks the bus
+        // by name, BusPinSetter.__getattr__/__setattr__ read/write the pin by name.
+        // Reads of an unknown bus or pin return Fix32.Zero (same as an unconnected
+        // input); writes to an unknown bus/pin are silently dropped, since a bus and
+        // its pins are defined on the controller (settings tooltip), not created
+        // from a script.
+        public BusNamespace Bus => new BusNamespace(module);
+
+        public class BusNamespace
+        {
+            private readonly Module module;
+
+            public BusNamespace(Module module)
+            {
+                this.module = module;
+            }
+
+            // Explicit accessor mirror of the dotted form, so `self.Bus.get("main")`
+            // works alongside `self.Bus.main`.
+            public BusPinSetter get(string busName)
+            {
+                return new BusPinSetter(module, busName);
+            }
+
+            public BusPinSetter __getattr__(string busName)
+            {
+                return new BusPinSetter(module, busName);
+            }
+        }
+
+        public class BusPinSetter
+        {
+            private readonly Module module;
+            private readonly string busName;
+
+            public BusPinSetter(Module module, string busName)
+            {
+                this.module = module;
+                this.busName = busName;
+            }
+
+            private ControllerBus bus => module.Controller?.GetBus(busName);
+
+            // Typed get/set helpers, matching the Input/Output/Field setter shape.
+            // The two-arg get() returns the supplied default when the pin name is
+            // not configured on the bus, distinguishing "absent" from "present but
+            // zero" the same way the pin setters do.
+            public Fix32 get(string pinName, Fix32 value)
+            {
+                ControllerBus b = bus;
+                if (b == null || b.IndexOfPin(pinName) < 0)
+                {
+                    return value;
+                }
+                return b.Get(pinName);
+            }
+
+            public void set(string pinName, Fix32 value)
+            {
+                bus?.Set(pinName, value);
+            }
+
+            public int get_int(string pinName, int value)
+            {
+                ControllerBus b = bus;
+                if (b == null || b.IndexOfPin(pinName) < 0)
+                {
+                    return value;
+                }
+                return b.Get(pinName).IntegerPart;
+            }
+
+            public void set_int(string pinName, int value)
+            {
+                bus?.Set(pinName, Fix32.FromInt(value));
+            }
+
+            public bool get_bool(string pinName, bool value)
+            {
+                ControllerBus b = bus;
+                if (b == null || b.IndexOfPin(pinName) < 0)
+                {
+                    return value;
+                }
+                return b.Get(pinName) != Fix32.Zero;
+            }
+
+            public void set_bool(string pinName, bool value)
+            {
+                bus?.Set(pinName, value ? Fix32.One : Fix32.Zero);
+            }
+
+            // Dotted accessors — see InputSetter.__getattr__/__setattr__.  Read of an
+            // unknown bus/pin is Fix32.Zero; write is dropped when the bus is missing.
+            public Fix32 __getattr__(string pinName)
+            {
+                ControllerBus b = bus;
+                return b != null ? b.Get(pinName) : Fix32.Zero;
+            }
+
+            public void __setattr__(string pinName, object value)
+            {
+                ControllerBus b = bus;
+                if (b == null)
+                {
+                    return;
+                }
+                if (value is bool bo)
+                {
+                    b.Set(pinName, bo ? Fix32.One : Fix32.Zero);
+                    return;
+                }
+                if (value is int i)
+                {
+                    b.Set(pinName, Fix32.FromInt(i));
+                    return;
+                }
+                if (value is Fix32 f)
+                {
+                    b.Set(pinName, f);
+                    return;
+                }
+                if (value is float fl)
+                {
+                    b.Set(pinName, fl.ToFix32());
+                    return;
+                }
+                throw new System.InvalidOperationException(
+                    "Cannot assign " + (value?.GetType().Name ?? "null") + " to bus pin '" + busName + "." + pinName + "'");
+            }
+
+            // Integer-index access: self.Bus.<bus>[i] reads/writes pin i directly.
+            // Pin names are just labels; a pin's stable identity is its index.  Out-of-
+            // range reads return Fix32.Zero; out-of-range writes are dropped.
+            public Fix32 __getitem__(object key)
+            {
+                ControllerBus b = bus;
+                if (b == null)
+                {
+                    return Fix32.Zero;
+                }
+                int i = Expressions.__int__(key);
+                if (i < 0 || i >= ControllerBus.PinCount)
+                {
+                    return Fix32.Zero;
+                }
+                return b.PinValues[i];
+            }
+
+            public void __setitem__(object key, object value)
+            {
+                ControllerBus b = bus;
+                if (b == null)
+                {
+                    return;
+                }
+                int i = Expressions.__int__(key);
+                if (i >= 0 && i < ControllerBus.PinCount)
+                {
+                    b.PinValues[i] = Expressions.__fix__(value);
+                }
+            }
+        }
+
         public ModuleProto Prototype => module.Prototype;
         public Controller Controller => module.Controller;
 

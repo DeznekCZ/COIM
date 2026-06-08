@@ -77,7 +77,9 @@ namespace ProgramableNetwork.Ui
 			// and to the sides of the module rows.  Bottom is left flush with the panel.
 			// Lane offsets are capped (MAX_LANE_OFFSET_PX) so cables stay inside the
 			// padding zone — no overflow:hidden trickery needed.
-			this.Padding(top: VIEW_PAD_TOP, right: VIEW_PAD, bottom: Px.Zero, left: VIEW_PAD);
+			// Padding now lives on the inner grid host (rebuilt each redraw) so the
+			// bus gutter can sit as an OUTER sibling to the grid's left; see
+			// RedrawComponents / m_gridHost.
 			AddModuleImplementation(refresh);
 
 			// Per-segment visibility is observed inside CreateConnectionPath, so no
@@ -162,6 +164,29 @@ namespace ProgramableNetwork.Ui
 			Px rowW = Sizes.BLOCK_SIZE * totalCols;
 			m_channelBlockHeight = 4f * bs;
 
+			// Outer layout: [ left bus gutter | module grid | right bus gutter ].
+			// The grid and its absolute cable overlay live in m_gridHost, which
+			// carries the padding the cable corridors need; the two bus panels are
+			// real siblings outside the grid so they sit outside it and receive clicks.
+			Row content = new Row();
+			Column leftBusPanel = new Column();
+			leftBusPanel.Width(BUS_GUTTER_W_PX);
+			m_gridHost = new Column();
+			m_gridHost.Padding(top: VIEW_PAD_TOP, right: VIEW_PAD, bottom: Px.Zero, left: VIEW_PAD);
+			Column rightBusPanel = new Column();
+			rightBusPanel.Width(BUS_GUTTER_W_PX);
+			content.Add(leftBusPanel);
+			content.Add(m_gridHost);
+			content.Add(rightBusPanel);
+			// Top-most cable overlay: added LAST so it paints over both gutter panels
+			// (and thus over the bus ports).  Absolutely fills the content row and never
+			// intercepts clicks; bus cable segments are drawn into it in content space.
+			m_busCableOverlay = new UiComponent().IgnoreInputPicking();
+			m_busCableOverlay.AbsolutePosition(top: Px.Zero, right: Px.Zero, bottom: Px.Zero, left: Px.Zero);
+			content.Add(m_busCableOverlay);
+			m_busCableOverlay.BringToFront();
+			Add(content);
+
 			// Bucket modules by row (ignoring out-of-range rows defensively).
 			var byRow = new Dictionary<int, List<Module>>();
 			foreach (var m in Entity.Modules ?? new Lyst<Module>())
@@ -236,25 +261,36 @@ namespace ProgramableNetwork.Ui
 				}
 			}
 
+			// Bus connections are collected as CableSpecs too (see CollectBusCables) so
+			// they share the channel- and side-lane allocation with module cables — the
+			// only difference is that their far end terminates in the side corridor at a
+			// bus pin rather than at another module.
+			CollectBusCables(channelCount, pad, bs);
+
 			// Order cables by (src.Row, src.Column, dst.Row, dst.Column).  This drives:
 			//   - palette assignment (top-left source → first colour, deterministic),
 			//   - RepaintLines draw order (z-order: later rows paint over earlier ones),
 			//   - tie-breaking inside the per-channel sort when XMin ties.
+			// A bus cable has only one real module endpoint; fall back to it for both the
+			// "src" and "dst" sort keys so bus cables order among themselves by module
+			// position without dereferencing a null endpoint.
 			m_cableSpecs.Sort((a, b) =>
 			{
-				int c = a.Src.Row.CompareTo(b.Src.Row);
+				Module aSrc = a.Src ?? a.Dst, aDst = a.Dst ?? a.Src;
+				Module bSrc = b.Src ?? b.Dst, bDst = b.Dst ?? b.Src;
+				int c = aSrc.Row.CompareTo(bSrc.Row);
 				if (c != 0) {
 					return c;
 				}
-				c = a.Src.Column.CompareTo(b.Src.Column);
+				c = aSrc.Column.CompareTo(bSrc.Column);
 				if (c != 0) {
 					return c;
 				}
-				c = a.Dst.Row.CompareTo(b.Dst.Row);
+				c = aDst.Row.CompareTo(bDst.Row);
 				if (c != 0) {
 					return c;
 				}
-				return a.Dst.Column.CompareTo(b.Dst.Column);
+				return aDst.Column.CompareTo(bDst.Column);
 			});
 
 			// Palette is NOT reset between redraws — every (sourceModuleId, outputId)
@@ -264,7 +300,12 @@ namespace ProgramableNetwork.Ui
 			// out of sync with the cable's new colour.
 			foreach (var cable in m_cableSpecs)
 			{
-				cable.ColorIndex = ColourPaletteIndex(cable.Src.Id, cable.OutputId);
+				// Bus→input cables key their colour on (busId, pinIdx) so the wire matches
+				// the module input dot (which is painted from that same key); module→bus
+				// and module→module cables key on (sourceModuleId, outputId).
+				cable.ColorIndex = cable.IsBus && cable.BusIsSource
+					? ColourPaletteIndex(cable.Bus.Id, cable.BusPinIdx.ToString())
+					: ColourPaletteIndex(cable.Src.Id, cable.OutputId);
 			}
 
 			// Decide left vs right corridor for each wrapping cable, balancing load
@@ -284,14 +325,14 @@ namespace ProgramableNetwork.Ui
 			// --- Sort + assign side-corridor lane indices ---------------------------------
 			AssignSideLanes();
 
-			m_channelHeights = new float[channelCount];
+			m_channelHeights = new Px[channelCount];
 			for (int i = 0; i < channelCount; i++)
 			{
 				m_channelHeights[i] = ComputeChannelHeight(m_channelLaneCounts[i]);
 			}
 
 			// Top channel — empty UiComponent, height observes the precomputed cable count.
-			Add(new UiComponent().Width(rowW).Height(m_channelHeights[0].px()));
+			m_gridHost.Add(new UiComponent().Width(rowW).Height(m_channelHeights[0]));
 
 			for (int i = 0; i < totalRows; i++)
 			{
@@ -350,13 +391,15 @@ namespace ProgramableNetwork.Ui
 					}
 				}
 
-				Add(rowElement);
+				m_gridHost.Add(rowElement);
 
 				// Channel row below this module row — height already sized to the lane count.
-				Add(new UiComponent().Width(rowW).Height(m_channelHeights[i + 1].px()));
+				m_gridHost.Add(new UiComponent().Width(rowW).Height(m_channelHeights[i + 1]));
 			}
 
 			RepaintLines();
+
+			BuildBusGutter(leftBusPanel, rightBusPanel);
 		}
 
 		// Top edge Y (in absolute pad-relative coords) of the channel at index i.
@@ -412,26 +455,26 @@ namespace ProgramableNetwork.Ui
 		// Single source of truth for the row gap.  The Column's gap is set to 0 (we use
 		// dedicated channel rows between modules instead), and channel heights are derived
 		// from cable count + min/lane spacing — never hand-tuned in two places.
-		private const float LINE_THICKNESS_PX = 4f;
-		private const float MIN_CHANNEL_PX = 5f;       // empty channel still has at least this much room
-		private const float CHANNEL_LANE_PX = 4f;      // vertical distance between two cables in the same channel
-		private const float CHANNEL_PADDING_PX = 3f;   // padding inside a channel above/below the lane stack
+		private static readonly Px LINE_THICKNESS_PX = 4;
+		private static readonly Px MIN_CHANNEL_PX = 5;       // empty channel still has at least this much room
+		private static readonly Px CHANNEL_LANE_PX = 4;      // vertical distance between two cables in the same channel
+		private static readonly Px CHANNEL_PADDING_PX = 3;   // padding inside a channel above/below the lane stack
 		// Vertical fudge so the cables visually sit on the port circles.  With the
 		// top-vs-side padding split, rowTopY anchors directly to the small top padding
 		// and the math meets the port centres without an offset (was -10 when the top
 		// padding was 56 — kept the constant in case future visual tweaks need it).
-		private const float CABLE_Y_OFFSET_PX = 0f;
+		private static readonly Px CABLE_Y_OFFSET_PX = 0;
 		// Outer padding around the ControllerView.  Sides need room for the side
 		// corridors (cables wrapping outside the rows); top/bottom only need a small
 		// breath because cables don't extend beyond the channel rows themselves.
-		private const float VIEW_PAD_PX     = 56f; // side padding (left/right — for side corridors)
-		private const float VIEW_PAD_TOP_PX = 4f;  // top padding — small, just visual breathing room
-		private static readonly Px VIEW_PAD     = VIEW_PAD_PX.px();
-		private static readonly Px VIEW_PAD_TOP = VIEW_PAD_TOP_PX.px();
+		private static readonly Px VIEW_PAD_PX     = 56; // side padding (left/right — for side corridors)
+		private static readonly Px VIEW_PAD_TOP_PX = 4;  // top padding — small, just visual breathing room
+		private static readonly Px VIEW_PAD     = VIEW_PAD_PX;
+		private static readonly Px VIEW_PAD_TOP = VIEW_PAD_TOP_PX;
 		// Side corridor configuration.
-		private const float CHANNEL_BASE_PX = 8f;
-		private const float SIDE_LANE_PX = 4f;
-		private const float MAX_LANE_OFFSET_PX = VIEW_PAD_PX - 6f;
+		private static readonly Px CHANNEL_BASE_PX = 8;
+		private static readonly Px SIDE_LANE_PX = 4;
+		private static readonly Px MAX_LANE_OFFSET_PX = VIEW_PAD_PX - 6;
 
 		// --- Wire colours -----------------------------------------------------------------
 		private const byte WIRE_ALPHA_ACTIVE = 200; // when hovered or m_showsLinks is on
@@ -444,9 +487,20 @@ namespace ProgramableNetwork.Ui
 		// m_channelLaneCounts[i] mirrors how many lanes are reserved in channel i.  Cables
 		// derive their Y from these values + cumulative row heights so the cable math and
 		// the laid-out channel components can never drift apart.
-		private float[] m_channelHeights;
+		private Px[]    m_channelHeights;
 		private int[]   m_channelLaneCounts;
 		private float   m_channelBlockHeight;   // == 4 * BLOCK_SIZE (constant module row height)
+		// Inner host holding the module grid + the absolute cable overlay.  The bus
+		// gutter is a sibling to its left.  Cable segments are added here (not to
+		// `this`) so the router's pad-relative coordinates are unchanged by the
+		// outer [gutter | grid] split.
+		private Column m_gridHost;
+
+		// Top-most overlay spanning the whole [gutter | grid | gutter] content row, into
+		// which BUS cables are drawn so they paint OVER the bus ports (which live in the
+		// gutter panels, siblings of m_gridHost).  Coordinates here are in content space:
+		// m_gridHost-relative X plus the left gutter width.
+		private UiComponent m_busCableOverlay;
 
 		// Per-cable routing decision computed up-front in RedrawComponents.  Capturing it
 		// in one place lets us sort cables within each channel before assigning lanes, so
@@ -466,6 +520,22 @@ namespace ProgramableNetwork.Ui
 			public int    ColorIndex;
 			public float  SrcXp;
 			public float  DstXp;
+
+			// --- Variable-bus connections --------------------------------------------
+			// A bus cable is an ordinary cable whose FAR end terminates in the left/right
+			// side corridor at a bus pin (instead of another module).  Exactly one of
+			// Src/Dst is the real module; the other is null and the bus end is described
+			// by these fields.  It still participates in channel- and side-lane
+			// allocation so it shares lanes with module cables.
+			public bool          IsBus;
+			public ControllerBus Bus;
+			public int           BusPinIdx;
+			// true  : bus pin drives a module INPUT  (module is Dst, module side = input)
+			// false : module OUTPUT feeds a bus pin  (module is Src, module side = output)
+			public bool          BusIsSource;
+
+			// The single real module endpoint of a bus cable.
+			public Module BusModule => BusIsSource ? Dst : Src;
 		}
 		private readonly List<CableSpec> m_cableSpecs = new List<CableSpec>();
 
@@ -492,15 +562,15 @@ namespace ProgramableNetwork.Ui
 			return new ColorRgba(c.r, c.g, c.b, 1f);
 		}
 
-		private static float ComputeChannelHeight(int laneCount)
+		private static Px ComputeChannelHeight(int laneCount)
 		{
 			// Every channel keeps at least MIN_CHANNEL_PX of breathing room — even empty
 			// ones — so adjacent module rows never touch.
 			if (laneCount <= 0) {
 				return MIN_CHANNEL_PX;
 			}
-			float needed = laneCount * CHANNEL_LANE_PX + 2f * CHANNEL_PADDING_PX;
-			return Math.Max(MIN_CHANNEL_PX, needed);
+			Px needed = laneCount * CHANNEL_LANE_PX + 2f * CHANNEL_PADDING_PX;
+			return MIN_CHANNEL_PX.Max(needed);
 		}
 
 		private int ColourPaletteIndex(long sourceModuleId, string outputId)
@@ -556,7 +626,17 @@ namespace ProgramableNetwork.Ui
 
 			foreach (var c in m_cableSpecs)
 			{
-				if (c.SrcChannelIdx == c.DstChannelIdx)
+				if (c.IsBus)
+				{
+					// Only the MODULE side runs through a channel; the bus end's short
+					// run lives in the gutter outside the grid, not in any channel.
+					if (c.BusIsSource) {
+						addSpanningEntry(c, isSrc: false, c.DstChannelIdx, c.DstXp);
+					} else {
+						addSpanningEntry(c, isSrc: true, c.SrcChannelIdx, c.SrcXp);
+					}
+				}
+				else if (c.SrcChannelIdx == c.DstChannelIdx)
 				{
 					// Adjacent-row cable — single channel, hBot spans srcXp..dstXp directly.
 					float xMin = Math.Min(c.SrcXp, c.DstXp);
@@ -672,8 +752,11 @@ namespace ProgramableNetwork.Ui
 		// vSide segments occupy disjoint Y intervals on that single corridor X.
 		private void AssignSideLanes()
 		{
-			var left  = m_cableSpecs.Where(c => c.WrapLeft  && c.SrcChannelIdx != c.DstChannelIdx).ToList();
-			var right = m_cableSpecs.Where(c => !c.WrapLeft && c.SrcChannelIdx != c.DstChannelIdx).ToList();
+			// Bus cables always run a vertical in the side corridor (their far end is the
+			// gutter), so they're packed too — their [Src..Dst] channel range spans from
+			// the module's channel to the bus pin's band.
+			var left  = m_cableSpecs.Where(c => c.WrapLeft  && (c.IsBus || c.SrcChannelIdx != c.DstChannelIdx)).ToList();
+			var right = m_cableSpecs.Where(c => !c.WrapLeft && (c.IsBus || c.SrcChannelIdx != c.DstChannelIdx)).ToList();
 			Comparison<CableSpec> bySpan = (a, b) =>
 			{
 				int aMin = Math.Min(a.SrcChannelIdx, a.DstChannelIdx);
@@ -746,6 +829,12 @@ namespace ProgramableNetwork.Ui
 					ColorRgba activeColor = new ColorRgba(uColor.r, uColor.g, uColor.b, 1f).SetA(WIRE_ALPHA_ACTIVE);
 					ColorRgba idleColor   = ColorRgba.Black.SetA(WIRE_ALPHA_IDLE);
 
+					if (c.IsBus)
+					{
+						CreateBusConnectionPath(c, activeColor, idleColor);
+						continue;
+					}
+
 					CreateConnectionPath(c.Src, c.OutputId, c.Dst, c.InputId,
 						activeColor, idleColor, c.WrapLeft, c.SideLane,
 						c.SrcChannelIdx, c.SrcChannelLane, c.DstChannelIdx, c.DstChannelLane);
@@ -792,6 +881,14 @@ namespace ProgramableNetwork.Ui
 			int rightCount = 0;
 			foreach (var cable in m_cableSpecs)
 			{
+				// A bus cable's side is fixed by which gutter its bus lives in — it can't
+				// pick the cheaper corridor.  Count it toward that side's load so module
+				// cables balance around it.
+				if (cable.IsBus) {
+					cable.WrapLeft = cable.Bus.Side == ControllerBus.BusSide.Left;
+					if (cable.WrapLeft) { leftCount++; } else { rightCount++; }
+					continue;
+				}
 				if (cable.SrcChannelIdx == cable.DstChannelIdx) {
 					// Adjacent-row direct route — no corridor used; WrapLeft is
 					// inert for routing but still feeds AssignChannelLanes' bookkeeping.
@@ -978,7 +1075,7 @@ namespace ProgramableNetwork.Ui
 					.Background(bg)
 					.IgnoreInputPicking();
 				applyBorder(seg, horizontal, bd);
-				Add(seg);
+				m_gridHost.Add(seg);
 				seg.BringToFront();
 				m_lineSegments.Add(seg);
 				return seg;

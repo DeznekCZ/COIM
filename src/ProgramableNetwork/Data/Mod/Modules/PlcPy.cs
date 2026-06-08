@@ -250,6 +250,12 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 					try {
 						Token[] tokens = Tokenizer.ParseString(source, "PLC_PY");
 						Block parsedRoot = Lexer.Parse(tokens);
+						// Bus direction check runs after the lexer accepted the
+						// source — keeps the parse error / bus error messages
+						// distinct.  Throws PythonParseException on the first
+						// mismatch so the compile-error path below picks it up
+						// the same way it picks up a lexer error.
+						PlcBusValidator.Validate(tokens, m.Controller);
 
 						Block initBlock = null;
 						Block mainBlock = null;
