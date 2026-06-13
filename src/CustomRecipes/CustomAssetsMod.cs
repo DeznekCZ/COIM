@@ -20,6 +20,21 @@ namespace CustomAssets
 			CustomAssetManager.Clear();
 			PackRegistry.Clear();
 			m_modBasePath = registrator.ActiveMod?.Manifest?.RootDirectoryPath ?? Manifest?.RootDirectoryPath;
+			// Park the path on the registry so PackScaffolder can derive
+			// the COI mods folder (parent of this directory) even on a save
+			// that has no user packs registered yet â€” without it the
+			// "create new pack" dialog would refuse to run on first use.
+			PackRegistry.CoreModBasePath = m_modBasePath;
+
+			// Stash this mod's own id + version on the API registry so
+			// per-pack pin resolution can find our entry in each pack's
+			// MandatoryDependencies array, AND so the "minimum required
+			// pin" recommendation can compare against the framework's
+			// actual current version. Captured here rather than in a
+			// static field initializer because Manifest isn't available
+			// at type-load time.
+			ApiVersionRegistry.FrameworkModId  = Manifest?.Id ?? "CustomAssets";
+			ApiVersionRegistry.FrameworkVersion = Manifest?.Version ?? default(VersionSlim);
 
 			// Synchronous trace file so we can localize hangs even if Mafi.Log buffers.
 			// Each Step() call flushes to disk before returning.

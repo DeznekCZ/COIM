@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using CustomAssets.Data.Mod;
 using Mafi;
+using Mafi.Core.Mods;
 using UnityEngine;
 
 namespace CustomAssets.Ui {
@@ -37,12 +38,27 @@ namespace CustomAssets.Ui {
         /// pack has no thumbnail (caller should display FallbackIconPath instead).
         public static Texture2D TryGet(LoadedPack pack) {
             if (pack == null) return NotFoundSentinel;
-            if (s_byModId.TryGetValue(pack.ModId, out Texture2D cached)) return cached;
-            if (s_checkedNotFound.Contains(pack.ModId)) return NotFoundSentinel;
+            return tryGetByModRoot(pack.ModId, pack.RootPath);
+        }
 
-            string path = Path.Combine(pack.RootPath ?? "", "Thumbnail.png");
+        /// Same lookup but for an arbitrary loaded mod (the LoadedModPicker
+        /// shows EVERY loaded mod, not just CustomAssets packs, so it needs
+        /// to reach mods that aren't in PackRegistry). Reuses the same
+        /// ModId-keyed cache so a CustomAssets pack that's BOTH a pack and
+        /// a mod (it always is) loads its thumbnail once.
+        public static Texture2D TryGet(LoadedModData mod) {
+            if (mod?.Manifest == null) return NotFoundSentinel;
+            return tryGetByModRoot(mod.Manifest.Id, mod.Manifest.RootDirectoryPath);
+        }
+
+        private static Texture2D tryGetByModRoot(string modId, string rootPath) {
+            if (string.IsNullOrEmpty(modId)) return NotFoundSentinel;
+            if (s_byModId.TryGetValue(modId, out Texture2D cached)) return cached;
+            if (s_checkedNotFound.Contains(modId)) return NotFoundSentinel;
+
+            string path = Path.Combine(rootPath ?? "", "Thumbnail.png");
             if (!File.Exists(path)) {
-                s_checkedNotFound.Add(pack.ModId);
+                s_checkedNotFound.Add(modId);
                 return NotFoundSentinel;
             }
 
@@ -54,14 +70,14 @@ namespace CustomAssets.Ui {
                 if (tex.LoadImage(data, markNonReadable: true)) {
                     tex.wrapMode = TextureWrapMode.Clamp;
                     tex.filterMode = FilterMode.Bilinear;
-                    s_byModId[pack.ModId] = tex;
+                    s_byModId[modId] = tex;
                     return tex;
                 }
                 UnityEngine.Object.Destroy(tex);
             } catch (Exception ex) {
                 Log.Warning($"PackThumbnailCache: failed to load {path}: {ex.Message}");
             }
-            s_checkedNotFound.Add(pack.ModId);
+            s_checkedNotFound.Add(modId);
             return NotFoundSentinel;
         }
 

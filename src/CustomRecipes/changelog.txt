@@ -1,0 +1,13 @@
+﻿v0.2.0 | 2026-06-12:
+- new big feature:
+  - added option to use ingame visual tool to change game data (instead of python scripts)
+- fixed order of products in exhaust scrubber
+- fixed missing textures for heaps of loose products
+- fixed missing models for unity products (now are loadable by python scripts from .obj files)
+- supported clone of machines, nuclear reactors, some other type of entities (static)
+
+v0.1.0 | 2025-06-12:
+- added option to change game data by python scripts
+- supported fluid products
+- supported loose products (not fully implemented - missing custom textures for heaps)
+- supported unity products (not fully implemented - missing custom models)

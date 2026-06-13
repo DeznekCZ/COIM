@@ -13,7 +13,10 @@ from CustomAssets import (
     add_unit_prefab,
     build_product_unit,
     build_recipe,
-    Product
+    Product,
+    build_product_loose,
+    build_nuclear_reactor,
+    FuelPair
 )
 
 # ---------------------------------------------------------------------------
@@ -25,95 +28,115 @@ from CustomAssets import (
 
 CAN_MESH = "Assets/Models/Can.obj"
 
+candu_rod = add_unit_prefab(
+    path   = "Assets/CannedCorn/EmptyCansBox.prefab",
+    albedo = "Assets/Products/EmptyCansBox.png",
+    mesh = "Assets/Models/Candu_Rod.obj"
+)
+
 empty_cans_prefab = add_unit_prefab(
     path   = "Assets/CannedCorn/EmptyCansBox.prefab",
     albedo = "Assets/Products/EmptyCansBox.png",
-    mesh   = CAN_MESH
+    mesh = "Assets/Models/Candu_Rod.obj"
 )
 
 canned_corn_prefab = add_unit_prefab(
     path   = "Assets/CannedCorn/CannedCornBox.prefab",
     albedo = "Assets/Products/CannedCornBox.png",
-    mesh   = CAN_MESH
+    mesh = "Assets/Models/Candu_Rod.obj"
 )
 
-# ---------------------------------------------------------------------------
-# Products
-# ---------------------------------------------------------------------------
-
 empty_cans = build_product_unit(
-    productId         = "Product_EmptyCansBox",
-    name              = "Empty cans",
-    description       = "A box of empty open metal cans, ready to be filled and sealed.",
-    icon              = Assets.Base.Products.Icons.Iron_svg,
-    prefab            = empty_cans_prefab,
-    isStorable        = True,
-    packingMode       = CountableProductStackingMode.Triangle,
+    productId = "Product_EmptyCansBox",
+    name      = "Empty cans",
+    icon      = Assets.Base.Products.Icons.Iron_svg,
+    prefab    = empty_cans_prefab,
+    description = "A box of empty open metal cans, ready to be filled and sealed.",
+    isStorable = True,
     allowPackingNoise = True
 )
 
 canned_corn = build_product_unit(
-    productId         = "Product_CannedCorn",
-    name              = "Canned corn",
-    description       = "Sealed cans of corn — a shelf-stable food product.",
-    icon              = Assets.Base.Products.Icons.FoodPack_svg,
-    prefab            = canned_corn_prefab,
-    isStorable        = True,
-    packingMode       = CountableProductStackingMode.Triangle,
+    productId = "Product_CannedCorn",
+    name      = "Canned corn",
+    icon      = Assets.Base.Products.Icons.FoodPack_svg,
+    prefab    = canned_corn_prefab,
+    description = "Sealed cans of corn — a shelf-stable food product.",
+    isStorable = True,
     allowPackingNoise = True
 )
 
-# ---------------------------------------------------------------------------
-# Empty-cans recipes — three input variants, all in the basic Assembler.
-# Yields differ by metal: aluminum > steel > iron, mirroring real-world cost.
-# Copy any of these and change `machine` to enable in higher assembler tiers.
-# ---------------------------------------------------------------------------
-
 build_recipe(
-    recipeId    = "CustomRecipe_EmptyCans_FromIron",
-    name        = "Empty cans (from iron)",
-    description = "Stamp 1 iron sheet into 8 empty cans (boxed).",
-    machine     = Ids.Machines.AssemblyManual,
-    duration    = Duration.FromSec(20),
-    ingredients = [Product(Ids.Products.Iron, Quantity(1))],
-    products    = [Product("Product_EmptyCansBox", Quantity(8))]
+    "CustomRecipe_EmptyCans_FromIron",
+    "Empty cans (from iron)",
+    "Stamp 1 iron sheet into 8 empty cans (boxed).",
+    Ids.Machines.AssemblyManual,
+    duration = Duration.FromSec(20),
+    ingredients = [
+        Product(Ids.Products.Iron, Quantity(1))
+    ],
+    products = [
+        Product("Product_EmptyCansBox", Quantity(8))
+    ]
 )
 
 build_recipe(
-    recipeId    = "CustomRecipe_EmptyCans_FromSteel",
-    name        = "Empty cans (from steel)",
-    description = "Stamp 1 steel sheet into 12 empty cans (boxed).",
-    machine     = Ids.Machines.AssemblyManual,
-    duration    = Duration.FromSec(20),
-    ingredients = [Product(Ids.Products.Steel, Quantity(1))],
-    products    = [Product("Product_EmptyCansBox", Quantity(12))]
+    "CustomRecipe_EmptyCans_FromSteel",
+    "Empty cans (from steel)",
+    "Stamp 1 steel sheet into 12 empty cans (boxed).",
+    Ids.Machines.AssemblyManual,
+    duration = Duration.FromSec(20),
+    ingredients = [
+        Product(Ids.Products.Steel, Quantity(1))
+    ],
+    products = [
+        Product("Product_EmptyCansBox", Quantity(12))
+    ]
 )
 
 build_recipe(
-    recipeId    = "CustomRecipe_EmptyCans_FromAluminum",
-    name        = "Empty cans (from aluminum)",
-    description = "Stamp 1 aluminum sheet into 16 empty cans (boxed).",
-    machine     = Ids.Machines.AssemblyManual,
-    duration    = Duration.FromSec(20),
-    ingredients = [Product(Ids.Products.Aluminum, Quantity(1))],
-    products    = [Product("Product_EmptyCansBox", Quantity(16))]
+    "CustomRecipe_EmptyCans_FromAluminum",
+    "Empty cans (from aluminum)",
+    "Stamp 1 aluminum sheet into 16 empty cans (boxed).",
+    Ids.Machines.AssemblyManual,
+    duration = Duration.FromSec(20),
+    ingredients = [
+        Product(Ids.Products.Aluminum, Quantity(1))
+    ],
+    products = [
+        Product("Product_EmptyCansBox", Quantity(16))
+    ]
 )
 
-# ---------------------------------------------------------------------------
-# Sealing recipe — Chemical Plant fills empty cans with corn and seals them.
-# Picked because its port configuration is flexible enough to accept the
-# (unit + unit → unit) shape; no other vanilla machine has the right ports.
-# ---------------------------------------------------------------------------
-
 build_recipe(
-    recipeId    = "CustomRecipe_CannedCorn_Sealing",
-    name        = "Canned corn",
-    description = "Fill empty cans with corn and seal them.",
-    machine     = Ids.Machines.ChemicalPlant,
-    duration    = Duration.FromSec(30),
+    "CustomRecipe_CannedCorn_Sealing",
+    "Canned corn",
+    "Fill empty cans with corn and seal them.",
+    Ids.Machines.ChemicalPlant,
+    duration = Duration.FromSec(30),
     ingredients = [
         Product("Product_EmptyCansBox", Quantity(8)),
-        Product(Ids.Products.Corn,      Quantity(8))
+        Product(Ids.Products.Corn, Quantity(8))
     ],
-    products = [Product("Product_CannedCorn", Quantity(8))]
+    products = [
+        Product("Product_CannedCorn", Quantity(8))
+    ]
 )
+
+build_nuclear_reactor(
+    reactorId              = "NewNuclearReactor_1",
+    source                 = "NuclearReactor",
+    name = "Any burnable burner",
+    description = "Jaderný reaktor, který udržuje jadernou řetězovou reakci z tyčí obohaceného uranu. Reakce uvolňuje velké množství energie využité pro výrobu páry. Toto zařízení lze nastavit tak, aby efektivně poskytovalo až 90 MW elektřiny při plném výkonu. Pozor, vyhořelé palivo je radioaktivní a pokud není skladováno ve specializovaném zařízení, může ublížit populaci.",
+    maxPowerLevel = 3,
+    fuelCapacity = 40,
+    minFuelToOperate = 16,
+    processDurationSeconds = 10,
+    computingConsumed = 0,
+    fuel_pairs             = [
+        FuelPair(fuelIn="Product_Coal", spentFuelOut="Product_Exhaust", durationSeconds=2),
+        FuelPair(fuelIn="Product_Biomass", spentFuelOut="Product_Exhaust", durationSeconds=3),
+        FuelPair(fuelIn="Product_Woodchips", spentFuelOut="Product_Exhaust", durationSeconds=2)
+    ]
+)
+

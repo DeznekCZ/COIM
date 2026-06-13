@@ -10,7 +10,7 @@ from Mafi.Core.Research import ResearchCostsTpl, ResearchNodeProto
 from Mafi.Core.Products import LooseProductProto, ProductProto
 from Mafi.Core.Entities.Static import StaticEntityProto
 from Mafi.Core.Entities.Dynamic import DynamicEntityProto
-from Mafi.Core.Entities.Static.Layout import ToolbarCategoryProto
+from Mafi.Core.Entities.Static.Layout import LayoutEntityProto, ToolbarCategoryProto
 
 def dependencies(*dependencies: str):
     pass
@@ -31,6 +31,96 @@ class Product:
         self.product = product
         self.quantity = quantity
         self.port = port or "*"
+
+class FuelPair:
+    def __init__(
+        self,
+        fuelIn: ProductProto | ProductProto.ID | str,
+        spentFuelOut: ProductProto | ProductProto.ID | str,
+        durationSeconds: int
+    ):
+        """
+        One nuclear-reactor fuel cycle. Used inside
+        `build_nuclear_reactor(..., fuel_pairs=[FuelPair(...), ...])` to
+        override the reactor's fuel chemistry list.
+
+        Parameters:
+            fuelIn:           ProductProto / id of the fresh fuel product.
+            spentFuelOut:     ProductProto / id of the spent fuel product the
+                              reactor returns.
+            durationSeconds:  how long the fuel lasts at power level 1, in
+                              seconds.
+
+        Example:
+            build_nuclear_reactor(
+                reactorId   = "MyReactor",
+                source      = "NuclearReactor",
+                fuel_pairs  = [
+                    FuelPair("Product_UraniumFuelRod",  "Product_UraniumSpent",  3600),
+                    FuelPair("Product_PlutoniumMox",    "Product_PlutoniumSpent", 1800),
+                ]
+            )
+        """
+        self.fuelIn = fuelIn
+        self.spentFuelOut = spentFuelOut
+        self.durationSeconds = durationSeconds
+
+class Port:
+    def __init__(
+        self,
+        name: str,
+        type: str,
+        shape: str,
+        position: Vector3i | (int, int, int) | (int, int), # type: ignore
+        direction: str,
+        canOnlyConnectToTransports: bool = False
+    ):
+        """
+        Spec for a single I/O port on a machine layout. Consumed by `edit_machine_ports`
+        and `clone_machine` to extend the connectivity surface of an existing or cloned
+        building.
+
+        Parameters:
+            name:      single character port label. Used as the recipe-side port selector
+                       (e.g. Product(..., port = 'w')). Must not collide with any port
+                       already on the target machine's layout.
+            type:      "input" or "output" (case-insensitive).
+            shape:     IoPortShapeProto id string. Picks the physical transport shape the
+                       port accepts. Common values from the base game:
+                         "IoPortShape_Pipe"                 — fluid pipe
+                         "IoPortShape_FlatConveyor"         — countable items on flat conveyor
+                         "IoPortShape_LooseMaterialConveyor"— loose piles on covered conveyor
+                         "IoPortShape_MoltenMetalChannel"   — molten metal channels
+                       The shape's AllowedProductType must match recipes that route
+                       products through this port.
+            position:  relative tile coordinate on the layout where the port sits, as
+                       (x, y, z) or (x, y) (z defaults to 0). Origin (0,0,0) is the
+                       low-XY corner of the entity. The port itself "occupies" the edge
+                       tile and points outward; the connected transport occupies the
+                       neighboring tile in the `direction` of the port.
+            direction: one of "+X", "-X", "+Y", "-Y" — direction the port faces, which is
+                       also the direction the connected transport extends into.
+            canOnlyConnectToTransports:
+                       when True the port refuses direct machine-to-machine connections
+                       and only accepts a transport (conveyor/pipe). Default False.
+
+        Example:
+            edit_machine_ports(
+                machine = "ChemicalPlant",
+                add_ports = [
+                    Port(name='w', type='input',  shape='IoPortShape_Pipe',
+                         position=(0, 1, 0), direction='-X'),
+                    Port(name='o', type='output', shape='IoPortShape_FlatConveyor',
+                         position=(3, 0, 0), direction='+X'),
+                ]
+            )
+        """
+        self.name = name
+        self.type = type
+        self.shape = shape
+        self.position = position
+        self.direction = direction
+        self.canOnlyConnectToTransports = canOnlyConnectToTransports
 
 class Model:
     def __init__(
@@ -249,6 +339,7 @@ def add_unit_prefab(
         height: float = 0.2,
         depth: float = 0.5,
         mesh: str = None,
+        winding: str = "ccw",
     ) -> Prefab:
     """
     Register a prefab for a unit (countable) product. Produces a single-GameObject prefab
@@ -284,8 +375,12 @@ def add_unit_prefab(
                    width/height/depth are ignored. Vertex coordinates in the .obj are also
                    meters. The .obj must be a single mesh; faces with >3 vertices are fan-
                    triangulated; UVs/normals are honoured if present (normals are
-                   recalculated otherwise). Right-handed CCW winding (standard OBJ) is
-                   reversed at load time to Unity's left-handed CW convention.
+                   recalculated otherwise).
+        winding:   "ccw" (default) or "cw". Controls how face corners are wound during
+                   fan-triangulation. Standard OBJ exports from Blender / Maya / 3ds Max
+                   are CCW-from-outside, which Unity treats as front-facing — leave the
+                   default. Set to "cw" only if your .obj loads inside-out (typical of
+                   CW-authored or legacy files).
     """
     pass
 
@@ -521,4 +616,473 @@ def add_toolbar_category(
         entities: list[StaticEntityProto | StaticEntityProto.ID | str]
     ) -> ToolbarCategoryProto:
     """ Adds new category to selected entities """
+    pass
+
+def edit_machine_ports(
+        machine: MachineProto | MachineProto.ID | LayoutEntityProto | str,
+        add_ports: list[Port] = []
+    ) -> LayoutEntityProto:
+    """
+    Append one or more ports to an existing machine (or any LayoutEntityProto). The
+    building's tile footprint, costs, graphics, and recipes are preserved — only the
+    connectivity surface changes. Existing recipe port selectors (`Product(..., port=...)`)
+    keep working because the original ports stay in place; new ports are simply added.
+
+    Parameters:
+        machine:    target building. Accepts MachineProto, MachineProto.ID, a string id,
+                    or any LayoutEntityProto. Resolved through the prototypes DB.
+        add_ports:  list of Port(...) specs. Each Port carries name, type, shape,
+                    position, direction, and optional canOnlyConnectToTransports.
+
+    Constraints:
+        - Must be called during definition loading (before LockAndInitializeProtos). The
+          Python load path always runs at the right time, so this is automatic — just
+          don't try to invoke after game start.
+        - Port names must not collide with existing port names on the target's layout.
+          A collision raises ArgumentException at registration time.
+        - The new port's `position` should sit on or just outside the building's tile
+          footprint. The port label and arrow render in the empty tile adjacent to the
+          port in the `direction` of the port. Off-footprint positions are allowed (the
+          layout's tile coverage is left unchanged) but the in-game placement preview
+          still has to find a connecting tile, so prefer positions on the building edge.
+
+    Example — give the Chemical Plant an extra water input on its west edge:
+        edit_machine_ports(
+            machine = "ChemicalPlant",
+            add_ports = [
+                Port(name='w', type='input', shape='IoPortShape_Pipe',
+                     position=(0, 1, 0), direction='-X'),
+            ]
+        )
+
+    Returns:
+        The same LayoutEntityProto (now with the additional ports).
+    """
+    pass
+
+def clone_machine(
+        machineId: MachineProto.ID | str,
+        source: MachineProto | MachineProto.ID | str,
+        name: str = None,
+        description: str = None,
+        add_ports: list[Port] = [],
+        consumedPowerPerTick: int = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        copy_recipes: bool = True,
+        copy_layout: bool = True,
+        copy_ports: bool = True,
+        copy_graphics: bool = True,
+        layout_str: str = None,
+        lockedOnInit: bool = None
+    ) -> MachineProto:
+    """
+    Clone an existing MachineProto under a new id, optionally with additional ports and
+    an override power draw. Non-overridden fields (costs, graphics, animation, computing
+    cost, etc.) are copied by reference from `source` — the clone is visually identical
+    unless you swap its graphics later via reflection.
+
+    Use this when you want a "variant" of a vanilla machine — e.g. a Chemical Plant with
+    one extra loose-material input — without authoring a whole new proto from scratch.
+
+    Parameters:
+        machineId:             required. New unique MachineProto id (string or ID).
+        source:                required. Template machine to copy. Resolved via the
+                               prototypes DB; must already be registered.
+        name:                  optional. Display name. Defaults to the source's name.
+        description:           optional. Short description. Defaults to the source's.
+        add_ports:             optional list of Port(...) specs to append on top of the
+                               source's existing ports. Same uniqueness rules as
+                               edit_machine_ports.
+        consumedPowerPerTick:  optional kW override. When omitted, the clone draws the
+                               same power as the source.
+        research:              optional research node that unlocks this machine. When
+                               set, the clone is locked-on-init by default and appended
+                               to the research node's Units / IconsProtos.
+        copy_recipes:          default True. When True, every recipe registered on the
+                               source machine is republished onto the clone. Set False
+                               to start with no recipes and hand-curate via build_recipe
+                               (passing the new machine id).
+        lockedOnInit:          override the auto-lock behavior (default True when
+                               research is provided, False otherwise).
+
+    Example — chemical plant with an extra loose input, kept locked behind research:
+        clone_machine(
+            machineId = "ChemicalPlantPlus",
+            source    = "ChemicalPlant",
+            name      = "Chemical Plant Plus",
+            add_ports = [
+                Port(name='L', type='input',
+                     shape='IoPortShape_LooseMaterialConveyor',
+                     position=(0, 2, 0), direction='-X'),
+            ],
+            research  = "CustomResearch_ChemicalPlantPlus"
+        )
+    """
+    pass
+
+def build_machine(
+        machineId: MachineProto.ID | str,
+        source: MachineProto | MachineProto.ID | str,
+        name: str = None,
+        description: str = None,
+        add_ports: list[Port] = [],
+        consumedPowerPerTick: int = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        copy_recipes: bool = True,
+        copy_layout: bool = True,
+        copy_ports: bool = True,
+        copy_graphics: bool = True,
+        layout_str: str = None,
+        lockedOnInit: bool = None
+    ) -> MachineProto:
+    """
+    Sibling of build_generator — registers a NEW MachineProto whose layout / graphics /
+    animation / costs are cloned from `source`, with optional name / description / power /
+    port overrides on top. Functionally equivalent to clone_machine; the two names exist so
+    a modder can pick whichever reads better in context. build_machine reads as "construct a
+    new machine type", clone_machine reads as "duplicate this machine with tweaks". Both go
+    through the same runtime path.
+
+    Parameters:
+        machineId:             required. New unique MachineProto id (string or ID).
+        source:                required. Template machine to clone visuals + layout from.
+                               Must already be registered in the prototypes DB.
+        name:                  optional. Display name. Defaults to the source's name.
+        description:           optional. Short description. Defaults to the source's.
+        add_ports:             optional list of Port(...) specs appended to the source's
+                               existing ports. Same uniqueness rules as edit_machine_ports.
+        consumedPowerPerTick:  optional kW override. When omitted, the new machine draws
+                               the same power per tick as the source.
+        research:              optional research node that unlocks this machine. When set,
+                               the new machine is locked-on-init by default and added to
+                               the research node's Units / IconsProtos.
+        copy_recipes:          default True. When True, every recipe registered on the
+                               source is republished onto the new machine. Set False to
+                               start empty and hand-curate via build_recipe.
+        lockedOnInit:          override the auto-lock (default True when research is set).
+
+    Example — water-cooled chemical plant variant with extra ports + recipe set carried over:
+        build_machine(
+            machineId            = "ChemicalPlantWaterCooled",
+            source               = "ChemicalPlant",
+            name                 = "Chemical Plant (water-cooled)",
+            description          = "Lower power draw, requires water feed.",
+            consumedPowerPerTick = 80,
+            add_ports = [
+                Port(name='w', type='input', shape='IoPortShape_Pipe',
+                     position=(0, 1, 0), direction='-X'),
+            ],
+            research = "CustomResearch_WaterCooling"
+        )
+    """
+    pass
+
+def define_box_type(
+        boxTypeId: str,
+        token: str,
+        heightFrom: int = 0,
+        heightTo: int = None,
+        constraint: str = None,
+        surface: str = None,
+        terrainMaterial: str = None,
+        isRamp: bool = False
+    ):
+    """
+    Register a reusable custom tile ("box") type for the visual layout editor
+    and the runtime layout parser. The layout editor lists every define_box_type
+    in its palette so a footprint can be painted with modder-defined tiles, and
+    the runtime feeds each one to COI's layout parser as a CustomLayoutToken.
+
+    Parameters:
+        boxTypeId:       required. Unique id used to reference this box type.
+        token:           required. The literal 3-character grid token, e.g.
+                         "=0=" or "<#>". A '0' in the MIDDLE slot is a per-tile
+                         height wildcard (a digit 1..9 chosen per tile). The
+                         token's first character must NOT be an uppercase
+                         letter A-Z (reserved for port names) or a port-direction
+                         arrow (^ > v < +), or it would be mistaken for a port.
+        heightFrom:      start height in tiles (0 = ground level).
+        heightTo:        end height (exclusive). Omit to derive the height from
+                         the per-tile wildcard digit; set it for a fixed ceiling.
+        constraint:      optional tile constraint — "None" / "Ground" / "Ocean".
+        surface:         optional terrain tile surface proto id placed on the tile.
+        terrainMaterial: optional terrain material proto id applied to the tile.
+        isRamp:          mark the token as a vehicle ramp.
+
+    Example — a 1-tile-tall reinforced pad the editor can paint:
+        define_box_type(
+            boxTypeId = "ReinforcedPad",
+            token     = "=0=",
+            heightFrom = 0,
+            constraint = "Ground"
+        )
+    """
+    pass
+
+# Alias — `layout_token(...)` reads better when defining inline grid tokens.
+layout_token = define_box_type
+
+def build_housing(
+        housingId: str,
+        source: str,
+        name: str = None,
+        description: str = None,
+        capacity: int = None,
+        upointsCapacity: int = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool = None
+    ):
+    """
+    Clone an existing SettlementHousingModuleProto under a new id. Inherits layout,
+    graphics, costs, unity-bonus needs profile, and consumption increases from the
+    source housing — only the modder-facing knobs (id / name / description / capacity
+    / unity-points capacity / unlock research) are overridable.
+
+    Modders typically use this to ship a re-skinned or differently-sized housing
+    variant unlocked by their own research tree, without having to author the unity-
+    bonus matrix from scratch.
+
+    Parameters:
+        housingId:        required. New unique StaticEntityProto id.
+        source:           required. Id of the housing to clone (vanilla or modded).
+                          Common base-game ids: "HousingT1" / "HousingT2" / "HousingT3".
+        name:             optional. Display name. Defaults to the source's name.
+        description:      optional. Short description. Defaults to the source's.
+        capacity:         optional. Max population count. Defaults to source.
+        upointsCapacity:  optional. Unity-points global capacity bonus. Defaults to source.
+        research:         optional. Research node that unlocks this housing. When set,
+                          the new housing is locked-on-init by default.
+        lockedOnInit:     optional. Override the auto-lock behavior (default True when
+                          research is set, False otherwise).
+
+    Example — tier-2 housing variant with bigger capacity, gated behind own research:
+        build_housing(
+            housingId       = "HousingT2_Modded",
+            source          = "HousingT2",
+            name            = "Housing T2 (large)",
+            capacity        = 80,
+            upointsCapacity = 60,
+            research        = "CustomResearch_LargeHousing"
+        )
+    """
+    pass
+
+def build_settlement_decoration(
+        decorationId: str,
+        source: str,
+        name: str = None,
+        description: str = None,
+        upointsBonus: int = None,
+        bonusRange: int = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool = None
+    ):
+    """
+    Clone an existing SettlementDecorationModuleProto under a new id. Inherits layout,
+    graphics, costs from the source; overrides the two modder-facing knobs
+    (unity-points bonus to nearby housing + bonus tile range).
+    """
+    pass
+
+def build_settlement_food(
+        foodModuleId: str,
+        source: str,
+        name: str = None,
+        description: str = None,
+        buffersCount: int = None,
+        capacityPerBuffer: int = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool = None
+    ):
+    """
+    Clone an existing SettlementFoodModuleProto under a new id. Overrides:
+    buffer count + capacity per buffer. Food module size scales with both.
+    """
+    pass
+
+def build_settlement_isp(
+        ispModuleId: str,
+        source: str,
+        name: str = None,
+        description: str = None,
+        computingPer100Pops: int = None,
+        electricityConsumedKw: int = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool = None
+    ):
+    """
+    Clone an existing SettlementIspModuleProto under a new id. ISP modules supply
+    the "internet" need; the per-pop computing requirement + electricity draw are
+    the typical mod knobs. PopNeed and emission intensity come from source verbatim.
+    """
+    pass
+
+def build_hospital(
+        hospitalId: str,
+        source: str,
+        name: str = None,
+        description: str = None,
+        powerRequiredKw: int = None,
+        buffersCount: int = None,
+        capacityPerBuffer: int = None,
+        suppliesPerHundredPopsPerMonth: int = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool = None
+    ):
+    """
+    Clone an existing HospitalProto under a new id. Override power draw, buffer
+    capacity, and the per-100-pops monthly supplies consumption coefficient.
+    """
+    pass
+
+def build_mine_tower(
+        mineTowerId: str,
+        source: str,
+        name: str = None,
+        description: str = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool = None
+    ):
+    """
+    Clone an existing MineTowerProto under a new id. Layout / costs / graphics /
+    MineArea (origin + initial-size + max-edge) come from source — modders pick
+    among the existing tower shapes when reskinning, not custom area sizes.
+    """
+    pass
+
+def build_research_lab(
+        researchLabId: str,
+        source: str,
+        name: str = None,
+        description: str = None,
+        electricityConsumedKw: int = None,
+        computingConsumed: int = None,
+        durationForRecipeSeconds: int = None,
+        sciencePerRecipe: int = None,
+        unityMonthlyCost: int = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool = None
+    ):
+    """
+    Clone an existing ResearchLabProto under a new id. Common knobs covered: power,
+    computing, cycle duration, science per recipe, unity monthly cost. Tier index,
+    consumed/produced product per recipe, and buffer capacities come from source.
+    """
+    pass
+
+def edit_nuclear_reactor_ports(
+        reactor: str,
+        add_ports: list[Port] = []
+    ):
+    """
+    Reactor-typed sibling of `edit_machine_ports`. Appends one or more new ports to an
+    existing NuclearReactorProto's layout without cloning the whole reactor. Useful for
+    wiring enrichment input/output (or any auxiliary connection) into a vanilla reactor.
+
+    Parameters:
+        reactor:    required. Id of the NuclearReactorProto to extend (vanilla or
+                    modded). Common base-game ids: "NuclearReactor" / "NuclearReactorT2".
+        add_ports:  list of Port(...) specs. Each Port carries name, type, shape,
+                    position, direction, and optional canOnlyConnectToTransports.
+
+    Constraints:
+        - Must run during definition loading (the Python load path always does — just
+          don't call after game start).
+        - Port names must not collide with the reactor's existing fuel / water / steam
+          / coolant ports. A collision raises ArgumentException at registration time.
+        - Position should sit on or just outside the building's tile footprint, with
+          `direction` pointing OUT of the building into the empty connecting tile.
+
+    Example — add enrichment in/out ports to the vanilla reactor:
+        edit_nuclear_reactor_ports(
+            reactor   = "NuclearReactor",
+            add_ports = [
+                Port(name='e', type='input',  shape='IoPortShape_FlatConveyor',
+                     position=(0, 2, 0), direction='-X'),
+                Port(name='x', type='output', shape='IoPortShape_FlatConveyor',
+                     position=(3, 2, 0), direction='+X'),
+            ]
+        )
+    """
+    pass
+
+def edit_nuclear_reactor_fuels(
+        reactor: str,
+        add_fuels: list[FuelPair]
+    ):
+    """
+    Append additional fuel cycles to an existing NuclearReactorProto WITHOUT cloning
+    the whole reactor. Use when a mod just wants to drop a new fuel chemistry into a
+    vanilla reactor (e.g. add CANDU rods to the base NuclearReactor) — much smaller
+    surface than build_nuclear_reactor for that common case.
+
+    Parameters:
+        reactor:    required. Id of the reactor proto to extend (vanilla or modded).
+                    Common base-game ids: "NuclearReactor" / "NuclearReactorT2".
+        add_fuels:  required. List of FuelPair(fuelIn, spentFuelOut, durationSeconds)
+                    entries to append to the reactor's fuel list.
+
+    Caveat:
+        The reactor's fuel-in / fuel-out port shapes are fixed at the source's first
+        fuel pair's product types. Adding fuels of a DIFFERENT product type works
+        in the fuel list but the physical port still only accepts the original
+        type — the new fuel won't be insertable in-game. For different fuel types
+        use build_nuclear_reactor with explicit fuelInPortShape / fuelOutPortShape.
+
+    Example — add a CANDU rod to the vanilla reactor:
+        edit_nuclear_reactor_fuels(
+            reactor   = "NuclearReactor",
+            add_fuels = [
+                FuelPair(fuelIn="Product_Candu_rod", spentFuelOut="Product_SpentFuel", durationSeconds=120)
+            ]
+        )
+    """
+    pass
+
+def build_nuclear_reactor(
+        reactorId: str,
+        source: str,
+        name: str = None,
+        description: str = None,
+        maxPowerLevel: int = None,
+        fuelCapacity: int = None,
+        minFuelToOperate: int = None,
+        processDurationSeconds: int = None,
+        computingConsumed: int = None,
+        fuel_pairs: list[FuelPair] = None,
+        fuelInPortShape: str = None,
+        fuelOutPortShape: str = None,
+        research: ResearchNodeProto | ResearchNodeProto.ID | str | None = None,
+        lockedOnInit: bool = None
+    ):
+    """
+    Clone an existing NuclearReactorProto under a new id. Tunable: max power level,
+    fuel capacity + minimum to operate, process duration, computing, AND the fuel
+    cycle list (`fuel_pairs`). Structurally heavy fields that aren't yet exposed
+    (coolant proto refs, port chars, enrichment data, water/steam product
+    quantities, enrichment breeding ratios) still come from source — see the
+    `EnrichmentData` notes in the C# proto for the full surface that could be
+    added later.
+
+    Parameters:
+        fuel_pairs: optional list of FuelPair(fuelIn, spentFuelOut, durationSeconds).
+                    When provided, REPLACES the source reactor's fuel list entirely;
+                    a custom fuel chemistry (e.g. thorium → uranium-233) is added by
+                    listing it here. When omitted (or empty), the source's fuel
+                    pairs are inherited verbatim — including their breeding ratios.
+
+        fuelInPortShape / fuelOutPortShape: optional IoPortShapeProto ids that
+                    replace the source reactor's fuel-in / fuel-out port shapes
+                    on the cloned layout. Use when the modder's fuel chemistry
+                    is a different product TYPE than the source's (e.g. coal
+                    is loose where uranium is unit) — the port has to physically
+                    accept the new transport shape. Common values:
+                      "IoPortShape_Pipe"                  — fluid
+                      "IoPortShape_FlatConveyor"          — unit (countable)
+                      "IoPortShape_LooseMaterialConveyor" — loose (pile)
+                      "IoPortShape_MoltenMetalChannel"    — molten
+                    When omitted, the runtime infers from the first fuel pair's
+                    product type. Pass explicitly when the fuel-in and fuel-out
+                    products differ in type (a mixed chemistry).
+    """
     pass

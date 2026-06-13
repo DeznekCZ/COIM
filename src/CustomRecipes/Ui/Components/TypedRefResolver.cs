@@ -40,6 +40,25 @@ namespace CustomAssets.Ui.Components {
             return s_pathToId.TryGetValue(dottedPath, out string id) ? id : null;
         }
 
+        /// <summary>Reverse lookup: find a dotted typed-ref path that resolves
+        /// to <paramref name="id"/>. Optional <paramref name="requiredPrefix"/>
+        /// (e.g. <c>"Ids.Recipes"</c>) narrows the search so a recipe picker
+        /// never accidentally hands back a machine path that happens to share
+        /// the same underlying string. Returns null if nothing matches.</summary>
+        public static string TypedRefFor(string id, string requiredPrefix = null) {
+            if (string.IsNullOrEmpty(id)) return null;
+            ensureInit();
+            foreach (var kvp in s_pathToId) {
+                if (kvp.Value != id) continue;
+                if (requiredPrefix != null
+                        && !kvp.Key.StartsWith(requiredPrefix + ".", StringComparison.Ordinal)) {
+                    continue;
+                }
+                return kvp.Key;
+            }
+            return null;
+        }
+
         private static void ensureInit() {
             if (s_pathToId != null) return;
             lock (s_initLock) {

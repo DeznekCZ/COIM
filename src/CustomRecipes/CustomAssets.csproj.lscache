@@ -69,17 +69,25 @@ Data/
   MiniJsonWriter.cs
   ObjLoader.cs
   PackRegistry.cs
+  PackScaffolder.cs
+  PrimitiveStockGenerator.cs
  Modules/Fields/Reference.cs
  MyExtensions.cs
  Tabs/
   MyTabContainer.cs
   ProductTab.cs
   ProtoTab.cs
-Editor/Io/
- PackEmitter.cs
- PackLoader.cs
- RoundTripTester.cs
-Editor/Model/PackModel.cs
+ Translate/
+  LaterTextExtensions.cs
+  ModTranslations.cs
+Editor/
+ AssetsCatalog.cs
+ Io/
+  PackEmitter.cs
+  PackLoader.cs
+  PackValidator.cs
+  RoundTripTester.cs
+ Model/PackModel.cs
 EmittedPackMod.cs
 FixSaveGames.cs
 ModuleParser/Registrator/
@@ -148,6 +156,7 @@ PythonAPI/
  Lexer.cs
  ListValue.cs
  PythonParseException.cs
+ PythonRuntimeException.cs
  PythonTokens.cs
  PyTuple.cs
  Range/
@@ -175,16 +184,59 @@ PythonAPI/
   ReturnStatement.cs
  Token.cs
  Tokenizer.cs
-Ui/Components/
- CollapsibleGroup.cs
- LegacyBanner.cs
- PackCardView.cs
- PackDepsDialog.cs
- ProtoPicker.cs
- TypedRefResolver.cs
 Ui/
+ AssetThumbnailCache.cs
+ Components/
+  AssetExpression.cs
+  AssetPathPicker.cs
+  CollapsibleGroup.cs
+  LegacyBanner.cs
+  MachineIdPicker.cs
+  NewPackDialog.cs
+  PackCardView.cs
+  PackDepsDialog.cs
+  PortListEditor.cs
+  PrimitiveShapeDialog.cs
+  ProductExpressionPicker.cs
+  ProtoPicker.cs
+  RecipeIdPicker.cs
+  RecipePreviewBuilder.cs
+  ResearchIdPicker.cs
+  ResearchPackProductPicker.cs
+  TranslationsDialog.cs
+  TypedRefResolver.cs
+ Editors/
+  BuildMachineDefEditor.cs
+  DefEditor.cs
+  EditMachinePortsDefEditor.cs
+  EditorHelpers.cs
+  EditRecipeDefEditor.cs
+  GeneratorDefEditor.cs
+  IfBlockDefEditor.cs
+  MaterialLooseDefEditor.cs
+  MaterialTextureDefEditor.cs
+  PrefabBoxDefEditor.cs
+  ProductDefEditor.cs
+  ProductFluidDefEditor.cs
+  ProductLooseDefEditor.cs
+  ProductUnitDefEditor.cs
+  RecipeDefEditor.cs
+  RecipeFormParts.cs
+  ResearchDefEditor.cs
+  TextureDefEditor.cs
+  ToolbarCategoryDefEditor.cs
+  UnitPrefabDefEditor.cs
+  UnlockDefEditors.cs
+ MafiAssetPrecache.cs
+ MeshThumbnailCache.cs
  PackManifestCache.cs
  PackThumbnailCache.cs
+ Primitives/
+  ObjMeshLoader.cs
+  PrimitiveCatalog.cs
+  PrimitiveMesh.cs
+  PrimitiveShapes.cs
+  PrimitiveWireframe.cs
  RecipeEditorWindow.cs
 Utils/
  EntityInspector.cs

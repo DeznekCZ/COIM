@@ -237,6 +237,33 @@ For each `<NewPatternPack>` entry, `DeployNewPatternPacks` does:
 
 All steps are idempotent — re-running them just refreshes the deploy.
 
+### Fast core-iteration loop: `Core_Only`
+
+When you're iterating on the core mod's C# (PythonAPI, asset loading,
+registrar internals) and don't want to wait for the 5 legacy packs to be
+regenerated or the 2 new-pattern packs to be redeployed, build the orchestrator
+with the `Core_Only` Configuration:
+
+```bash
+dotnet build src/CustomAssetPack/CustomAssetPack.csproj -c Core_Only
+```
+
+This skips:
+
+- The `BuildAll` target (generates + builds the 5 legacy packs).
+- The `DeployNewPatternPacks` target (deploys Batteries + AirFiltering with
+  the stub).
+
+And still does:
+
+- Build `CustomAssets.dll` via the `ProjectReference`.
+- Run its PostBuild → deploy the base mod to `%APPDATA%/.../CustomAssets/`.
+
+The previously-staged `CustomAssetPack.dll` in the base mod folder is left
+untouched (it's only restaged when you rebuild the Lib project itself), and
+already-deployed pack folders are left alone too. So COI sees fresh core code
+on next launch with no pack-side churn.
+
 ---
 
 ## Lifecycle in COI's load sequence

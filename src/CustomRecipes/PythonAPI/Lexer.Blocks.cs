@@ -50,7 +50,7 @@ namespace CustomAssets.Python
             RequireNext(PythonTokens.dedent);
         }
 
-        private void ParseIf(Block tree)
+        private void ParseIf(Block tree, int headerLine)
         {
             IExpression condition = ParseExpression();
             RequireNext(PythonTokens.block);
@@ -60,19 +60,26 @@ namespace CustomAssets.Python
                 RequireNext(PythonTokens.indent);
 
                 Block block = ParseBlock(tree, PythonTokens.dedent);
-                IfStatement @class = new IfStatement(condition, block);
+                IfStatement @class = new IfStatement(condition, block) {
+                    StartLine = headerLine,
+                    EndLine = lastBodyLine(headerLine)
+                };
                 tree.Add(@class);
 
                 RequireNext(PythonTokens.dedent);
             }
             else
             {
+                // Single-line `if cond: stmt` — header and body share a line.
                 Block block = ParseBlock(tree, PythonTokens.newline);
-                tree.Add(new IfStatement(condition, block));
+                tree.Add(new IfStatement(condition, block) {
+                    StartLine = headerLine,
+                    EndLine = lastBodyLine(headerLine)
+                });
             }
         }
 
-        private void ParseElIf(IfStatement ifs, Block tree)
+        private void ParseElIf(IfStatement ifs, Block tree, int headerLine)
         {
             IExpression condition = ParseExpression();
             RequireNext(PythonTokens.block);
@@ -82,7 +89,10 @@ namespace CustomAssets.Python
                 RequireNext(PythonTokens.indent);
 
                 Block block = ParseBlock(tree, PythonTokens.dedent);
-                IfStatement @class = new IfStatement(ifs, condition, block);
+                IfStatement @class = new IfStatement(ifs, condition, block) {
+                    StartLine = headerLine,
+                    EndLine = lastBodyLine(headerLine)
+                };
                 tree.Add(@class);
 
                 RequireNext(PythonTokens.dedent);
@@ -90,11 +100,14 @@ namespace CustomAssets.Python
             else
             {
                 var block = ParseBlock(tree, PythonTokens.newline);
-                tree.Add(new IfStatement(ifs, condition, block));
+                tree.Add(new IfStatement(ifs, condition, block) {
+                    StartLine = headerLine,
+                    EndLine = lastBodyLine(headerLine)
+                });
             }
         }
 
-        private void ParseElse(IfStatement ifs, Block tree)
+        private void ParseElse(IfStatement ifs, Block tree, int headerLine)
         {
             RequireNext(PythonTokens.block);
 
@@ -103,7 +116,10 @@ namespace CustomAssets.Python
                 RequireNext(PythonTokens.indent);
 
                 Block block = ParseBlock(tree, PythonTokens.dedent);
-                IfStatement @class = new IfStatement(ifs, block);
+                IfStatement @class = new IfStatement(ifs, block) {
+                    StartLine = headerLine,
+                    EndLine = lastBodyLine(headerLine)
+                };
                 tree.Add(@class);
 
                 RequireNext(PythonTokens.dedent);
@@ -111,8 +127,21 @@ namespace CustomAssets.Python
             else
             {
                 Block block = ParseBlock(tree, PythonTokens.newline);
-                tree.Add(new IfStatement(ifs, block));
+                tree.Add(new IfStatement(ifs, block) {
+                    StartLine = headerLine,
+                    EndLine = lastBodyLine(headerLine)
+                });
             }
+        }
+
+        // Pick the line of the body's last non-trivial token after ParseBlock
+        // returned. m_lastNonTrivialToken tracks all dequeues except whitespace
+        // (see Dequeue() in Lexer.cs); reading it AFTER the body parse means we
+        // see the last actual token of the conditional's body. Falls back to
+        // the header line for an empty body — defensive only; the grammar
+        // wouldn't normally allow that.
+        private int lastBodyLine(int headerLine) {
+            return m_lastNonTrivialToken != null ? m_lastNonTrivialToken.line : headerLine;
         }
     }
 }

@@ -2,18 +2,18 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net48</TargetFramework>
-    <Configurations>Debug;Release;Debug_Pack</Configurations>
+    <Configurations>Debug;Release;Debug_Pack;Core_Only</Configurations>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <Version>0.1.10</Version> <!-- Update the project definition to standard from Mafi project. -->
+    <Version>0.2.0</Version> <!-- Update the project definition to standard from Mafi project. -->
     <LangVersion>latest</LangVersion>
       
     <!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->
     <COI_APPDATA>$(APPDATA)\Captain of Industry</COI_APPDATA>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' or '$(Configuration)|$(Platform)' == 'Core_Only|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
     <DefineConstants>DEBUG</DefineConstants>
@@ -32,15 +32,12 @@
     <Compile Remove="AssetBundles\**" />
     <Compile Remove="Data\Instructions\**" />
     <Compile Remove="ModuleParser\Registrator\Definitions\**" />
-    <Compile Remove="Translate\**" />
     <EmbeddedResource Remove="AssetBundles\**" />
     <EmbeddedResource Remove="Data\Instructions\**" />
     <EmbeddedResource Remove="ModuleParser\Registrator\Definitions\**" />
-    <EmbeddedResource Remove="Translate\**" />
     <None Remove="AssetBundles\**" />
     <None Remove="Data\Instructions\**" />
     <None Remove="ModuleParser\Registrator\Definitions\**" />
-    <None Remove="Translate\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -179,6 +176,7 @@
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Debug_Pack'">
     <Exec Command="mkdir &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <Exec Command="copy changelog.txt &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="robocopy .\AssetBundles &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" ContinueOnError="true" />
@@ -194,7 +192,7 @@
       <_ZipStageFiles Include="$(COI_APPDATA)\Mods\$(MSBuildProjectName)\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(_ZipStageFiles)" DestinationFolder="$(IntermediateOutputPath)zip-stage\$(MSBuildProjectName)\%(RecursiveDir)" />
-    <ZipDirectory SourceDirectory="$(IntermediateOutputPath)zip-stage" DestinationFile="$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(Version).zip" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(IntermediateOutputPath)zip-stage" DestinationFile="$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(Version)a.zip" Overwrite="true" />
     <RemoveDir Directories="$(IntermediateOutputPath)zip-stage" />
   </Target>
 </Project>

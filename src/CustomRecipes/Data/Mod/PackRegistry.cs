@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using CustomAssets.Python;
+using Mafi;
 using PythonAPI;
 using PythonAPI.Statements;
 
@@ -47,6 +48,15 @@ namespace CustomAssets.Data.Mod {
         private static readonly Dictionary<string, LoadedPack> s_packs =
             new Dictionary<string, LoadedPack>();
 
+        /// Absolute path of the CustomAssets mod's own folder, captured by
+        /// <see cref="CustomAssetsMod.RegisterPrototypes"/> at game-start.
+        /// Used as the authoritative "where do mods live" anchor by the
+        /// new-pack scaffolder so creating a pack works on a fresh save
+        /// where no user packs have been loaded yet â€” the editor itself
+        /// is shipped inside a mod folder, so its parent IS the COI mods
+        /// directory.
+        public static string CoreModBasePath;
+
         /// Reset all recorded packs. Called from CustomAssetsMod.RegisterPrototypes alongside
         /// CustomAssetManager.Clear() so a fresh game session starts with an empty registry.
         public static void Clear() {
@@ -85,17 +95,36 @@ namespace CustomAssets.Data.Mod {
             return s_packs.TryGetValue(modId, out pack);
         }
 
-        /// True iff the pack uses the legacy load-order convention:
-        ///   - no Definitions/__init__.py on disk, AND
-        ///   - at least one .py file in the pack contains a top-level
-        ///     <c>dependencies("...", "...")</c> call instead of relying on
-        ///     a central __init__.py to declare load order.
+        /// True iff the pack uses any of the legacy conventions:
+        ///   1. No <c>Definitions/__init__.py</c> AND at least one .py file
+        ///      declares load order via a top-level <c>dependencies(...)</c>
+        ///      call. (Original legacy shape.)
+        ///   2. The pack folder still contains a per-pack
+        ///      <c>CustomAssets_&lt;modId&gt;.dll</c> from the old build
+        ///      pattern, where each pack shipped its own generated DLL
+        ///      instead of the shared <c>CustomAssetPack.dll</c> stub.
+        ///   3. The pack's <c>manifest.json</c> still references the legacy
+        ///      DLL name in <c>primary_dlls</c> (even after the DLL itself
+        ///      was deleted) or is missing <c>primary_mod_class_name</c>.
         ///
         /// The editor's LegacyBanner is shown when this returns true (and the
         /// modder hasn't dismissed it this session). The migration step that
         /// the banner advertises is implemented by LegacyMigrator.
         public static bool IsLegacyStructure(LoadedPack pack) {
             if (pack == null || string.IsNullOrEmpty(pack.RootPath)) return false;
+
+            // Per-pack DLL leftover from the old build pattern is by itself
+            // enough — once the legacy DLL exists in the deploy folder, Mafi
+            // will pick it up over the shared stub and the pack runs against
+            // a stale copy of the framework even after the modder updates
+            // the editor mod. Catch it whether or not the load-order shape
+            // was migrated.
+            if (hasLegacyPerPackDll(pack)) return true;
+
+            // Manifest still pointing at the legacy DLL name is enough on its
+            // own — without primary_dlls = CustomAssetPack.dll, the loader
+            // won't find any IMod class even though the data files migrated.
+            if (hasLegacyManifest(pack)) return true;
 
             // Check for __init__.py via the registered files list (cheaper
             // than touching disk; mirrors what the loader already saw).
@@ -115,6 +144,57 @@ namespace CustomAssets.Data.Mod {
                 if (hasTopLevelDependenciesCall(f.Ast)) return true;
             }
             return false;
+        }
+
+        /// True iff the pack folder contains the per-pack DLL produced by the
+        /// pre-stub build pattern (<c>CustomAssets_&lt;modId&gt;.dll</c>).
+        /// Public so the LegacyMigrator can also check + delete it.
+        public static bool hasLegacyPerPackDll(LoadedPack pack) {
+            if (pack == null
+                    || string.IsNullOrEmpty(pack.RootPath)
+                    || string.IsNullOrEmpty(pack.ModId)) {
+                return false;
+            }
+            return File.Exists(Path.Combine(pack.RootPath, pack.ModId + ".dll"));
+        }
+
+        /// True iff manifest.json still references the legacy DLL shape: an
+        /// entry in <c>primary_dlls</c> that isn't <c>CustomAssetPack.dll</c>,
+        /// or a missing <c>primary_mod_class_name</c> on a pack whose data
+        /// shape otherwise already migrated. The migrator's manifest step
+        /// fixes both in one pass.
+        public static bool hasLegacyManifest(LoadedPack pack) {
+            if (pack == null || string.IsNullOrEmpty(pack.RootPath)) return false;
+            string manifestPath = Path.Combine(pack.RootPath, "manifest.json");
+            if (!File.Exists(manifestPath)) return false;
+            try {
+                object root = MiniJson.Parse(File.ReadAllText(manifestPath));
+                if (!(root is Dictionary<string, object> dict)) return false;
+
+                // primary_dlls must contain CustomAssetPack.dll (and only
+                // that — extra entries imply a legacy-or-custom packaging
+                // we should flag for re-migration).
+                if (!dict.TryGetValue("primary_dlls", out object rawDlls)
+                        || !(rawDlls is List<object> dlls)
+                        || dlls.Count != 1
+                        || !(dlls[0] is string dll)
+                        || !string.Equals(dll, "CustomAssetPack.dll",
+                                System.StringComparison.Ordinal)) {
+                    return true;
+                }
+
+                // primary_mod_class_name must be present and = CustomAssetPack.
+                if (!dict.TryGetValue("primary_mod_class_name", out object rawClass)
+                        || !(rawClass is string cls)
+                        || !string.Equals(cls, "CustomAssetPack",
+                                System.StringComparison.Ordinal)) {
+                    return true;
+                }
+                return false;
+            } catch (System.Exception ex) {
+                Log.Warning("PackRegistry.hasLegacyManifest: " + ex.Message);
+                return false;
+            }
         }
 
         // Detect a top-level `dependencies("a", "b", ...)` call. The AST shape

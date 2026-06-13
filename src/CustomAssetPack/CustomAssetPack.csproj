@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
 		<TargetFramework>net48</TargetFramework>
-		<Configurations>Debug;Release;Debug_Pack</Configurations>
+		<Configurations>Debug;Release;Debug_Pack;Core_Only</Configurations>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<WarningLevel>9999</WarningLevel>
 		<LangVersion>7.3</LangVersion>
@@ -26,7 +26,7 @@
 		<ModBuilderExe>$(MSBuildThisFileDirectory)..\ModBuilder\bin\Release\ModBuilder.exe</ModBuilderExe>
 	</PropertyGroup>
 
-	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' ">
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' or '$(Configuration)|$(Platform)' == 'Debug_Pack|AnyCPU' or '$(Configuration)|$(Platform)' == 'Core_Only|AnyCPU' ">
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>portable</DebugType>
 		<DefineConstants>DEBUG</DefineConstants>
@@ -68,7 +68,10 @@
 		<ModFolders Include="Packs\**\manifest.json" />
 	</ItemGroup>
 
-	<Target Name="BuildAll" AfterTargets="PostBuildEvent" Condition="'$(ModPack)' == ''">
+	<!-- Core_Only Configuration skips all pack work — only the ProjectReference'd
+	     CustomAssets build (and its PostBuild that deploys the base mod) runs.
+	     Use for fast iteration on the core runtime: `dotnet build CustomAssetPack.csproj -c Core_Only`. -->
+	<Target Name="BuildAll" AfterTargets="PostBuildEvent" Condition="'$(ModPack)' == '' And '$(Configuration)' != 'Core_Only'">
 		<Message Text="Building all packs..." Importance="high" />
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildPack" Properties="ModPack=%(ModFolders.RecursiveDir);Configuration=Debug;Platform=AnyCPU" />
 	</Target>
@@ -89,7 +92,7 @@
 		</NewPatternPack>
 	</ItemGroup>
 
-	<Target Name="DeployNewPatternPacks" AfterTargets="PostBuildEvent" DependsOnTargets="EnsureModBuilder" Condition="'$(ModPack)' == ''">
+	<Target Name="DeployNewPatternPacks" AfterTargets="PostBuildEvent" DependsOnTargets="EnsureModBuilder" Condition="'$(ModPack)' == '' And '$(Configuration)' != 'Core_Only'">
 		<Error Condition="'$(COI_MODS)' == ''" Text="Environment or project variable 'COI_MODS' is not set." />
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="DeployOneNewPatternPack"
 		         Properties="NewPatternPackName=%(NewPatternPack.Identity);NewPatternPackId=%(NewPatternPack.ModId);Configuration=$(Configuration);Platform=AnyCPU" />

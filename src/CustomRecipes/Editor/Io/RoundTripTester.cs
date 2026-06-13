@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using CustomAssets.Data.Mod;
 using CustomAssets.Editor.Model;
@@ -32,6 +33,15 @@ namespace CustomAssets.Editor.Io {
         /// Run round-trip checks against every pack currently in PackRegistry.
         public static Report RunOnRegisteredPacks() {
             Report report = new Report();
+            // Layout codec round-trip self-test runs first so a regression in
+            // the tile-grid serialiser surfaces alongside the recipe checks.
+            string layoutFail = LayoutCodec.SelfTest();
+            if (layoutFail != null) {
+                report.Failed++;
+                report.Messages.Add("LayoutCodec.SelfTest FAILED: " + layoutFail);
+            } else {
+                report.Messages.Add("LayoutCodec.SelfTest passed.");
+            }
             foreach (LoadedPack pack in PackRegistry.Packs) {
                 runOnPack(pack, report);
             }
@@ -90,7 +100,7 @@ namespace CustomAssets.Editor.Io {
             LoadedPack syntheticPack = new LoadedPack("<round-trip>", "");
             syntheticPack.Files.Add(synthetic);
             PackModel m = PackLoader.Load(syntheticPack);
-            return m.Recipes.Count == 1 ? m.Recipes[0] : null;
+            return m.Recipes.Count() == 1 ? m.Recipes.First() : null;
         }
 
         private static List<string> compareRecipes(RecipeDef a, RecipeDef b) {

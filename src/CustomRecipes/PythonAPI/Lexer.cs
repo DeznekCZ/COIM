@@ -84,7 +84,11 @@ namespace CustomAssets.Python {
 					break;
 
 				case PythonTokens.ifp:
-					ParseIf(tree);
+					// Pass the `if` header line in so the resulting IfStatement
+					// can record where the clause starts in source. PackLoader
+					// uses StartLine/EndLine to compute the line range of the
+					// whole conditional wrapper around any nested build_recipe.
+					ParseIf(tree, token.line);
 					break;
 
 				case PythonTokens.elif:
@@ -93,7 +97,7 @@ namespace CustomAssets.Python {
 					}
 
 					tree.statements.RemoveAt(tree.statements.Count - 1);
-					ParseElIf(ifs1, tree);
+					ParseElIf(ifs1, tree, token.line);
 					break;
 
 				case PythonTokens.elsep:
@@ -102,7 +106,7 @@ namespace CustomAssets.Python {
 					}
 
 					tree.statements.RemoveAt(tree.statements.Count - 1);
-					ParseElse(ifs2, tree);
+					ParseElse(ifs2, tree, token.line);
 					break;
 
 				case PythonTokens.name:
@@ -120,7 +124,15 @@ namespace CustomAssets.Python {
 					// whitespace tokens that would otherwise corrupt the read.
 					Token expressionLastToken = m_lastNonTrivialToken;
 					if (IsNext(PythonTokens.set, out Token _)) {
-						tree.Add(ParseAssignment(leftExpression));
+						AssignmentStatement asn = ParseAssignment(leftExpression);
+						asn.StartLine = stmtStartLine;
+						// EndLine = last non-trivial token after the right-hand-side
+						// expression parse. m_lastNonTrivialToken is the canonical
+						// position tracker since it ignores newline / indent / dedent
+						// (same reasoning as for EvaluateStatement).
+						asn.EndLine = m_lastNonTrivialToken != null
+							? m_lastNonTrivialToken.line : stmtStartLine;
+						tree.Add(asn);
 					} else if (IsNextOf(new PythonTokens[] {
 								PythonTokens.setadd,
 								PythonTokens.setsub,
@@ -477,7 +489,7 @@ namespace CustomAssets.Python {
 					var nameToken = RequireNext(PythonTokens.name, defaultIgnore);
 					expression = new PropertyExpression(expression, nameToken.value);
 				} else if (member.type == PythonTokens.lparen) {
-					expression = new CallExpression(expression, arguments());
+					expression = new CallExpression(expression, arguments(), callSite: member);
 				} else if (member.type == PythonTokens.llist) {
 					expression = new IndexExpression(expression, range());
 				}
@@ -534,7 +546,13 @@ namespace CustomAssets.Python {
 		}
 
 		private List<IExpression> list() {
-			if (IsNext(PythonTokens.rlist, out Token end, newLineIgnore)) {
+			// Peek (don't consume) the next non-whitespace token. When the
+			// list literal is empty the `]` stays in the queue so atom's
+			// RequireNext(rlist) owns the closing-bracket eat — same as
+			// every other path through list(). IsNext is consume-on-match,
+			// which would otherwise leave atom asking for a second `]`
+			// that isn't there (the historical `foo([])` parse error).
+			if (PeekNext(PythonTokens.rlist, newLineIgnore)) {
 				return new List<IExpression>();
 			}
 
@@ -633,14 +651,16 @@ namespace CustomAssets.Python {
 				if (begin.value.EndsWith("{")) {
 					value.Add(new CallExpression(
 							new ObjectConstant(new Constructor((args) => Expressions.__str__(args[0].Value))),
-							new List<IArgument> { new OrderedArgument(ParseExpression()) }
+							new List<IArgument> { new OrderedArgument(ParseExpression()) },
+							callSite: begin
 						));
 					begin = RequireNext(PythonTokens.fstrmiddle);
 					continue;
 				}
 				return new CallExpression(
 						new ObjectConstant(new Constructor((args) => string.Concat(args.Values().Select(v => v?.ToString() ?? "")))),
-						value.Select(e => new OrderedArgument(e)).ToList<IArgument>()
+						value.Select(e => new OrderedArgument(e)).ToList<IArgument>(),
+						callSite: begin
 					);
 			}
 		}
@@ -708,6 +728,31 @@ namespace CustomAssets.Python {
 				return false;
 			}
 			return true;
+		}
+
+		// Look ahead without consuming any tokens. Walks past ignored
+		// whitespace looking for the requested type and rewinds every
+		// dequeue afterward so the queue is byte-identical to its
+		// pre-call state. Used where the caller wants to BRANCH on what's
+		// next but the actual consumption belongs to a different code
+		// path (e.g. list() detecting an empty `[]` whose `]` is the
+		// caller's to eat).
+		private bool PeekNext(PythonTokens type, params PythonTokens[] ignore) {
+			if (enumerator.Count == 0) return false;
+			Stack<Token> stack = new Stack<Token>();
+			Token token = Dequeue();
+			stack.Push(token);
+			while (ignore.Contains(token.type)) {
+				if (enumerator.Count == 0) {
+					while (stack.Count > 0) enumerator.AddFirst(stack.Pop());
+					return false;
+				}
+				token = Dequeue();
+				stack.Push(token);
+			}
+			bool match = token.type == type;
+			while (stack.Count > 0) enumerator.AddFirst(stack.Pop());
+			return match;
 		}
 
 		private bool IsNextOf(PythonTokens[] type, out Token token, params PythonTokens[] ignore) {

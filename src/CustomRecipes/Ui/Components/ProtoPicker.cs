@@ -40,6 +40,17 @@ namespace CustomAssets.Ui.Components {
         private readonly Func<T, string> m_iconPathOf;
         private readonly LocStrFormatted m_emptyLabel;
         private readonly LocStrFormatted m_title;
+        // Optional pre-lookup hook. When the bound id doesn't resolve in
+        // ProtosDb directly (e.g. it's a Python variable name like
+        // "researchWoodgass" rather than the registered proto id), the
+        // picker calls this delegate to translate the value first. Callers
+        // typically pass a lambda that reads DefBase.SourceFileVariables.
+        private readonly Func<string, string> m_variableResolver;
+        // Show a "(none)" option at the top of the popup for optional fields
+        // (e.g. a recipe's research, a product's research). Selecting it
+        // writes null through setId so the emitter omits the arg / writes
+        // None and the field reads as "no research required" afterwards.
+        private readonly bool m_allowNone;
 
         // Content holder inside the inherited Row. Rebuilt on selection change
         // so the rest of the display chrome (recessed bg, chevron) stays put.
@@ -52,16 +63,20 @@ namespace CustomAssets.Ui.Components {
                 Func<T, bool> filter = null,
                 Func<T, string> iconPathOf = null,
                 LocStrFormatted? emptyLabel = null,
-                LocStrFormatted? title = null)
+                LocStrFormatted? title = null,
+                Func<string, string> variableResolver = null,
+                bool allowNone = false)
                 : base(Mafi.Unity.UiToolkit.Library.Button.General) {
 
-            m_protosDb   = protosDb;
-            m_getId      = getId;
-            m_setId      = setId;
-            m_filter     = filter;
-            m_iconPathOf = iconPathOf ?? defaultIconPath;
-            m_emptyLabel = emptyLabel ?? new LocStrFormatted("(pick…)");
-            m_title      = title ?? new LocStrFormatted("Pick");
+            m_protosDb         = protosDb;
+            m_getId            = getId;
+            m_setId            = setId;
+            m_filter           = filter;
+            m_iconPathOf       = iconPathOf ?? defaultIconPath;
+            m_emptyLabel       = emptyLabel ?? new LocStrFormatted("(pick…)");
+            m_title            = title ?? new LocStrFormatted("Pick");
+            m_variableResolver = variableResolver;
+            m_allowNone        = allowNone;
 
             // Strip the LCD/digital "displayFont" class that DisplayRowWithButton
             // applies to its inner Row — that font is meant for numeric readouts
@@ -89,12 +104,22 @@ namespace CustomAssets.Ui.Components {
                 m_buttonContent.Add(new Label(m_emptyLabel));
                 return;
             }
+            // Two-line stack — name on top, dim id below — mirroring the
+            // option rows in the popup. Earlier the trigger laid everything
+            // on a single line which competed with qty/port for horizontal
+            // space and the long display id (Product_FilterMediaIronLime…)
+            // pushed neighbours far to the right. Stacking lets the labels
+            // wrap naturally and the row reads as one compact card.
             Row content = new Row();
             string icon = m_iconPathOf(current);
             if (!string.IsNullOrEmpty(icon)) content.Add(new Icon(icon).Size(ButtonIconSize));
-            content.Add(new Label(current.Strings.Name));
-            content.Add(new Label(new LocStrFormatted(" — " + current.Id.Value)).TinyFontSize());
-            content.Gap(2.pt()).AlignItemsCenter();
+            Column labelStack = new Column {
+                new Label(current.Strings.Name).Fill(),
+                new Label(new LocStrFormatted(current.Id.Value)).TinyFontSize().Fill()
+            };
+            labelStack.Fill();
+            content.Add(labelStack);
+            content.Gap(2.pt()).AlignItemsCenter().FlexGrow(1f);
             m_buttonContent.Add(content);
         }
 
@@ -110,15 +135,21 @@ namespace CustomAssets.Ui.Components {
                 keepOpenOnHover: false,
                 openAfterDelay: false,
                 closeOnClickOutside: true);
-            // FloatingColumn renders transparent by default — give it the
-            // standard COI panel chrome so the picker reads as a real popup
-            // instead of floating glyphs over the form behind it.
-            popup.Class(Cls.panelBg)
-                 .Padding(3.pt()).Gap(2.pt())
-                 .MinWidth(380.px())
-                 .MaxHeight(500.px());
-
-            popup.Add(new Label(m_title).FontBold());
+            // FloatingColumn renders transparent + borderless by default —
+            // give it Cls.panel (the unified panel chrome that ties bg, border,
+            // and bolts together) so the picker reads as a real popup instead
+            // of floating glyphs over the form behind it. AlignItemsStretch
+            // propagates width to every child added below — without it the
+            // option rows hug their content (icon + name + chip) and leave a
+            // gap on the right, while the search field stretches via its own
+            // FlexGrow chain.
+            PanelWithHeader panel = popup.AddAndReturn(new PanelWithHeader(m_title))
+				.AlignItemsStretch()
+				.Gap(2.pt())
+				.MinWidth(380.px())
+				.MaxHeight(500.px());
+            panel.Header.Clear();
+			panel.Header.Add(new Label(m_title).FontBold());
 
             // Snapshot the filtered source once per open. Ordering by display
             // name produces a stable, intuitive list — id-order would mix
@@ -136,16 +167,47 @@ namespace CustomAssets.Ui.Components {
             // would close + reopen the floating panel.
             TextField search = new TextField()
                 .Placeholder(new LocStrFormatted("search…"));
-            popup.Add(search);
+			panel.Header.Add(search);
 
             ScrollColumn list = new ScrollColumn();
-            list.Gap(1.pt()).MaxHeight(420.px());
-            popup.Add(list);
+            // AlignItemsStretch on the inner list makes each ButtonRow fill
+            // the popup width — without it the rows hug their content (icon +
+            // labelStack + mod chip) and leave a visible empty strip on the
+            // right side of the popup. The popup's own AlignItemsStretch makes
+            // the ScrollColumn itself reach edge-to-edge; this propagates that
+            // further to the items inside.
+            list.Gap(1.pt()).MaxHeight(420.px()).AlignItemsStretch();
+			panel.BodyAdd(list);
 
             // Map row → lowercased haystack (name + id + mod) so search
             // comparisons stay cheap. We avoid allocating new strings per
             // keypress by pre-computing the haystack once during initial build.
             List<KeyValuePair<UiComponent, string>> rows = new List<KeyValuePair<UiComponent, string>>();
+
+            // Optional "(none)" row for clearing the field — only added when
+            // the caller opted in via allowNone. The haystack includes
+            // synonyms so a search for "clear" / "empty" / "remove" still
+            // surfaces it.
+            if (m_allowNone) {
+                ButtonRow noneRow = new ButtonRow(
+                    Mafi.Unity.UiToolkit.Library.Button.General,
+                    () => {
+                        popup.Close();
+                        m_setId(null);
+                        RefreshDisplay();
+                    });
+                noneRow.Class(Cls.group);
+                noneRow.Gap(3.pt()).AlignItemsCenter().PaddingLeftRight(2.pt());
+                Column noneLabel = new Column {
+                    new Label(new LocStrFormatted("(none)")),
+                    new Label(new LocStrFormatted("clear the current selection")).TinyFontSize()
+                };
+                noneLabel.Fill();
+                noneRow.Add(noneLabel);
+                list.Add(noneRow);
+                rows.Add(new KeyValuePair<UiComponent, string>(noneRow, "none clear empty remove"));
+            }
+
             foreach (T option in source) {
                 T captured = option;
                 ButtonRow row = new ButtonRow(
@@ -155,6 +217,7 @@ namespace CustomAssets.Ui.Components {
                         m_setId(captured.Id.Value);
                         RefreshDisplay();
                     });
+				row.Class(Cls.group);
                 row.Gap(3.pt()).AlignItemsCenter().PaddingLeftRight(2.pt());
                 string icon = m_iconPathOf(option);
                 if (!string.IsNullOrEmpty(icon))
@@ -163,7 +226,7 @@ namespace CustomAssets.Ui.Components {
                     new Label(option.Strings.Name),
                     new Label(new LocStrFormatted(option.Id.Value)).TinyFontSize()
                 };
-                labelStack.FlexGrow(1f);
+                labelStack.Fill();
                 row.Add(labelStack);
 
                 // Provenance chip — short tag showing which mod registered the
@@ -193,9 +256,10 @@ namespace CustomAssets.Ui.Components {
                     kvp.Key.Visible(kvp.Value.Contains(needle));
                 }
             });
+			search.FocusOnShow();
 
             popup.Open(Btn);
-        }
+		}
 
         // ---- Lookup ---------------------------------------------------------
 
@@ -207,8 +271,24 @@ namespace CustomAssets.Ui.Components {
         private T lookupCurrent() {
             string id = m_getId();
             if (string.IsNullOrEmpty(id)) return null;
+            // Three-tier resolution:
+            //   1. Direct ProtosDb hit — handles "Product_X"/"Recipe_X" ids.
+            //   2. Variable resolver — turns a Python variable name (e.g.
+            //      "researchWoodgass") into the underlying registered id by
+            //      consulting the def's per-file SourceFileVariables map.
+            //      Falls through when the resolver returns null/unchanged.
+            //   3. TypedRefResolver — converts dotted typed-ref paths like
+            //      "Ids.Machines.Foo" to the underlying proto id by
+            //      reflecting through Mafi.Base.Ids.
             Option<T> direct = m_protosDb.Get<T>(new Proto.ID(id));
             if (direct.HasValue) return direct.Value;
+            if (m_variableResolver != null) {
+                string viaVar = m_variableResolver(id);
+                if (!string.IsNullOrEmpty(viaVar) && viaVar != id) {
+                    Option<T> byVar = m_protosDb.Get<T>(new Proto.ID(viaVar));
+                    if (byVar.HasValue) return byVar.Value;
+                }
+            }
             string resolved = TypedRefResolver.ResolveOrNull(id);
             if (!string.IsNullOrEmpty(resolved)) {
                 Option<T> byPath = m_protosDb.Get<T>(new Proto.ID(resolved));

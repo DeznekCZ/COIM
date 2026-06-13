@@ -48,26 +48,40 @@ namespace CustomAssets.Ui.Components {
         public CollapsibleGroup(LocStrFormatted label, bool expanded = false) {
             m_chevron    = new Label(new LocStrFormatted(expanded ? ChevronExpanded : ChevronCollapsed))
                             .Width(14.px());
-            HeaderLabel  = new Label(label);
+            HeaderLabel  = new Label(label).FlexGrow(1f);
             Header       = new ButtonRow(Button.General, null);
+            // Header centres chevron + label + any extra controls callers
+            // add (e.g. a per-clause edit button) on the cross-axis, and
+            // gives the label FlexGrow so it claims the slack instead of
+            // letting the right edge crowd against the chevron.
+            Header.AlignItemsCenter().Gap(2.pt());
             Header.Add(m_chevron);
             Header.Add(HeaderLabel);
             // Assign the click handler after construction so the toggle closes
             // over this instance correctly. OnClick fluently returns the button.
             Header.OnClick(() => SetExpanded(!m_expanded));
 
+            // Body stretches its children horizontally so nested
+            // CollapsibleGroups, inline editors (e.g. the if-condition
+            // editor), and tree rows fill the available width regardless of
+            // their own intrinsic size. Without it a row inside the body
+            // hugs its content and the group looks half-empty on wide panes.
             Body = new Column();
+            Body.AlignItemsStretch().Gap(1.pt());
 
             // Wrap header + body inside a Panel so the group reads as a card
             // (background + border + corners), matching the HTML mockup's
             // .group rule. noBolts:true keeps it visually quiet — the bolts
-            // would be overkill at this nesting density. Children stretch
-            // horizontally so a nested CollapsibleGroup's card fills the
-            // available width of its parent's body.
+            // would be overkill at this nesting density. FlexGrow on the
+            // card lets the group claim parent height when stacked in a
+            // ScrollColumn — important for nested groups containing long
+            // recipe lists that would otherwise scroll inside their own
+            // clipped panel.
             Panel card = new Panel(noBolts: true);
             card.BodyAdd(c => c.Padding(3.px()).AlignItemsStretch().Gap(2.pt()),
                 Header,
                 Body);
+            card.FlexShrink(0f);
 
             // The outer Column (this) holds just the card so callers can use
             // the group like any other component (Add to parents, set widths,

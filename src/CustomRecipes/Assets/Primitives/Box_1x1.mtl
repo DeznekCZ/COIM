@@ -1,0 +1,4 @@
+# Written by ObjEditor
+newmtl default
+Kd 0.7 0.75 0.85
+map_Kd Box_256x256.png

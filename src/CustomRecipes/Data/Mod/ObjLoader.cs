@@ -18,7 +18,14 @@ namespace CustomAssets.Data.Mod
     /// Unity's unified vertex format on the fly.
     internal static class ObjLoader
     {
-        public static Mesh LoadFromFile(string fullPath)
+        /// <param name="reverseWinding">
+        /// When <c>false</c> (default), face corners are passed through unchanged —
+        /// correct for OBJ files exported by Blender / Maya / 3ds Max (CCW-from-outside),
+        /// which Unity treats as front-facing. Set to <c>true</c> only when the source
+        /// .obj is authored CW (rare; some legacy tools or hand-written files) and the
+        /// mesh would otherwise render inside-out.
+        /// </param>
+        public static Mesh LoadFromFile(string fullPath, bool reverseWinding = false)
         {
             if (!File.Exists(fullPath))
             {
@@ -28,7 +35,7 @@ namespace CustomAssets.Data.Mod
             try
             {
                 using (var reader = new StreamReader(fullPath))
-                    return Parse(reader, Path.GetFileNameWithoutExtension(fullPath));
+                    return Parse(reader, Path.GetFileNameWithoutExtension(fullPath), reverseWinding);
             }
             catch (Exception ex)
             {
@@ -37,7 +44,7 @@ namespace CustomAssets.Data.Mod
             }
         }
 
-        private static Mesh Parse(TextReader reader, string name)
+        private static Mesh Parse(TextReader reader, string name, bool reverseWinding = false)
         {
             var positions = new List<Vector3>();
             var uvs       = new List<Vector2>();
@@ -80,15 +87,29 @@ namespace CustomAssets.Data.Mod
                         for (int i = 0; i < n; i++)
                             faceIdx[i] = ResolveFaceVertex(tok[i + 1], positions, uvs, normals,
                                                           unified, outVerts, outUVs, outNorms);
-                        // Reverse winding when fan-triangulating: OBJ is right-handed (CCW =
-                        // front from outside), Unity is left-handed (CW = front from outside).
-                        // Without this swap, every face renders inside-out — model looks correct
-                        // when seen from the inside, hollow when seen from the outside.
-                        for (int i = 1; i < n - 1; i++)
+                        // Fan-triangulation. Default (reverseWinding=false) passes the
+                        // source corner order through (0, i, i+1) — correct for standard
+                        // OBJ files (Blender / Maya / 3ds Max emit CCW-from-outside, which
+                        // Unity treats as front-facing). Flipped path (0, i+1, i) is the
+                        // escape hatch for CW-authored OBJs that would otherwise render
+                        // inside-out.
+                        if (reverseWinding)
                         {
-                            outTris.Add(faceIdx[0]);
-                            outTris.Add(faceIdx[i + 1]);
-                            outTris.Add(faceIdx[i]);
+                            for (int i = 1; i < n - 1; i++)
+                            {
+                                outTris.Add(faceIdx[0]);
+                                outTris.Add(faceIdx[i + 1]);
+                                outTris.Add(faceIdx[i]);
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 1; i < n - 1; i++)
+                            {
+                                outTris.Add(faceIdx[0]);
+                                outTris.Add(faceIdx[i]);
+                                outTris.Add(faceIdx[i + 1]);
+                            }
                         }
                         break;
                 }

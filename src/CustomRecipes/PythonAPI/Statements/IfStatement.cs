@@ -6,29 +6,51 @@ using System.Threading.Tasks;
 
 namespace PythonAPI.Statements
 {
-    internal class IfStatement : IStatement
+    public class IfStatement : IStatement
     {
-        private IExpression condition;
-        private IfStatement parent;
-        private Block block;
+        // Condition expression on this clause. Null for `else` branches (which
+        // have a non-null Parent instead). Public read-only so editor code can
+        // inspect the conditional chain when walking the AST for build_recipe
+        // calls nested inside if/elif/else blocks.
+        public IExpression Condition { get; }
+
+        // The previous IfStatement in an if/elif/else chain. For a leading
+        // `if`, Parent is null; subsequent `elif` and `else` clauses point at
+        // the previous clause so runtime evaluation can short-circuit when a
+        // higher clause already ran (see Executed()).
+        public IfStatement Parent { get; }
+
+        // Statements that run when this clause's condition matches. PackLoader
+        // recurses into Block.statements looking for build_recipe calls so
+        // recipes nested inside an if/elif/else are surfaced to the editor.
+        public Block Block { get; }
+
+        // Source-line bookkeeping. StartLine = the `if`/`elif`/`else` header
+        // line itself (1-based). EndLine = the last line of the indented body
+        // (or the same line as StartLine when the body is on the same line as
+        // the header — a Python single-line if). Both are 0 when the
+        // statement was constructed without a source position. Populated by
+        // Lexer.Blocks.ParseIf / ParseElIf / ParseElse.
+        public int StartLine;
+        public int EndLine;
 
         public IfStatement(IExpression condition, Block block)
         {
-            this.condition = condition;
-            this.block = block;
+            this.Condition = condition;
+            this.Block = block;
         }
 
         public IfStatement(IfStatement parent, Block block)
         {
-            this.parent = parent;
-            this.block = block;
+            this.Parent = parent;
+            this.Block = block;
         }
 
         public IfStatement(IfStatement parent, IExpression condition, Block block)
         {
-            this.parent = parent;
-            this.condition = condition;
-            this.block = block;
+            this.Parent = parent;
+            this.Condition = condition;
+            this.Block = block;
         }
 
         public void Execute(IDictionary<string, object> context)
@@ -38,20 +60,20 @@ namespace PythonAPI.Statements
 
         private bool Executed(IDictionary<string, object> context)
         {
-            if (parent != null && parent.Executed(context)) {
+            if (Parent != null && Parent.Executed(context)) {
 				return true; // already executed
 			}
 
-			if (this.condition is null)
+			if (this.Condition is null)
             {
-                foreach (var item in block.statements)
+                foreach (var item in Block.statements)
                 {
                     item.Execute(context);
                 }
                 return true;
             }
 
-            object condition = this.condition.GetValue(context);
+            object condition = this.Condition.GetValue(context);
 
             if (condition is null) {
 				return false;
@@ -65,7 +87,7 @@ namespace PythonAPI.Statements
 				return false;
 			}
 
-			foreach (var item in block.statements)
+			foreach (var item in Block.statements)
             {
                 item.Execute(context);
             }
@@ -79,20 +101,20 @@ namespace PythonAPI.Statements
 
         private async Task<bool> ExecutedAsync(IDictionary<string, object> context)
         {
-            if (parent != null && await parent.ExecutedAsync(context)) {
+            if (Parent != null && await Parent.ExecutedAsync(context)) {
 				return true; // already executed
 			}
 
-			if (this.condition is null)
+			if (this.Condition is null)
             {
-                foreach (var item in block.statements)
+                foreach (var item in Block.statements)
                 {
                     await item.ExecuteAsync(context);
                 }
                 return true;
             }
 
-            object condition = await this.condition.GetValueAsync(context);
+            object condition = await this.Condition.GetValueAsync(context);
 
             if (condition is null) {
 				return false;
@@ -106,7 +128,7 @@ namespace PythonAPI.Statements
 				return false;
 			}
 
-			foreach (var item in block.statements)
+			foreach (var item in Block.statements)
             {
                 await item.ExecuteAsync(context);
             }

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using CustomAssets.Data.Mod;
+using CustomAssets.Editor;
 using CustomAssets.Editor.Io;
 using CustomAssets.Editor.Model;
 using CustomAssets.Ui.Components;
@@ -21,6 +22,7 @@ using Mafi.Unity.Ui.Hud;
 using Mafi.Unity.UiStatic.Toolbar;
 using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
+using Mafi.Unity.UiToolkit.Component.Manipulators;
 using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Library.FloatingPanel;
 using UnityEngine;
@@ -104,7 +106,35 @@ namespace CustomAssets.Ui {
         private LoadedPack m_currentPack;
         private PackModel m_currentModel;
         private RecipeDef m_selectedRecipe;
+        // Currently-selected non-recipe definition (or null). Holds the
+        // typed Def (ResearchDef, UnlockRecipeDef, etc.) or UnknownDef
+        // backing the form. Tracking it lets post-save reload re-select the
+        // same definition by id so the modder doesn't lose their place.
+        private DefBase m_selectedOther;
         private bool m_legacyDismissedThisSession;
+
+        // Per-kind DefEditor cache. Constructed lazily on first selection
+        // of each kind; subsequent selections of the same kind reuse the
+        // existing editor via Value(...) without tearing down its UI tree.
+        // Keyed by the concrete DefBase subclass type, value is the
+        // editor's Column (DefEditor<T> erased to base for storage).
+        private readonly System.Collections.Generic.Dictionary<System.Type, Column>
+            m_editorCache = new System.Collections.Generic.Dictionary<System.Type, Column>();
+
+        // Lookup-or-create a DefEditor<T> from m_editorCache, bind the
+        // current value into it via Value(...), and add it to the statement
+        // column. The editor's Value(...) returns DefEditor<T> (covariant
+        // chain), so we cast on the way back to call it.
+        private void showEditor<T>(T def, System.Func<Editors.DefEditor<T>> factory)
+                where T : DefBase {
+            System.Type key = typeof(T);
+            if (!m_editorCache.TryGetValue(key, out Column cached)) {
+                cached = factory();
+                m_editorCache[key] = cached;
+            }
+            ((Editors.DefEditor<T>)cached).Value(def);
+            m_statementColumn.Add(cached);
+        }
 
         // UiContext gives us the live ProtosDb the in-game proto pickers need.
         // Window dependencies are resolved via Context.Resolver.Instantiate
@@ -112,14 +142,44 @@ namespace CustomAssets.Ui {
         // sufficient — no manual binding required.
         private readonly UiContext m_uiContext;
 
+        // Injected by DI alongside UiContext. Used to send the modder back
+        // to the main menu after creating a new pack so COI rescans the
+        // mods folder on the way through and the new pack loads on next
+        // save-load. Constructor-injected via Context.Resolver.Instantiate
+        // (no manual binding needed).
+        private readonly Mafi.Unity.IMain m_main;
+
         private readonly LegacyBanner m_legacyBanner;
         private readonly Column m_treeColumn;       // children = per-file CollapsibleGroups
         private readonly Column m_statementColumn; // polymorphic right-pane content
+        private readonly Row m_editorFooter;        // fixed Save / Duplicate / Verify row
+        private readonly ButtonText m_saveBtn;
+        private readonly ButtonText m_duplicateBtn;
+        private readonly ButtonText m_verifyBtn;
+        private DefBase m_footerTarget;             // current footer subject; null = nothing selected
         private readonly PackCardView m_packCard;
 
-        public RecipeEditorWindow(UiContext uiContext) : base(WindowTitle) {
+        // Per-row map for selection-state refresh. Keys are the DefBase
+        // instances rendered into the tree on the current rebuildTree;
+        // values are the label-button UiComponent so onRecipeSelected /
+        // onOtherDefSelected can toggle Cls.selected without rebuilding
+        // the whole tree. DefBase doesn't override Equals so default
+        // reference equality is what we want. Cleared and repopulated by
+        // buildTreeRow on every rebuildTree pass.
+        private readonly System.Collections.Generic.Dictionary<DefBase, UiComponent>
+            m_rowLabelByDef = new System.Collections.Generic.Dictionary<DefBase, UiComponent>();
+
+        public RecipeEditorWindow(UiContext uiContext, Mafi.Unity.IMain main) : base(WindowTitle) {
             m_uiContext = uiContext;
+            m_main      = main;
             MakeImmersiveFullscreen();
+
+            // Warm AssetsDb's sprite cache for Mafi.Base.Assets image consts
+            // the first time the editor attaches. Each AssetPathPicker would
+            // otherwise hit GetSharedSprite for 800+ icons on its first popup
+            // open — stutters the UI for ~1s. Doing it once at window-attach
+            // time means subsequent picker opens are instant.
+            RunWhenAttached(MafiAssetPrecache.Warm);
 
             m_legacyBanner = new LegacyBanner(onMigrateNow, onLegacyDismiss);
 
@@ -134,13 +194,18 @@ namespace CustomAssets.Ui {
             // own width to children by default — without it the column hugs
             // its content and the stretch chain has nothing to stretch into.
             m_statementColumn.AlignItemsStretch().Width(100.Percent());
-            m_packCard        = new PackCardView(onSwitchPack, onOpenDepsDialog);
+            // Same width-propagation fix as m_statementColumn — without it
+            // the per-file CollapsibleGroups in the tree hugged their
+            // header text width instead of filling the left pane.
+            m_treeColumn.AlignItemsStretch().Width(100.Percent());
+            m_packCard        = new PackCardView(onSwitchPack, onOpenDepsDialog, onOpenTranslations);
 
             // ---- Three content panels: tree (top-left), pack info (bottom-left), editor (right).
             // Each Mafi Panel adds its own background + bolts so the regions visually
             // separate without us drawing borders by hand.
             ScrollColumn treeScroll = new ScrollColumn();
             treeScroll.Add(m_treeColumn);
+			treeScroll.FlexGrow(1f).AlignItemsStretch();
             Panel treePanel = new Panel();
             treePanel.BodyAdd(treeScroll);
             treePanel.FlexGrow(1f);
@@ -148,10 +213,49 @@ namespace CustomAssets.Ui {
             Panel packCardPanel = new Panel();
             packCardPanel.BodyAdd(m_packCard);
 
+            // Editor pane = ScrollColumn body that fills the available space +
+            // a fixed footer row pinned to the bottom. FlexGrow(1) on the
+            // scroll makes the editor body absorb all leftover height so the
+            // footer stays glued to the panel's lower edge whatever the
+            // content size. Action buttons (Save / Duplicate / Verify) live
+            // in m_editorFooter and are repopulated on every selection
+            // change by rebuildEditorFooter.
             ScrollColumn statementScroll = new ScrollColumn();
             statementScroll.Add(m_statementColumn);
+            statementScroll.FlexGrow(1f).AlignItemsStretch();
+
+            // Footer buttons are built ONCE and stay attached for the
+            // lifetime of the window — selection changes flip their
+            // Enabled state via rebuildEditorFooter and stash the target
+            // def in m_footerTarget so the click handlers dispatch to the
+            // current selection without re-allocating buttons each pass.
+            // Keeps the footer visually stable instead of flashing as the
+            // modder clicks around the tree.
+            m_saveBtn = new ButtonText(
+                new LocStrFormatted("Save this entry"),
+                () => { if (m_footerTarget != null) onSaveDef(m_footerTarget); });
+            m_duplicateBtn = new ButtonText(
+                new LocStrFormatted("Duplicate"),
+                () => { if (m_footerTarget != null) onDuplicateDef(m_footerTarget); });
+            //m_verifyBtn = new ButtonText(
+            //    new LocStrFormatted("Verify Round-Trip"),
+            //    onVerifyRoundTrip);
+
+            m_editorFooter = new Row { m_saveBtn, m_duplicateBtn, /*m_verifyBtn*/ };
+            m_editorFooter.Gap(3.pt())
+                          .AlignItemsCenter()
+                          .PaddingTopBottom(3.pt())
+                          .PaddingLeftRight(4.pt());
+
+            // Start with no selection → every button disabled but still
+            // visible so the modder sees the panel's full action surface.
+            rebuildEditorFooter(null, includeVerify: false);
+
+            Column editorBody = new Column { statementScroll, m_editorFooter };
+            editorBody.AlignItemsStretch().FlexGrow(1f);
+
             Panel editorPanel = new Panel();
-            editorPanel.BodyAdd(statementScroll);
+            editorPanel.BodyAdd(editorBody);
             editorPanel.FlexGrow(1f);
 
             // Left column = tree panel (flex-grow) + pack panel (auto, bottom).
@@ -221,10 +325,24 @@ namespace CustomAssets.Ui {
             bool isLegacy = PackRegistry.IsLegacyStructure(pack);
             m_legacyBanner.Visible(isLegacy && !m_legacyDismissedThisSession);
 
+            // Surface PackValidator findings to Player.log so the user can
+            // see context (file + line + message) even before opening any
+            // def. The in-editor surface is the per-def warning row added
+            // by onOtherDefSelected / onRecipeSelected.
+            foreach (PackIssue issue in m_currentModel.Issues) {
+                Log.Warning("RecipeEditor: " + Path.GetFileName(issue.SourceFile ?? "?")
+                            + ":" + issue.Line + " - " + issue.Message);
+            }
+
             rebuildTree();
-            showEmptyStatement(m_currentModel.Recipes.Count == 0
+            string baseMsg = m_currentModel.Recipes.Count() == 0
                 ? "Pack has no build_recipe() calls yet."
-                : "Select a recipe from the tree.");
+                : "Select a recipe from the tree.";
+            if (m_currentModel.Issues.Count > 0) {
+                baseMsg += "  ⚠ " + m_currentModel.Issues.Count
+                    + " validation issue(s) - see Player.log and the warning row on the affected def.";
+            }
+            showEmptyStatement(baseMsg);
         }
 
         // ---- Tree --------------------------------------------------------------
@@ -243,6 +361,7 @@ namespace CustomAssets.Ui {
         // and extend pack content later.
         private void rebuildTree() {
             m_treeColumn.Clear();
+            m_rowLabelByDef.Clear();
             if (m_currentModel == null || m_currentPack == null) return;
 
             // "+ new file" header — scaffold flow is a follow-up todo.
@@ -269,107 +388,650 @@ namespace CustomAssets.Ui {
                 var recipesInFile = m_currentModel.Recipes
                     .Where(r => r.SourceFile == file.AbsolutePath)
                     .ToList();
+                var otherDefsInFile = m_currentModel.OtherDefinitions
+                    .Where(d => d.SourceFile == file.AbsolutePath)
+                    .ToList();
 
-                // __init__.py CAN hold definitions (recipes/products/research)
-                // — the runtime accepts content there — but the convention is
-                // to keep load order in __init__.py and put definitions in
-                // dedicated files. We show whatever's there and flag the
-                // recommendation with a soft "tip" when content is present.
+                // Index defs by (scope, run) so each Reorderable container in
+                // renderStatementsTree can pull its members in current model
+                // order. The model order is the SOURCE OF TRUTH for tree
+                // position after a load — drag operations mutate it, so we
+                // no longer key off AST line numbers (those reflect the
+                // pre-drag source layout). Defs from a single file only —
+                // other files have their own (scope, run) indices.
+                var defsByScopeRun = new System.Collections.Generic.Dictionary<string,
+                    System.Collections.Generic.List<DefBase>>(StringComparer.Ordinal);
+                foreach (DefBase d in m_currentModel.Definitions) {
+                    if (d.SourceFile != file.AbsolutePath) continue;
+                    string key = (d.ScopeKey ?? "top") + "#" + d.RunIndex;
+                    if (!defsByScopeRun.TryGetValue(key, out var list)) {
+                        list = new System.Collections.Generic.List<DefBase>();
+                        defsByScopeRun[key] = list;
+                    }
+                    list.Add(d);
+                }
+
                 string headerText = "📄 " + fileName +
-                    "  (" + recipesInFile.Count + " recipe(s)" +
-                    (isInit ? ", load order" : "") + ")";
+                    "  (" + recipesInFile.Count + " recipe(s)"
+                    + (otherDefsInFile.Count > 0 ? ", " + otherDefsInFile.Count + " other def(s)" : "")
+                    + (isInit ? ", load order" : "") + ")";
 
                 // __init__.py defaults expanded when it has content (so the
                 // modder sees the misplaced definitions immediately) and
                 // collapsed when it only carries load order. Content files
                 // always default expanded.
-                bool defaultExpanded = !isInit || recipesInFile.Count > 0;
+                bool defaultExpanded = !isInit
+                    || recipesInFile.Count > 0
+                    || otherDefsInFile.Count > 0;
                 var fileGroup = new CollapsibleGroup(
                     new LocStrFormatted(headerText),
                     expanded: defaultExpanded);
 
-                if (recipesInFile.Count > 0) {
-                    var recipesGroup = new CollapsibleGroup(
-                        new LocStrFormatted("Recipes (" + recipesInFile.Count + ")"),
-                        expanded: true);
-                    foreach (RecipeDef recipe in recipesInFile) {
-                        RecipeDef captured = recipe;
-                        recipesGroup.Body.Add(
-                            new ButtonText(
-                                new LocStrFormatted(displayLabelFor(recipe)),
-                                () => onRecipeSelected(captured)));
-                    }
-                    fileGroup.Body.Add(recipesGroup);
+                // Read the source lines once per file so the conditional walk
+                // can label each if/elif/else clause with its verbatim header
+                // text. Tolerate read failure — falls back to a generic label
+                // ("if/elif/else block") when sourceLines is null.
+                string[] sourceLines = tryReadAllLines(file.AbsolutePath);
+
+                // Structural walk — render the AST's top-level statements in
+                // order, recursing into IfStatement bodies and surfacing each
+                // if/elif/else clause as its own CollapsibleGroup so recipes
+                // nested inside a conditional live visually under their
+                // wrapper instead of being flattened into one big "Recipes"
+                // group at the bottom of the file.
+                if (file.Ast != null) {
+                    renderStatementsTree(file.Ast.statements, fileGroup.Body,
+                                         defsByScopeRun, sourceLines, file.AbsolutePath,
+                                         scopeKey: "top");
                 }
 
                 if (isInit) {
                     // Always note the load-order entry point and flag the
                     // recommendation when definitions are present.
-                    if (recipesInFile.Count > 0) {
+                    if (recipesInFile.Count > 0 || otherDefsInFile.Count > 0) {
                         fileGroup.Body.Add(new Label(new LocStrFormatted(
                             "⚠ Tip: prefer to keep __init__.py for load order only and " +
                             "move definitions into separate files (products, recipes, research, …).")));
                     }
                     fileGroup.Body.Add(new Label(new LocStrFormatted(
                         "Load order — edit via the 🔗 deps dialog on the pack card.")));
-                } else if (recipesInFile.Count == 0) {
+                } else if (recipesInFile.Count == 0 && otherDefsInFile.Count == 0) {
                     fileGroup.Body.Add(new Label(new LocStrFormatted(
                         "(no recognised statements — products/research/asset editors land later)")));
                 }
 
-                // "+ new recipe" entry point on every non-init file. The emitter
-                // already handles RecipeDefs with SourceStartLine == 0 by
-                // appending the rendered build_recipe(...) to the end of the
-                // target file (see PackEmitter), so the new RecipeDef just
-                // needs SourceFile assigned and the rest of the source-location
-                // bookkeeping left at 0. We skip __init__.py because the
-                // convention (and our own tip above) is to keep it for load
-                // order only — modders adding recipes there would immediately
-                // be told to move them, so don't surface the option.
+                // Single "+ add definition…" button on every non-init file.
+                // Opens a FloatingColumn popup with one row per DefKind so
+                // the modder picks what to insert without flooding the tree
+                // with 16 sibling buttons. Skipped on __init__.py since the
+                // convention keeps it for load-order imports only.
                 if (!isInit) {
                     string targetFile = file.AbsolutePath;
-                    fileGroup.Body.Add(new ButtonText(
-                        new LocStrFormatted("+ new recipe in " + fileName),
-                        () => onAddRecipeToFile(targetFile)));
+                    ButtonText addBtn = fileGroup.Body.AddAndReturn(new ButtonText(
+                        new LocStrFormatted("+ add definition…"), null));
+                    addBtn.OnClick(() => openAddDefPopup(addBtn, targetFile));
                 }
 
                 m_treeColumn.Add(fileGroup);
             }
         }
 
-        // Append a fresh RecipeDef to the model, tagged for emission into
-        // `filePath`. The id seed is "NewRecipe_<n>" where n is the recipe
-        // count after insertion — gives the modder something unique they can
-        // immediately rename in the editor's id field without typing over an
-        // existing recipe by accident. SourceStartLine / SourceEndLine stay
-        // at 0 (PackEmitter treats that as "append to file end"). The form
-        // is then refreshed and the new recipe pre-selected so editing can
-        // start immediately.
-        private void onAddRecipeToFile(string filePath) {
-            if (m_currentModel == null) return;
-            int seed = m_currentModel.Recipes.Count + 1;
-            string newId = "NewRecipe_" + seed;
-            // Avoid collisions when files were deleted/added and counts shifted —
-            // bump until we find a free id.
-            while (m_currentModel.Recipes.Any(r => r.RecipeId == newId)) {
-                seed++;
-                newId = "NewRecipe_" + seed;
-            }
-            RecipeDef created = new RecipeDef {
-                RecipeId        = newId,
-                Name            = "New recipe",
-                Description     = "",
-                MachineId       = null,
-                ResearchId      = null,
-                DurationSeconds = null,
-                PowerPercent    = null,
-                SourceFile      = filePath,
-                SourceStartLine = 0,
-                SourceEndLine   = 0
+        // Popup launched by the "+ add definition…" button on each file
+        // group's header. Lists every DefKind as a clickable row with a
+        // short hint of what the call name will be. Clicking closes the
+        // popup and inserts a fresh def into the target file.
+        private void openAddDefPopup(UiComponent anchor, string targetFile) {
+            openAddDefPickerPopup(anchor,
+                title: "Add definition to " + Path.GetFileName(targetFile),
+                onPick: kind => onAddDefToFile(targetFile, kind));
+        }
+
+        // Per-clause sibling — same picker, just routes the click through
+        // onAddDefToClause so the def splices into the if-chain clause
+        // body with proper indentation instead of the file end.
+        private void openAddDefIntoClausePopup(UiComponent anchor,
+                string targetFile, int clauseHeaderLine) {
+            openAddDefPickerPopup(anchor,
+                title: "Add definition inside clause @ line " + clauseHeaderLine
+                    + " of " + Path.GetFileName(targetFile),
+                onPick: kind => onAddDefToClause(targetFile, clauseHeaderLine, kind));
+        }
+
+        // Build + open the shared "pick a def kind" picker. Both the
+        // file-level and per-clause "+ add definition" affordances feed
+        // through here so the option list stays identical across both
+        // surfaces — adding a new DefKind only needs one entry to show
+        // up everywhere it's relevant.
+        private void openAddDefPickerPopup(UiComponent anchor,
+                string title, Action<DefKind> onPick) {
+            FloatingColumn popup = new FloatingColumn(
+                FloaterPositionPolicy.BELOW,
+                keepOpenOnHover: false,
+                openAfterDelay: false,
+                closeOnClickOutside: true);
+            PanelWithHeader panel = popup.AddAndReturn(new PanelWithHeader(
+                    new LocStrFormatted(title)))
+                .AlignItemsStretch()
+                .Gap(2.pt())
+                .MinWidth(360.px())
+                .MaxHeight(520.px());
+
+            ScrollColumn list = new ScrollColumn();
+            list.Gap(1.pt()).MaxHeight(460.px()).AlignItemsStretch();
+            panel.BodyAdd(list);
+
+            Action<DefKind> pick = kind => {
+                popup.Close();
+                onPick(kind);
             };
-            m_currentModel.Recipes.Add(created);
+
+            // Same order the toolbar would have shown — recipe-shaped first
+            // (recipe, edit_recipe, research), then products, then unlocks,
+            // then asset registrations. Within each group, the most common
+            // is listed first.
+            list.Add(new Label(new LocStrFormatted("Products")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "product (loose)",   "build_product_loose(...)",          DefKind.ProductLoose,           pick);
+            addPopupRow(list, "product (fluid)",   "build_product_fluid(...)",          DefKind.ProductFluid,           pick);
+            addPopupRow(list, "product (unit)",    "build_product_unit(...)",           DefKind.ProductUnit,            pick);
+            list.Add(new Label(new LocStrFormatted("Recipes")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "build recipe",      "build_recipe(...)",                 DefKind.Recipe,                 pick);
+            addPopupRow(list, "edit recipe",       "edit_recipe(...)",                  DefKind.EditRecipe,             pick);
+            list.Add(new Label(new LocStrFormatted("Machines")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "build machine",     "build_machine(...)",                DefKind.BuildMachine,           pick);
+            addPopupRow(list, "build generator",   "build_generator(...)",              DefKind.Generator,              pick);
+            addPopupRow(list, "edit machine ports","edit_machine_ports(...)",           DefKind.EditMachinePorts,       pick);
+            list.Add(new Label(new LocStrFormatted("Settlements")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "build housing",     "build_housing(...)",                DefKind.Housing,                pick);
+            addPopupRow(list, "build decoration",  "build_settlement_decoration(...)",  DefKind.SettlementDecoration,   pick);
+            addPopupRow(list, "build food module", "build_settlement_food(...)",        DefKind.SettlementFood,         pick);
+            addPopupRow(list, "build ISP module",  "build_settlement_isp(...)",         DefKind.SettlementIsp,          pick);
+            addPopupRow(list, "build hospital",    "build_hospital(...)",               DefKind.Hospital,               pick);
+            list.Add(new Label(new LocStrFormatted("Buildings")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "build mine tower",  "build_mine_tower(...)",             DefKind.MineTower,              pick);
+            addPopupRow(list, "build research lab","build_research_lab(...)",           DefKind.ResearchLab,            pick);
+            addPopupRow(list, "build nuclear reactor", "build_nuclear_reactor(...)",    DefKind.NuclearReactor,         pick);
+            addPopupRow(list, "edit reactor fuels",    "edit_nuclear_reactor_fuels(...)",      DefKind.EditNuclearReactorFuels,      pick);
+            addPopupRow(list, "edit reactor fluids",   "edit_nuclear_reactor_fluids(...)",     DefKind.EditNuclearReactorFluids,     pick);
+            addPopupRow(list, "edit reactor enrichment","edit_nuclear_reactor_enrichment(...)",DefKind.EditNuclearReactorEnrichment, pick);
+            addPopupRow(list, "edit reactor ports",    "edit_nuclear_reactor_ports(...)",      DefKind.EditNuclearReactorPorts,      pick);
+            list.Add(new Label(new LocStrFormatted("Research")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "research",          "build_research(...)",               DefKind.Research,               pick);
+            addPopupRow(list, "unlock recipe",     "add_unlock_recipe(...)",            DefKind.UnlockRecipe,           pick);
+            addPopupRow(list, "unlock product",    "add_unlock_product(...)",           DefKind.UnlockProduct,          pick);
+            addPopupRow(list, "unlock machine",    "add_unlock_machine(...)",           DefKind.UnlockMachine,          pick);
+            list.Add(new Label(new LocStrFormatted("Toolbars")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "toolbar category",  "add_toolbar_category(...)",         DefKind.ToolbarCategory,        pick);
+            list.Add(new Label(new LocStrFormatted("Assets")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "texture",           "add_texture(...)",                  DefKind.Texture,                pick);
+            addPopupRow(list, "material (loose)",  "add_loose_product_material(...)",   DefKind.MaterialLoose,          pick);
+            addPopupRow(list, "material (texture)","add_texture_material(...)",         DefKind.MaterialTexture,        pick);
+            addPopupRow(list, "prefab (box)",      "add_prefab_box(...)",               DefKind.PrefabBox,              pick);
+            addPopupRow(list, "prefab (unit)",     "add_unit_prefab(...)",              DefKind.UnitPrefab,             pick);
+            list.Add(new Label(new LocStrFormatted("Conditionals")).Class(Cls.groupHeader).PaddingTop(3.pt()));
+            addPopupRow(list, "if block",          "if True:\n    pass",                DefKind.IfBlock,                pick);
+
+            popup.Open(anchor);
+        }
+
+        private void addPopupRow(ScrollColumn list,
+                string title, string subtitle, DefKind kind, Action<DefKind> onPick) {
+            ButtonRow row = new ButtonRow(
+                Mafi.Unity.UiToolkit.Library.Button.General,
+                () => onPick(kind));
+            row.Class(Cls.group);
+            row.Gap(3.pt()).AlignItemsCenter().PaddingLeftRight(2.pt());
+            Column stack = new Column {
+                new Label(new LocStrFormatted(title)),
+                new Label(new LocStrFormatted(subtitle))
+                    .Class(Cls.fontMonospace).TinyFontSize()
+            };
+            stack.Fill();
+            row.Add(stack);
+            list.Add(row);
+        }
+
+        // Add a fresh def into the body of an if/elif/else clause at the
+        // given header line. Mirrors onAddDefToFile but routes the splice
+        // through PackEmitter.AppendDefIntoClause so the def is indented
+        // to match the clause's body level.
+        private void onAddDefToClause(string filePath, int clauseHeaderLine, DefKind kind) {
+            if (m_currentModel == null) return;
+            // Fresh nested if-block — handled by the dedicated emitter
+            // splice that hand-rolls `if True:\n    pass` with the right
+            // nesting indent.
+            if (kind == DefKind.IfBlock) {
+                try {
+                    PackEmitter.AppendIfBlockIntoClause(filePath, clauseHeaderLine, "True");
+                    if (m_currentPack != null) {
+                        PackRegistry.RescanPack(m_currentPack);
+                        m_currentModel = PackLoader.Load(m_currentPack);
+                    }
+                    rebuildTree();
+                } catch (Exception ex) {
+                    Log.Exception(ex);
+                    Log.Warning("RecipeEditor: add-if-inside-clause failed - " + ex.Message);
+                }
+                return;
+            }
+            string newId = freshId(kindIdPrefix(kind));
+            DefBase created = createDef(kind, newId);
+            if (created == null) return;
+            created.SourceFile = filePath;
+
+            Mafi.Collections.Lyst<string> missing = created.MissingMandatoryFields();
+            if (missing != null && missing.Count > 0) {
+                // Same "in-memory only until required fields are filled"
+                // contract as onAddDefToFile. Add to the model so it's
+                // visible + editable; save runs the splice path later.
+                m_currentModel.Definitions.Add(created);
+                Log.Info("RecipeEditor: added '" + created.DisplayId + "' to clause @ line "
+                    + clauseHeaderLine + " (in-memory only — fill "
+                    + string.Join(", ", missing) + " then Save to write it).");
+                rebuildTree();
+                onOtherDefSelected(created);
+                return;
+            }
+
+            try {
+                PackEmitter.AppendDefIntoClause(filePath, clauseHeaderLine, created, m_currentModel);
+                if (m_currentPack != null) {
+                    PackRegistry.RescanPack(m_currentPack);
+                    m_currentModel = PackLoader.Load(m_currentPack);
+                }
+                rebuildTree();
+            } catch (Exception ex) {
+                Log.Exception(ex);
+                Log.Warning("RecipeEditor: add-into-clause failed - " + ex.Message);
+            }
+        }
+
+        // Append an else clause to an existing if-chain. Triggered by the
+        // "+ add else clause" button on the chain's last group (only
+        // rendered when the chain doesn't already end with else).
+        private void onAddElseToChain(string filePath, int afterLine, string leadingIndent) {
+            if (m_currentPack == null) return;
+            try {
+                PackEmitter.AppendElseClauseToFile(filePath, afterLine, leadingIndent ?? "");
+                PackRegistry.RescanPack(m_currentPack);
+                m_currentModel = PackLoader.Load(m_currentPack);
+                rebuildTree();
+            } catch (Exception ex) {
+                Log.Exception(ex);
+                Log.Warning("RecipeEditor: add-else failed - " + ex.Message);
+            }
+        }
+
+        // Read the leading-whitespace prefix of a 1-based line. Returns
+        // empty string when the line is past EOF or the lines array is
+        // null. Used by the "+ add else" hook to give the new clause the
+        // same indent as the chain's opening if.
+        private static string readLeadingIndentForLine(string[] sourceLines, int oneBasedLine) {
+            if (sourceLines == null || oneBasedLine < 1 || oneBasedLine > sourceLines.Length) {
+                return "";
+            }
+            string line = sourceLines[oneBasedLine - 1] ?? "";
+            int n = 0;
+            while (n < line.Length && (line[n] == ' ' || line[n] == '\t')) n++;
+            return line.Substring(0, n);
+        }
+
+        // Discriminator for the per-kind "+ new" buttons. Each value maps to
+        // a concrete DefBase subclass that the create flow knows how to
+        // instantiate with sensible defaults.
+        private enum DefKind {
+            Recipe,
+            EditRecipe,
+            Research,
+            ProductLoose,
+            ProductFluid,
+            ProductUnit,
+            UnlockRecipe,
+            UnlockProduct,
+            UnlockMachine,
+            Texture,
+            MaterialLoose,
+            MaterialTexture,
+            PrefabBox,
+            UnitPrefab,
+            Generator,
+            ToolbarCategory,
+            EditMachinePorts,
+            BuildMachine,
+            Housing,
+            SettlementDecoration,
+            SettlementFood,
+            SettlementIsp,
+            Hospital,
+            MineTower,
+            ResearchLab,
+            NuclearReactor,
+            EditNuclearReactorFuels,
+            EditNuclearReactorFluids,
+            EditNuclearReactorEnrichment,
+            EditNuclearReactorPorts,
+            // Structural — not a typed Def. Routed through
+            // PackEmitter.AppendIfBlockToFile / AppendIfBlockIntoClause
+            // instead of createDef + AppendDef.
+            IfBlock,
+        }
+
+        // Append a fresh Def to the model, tagged for emission into
+        // `filePath`. The id seed is "New<Kind>_<n>" where n is bumped until
+        // it doesn't collide with any existing def's Id — gives the modder
+        // something unique they can rename in the form without typing over
+        // an existing entry. SourceStartLine / SourceEndLine stay at 0,
+        // which PackEmitter treats as "append rendered call to file end".
+        //
+        // After insertion, the tree is rebuilt and the new def is
+        // pre-selected so the modder lands directly in its form. Recipes
+        // open via onRecipeSelected (full recipe form); everything else
+        // goes through onOtherDefSelected (the typed-form dispatcher).
+        private void onAddDefToFile(string filePath, DefKind kind) {
+            if (m_currentModel == null) return;
+            // Structural kinds (IfBlock) don't go through createDef +
+            // AppendDef — they live in the AST, not the typed model.
+            // Route them to dedicated raw-text splicers instead.
+            if (kind == DefKind.IfBlock) {
+                try {
+                    PackEmitter.AppendIfBlockToFile(filePath, "True");
+                    if (m_currentPack != null) {
+                        PackRegistry.RescanPack(m_currentPack);
+                        m_currentModel = PackLoader.Load(m_currentPack);
+                    }
+                    rebuildTree();
+                } catch (Exception ex) {
+                    Log.Exception(ex);
+                    Log.Warning("RecipeEditor: add-if failed - " + ex.Message);
+                }
+                return;
+            }
+            string newId = freshId(kindIdPrefix(kind));
+            DefBase created = createDef(kind, newId);
+            if (created == null) return;
+            created.SourceFile      = filePath;
+            created.SourceStartLine = 0;
+            created.SourceEndLine   = 0;
+            // Auto-assign a Python variable name so other defs in this
+            // pack can reference the new entry via the variable form
+            // (`research = researchX`) instead of the bare id form
+            // (`research = "CustomResearch_X"`). Pure-id references fail
+            // at runtime when the COI loader hasn't yet registered the
+            // proto; variable references hand the in-memory object and
+            // sidestep the lookup entirely. Applies to research,
+            // products, textures, prefabs, materials, generators,
+            // machines, recipes — every kind whose Python call returns
+            // a usable object. See supportsAutoVariableName for the
+            // exact whitelist.
+            if (string.IsNullOrEmpty(created.VariableName)
+                    && supportsAutoVariableName(created)) {
+                created.VariableName = deriveFreshVarName(created);
+            }
+            m_currentModel.Definitions.Add(created);
+
+            // Commit the new def to disk RIGHT NOW — UNLESS it's still
+            // missing mandatory fields. Some def kinds (edit_machine_ports,
+            // build_machine) carry required ids that createDef can't seed
+            // because they reference other protos the modder must pick.
+            // Emitting them while empty produces a syntactically-valid but
+            // semantically-broken call (e.g.
+            // `edit_machine_ports(machine = None)`) which then crashes the
+            // mod loader on next pack reload. Hold these in memory only
+            // until the modder fills the required fields, at which point
+            // their next per-def or global Save runs the append path.
+            string newKind = created.Kind;
+            string newDisplayId = created.DisplayId;
+            Mafi.Collections.Lyst<string> missing = created.MissingMandatoryFields();
+            if (missing != null && missing.Count > 0) {
+                Log.Info("RecipeEditor: added '" + newDisplayId + "' to "
+                    + Path.GetFileName(filePath) + " (in-memory only — fill "
+                    + string.Join(", ", missing) + " then Save to write it to disk).");
+            } else if (m_currentPack != null) {
+                try {
+                    PackEmitter.AppendDef(created, m_currentModel);
+                    PackRegistry.RescanPack(m_currentPack);
+                    m_currentModel = PackLoader.Load(m_currentPack);
+                    Log.Info("RecipeEditor: added '" + newDisplayId + "' to "
+                        + Path.GetFileName(filePath));
+                } catch (Exception ex) {
+                    Log.Exception(ex);
+                    Log.Warning("RecipeEditor: add-new failed - " + ex.Message);
+                    // Leave the in-memory def in place so the modder can
+                    // still see + edit it; their next Save will retry the
+                    // append path.
+                }
+            }
+
             rebuildTree();
-            onRecipeSelected(created);
+
+            // The model was reloaded fresh from disk, so the `created`
+            // reference no longer matches what's in m_currentModel. Find
+            // the equivalent by (Kind, DisplayId) so we can select it.
+            DefBase selected = m_currentModel.Definitions.FirstOrDefault(
+                d => d.Kind == newKind && d.DisplayId == newDisplayId);
+            if (selected is RecipeDef rd2) onRecipeSelected(rd2);
+            else if (selected != null) onOtherDefSelected(selected);
+            else if (created is RecipeDef rd) onRecipeSelected(rd);
+            else onOtherDefSelected(created);
+        }
+
+        // Make a unique id by appending "_<n>" until nothing in the current
+        // model claims it. Walks the unified Definitions list once — fine for
+        // typical pack sizes (dozens of defs); a future hot-path could cache
+        // a Set if it ever becomes the bottleneck.
+        private string freshId(string prefix) {
+            int n = 1;
+            string id;
+            do {
+                id = prefix + "_" + n;
+                n++;
+            } while (m_currentModel.Definitions.Any(d => d.DisplayId == id));
+            return id;
+        }
+
+        // Derive a Python variable name from the def's DisplayId so the
+        // new entry rounds-trips as `<var> = <call>(...)` and can be
+        // referenced by name from elsewhere in the same file. Strategy:
+        //   • Strip a leading directory (asset paths like Assets/Foo
+        //     read as just "foo" in the variable).
+        //   • Drop a trailing file-extension (texture ids sometimes
+        //     include .png).
+        //   • Keep [A-Za-z_0-9] only; lower the first letter to read as
+        //     camelCase; prefix a leading digit with 'v' so the result
+        //     is a valid identifier.
+        //   • Uniquify against every variable name already in use in
+        //     the same source file — both VariableName fields on
+        //     model defs AND any populated SourceFileVariables map.
+        private string deriveFreshVarName(DefBase def) {
+            if (def == null) {
+                return null;
+            }
+            string seed = def.DisplayId ?? "";
+            int lastSlash = seed.LastIndexOfAny(new[] { '/', '\\' });
+            if (lastSlash >= 0 && lastSlash < seed.Length - 1) {
+                seed = seed.Substring(lastSlash + 1);
+            }
+            int dot = seed.LastIndexOf('.');
+            if (dot > 0) {
+                seed = seed.Substring(0, dot);
+            }
+
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in seed) {
+                if (char.IsLetter(c) || char.IsDigit(c) || c == '_') {
+                    sb.Append(c);
+                }
+            }
+            if (sb.Length == 0) {
+                sb.Append('v');
+            }
+            if (char.IsDigit(sb[0])) {
+                sb.Insert(0, 'v');
+            }
+            sb[0] = char.ToLowerInvariant(sb[0]);
+            string baseName = sb.ToString();
+
+            System.Collections.Generic.HashSet<string> used =
+                new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+            if (m_currentModel?.Definitions != null) {
+                foreach (DefBase d in m_currentModel.Definitions) {
+                    bool sameFile = string.Equals(d.SourceFile, def.SourceFile,
+                        StringComparison.OrdinalIgnoreCase);
+                    if (!sameFile) {
+                        continue;
+                    }
+                    if (!string.IsNullOrEmpty(d.VariableName)) {
+                        used.Add(d.VariableName);
+                    }
+                    if (d.SourceFileVariables != null) {
+                        foreach (string varName in d.SourceFileVariables.Keys) {
+                            used.Add(varName);
+                        }
+                    }
+                }
+            }
+            if (!used.Contains(baseName)) {
+                return baseName;
+            }
+            for (int i = 2; i < 1000; i++) {
+                string suffixed = baseName + i;
+                if (!used.Contains(suffixed)) {
+                    return suffixed;
+                }
+            }
+            return baseName;
+        }
+
+        // Whether to auto-create a VariableName when adding a new def.
+        // True for kinds whose Python call returns a usable object the
+        // modder may want to reference elsewhere — research, products,
+        // textures, materials, prefabs, generators, machines, recipes.
+        // Skipped for side-effect calls (unlocks, edit_recipe,
+        // edit_machine_ports, toolbar category) and structural markers
+        // (if-block, unknown). The modder can still hand-edit the
+        // VariableName field on the skipped kinds if they need it.
+        private static bool supportsAutoVariableName(DefBase def) {
+            return def is RecipeDef
+                || def is ResearchDef
+                || def is ProductDefBase
+                || def is TextureDef
+                || def is MaterialLooseDef
+                || def is MaterialTextureDef
+                || def is PrefabBoxDef
+                || def is UnitPrefabDef
+                || def is GeneratorDef
+                || def is BuildMachineDef;
+        }
+
+        private static string kindIdPrefix(DefKind kind) {
+            switch (kind) {
+                case DefKind.Recipe:          return "NewRecipe";
+                case DefKind.EditRecipe:      return "EditRecipe";
+                case DefKind.Research:        return "NewResearch";
+                case DefKind.ProductLoose:    return "Product_NewLoose";
+                case DefKind.ProductFluid:    return "Product_NewFluid";
+                case DefKind.ProductUnit:     return "Product_NewUnit";
+                case DefKind.UnlockRecipe:    return "Unlock_Recipe";
+                case DefKind.UnlockProduct:   return "Unlock_Product";
+                case DefKind.UnlockMachine:   return "Unlock_Machine";
+                case DefKind.Texture:         return "Assets/NewTexture";
+                case DefKind.MaterialLoose:   return "Assets/NewLooseMat";
+                case DefKind.MaterialTexture: return "Assets/NewTexMat";
+                case DefKind.PrefabBox:       return "Assets/NewBoxPrefab";
+                case DefKind.UnitPrefab:      return "Assets/NewUnitPrefab";
+                case DefKind.Generator:       return "NewGenerator";
+                case DefKind.ToolbarCategory: return "NewCategory";
+                case DefKind.EditMachinePorts:return "EditMachinePorts";
+                case DefKind.BuildMachine:    return "NewMachine";
+                case DefKind.Housing:               return "NewHousing";
+                case DefKind.SettlementDecoration:  return "NewDecoration";
+                case DefKind.SettlementFood:        return "NewFoodModule";
+                case DefKind.SettlementIsp:         return "NewIspModule";
+                case DefKind.Hospital:              return "NewHospital";
+                case DefKind.MineTower:             return "NewMineTower";
+                case DefKind.ResearchLab:           return "NewResearchLab";
+                case DefKind.NuclearReactor:        return "NewNuclearReactor";
+                case DefKind.EditNuclearReactorFuels: return "EditReactorFuels";
+                case DefKind.EditNuclearReactorFluids: return "EditReactorFluids";
+                case DefKind.EditNuclearReactorEnrichment: return "EditReactorEnrichment";
+                case DefKind.EditNuclearReactorPorts: return "EditReactorPorts";
+                default:                            return "NewDef";
+            }
+        }
+
+        // Concrete-type construction with kind-appropriate defaults. Each
+        // case picks a starting shape the modder can extend in the form
+        // (e.g. recipes start with no machine so the picker prompts; loose
+        // products start with isStorable=true since that's the common case).
+        private static DefBase createDef(DefKind kind, string id) {
+            switch (kind) {
+                case DefKind.Recipe:
+                    return new RecipeDef { RecipeId = id, Name = "New recipe", Description = "" };
+                case DefKind.EditRecipe:
+                    return new EditRecipeDef { RecipeId = id };
+                case DefKind.Research:
+                    return new ResearchDef { ResearchId = id, Name = "New research", Description = "" };
+                case DefKind.ProductLoose:
+                    return new ProductLooseDef { ProductId = id, Name = "New loose product" };
+                case DefKind.ProductFluid:
+                    return new ProductFluidDef { ProductId = id, Name = "New fluid product" };
+                case DefKind.ProductUnit:
+                    return new ProductUnitDef { ProductId = id, Name = "New unit product" };
+                case DefKind.UnlockRecipe:
+                    // Unlock kinds compute DisplayId from their (research,
+                    // machine, recipe) composite — no Id field to seed.
+                    return new UnlockRecipeDef();
+                case DefKind.UnlockProduct:
+                    return new UnlockProductDef();
+                case DefKind.UnlockMachine:
+                    return new UnlockMachineDef();
+                case DefKind.Texture:
+                    return new TextureDef { Path = id };
+                case DefKind.MaterialLoose:
+                    return new MaterialLooseDef { Path = id };
+                case DefKind.MaterialTexture:
+                    return new MaterialTextureDef { Path = id };
+                case DefKind.PrefabBox:
+                    return new PrefabBoxDef { Path = id };
+                case DefKind.UnitPrefab:
+                    return new UnitPrefabDef { Path = id };
+                case DefKind.Generator:
+                    return new GeneratorDef { GeneratorId = id, Name = "New generator" };
+                case DefKind.ToolbarCategory:
+                    return new ToolbarCategoryDef { CategoryId = id, Name = "New category" };
+                case DefKind.EditMachinePorts:
+                    // No primary id field on edit_machine_ports itself —
+                    // the modder picks the target machine in the editor.
+                    return new EditMachinePortsDef();
+                case DefKind.BuildMachine:
+                    return new BuildMachineDef { MachineId = id, Name = "New machine" };
+                case DefKind.Housing:
+                    return new HousingDef { HousingId = id, Name = "New housing" };
+                case DefKind.SettlementDecoration:
+                    return new SettlementDecorationDef { DecorationId = id, Name = "New decoration" };
+                case DefKind.SettlementFood:
+                    return new SettlementFoodDef { FoodModuleId = id, Name = "New food module" };
+                case DefKind.SettlementIsp:
+                    return new SettlementIspDef { IspModuleId = id, Name = "New ISP module" };
+                case DefKind.Hospital:
+                    return new HospitalDef { HospitalId = id, Name = "New hospital" };
+                case DefKind.MineTower:
+                    return new MineTowerDef { MineTowerId = id, Name = "New mine tower" };
+                case DefKind.ResearchLab:
+                    return new ResearchLabDef { ResearchLabId = id, Name = "New research lab" };
+                case DefKind.NuclearReactor:
+                    return new NuclearReactorDef { ReactorId = id, Name = "New nuclear reactor" };
+                case DefKind.EditNuclearReactorFuels:
+                    // No primary id — the modder picks the target reactor in the editor.
+                    return new EditNuclearReactorFuelsDef();
+                case DefKind.EditNuclearReactorFluids:
+                    return new EditNuclearReactorFluidsDef();
+                case DefKind.EditNuclearReactorEnrichment:
+                    return new EditNuclearReactorEnrichmentDef();
+                case DefKind.EditNuclearReactorPorts:
+                    return new EditNuclearReactorPortsDef();
+                default:
+                    return null;
+            }
         }
 
         // "0_" prefix sorts before "1_" under Ordinal comparison, pinning
@@ -382,159 +1044,762 @@ namespace CustomAssets.Ui {
         }
 
         private static string displayLabelFor(RecipeDef r) {
+            string body;
             string name = string.IsNullOrEmpty(r.Name) ? "" : r.Name;
-            if (string.IsNullOrEmpty(name) || name == r.RecipeId) return r.RecipeId ?? "<no id>";
-            if (name.Length > 40) name = name.Substring(0, 37) + "...";
-            return r.RecipeId + "  —  " + name;
+            if (string.IsNullOrEmpty(name) || name == r.RecipeId) {
+                body = r.RecipeId ?? "<no id>";
+            } else {
+                if (name.Length > 40) name = name.Substring(0, 37) + "...";
+                body = r.RecipeId + "  —  " + name;
+            }
+            return prependVariableName(r, body);
+        }
+
+        // Pull the def's Python-source variable binding (set by PackLoader
+        // when the call shape was `name = build_*(...)`) and prepend it as
+        // `name = ` so the modder can spot which AST handle each row maps
+        // to. Null/empty VariableName passes through unchanged.
+        private static string prependVariableName(DefBase def, string body) {
+            if (def == null || string.IsNullOrEmpty(def.VariableName)) return body;
+            return def.VariableName + " = " + body;
+        }
+
+        // Render a Block.statements list as nested tree rows. Mirrors the AST
+        // exactly: EvaluateStatement → if it maps to a captured RecipeDef /
+        // UnknownDef, render a clickable row; IfStatement → render the full
+        // if/elif/else chain (each clause becomes its own CollapsibleGroup
+        // with its body's statements rendered recursively inside).
+        //
+        // The lexer collapses an if/elif/else chain into the LAST clause's
+        // IfStatement and links earlier clauses via Parent. We rebuild the
+        // chain in source order (outermost-if → last-clause) by walking the
+        // Parent chain and reversing, so the tree presents clauses in the
+        // order they appear in the file.
+        private void renderStatementsTree(
+                System.Collections.Generic.List<PythonAPI.Statements.IStatement> statements,
+                UiComponent container,
+                System.Collections.Generic.Dictionary<string,
+                    System.Collections.Generic.List<DefBase>> defsByScopeRun,
+                string[] sourceLines,
+                string sourceFile,
+                string scopeKey) {
+            // Tree position is driven by the model's per-(scope, run) ordering,
+            // not by per-statement AST lookups — that way drag operations on
+            // a row simply mutate the model list and the next rebuildTree
+            // call shows the new order without any source-file rewrite.
+            //
+            // The AST still defines the SCOPE STRUCTURE: each if-chain at
+            // this scope acts as a fixed boundary that splits the surrounding
+            // run into "before" and "after" halves. We walk the AST only to
+            // discover those boundaries (and to render clause headers); the
+            // defs themselves come from defsByScopeRun in model order.
+            int currentRun = 0;
+            foreach (PythonAPI.Statements.IStatement stmt in statements) {
+                if (stmt is PythonAPI.Statements.IfStatement ifs) {
+                    // Flush the run that ended at this if-chain BEFORE
+                    // rendering the clause groups, so the clause sits
+                    // visually between its before-run and after-run.
+                    renderRun(container, defsByScopeRun, scopeKey, currentRun);
+                    currentRun++;
+
+                    // Walk Parent chain and reverse so we render from the
+                    // outermost `if` clause downward to the final `else`.
+                    System.Collections.Generic.List<PythonAPI.Statements.IfStatement> chain =
+                        new System.Collections.Generic.List<PythonAPI.Statements.IfStatement>();
+                    PythonAPI.Statements.IfStatement walker = ifs;
+                    while (walker != null) {
+                        chain.Add(walker);
+                        walker = walker.Parent;
+                    }
+                    chain.Reverse();
+                    // True when the chain already terminates with an
+                    // `else` clause — Condition is null on the else
+                    // IfStatement. Suppresses the "+ add else" button on
+                    // the last group so we don't end up with two else
+                    // clauses on the same chain.
+                    bool chainHasElse = chain.Count > 0
+                        && chain[chain.Count - 1].Condition == null;
+                    for (int i = 0; i < chain.Count; i++) {
+                        PythonAPI.Statements.IfStatement clause = chain[i];
+                        string header = readSourceLineTrimmed(sourceLines, clause.StartLine)
+                            ?? (clause.Condition != null ? "if/elif:" : "else:");
+                        var clauseGroup = new CollapsibleGroup(
+                            new LocStrFormatted("🔀 " + header), expanded: true);
+                        // For `if`/`elif` clauses, synthesize an IfBlockDef so
+                        // the condition becomes a clickable tree row that
+                        // opens the proper right-pane editor (mode dropdown +
+                        // product picker). `else` has no condition to edit, so
+                        // it just hosts its children directly.
+                        if (clause.Condition != null && sourceFile != null) {
+                            IfBlockDef ifBlock = new IfBlockDef {
+                                Condition = extractConditionFromHeaderLine(
+                                    readSourceLineTrimmed(sourceLines, clause.StartLine)),
+                                SourceFile = sourceFile,
+                                SourceStartLine = clause.StartLine,
+                                SourceEndLine = clause.StartLine,
+                                AstStartLine = clause.StartLine,
+                            };
+                            clauseGroup.Body.Add(buildTreeRow(ifBlock));
+                        }
+                        if (clause.Block != null) {
+                            renderStatementsTree(clause.Block.statements, clauseGroup.Body,
+                                                 defsByScopeRun, sourceLines, sourceFile,
+                                                 scopeKey: "clause:" + clause.StartLine);
+                        }
+
+                        // "+ add definition" inside this clause's body —
+                        // splices the new def into the clause with proper
+                        // body indentation (same code path the file-level
+                        // popup uses, but routed through AppendDefIntoClause).
+                        if (sourceFile != null) {
+                            string targetFileForClause = sourceFile;
+                            int clauseHeaderLine = clause.StartLine;
+                            ButtonText addInClauseBtn = clauseGroup.Body.AddAndReturn(new ButtonText(
+                                new LocStrFormatted("+ add definition inside this clause…"), null));
+                            addInClauseBtn.OnClick(() =>
+                                openAddDefIntoClausePopup(addInClauseBtn, targetFileForClause, clauseHeaderLine));
+                        }
+
+                        // "+ add else" on the LAST clause when the chain
+                        // doesn't already end with one. The else's header
+                        // gets the same leading indent as the chain's
+                        // opening if.
+                        bool isLastClause = i == chain.Count - 1;
+                        if (isLastClause && !chainHasElse && sourceFile != null) {
+                            PythonAPI.Statements.IfStatement openingIf = chain[0];
+                            int afterLine = clause.EndLine > 0 ? clause.EndLine : clause.StartLine;
+                            string leadingIndent = readLeadingIndentForLine(sourceLines, openingIf.StartLine);
+                            string targetFileForElse = sourceFile;
+                            clauseGroup.Body.Add(new ButtonText(
+                                new LocStrFormatted("+ add else clause"),
+                                () => onAddElseToChain(targetFileForElse, afterLine, leadingIndent)));
+                        }
+
+                        container.Add(clauseGroup);
+                    }
+                }
+                // Every other statement (EvaluateStatement, AssignmentStatement,
+                // FunctionDef, …) is non-clausal and contributes nothing to
+                // the run boundary — the captured defs are sourced through
+                // defsByScopeRun, so we don't render here. Pure helper code
+                // (no captured def) passes through invisibly because it
+                // never made it into the model.
+            }
+            // Flush the final run (everything at this scope after the last
+            // if-chain, OR the only run when no clauses exist at all).
+            renderRun(container, defsByScopeRun, scopeKey, currentRun);
+        }
+
+        // Pull the (scope, run) bucket from defsByScopeRun in current model
+        // order and add a row per def into a dedicated Column that hosts a
+        // Reorderable manipulator on each row. The Column is the "drag
+        // arena" for this run — Reorderable confines each row's drag to
+        // its parent.contentContainer, so wrapping the run in its own
+        // Column is what keeps reorder strictly within (scope, run).
+        // No-op when the bucket is empty (a leading/trailing if-chain
+        // leaves its adjacent run with zero defs).
+        private void renderRun(
+                UiComponent container,
+                System.Collections.Generic.Dictionary<string,
+                    System.Collections.Generic.List<DefBase>> defsByScopeRun,
+                string scopeKey,
+                int runIndex) {
+            string key = (scopeKey ?? "top") + "#" + runIndex;
+            if (!defsByScopeRun.TryGetValue(key, out var defs) || defs.Count == 0) return;
+
+            Column runColumn = new Column();
+            // Stretch each row to the run-column's full width so flex-
+            // distributed children (drag handle | label | trash) get
+            // proper bounds. Without this the row sizes to its content,
+            // which pushes long-label rows past the tree panel's right
+            // edge.
+            runColumn.AlignItemsStretch();
+            // Keep a reference to the def list so the drag callback can
+            // translate visual order changes into in-memory reorderings of
+            // model.Definitions. The list captured here is the same one
+            // referenced by defsByScopeRun, so it mutates in place and
+            // future rebuildTree calls pick up the new order without any
+            // extra plumbing.
+            System.Collections.Generic.List<DefBase> defsRef = defs;
+            foreach (DefBase def in defsRef) {
+                UiComponent row = buildTreeRow(def, onReordered: (oldIdx, newIdx) =>
+                    onRunReordered(defsRef, oldIdx, newIdx));
+                runColumn.Add(row);
+            }
+            container.Add(runColumn);
+        }
+
+        // Splice a new condition into the if/elif header line. Preserves the
+        // original line's leading indent so a nested-if's header doesn't lose
+        // its column position. Keyword (if vs elif) is re-detected from the
+        // header line so the editor doesn't need to carry it. RescanPack +
+        // reload propagates the new condition into the AST + PackModel so the
+        // tree refreshes.
+        private void saveIfCondition(IfBlockDef def, string newCondition) {
+            if (def == null) return;
+            if (m_currentPack == null) return;
+            string sourceFile = def.SourceFile;
+            int headerLine = def.SourceStartLine;
+            if (string.IsNullOrEmpty(sourceFile) || headerLine < 1) return;
+            try {
+                string[] lines = File.ReadAllLines(sourceFile, Encoding.UTF8);
+                if (headerLine > lines.Length) return;
+                string original = lines[headerLine - 1];
+                int j = 0;
+                while (j < original.Length && (original[j] == ' ' || original[j] == '\t')) j++;
+                string indent = original.Substring(0, j);
+                string body = original.Substring(j);
+                string keyword = body.StartsWith("elif ") ? "elif"
+                                : body.StartsWith("if ")   ? "if"
+                                : null;
+                if (keyword == null) return;
+                string trimmed = (newCondition ?? "").Trim();
+                lines[headerLine - 1] = indent + keyword + " " + trimmed + ":";
+                File.WriteAllLines(sourceFile, lines,
+                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                PackRegistry.RescanPack(m_currentPack);
+                m_currentModel = PackLoader.Load(m_currentPack);
+                // Selection by recipe id survives the reload via the
+                // existing onSavePack pattern; reuse that mechanism by
+                // calling rebuildTree + leaving selection alone.
+                rebuildTree();
+                Log.Info("RecipeEditor: condition updated in " + Path.GetFileName(sourceFile)
+                         + ":" + headerLine);
+            } catch (Exception ex) {
+                Log.Exception(ex);
+                Log.Warning("RecipeEditor: condition save failed — " + ex.Message);
+            }
+        }
+
+        // One clickable row for a captured definition. Recipes route through
+        // onRecipeSelected (full editor); other defs through onOtherDefSelected
+        // (read-only placeholder until typed forms land).
+        // Single tree row: [drag handle] [● dirty] [label button] [🗑 trash]
+        //
+        //  * Label-button click selects the def into the right pane. Selected
+        //    row carries Cls.selected so applySelectionHighlight can flip the
+        //    style without rebuilding the tree.
+        //  * Trash button: plain click pops a confirm-popup; Shift+LMB skips
+        //    the popup (power-user shortcut). Both paths funnel through
+        //    onDeleteDefFromFile so the deletion behaviour stays in one place.
+        //  * Drag handle is the Reorderable's grip; the manipulator is added
+        //    to the row itself, so dropping rearranges the run's children in
+        //    place. onReordered translates the new DOM order into a mutation
+        //    of the run's def list (which is the same instance the model
+        //    holds via Definitions filtered by ScopeKey/RunIndex).
+        //
+        //  IfBlockDef rows are clause-header editors, not run members: they
+        //  skip the drag handle and trash icon to keep clauses fixed.
+        private UiComponent buildTreeRow(DefBase def, System.Action<int, int> onReordered = null) {
+            DefBase capturedDef = def;
+            bool isClauseHeader = def is IfBlockDef;
+
+            // Label / select button â€” Button.Area variant has built-in
+            // hover + selected effects (Mafi docstring: "Suitable for
+            // lists / menus"), so Cls.selected on the label visually
+            // pops the highlighted row without us styling it ourselves.
+            // Cls.group groups the row's hover/selected effect with its
+            // siblings in the same draggable run.
+            string labelText = def is RecipeDef rd ? displayLabelFor(rd) : displayLabelForDef(def);
+            ButtonText selectBtn;
+            if (def is RecipeDef rec) {
+                RecipeDef cap = rec;
+                selectBtn = new ButtonText(Button.Area, new LocStrFormatted(labelText),
+                    () => onRecipeSelected(cap));
+            } else {
+                selectBtn = new ButtonText(Button.Area, new LocStrFormatted(labelText),
+                    () => onOtherDefSelected(capturedDef));
+            }
+            selectBtn.FlexGrow(1f)
+                     .FlexShrink(1f)
+                     // MinWidth(0) lets flexbox shrink the button below its
+                     // intrinsic content width — without it, a long label
+                     // pushes the row past the panel's right edge (the
+                     // overflow bug the modder hit on the coal-liquification
+                     // pack). Combined with TextOverflow.Ellipsis the label
+                     // truncates with "..." while the trash button stays
+                     // visible.
+                     .MinWidth(0.px())
+                     .TextAlign(Mafi.Unity.UiToolkit.Component.TextAlignment.LeftMiddle)
+                     .TextOverflow(Mafi.Unity.UiToolkit.Component.TextOverflow.Ellipsis)
+                     .Class(Cls.group);
+            selectBtn.ClassRootIff(Cls.selected, isCurrentlySelected(def));
+            m_rowLabelByDef[def] = selectBtn;
+
+            // Clause headers fall back to a plain row — no drag, no delete.
+            if (isClauseHeader) return selectBtn;
+
+            // Drag handle (left grip column). Reorderable confines drag to
+            // its target.parent.contentContainer, so this row's container
+            // (one Column per (scope, run)) is the drag arena.
+            Column dragHandle = new Column();
+            dragHandle.Class(Cls.dragHandle)
+                      .AlignSelfStretch()
+                      .Width(8.px());
+
+            // Dirty marker. Hidden when clean; an orange "â—" when the def
+            // has uncommitted in-memory changes (field edit or reorder).
+            Label dirtyMarker = new Label(new LocStrFormatted(def.Dirty ? "â—" : ""));
+            dirtyMarker.Width(10.px()).Color(ColorRgba.Orange);
+
+            // Trash button. AttachConfirmationInline wraps OnClick with a
+            // floating confirm popup; the MouseDown listener short-circuits
+            // it when Shift+LMB is held so power-users can bypass the
+            // popup. StopImmediatePropagation prevents the underlying
+            // Clickable manipulator from then firing OnClick.
+            ButtonIcon trash = new ButtonIcon(
+                    Button.Danger,
+                    "Assets/Unity/UserInterface/General/Trash128.png")
+                .IconSize(14.px())
+                .Tooltip(new LocStrFormatted("Delete (Shift+click to skip confirm)"));
+            trash.AttachConfirmationInline(
+                new LocStrFormatted("Delete"),
+                () => new LocStrFormatted("Delete '"
+                    + (def.DisplayId ?? def.Kind) + "'?"),
+                () => onDeleteDefFromFile(capturedDef));
+            trash.RootElement.RegisterCallback<UnityEngine.UIElements.MouseDownEvent>(evt => {
+                if (evt.button == 0 && evt.shiftKey) {
+                    onDeleteDefFromFile(capturedDef);
+                    evt.StopImmediatePropagation();
+                }
+            });
+
+            Row row = new Row();
+            row.AlignItemsCenter().Gap(2.pt());
+            row.Add(dragHandle);
+            row.Add(dirtyMarker);
+            row.Add(selectBtn);
+            row.Add(trash);
+
+            // Reorderable manipulator. drag-handle is the grip; OnOrderChanged
+            // fires after drop with the row's new container index.
+            if (onReordered != null) {
+                Reorderable reorderable = new Reorderable(dragHandle.RootElement);
+                System.Action<int, int> capturedCallback = onReordered;
+                reorderable.OnOrderChanged += (oldIdx, newIdx) => capturedCallback(oldIdx, newIdx);
+                row.AddManipulator(reorderable);
+            }
+            return row;
+        }
+
+        // Called by Reorderable after a successful drop. Mutates the run's
+        // def list in place so the next rebuildTree (triggered here) shows
+        // the new order. Marks every def in the run Dirty so the modder can
+        // tell which file needs a save — reorder doesn't change individual
+        // field values but it WILL change the on-disk layout, so until Save
+        // runs the in-memory state diverges from the file.
+        private void onRunReordered(System.Collections.Generic.List<DefBase> runDefs,
+                int oldIdx, int newIdx) {
+            if (runDefs == null) return;
+            if (oldIdx < 0 || oldIdx >= runDefs.Count) return;
+            if (newIdx < 0 || newIdx >= runDefs.Count) return;
+            if (oldIdx == newIdx) return;
+            DefBase moved = runDefs[oldIdx];
+            runDefs.RemoveAt(oldIdx);
+            runDefs.Insert(newIdx, moved);
+            foreach (DefBase d in runDefs) d.Dirty = true;
+            // model.Definitions also needs to mirror the new order so
+            // PackEmitter's eventual region-rewrite sees it. We walk the
+            // run's defs in their NEW order and reassign them to the same
+            // set of indices in model.Definitions that they originally
+            // occupied â€” that keeps cross-run defs untouched.
+            if (m_currentModel != null) {
+                System.Collections.Generic.List<int> indices =
+                    new System.Collections.Generic.List<int>(runDefs.Count);
+                for (int i = 0; i < m_currentModel.Definitions.Count; i++) {
+                    if (runDefs.Contains(m_currentModel.Definitions[i])) {
+                        indices.Add(i);
+                    }
+                }
+                if (indices.Count == runDefs.Count) {
+                    for (int i = 0; i < indices.Count; i++) {
+                        m_currentModel.Definitions[indices[i]] = runDefs[i];
+                    }
+                }
+            }
+            rebuildTree();
+        }
+
+        // True when this def is what the right pane currently shows. Used
+        // by buildTreeRow to seed the Cls.selected class on the row's
+        // label button so the modder can scan the tree and see which row
+        // is loaded into the editor.
+        private bool isCurrentlySelected(DefBase def) {
+            if (def is RecipeDef rd) return ReferenceEquals(m_selectedRecipe, rd);
+            return ReferenceEquals(m_selectedOther, def);
+        }
+
+        // Toggle Cls.selected on each tracked row's label button to match
+        // the current m_selectedRecipe / m_selectedOther values. Cheaper
+        // than rebuilding the tree on every click; called from the two
+        // selection handlers below.
+        private void applySelectionHighlight() {
+            foreach (var kvp in m_rowLabelByDef) {
+                if (kvp.Value == null) continue;
+                kvp.Value.ClassRootIff(Cls.selected, isCurrentlySelected(kvp.Key));
+            }
+        }
+
+        // Read line `n` (1-based) from the source-line array, returning the
+        // trimmed text. Returns null when the line index is out of range or
+        // the array is null. Used as the if/elif/else clause label.
+        private static string readSourceLineTrimmed(string[] sourceLines, int oneBasedLine) {
+            if (sourceLines == null) return null;
+            if (oneBasedLine < 1 || oneBasedLine > sourceLines.Length) return null;
+            return sourceLines[oneBasedLine - 1].Trim();
+        }
+
+        // Extract the condition expression text from an `if <expr>:` /
+        // `elif <expr>:` header line (already trimmed). Returns "" when the
+        // line doesn't match either keyword — the editor still opens with an
+        // empty Custom field so the modder can type one in.
+        private static string extractConditionFromHeaderLine(string trimmedHeader) {
+            if (string.IsNullOrEmpty(trimmedHeader)) return "";
+            string keyword = trimmedHeader.StartsWith("elif ") ? "elif"
+                            : trimmedHeader.StartsWith("if ")   ? "if"
+                            : null;
+            if (keyword == null) return "";
+            string body = trimmedHeader.Substring(keyword.Length + 1);
+            int colon = body.LastIndexOf(':');
+            if (colon >= 0) body = body.Substring(0, colon);
+            return body.Trim();
+        }
+
+        // Best-effort file read; the caller falls back to a generic clause
+        // label when this returns null.
+        private static string[] tryReadAllLines(string path) {
+            try { return File.ReadAllLines(path, Encoding.UTF8); }
+            catch { return null; }
         }
 
         private void onRecipeSelected(RecipeDef recipe) {
             m_selectedRecipe = recipe;
-            rebuildStatementEditor();
-        }
-
-        // ---- Statement editor (right pane) -------------------------------------
-
-        private void rebuildStatementEditor() {
+            m_selectedOther  = null;
+            applySelectionHighlight();
             m_statementColumn.Clear();
-            if (m_selectedRecipe == null) return;
+            if (recipe == null) return;
 
-            RecipeDef r = m_selectedRecipe;
-            m_statementColumn.Add(new Label(new LocStrFormatted("Recipe — " + (r.RecipeId ?? "?"))));
+            // Mirrors onOtherDefSelected layout: bold header → comment →
+            // editor body → source label → Save-this-entry. Keeping the
+            // dispatcher in charge of header/comment/source/save means
+            // RecipeDefEditor focuses purely on the recipe-specific
+            // fields, matching every other typed editor.
+            m_statementColumn.Add(new Label(new LocStrFormatted(recipe.Kind + " — "
+                + (string.IsNullOrEmpty(recipe.DisplayId) ? "<no id>" : recipe.DisplayId)))
+                .FontBold());
 
-            // Editable scalar fields from step C. Pickers (machine / research /
-            // products) and list editing (ingredients / products) come in next
-            // passes; for now they remain read-only display strings.
-            m_statementColumn.Add(labeledField("id",
-                new TextField()
-                    .Text(r.RecipeId ?? "")
-                    .OnValueChanged(v => r.RecipeId = v)));
-            m_statementColumn.Add(labeledField("name",
-                new TextField()
-                    .Text(r.Name ?? "")
-                    .OnValueChanged(v => r.Name = v)));
-            m_statementColumn.Add(labeledField("description",
-                new TextField()
-                    .Multiline(true)
-                    .Text(r.Description ?? "")
-                    .SetTextAreaMinHeight(48.px())
-                    .OnValueChanged(v => r.Description = v)));
-            // Comment captures the `#` comment block immediately preceding the
-            // build_recipe(...) call in source. Editing here writes back the
-            // entire block on save (PackEmitter prepends `# ` to each line).
-            // Multiline so modders can author paragraph notes without hand
-            // wrapping. Stored on the RecipeDef but NOT a `build_recipe`
-            // argument — purely authorial documentation.
-            // Comment captures the `#` comment block immediately preceding the
-            // build_recipe(...) call in source. No Placeholder() here — Mafi's
-            // multiline TextField doesn't hide the hint text once a value is
-            // present, so the hint overlaps the actual content (same bug that
-            // bit the qty TextField; see the buildProductRow comment). The
-            // label above the field is sufficient guidance.
+            RecipeDef commentTarget = recipe;
             m_statementColumn.Add(labeledField("comment (notes shown above the recipe)",
                 new TextField()
                     .Multiline(true)
-                    .Text(r.Comment ?? "")
+                    .Text(recipe.Comment ?? "")
                     .SetTextAreaMinHeight(36.px())
-                    .OnValueChanged(v => r.Comment = string.IsNullOrEmpty(v) ? null : v)));
-            // Machine and research are now real proto pickers backed by the
-            // live ProtosDb. The picker shows icon + display name + dim id and
-            // opens a searchable popup on click. Selection writes back the id
-            // string into the RecipeDef so the emitter preserves the change.
-            // Changing the machine invalidates the port dropdowns on every
-            // ingredient/product row, so we rebuild the whole form after a
-            // machine change. The picker writes the new id back into the
-            // RecipeDef BEFORE the callback fires here.
-            m_statementColumn.Add(labeledField("machine",
-                new ProtoPicker<MachineProto>(
-                    m_uiContext.ProtosDb,
-                    getId: () => r.MachineId,
-                    setId: id => { r.MachineId = id; rebuildStatementEditor(); },
-                    emptyLabel: new LocStrFormatted("(pick a machine…)"))));
-            // Research uses the same generic ProtoPicker<T> as machine/product
-            // (the picker no longer requires T : IProtoWithIcon — it dropped
-            // ProtoPickerPopup<T> in favour of a custom FloatingColumn popup
-            // for exactly this case). The custom iconPathOf delegate digs the
-            // icon out of ResearchNodeProto.Graphics.Icons[0], falling back to
-            // IconsProtos[0].IconPath when only the unlocked-proto icon is set.
-            m_statementColumn.Add(labeledField("research",
-                new ProtoPicker<ResearchNodeProto>(
-                    m_uiContext.ProtosDb,
-                    getId: () => r.ResearchId,
-                    setId: id => r.ResearchId = id,
-                    iconPathOf: researchIconPath,
-                    emptyLabel: new LocStrFormatted("(no research required)"),
-                    title: new LocStrFormatted("Pick research"))));
-            m_statementColumn.Add(labeledField("duration (seconds, blank = default)",
+                    .OnValueChanged(v => commentTarget.Comment = string.IsNullOrEmpty(v) ? null : v)));
+
+            // Variable-name field — when set the emitter writes
+            // `<name> = build_recipe(...)` so downstream code that
+            // references this recipe by variable still resolves on the
+            // next pack load. Blank means "emit as a bare expression
+            // statement" (the typical recipe shape).
+            m_statementColumn.Add(labeledField("variable name (assigns the def to this Python variable; blank = none)",
                 new TextField()
-                    .Text(r.DurationSeconds.HasValue ? r.DurationSeconds.Value.ToString() : "")
-                    .PositiveIntegersOnly()
-                    .OnValueChanged(v => r.DurationSeconds = parseNullableInt(v))));
-            m_statementColumn.Add(labeledField("power (percent, blank = default)",
-                new TextField()
-                    .Text(r.PowerPercent.HasValue ? r.PowerPercent.Value.ToString() : "")
-                    .PositiveIntegersOnly()
-                    .OnValueChanged(v => r.PowerPercent = parseNullableInt(v))));
+                    .Text(recipe.VariableName ?? "")
+                    .OnValueChanged(v => commentTarget.VariableName = string.IsNullOrEmpty(v) ? null : v)));
 
-            // Ingredient + product lists are editable. Each row carries a
-            // ProductPicker (game's ProtoPickerPopup), a numeric quantity
-            // field, a port dropdown driven by the recipe's machine ports,
-            // and a remove button. The list header has a "+ add" button
-            // that appends a default-empty row.
-            MachineProto currentMachine = resolveMachine(r.MachineId);
+            showEditor<RecipeDef>(recipe,
+                () => new Editors.RecipeDefEditor(m_uiContext.ProtosDb, m_currentModel));
 
-            // Machine port layout summary, rendered in monospace right under
-            // the machine picker. This is the "display for layout" the modder
-            // needs to cross-reference what port letters and shapes the chosen
-            // machine actually exposes, without having to open the port
-            // dropdown for each row. It also serves as a sanity check when
-            // validation flags a missing-port-type — the user can see at a
-            // glance which types the machine does support.
-            m_statementColumn.Add(buildMachinePortsView(currentMachine, r.MachineId));
-
-            // Allocate the validation column up front so row edits (product
-            // change, port change, qty change, add/remove) can clear+refill
-            // it through `refreshValidation` instead of rebuilding the whole
-            // form (which would lose focus on whatever field the user is
-            // typing in). The column is positioned AFTER the lists below,
-            // but `refreshValidation` only mutates its children, so the
-            // ordering in the layout stays intact.
-            Column validation = new Column();
-            validation.Gap(1.pt()).PaddingTopBottom(2.pt());
-            Action refreshValidation = () => populateValidationColumn(validation, r, currentMachine);
-            refreshValidation();
-
-            m_statementColumn.Add(buildProductListEditor(
-                label: "ingredients",
-                isInput: true,
-                machine: currentMachine,
-                list: r.Ingredients ?? (r.Ingredients = new System.Collections.Generic.List<ProductRef>()),
-                onChanged: refreshValidation));
-            m_statementColumn.Add(buildProductListEditor(
-                label: "products",
-                isInput: false,
-                machine: currentMachine,
-                list: r.Products ?? (r.Products = new System.Collections.Generic.List<ProductRef>()),
-                onChanged: refreshValidation));
-
-            m_statementColumn.Add(validation);
-
-            if (!string.IsNullOrEmpty(r.SourceFile)) {
+            if (!string.IsNullOrEmpty(recipe.SourceFile)) {
                 m_statementColumn.Add(new Label(new LocStrFormatted(
-                    "source: " + Path.GetFileName(r.SourceFile) +
-                    " (lines " + r.SourceStartLine + "–" + r.SourceEndLine + ")")));
+                    "source: " + Path.GetFileName(recipe.SourceFile) +
+                    " (lines " + recipe.SourceStartLine + "–" + recipe.SourceEndLine + ")")));
+            }
+            appendIssueRowsForDef(recipe);
+
+            rebuildEditorFooter(recipe, includeVerify: true);
+        }
+
+        // Tree label for a non-recipe definition: "[<kind>] <id>  —  <name>"
+        // when a display name is present, "[<kind>] <id>" otherwise. The
+        // kind tag is bracketed so the eye can scan a file's contents and
+        // distinguish recipes from product/research/asset entries at a
+        // glance.
+        private static string displayLabelForDef(DefBase def) {
+            string id = string.IsNullOrEmpty(def.DisplayId) ? "<no id>" : def.DisplayId;
+            string label = "[" + def.Kind + "] " + id;
+            string name = def.DisplayName;
+            if (!string.IsNullOrEmpty(name) && name != id) {
+                if (name.Length > 40) label += "  —  " + name.Substring(0, 37) + "...";
+                else label += "  —  " + name;
+            }
+            return prependVariableName(def, label);
+        }
+
+        // Selection handler for non-recipe definitions. Dispatches per Def
+        // kind: typed Defs (ResearchDef, UnlockRecipeDef, UnlockProductDef,
+        // UnlockMachineDef) render a per-kind form so the modder gets proper
+        // pickers and validation; UnknownDef falls back to the raw-source
+        // multiline editor so unrecognised kinds remain editable.
+        //
+        // m_selectedOther tracks any non-recipe selection (typed or unknown)
+        // so onSavePack can re-select the same definition by id after reload.
+        private void onOtherDefSelected(DefBase def) {
+            m_selectedRecipe = null;
+            m_selectedOther  = def;
+            applySelectionHighlight();
+            m_statementColumn.Clear();
+            m_statementColumn.Add(new Label(new LocStrFormatted(def.Kind + " — "
+                + (string.IsNullOrEmpty(def.DisplayId) ? "<no id>" : def.DisplayId))).FontBold());
+
+            // Comment editor — shared across all Def kinds since it lives on
+            // DefBase. Multi-line, no placeholder (see TextField placeholder
+            // quirk memory).
+            m_statementColumn.Add(labeledField("comment (notes shown above the statement)",
+                new TextField()
+                    .Multiline(true)
+                    .Text(def.Comment ?? "")
+                    .SetTextAreaMinHeight(36.px())
+                    .OnValueChanged(v => def.Comment = string.IsNullOrEmpty(v) ? null : v)));
+
+            // Variable-name field — when set the emitter writes
+            // `<name> = <call>(...)` so downstream code that references
+            // this def by variable (e.g. `material = filter_media_mat`)
+            // still resolves on next load. Blank means "emit as a bare
+            // expression statement". Skipped for IfBlockDef since `if`
+            // clauses aren't assignable expressions in Python.
+            if (!(def is IfBlockDef)) {
+                m_statementColumn.Add(labeledField("variable name (assigns the def to this Python variable; blank = none)",
+                    new TextField()
+                        .Text(def.VariableName ?? "")
+                        .OnValueChanged(v => def.VariableName = string.IsNullOrEmpty(v) ? null : v)));
             }
 
-            // Save + verify side-by-side. Save splices each recipe back into
-            // its source .py file via PackEmitter.Save, then rescans the pack
-            // so subsequent edits see fresh line ranges. Verify is the existing
-            // round-trip diagnostic (load → render → re-parse → diff).
-            Row actionRow = new Row {
-                new ButtonText(new LocStrFormatted("Save pack to disk"), onSavePack),
-                new ButtonText(new LocStrFormatted("Verify Round-Trip"), onVerifyRoundTrip)
-            };
-            actionRow.Gap(3.pt());
-            m_statementColumn.Add(actionRow);
+            // Per-kind body. Typed editors follow the `DefEditor<T>` pattern:
+            // constructed once and cached, rebinds via `Value(...)` on each
+            // selection. The legacy `buildEditRecipeForm` stays in place
+            // because it depends on the recipe form's product-list editor
+            // helpers, which haven't been migrated yet. UnknownDef falls
+            // back to the raw-source multiline editor.
+            //
+            // Wrapped in try/catch so a typed editor's constructor blowing
+            // up (missing field, null-deref in a binding) surfaces a visible
+            // banner + full stack in Player.log instead of leaving the right
+            // pane silently empty.
+            try {
+                if      (def is IfBlockDef ib)         showEditor<IfBlockDef>(ib, () => new Editors.IfBlockDefEditor(m_uiContext.ProtosDb, saveIfCondition));
+                else if (def is ResearchDef rs)        showEditor<ResearchDef>(rs, () => new Editors.ResearchDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
+                else if (def is UnlockRecipeDef ur)    showEditor<UnlockRecipeDef>(ur, () => new Editors.UnlockRecipeDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is UnlockProductDef up)   showEditor<UnlockProductDef>(up, () => new Editors.UnlockProductDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is UnlockMachineDef um)   showEditor<UnlockMachineDef>(um, () => new Editors.UnlockMachineDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is ProductLooseDef pl)    showEditor<ProductLooseDef>(pl, () => new Editors.ProductLooseDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
+                else if (def is ProductFluidDef pf)    showEditor<ProductFluidDef>(pf, () => new Editors.ProductFluidDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
+                else if (def is ProductUnitDef pu)     showEditor<ProductUnitDef>(pu, () => new Editors.ProductUnitDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
+                else if (def is TextureDef tx)         showEditor<TextureDef>(tx, () => new Editors.TextureDefEditor(m_currentPack));
+                else if (def is MaterialLooseDef ml)   showEditor<MaterialLooseDef>(ml, () => new Editors.MaterialLooseDefEditor(m_currentPack, m_currentModel));
+                else if (def is MaterialTextureDef mt) showEditor<MaterialTextureDef>(mt, () => new Editors.MaterialTextureDefEditor(m_currentPack, m_currentModel));
+                else if (def is PrefabBoxDef pb)       showEditor<PrefabBoxDef>(pb, () => new Editors.PrefabBoxDefEditor(m_currentPack, m_currentModel));
+                else if (def is UnitPrefabDef upr)     showEditor<UnitPrefabDef>(upr, () => new Editors.UnitPrefabDefEditor(m_currentPack, m_currentModel, m_uiContext));
+                else if (def is ToolbarCategoryDef tc) showEditor<ToolbarCategoryDef>(tc, () => new Editors.ToolbarCategoryDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
+                else if (def is GeneratorDef gd)       showEditor<GeneratorDef>(gd, () => new Editors.GeneratorDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is EditRecipeDef er)      showEditor<EditRecipeDef>(er, () => new Editors.EditRecipeDefEditor(m_uiContext.ProtosDb, m_currentModel));
+                else if (def is EditMachinePortsDef emp) showEditor<EditMachinePortsDef>(emp, () => new Editors.EditMachinePortsDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is BuildMachineDef bmd)   showEditor<BuildMachineDef>(bmd, () => new Editors.BuildMachineDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is HousingDef hd)         showEditor<HousingDef>(hd, () => new Editors.HousingDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is SettlementDecorationDef sdd) showEditor<SettlementDecorationDef>(sdd, () => new Editors.SettlementDecorationDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is SettlementFoodDef sfd) showEditor<SettlementFoodDef>(sfd, () => new Editors.SettlementFoodDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is SettlementIspDef sid)  showEditor<SettlementIspDef>(sid, () => new Editors.SettlementIspDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is HospitalDef hpd)       showEditor<HospitalDef>(hpd, () => new Editors.HospitalDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is MineTowerDef mtd)      showEditor<MineTowerDef>(mtd, () => new Editors.MineTowerDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is ResearchLabDef rld)    showEditor<ResearchLabDef>(rld, () => new Editors.ResearchLabDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is NuclearReactorDef nrd) showEditor<NuclearReactorDef>(nrd, () => new Editors.NuclearReactorDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is EditNuclearReactorFuelsDef enrf) showEditor<EditNuclearReactorFuelsDef>(enrf, () => new Editors.EditNuclearReactorFuelsDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is EditNuclearReactorFluidsDef enrfl) showEditor<EditNuclearReactorFluidsDef>(enrfl, () => new Editors.EditNuclearReactorFluidsDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is EditNuclearReactorPortsDef enrp) showEditor<EditNuclearReactorPortsDef>(enrp, () => new Editors.EditNuclearReactorPortsDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is EditNuclearReactorEnrichmentDef enren) showEditor<EditNuclearReactorEnrichmentDef>(enren, () => new Editors.EditNuclearReactorEnrichmentDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is UnknownDef other)      buildRawSourceForm(other);
+                else m_statementColumn.Add(new Label(new LocStrFormatted(
+                    "(no editor for this definition kind yet)"))
+                    .Color(ColorRgba.LightGray));
+            } catch (Exception editorEx) {
+                Log.Exception(editorEx);
+                Log.Warning("RecipeEditor: editor for kind '" + def.Kind
+                    + "' threw â€” " + editorEx.GetType().Name + ": " + editorEx.Message);
+                m_statementColumn.Add(new Label(new LocStrFormatted(
+                    "(editor crashed â€” see Player.log: " + editorEx.GetType().Name
+                    + ": " + editorEx.Message + ")"))
+                    .Color(ColorRgba.Red));
+            }
+
+            if (!string.IsNullOrEmpty(def.SourceFile)) {
+                m_statementColumn.Add(new Label(new LocStrFormatted(
+                    "source: " + Path.GetFileName(def.SourceFile) +
+                    " (lines " + def.SourceStartLine + "–" + def.SourceEndLine + ")")));
+            }
+            appendIssueRowsForDef(def);
+
+            // Action buttons (Save, Duplicate) live in the editor's footer
+            // — see rebuildEditorFooter. The footer is anchored to the
+            // bottom of the editor pane so it stays visible while the
+            // scrollable body above scrolls. Per-entry save splices ONLY
+            // this def back into its source file so a single edit doesn't
+            // drag every other dirty entry in the model along with it.
+            rebuildEditorFooter(def, includeVerify: false);
+        }
+
+        // Remove the def from the in-memory model so the next save splices
+        // it out of source. Source-file rewriting is line-range-based —
+        // PackEmitter detects the missing entry and deletes the
+        // corresponding lines from the .py file. Clears the current
+        // selection (the just-deleted def shouldn't stay editable) and
+        // rebuilds the tree so the row disappears immediately.
+        private void onDeleteDefFromFile(DefBase def) {
+            if (m_currentModel == null || def == null) return;
+            bool wasOnDisk = !string.IsNullOrEmpty(def.SourceFile) && def.SourceStartLine > 0;
+            string sourceFileName = Path.GetFileName(def.SourceFile ?? "");
+            string displayId = def.DisplayId ?? def.Kind;
+
+            m_currentModel.Definitions.Remove(def);
+            if (ReferenceEquals(m_selectedOther, def)) m_selectedOther = null;
+            if (def is RecipeDef rd && ReferenceEquals(m_selectedRecipe, rd))
+                m_selectedRecipe = null;
+
+            // Commit the deletion to disk RIGHT NOW. The earlier "save
+            // later" flow had a bug: onSavePack only re-emits defs still
+            // in the model, so the deleted def's lines lingered on disk
+            // and the next reload pulled it back into the model.
+            if (wasOnDisk && m_currentPack != null) {
+                try {
+                    PackEmitter.DeleteDef(def);
+                    PackRegistry.RescanPack(m_currentPack);
+                    m_currentModel = PackLoader.Load(m_currentPack);
+                    Log.Info("RecipeEditor: deleted '" + displayId + "' from "
+                        + sourceFileName);
+                } catch (Exception ex) {
+                    Log.Exception(ex);
+                    Log.Warning("RecipeEditor: delete failed - " + ex.Message);
+                }
+            }
+
+            rebuildTree();
+            showEmptyStatement("Deleted '" + displayId + "'"
+                + (wasOnDisk ? (" from " + sourceFileName + ".") : "."));
+        }
+
+        // Append every PackValidator issue whose source file + line range
+        // overlaps this def to the statement column as a red warning row.
+        // Currently the only check is use-before-definition; rendering as
+        // one row per issue keeps the surface usable when a single def
+        // references several undefined variables.
+        private void appendIssueRowsForDef(DefBase def) {
+            if (m_currentModel?.Issues == null || def == null) return;
+            string defFile = def.SourceFile;
+            if (string.IsNullOrEmpty(defFile)) return;
+            foreach (PackIssue issue in m_currentModel.Issues) {
+                if (!string.Equals(issue.SourceFile, defFile, StringComparison.Ordinal)) continue;
+                // Use-before-def issues are flagged at the reference line.
+                // Show every issue whose line falls inside (or at) this
+                // def's source range so the modder sees them in-context.
+                if (issue.Line < def.SourceStartLine || issue.Line > def.SourceEndLine) continue;
+                m_statementColumn.Add(new Label(new LocStrFormatted("⚠ " + issue.Message))
+                    .Color(ColorRgba.Red));
+            }
+        }
+
+
+        // Fallback raw-text editor for UnknownDef (definition kinds we don't
+        // have typed forms for yet). PackEmitter splices the edited text
+        // back at the original line range on save.
+        private void buildRawSourceForm(UnknownDef other) {
+            if (other.RawSource != null) {
+                m_statementColumn.Add(new Label(new LocStrFormatted(
+                    "Raw source — edit and Save to splice the new text back at the original line range:")));
+                TextField raw = new TextField()
+                    .Multiline(true)
+                    .Text(other.RawSource)
+                    .SetTextAreaMinHeight(220.px())
+                    .OnValueChanged(v => other.RawSource = v ?? "");
+                raw.Class(Cls.fontMonospace);
+                m_statementColumn.Add(raw);
+            } else {
+                m_statementColumn.Add(new Label(new LocStrFormatted(
+                    "(no captured source — definition came from a non-file source)"))
+                    .Color(ColorRgba.LightGray));
+            }
+        }
+
+
+        // Persist a single entry. Splices ONLY this def back into its source
+        // file via PackEmitter.SaveDef so unrelated edits in other entries
+        // stay in memory until the modder explicitly saves them too. Other
+        // entries in the same file keep their Dirty markers; the saved
+        // entry's Dirty flag clears. RescanPack runs so subsequent edits on
+        // this def see fresh line ranges after the splice shifted them.
+        private void onSaveDef(DefBase def) {
+            if (def == null || m_currentPack == null) {
+                Log.Info("RecipeEditor: SaveDef clicked but no def/pack selected.");
+                return;
+            }
+            // Refuse to write a new def while mandatory fields are still
+            // empty. Without this guard the emitter would happily produce
+            // a `<call>(machine = None, ...)` line which crashes the mod
+            // loader on next pack reload. The modder sees the missing
+            // fields in the log + the in-memory def stays editable.
+            Mafi.Collections.Lyst<string> missing = def.MissingMandatoryFields();
+            if (missing != null && missing.Count > 0) {
+                DiagnosticTrace.Step($"onSaveDef[{def.Kind}/{def.DisplayId}]: blocked — missing {string.Join(",", missing)}");
+                Log.Warning("RecipeEditor: cannot save '" + (def.DisplayId ?? def.Kind)
+                    + "' — required fields still empty: " + string.Join(", ", missing));
+                return;
+            }
+            // Freshly added defs without a source range yet can't go through
+            // the single-entry path â€” they need the appended-defs flow that
+            // PackEmitter.Save runs. Fall back to onSavePack in that case.
+            if (string.IsNullOrEmpty(def.SourceFile) || def.SourceStartLine <= 0) {
+                DiagnosticTrace.Step($"onSaveDef[{def.Kind}/{def.DisplayId}]: no SourceFile/StartLine → onSavePack");
+                onSavePack();
+                return;
+            }
+            DiagnosticTrace.Step($"onSaveDef[{def.Kind}/{def.DisplayId}]: BEGIN file={Path.GetFileName(def.SourceFile)} lines={def.SourceStartLine}-{def.SourceEndLine}");
+            try {
+                DiagnosticTrace.Step("onSaveDef: PackEmitter.SaveDef BEGIN");
+                PackEmitter.SaveDef(def, m_currentModel);
+                DiagnosticTrace.Step("onSaveDef: PackEmitter.SaveDef END");
+                DiagnosticTrace.Step("onSaveDef: PackRegistry.RescanPack BEGIN");
+                PackRegistry.RescanPack(m_currentPack);
+                DiagnosticTrace.Step("onSaveDef: PackRegistry.RescanPack END");
+                string previousRecipeId = m_selectedRecipe?.RecipeId;
+                string previousOtherKind = m_selectedOther?.Kind;
+                string previousOtherId   = m_selectedOther?.DisplayId;
+                DiagnosticTrace.Step("onSaveDef: PackLoader.Load BEGIN");
+                m_currentModel = PackLoader.Load(m_currentPack);
+                DiagnosticTrace.Step("onSaveDef: PackLoader.Load END");
+                m_selectedRecipe = previousRecipeId != null
+                    ? m_currentModel.Recipes.FirstOrDefault(r => r.RecipeId == previousRecipeId)
+                    : null;
+                m_selectedOther = (previousOtherKind != null && previousOtherId != null)
+                    ? m_currentModel.OtherDefinitions
+                        .FirstOrDefault(d => d.Kind == previousOtherKind && d.DisplayId == previousOtherId)
+                    : null;
+                DiagnosticTrace.Step("onSaveDef: rebuildTree BEGIN");
+                rebuildTree();
+                DiagnosticTrace.Step("onSaveDef: rebuildTree END");
+                if (m_selectedRecipe != null) {
+                    DiagnosticTrace.Step($"onSaveDef: onRecipeSelected[{m_selectedRecipe.RecipeId}] BEGIN");
+                    onRecipeSelected(m_selectedRecipe);
+                    DiagnosticTrace.Step("onSaveDef: onRecipeSelected END");
+                } else if (m_selectedOther != null) {
+                    DiagnosticTrace.Step($"onSaveDef: onOtherDefSelected[{m_selectedOther.Kind}/{m_selectedOther.DisplayId}] BEGIN");
+                    onOtherDefSelected(m_selectedOther);
+                    DiagnosticTrace.Step("onSaveDef: onOtherDefSelected END");
+                }
+                Log.Info("RecipeEditor: saved entry '"
+                    + (def.DisplayId ?? def.Kind) + "' in "
+                    + Path.GetFileName(def.SourceFile));
+            } catch (Exception ex) {
+                DiagnosticTrace.Step($"onSaveDef: THREW {ex.GetType().Name}: {ex.Message}");
+                Log.Exception(ex);
+                Log.Warning("RecipeEditor: SaveDef failed â€” " + ex.Message);
+            }
         }
 
         // Persist edits made in the form. The new emitter (Duration.FromSec /
@@ -547,24 +1812,57 @@ namespace CustomAssets.Ui {
                 Log.Info("RecipeEditor: Save clicked but no pack/model selected.");
                 return;
             }
+            DiagnosticTrace.Step($"onSavePack[{m_currentPack.ModId}]: BEGIN recipes={m_currentModel.Recipes.Count()} other={m_currentModel.OtherDefinitions.Count()}");
             try {
+                DiagnosticTrace.Step("onSavePack: PackEmitter.Save BEGIN");
                 PackEmitter.Save(m_currentModel);
-                // Re-tokenise + re-parse the pack so the next edit's SourceStartLine
-                // / SourceEndLine reflect post-splice line positions.
+                DiagnosticTrace.Step("onSavePack: PackEmitter.Save END");
+                // Re-tokenise + re-parse the pack so the next edit's
+                // SourceStartLine / SourceEndLine reflect post-splice line
+                // positions.
+                DiagnosticTrace.Step("onSavePack: PackRegistry.RescanPack BEGIN");
                 PackRegistry.RescanPack(m_currentPack);
-                // Reload the model from the refreshed AST; preserve the user's
-                // selected recipe by id so the form doesn't reset.
-                string previousId = m_selectedRecipe?.RecipeId;
+                DiagnosticTrace.Step("onSavePack: PackRegistry.RescanPack END");
+                // Preserve selection across reload — recipes by RecipeId,
+                // other definitions by (CallName, Id). If neither matches the
+                // form clears, but typically Save → reload → same selection
+                // so the modder can keep editing without a click.
+                string previousRecipeId = m_selectedRecipe?.RecipeId;
+                string previousOtherKind = m_selectedOther?.Kind;
+                string previousOtherId   = m_selectedOther?.DisplayId;
+                DiagnosticTrace.Step("onSavePack: PackLoader.Load BEGIN");
                 m_currentModel = PackLoader.Load(m_currentPack);
-                m_selectedRecipe = previousId != null
-                    ? m_currentModel.Recipes.FirstOrDefault(r => r.RecipeId == previousId)
+                DiagnosticTrace.Step("onSavePack: PackLoader.Load END");
+                m_selectedRecipe = previousRecipeId != null
+                    ? m_currentModel.Recipes.FirstOrDefault(r => r.RecipeId == previousRecipeId)
                     : null;
+                // Re-select the same non-recipe definition by (Kind, DisplayId).
+                // Kind matches across both typed Defs (ResearchDef.Kind ==
+                // "research", etc.) and UnknownDef (Kind == CallName), so
+                // one comparison handles both cases.
+                m_selectedOther = (previousOtherKind != null && previousOtherId != null)
+                    ? m_currentModel.OtherDefinitions
+                        .FirstOrDefault(d => d.Kind == previousOtherKind && d.DisplayId == previousOtherId)
+                    : null;
+                DiagnosticTrace.Step("onSavePack: rebuildTree BEGIN");
                 rebuildTree();
-                if (m_selectedRecipe != null) rebuildStatementEditor();
-                else showEmptyStatement("Saved. Select a recipe.");
-                Log.Info("RecipeEditor: saved " + m_currentModel.Recipes.Count +
-                         " recipe(s) to pack " + m_currentPack.ModId);
+                DiagnosticTrace.Step("onSavePack: rebuildTree END");
+                if (m_selectedRecipe != null) {
+                    DiagnosticTrace.Step($"onSavePack: onRecipeSelected[{m_selectedRecipe.RecipeId}] BEGIN");
+                    onRecipeSelected(m_selectedRecipe);
+                    DiagnosticTrace.Step("onSavePack: onRecipeSelected END");
+                } else if (m_selectedOther != null) {
+                    DiagnosticTrace.Step($"onSavePack: onOtherDefSelected[{m_selectedOther.Kind}/{m_selectedOther.DisplayId}] BEGIN");
+                    onOtherDefSelected(m_selectedOther);
+                    DiagnosticTrace.Step("onSavePack: onOtherDefSelected END");
+                } else {
+                    showEmptyStatement("Saved. Select a recipe.");
+                }
+                Log.Info("RecipeEditor: saved " + m_currentModel.Recipes.Count()
+                         + " recipe(s) + " + m_currentModel.OtherDefinitions.Count()
+                         + " other def(s) to pack " + m_currentPack.ModId);
             } catch (Exception ex) {
+                DiagnosticTrace.Step($"onSavePack: THREW {ex.GetType().Name}: {ex.Message}");
                 Log.Exception(ex);
                 Log.Warning("RecipeEditor: save failed — " + ex.Message);
             }
@@ -583,6 +1881,7 @@ namespace CustomAssets.Ui {
             return null;
         }
 
+
         private static UiComponent labeledField(string label, UiComponent field) {
             // The container Column needs AlignItemsStretch so the inner field
             // fills horizontally; m_statementColumn's stretch propagates to
@@ -596,729 +1895,197 @@ namespace CustomAssets.Ui {
             return col;
         }
 
-        // Editable list of ingredient/product rows. Captured `list` is the
-        // RecipeDef's actual List<ProductRef>, so add/remove mutations apply
-        // directly to the model — no separate sync step needed before Save.
-        // Each row's ProductPicker, qty field, and port dropdown bind through
-        // closures over the captured ProductRef, so individual edits also
-        // mutate the model in place.
-        //
-        // `isInput` drives the port dropdown's filter: ingredient rows show
-        // the machine's INPUT ports; product rows show OUTPUT ports.
-        //
-        // Rebuilds the WHOLE list column on add/remove to keep the picker
-        // popups, button states, and remove handlers in sync with the
-        // current row order without juggling indexes by hand.
-        private UiComponent buildProductListEditor(
-                string label, bool isInput, MachineProto machine,
-                System.Collections.Generic.List<ProductRef> list,
-                Action onChanged) {
-            Column listColumn = new Column();
-            // AlignItemsStretch chain: m_statementColumn stretches its children
-            // (this returned Column), which we then stretch (so listColumn
-            // gets full width), which then stretches each row. Without these
-            // stretches at every Column boundary, the row collapses to its
-            // content and leaves the editor pane mostly empty.
-            listColumn.Gap(1.pt()).AlignItemsStretch();
-
-            // Compute the valid port names + monospace-formatted layout text
-            // once for the whole list — they're shared across rows since they
-            // all reference the same machine. The dropdown's option factory
-            // reads back through this map (via closure) to render each option
-            // with its layout in a monospace font, so users can see the port's
-            // type/shape/transport-only flag in addition to the bare name char.
-            System.Collections.Generic.Dictionary<string, string> portLayouts =
-                collectPortLayouts(machine, isInput);
-
-            // `onChanged` is the validation-refresh hook from rebuildStatementEditor.
-            // We invoke it on every list mutation (add/remove) and pass it down to
-            // each row so its inner pickers/fields can poke validation too.
-            // Doing this in place beats calling rebuildStatementEditor() because a
-            // full rebuild blows away keyboard focus on whatever field the user is
-            // currently editing — terrible UX when typing a quantity.
-            Action rebuild = null;
-            rebuild = () => {
-                listColumn.Clear();
-                // Recompute auto-assigned port slots for every wildcard row in
-                // this list. COI's Python load distributes "*" outputs 1:1 over
-                // the machine's ports of matching type in order, after explicit
-                // port letters are subtracted from the pool. We surface the
-                // would-be-picked port next to each "*" in the row so modders
-                // see what the runtime is actually wiring up.
-                System.Collections.Generic.List<string> autoAssigned =
-                    computeAutoAssignedPorts(list, machine, isInput);
-                for (int i = 0; i < list.Count; i++) {
-                    ProductRef p = list[i];
-                    int captured = i;
-                    string autoPort = i < autoAssigned.Count ? autoAssigned[i] : null;
-                    // Two callbacks: onChanged refreshes validation only (used by
-                    // the quantity field — rebuilding the list on every keystroke
-                    // would yank keyboard focus). onStructureChanged ALSO rebuilds
-                    // the list (used by product picker + port dropdown, whose
-                    // discrete clicks don't lose focus) so the auto-assignment
-                    // labels for wildcard "*" rows reflect the new shape.
-                    Action onStructureChanged = () => {
-                        onChanged?.Invoke();
-                        rebuild();
-                    };
-                    // ▲▼ reorder callbacks: swap with the neighbour and rebuild.
-                    // Order matters for COI's auto-distribution of "*" — moving
-                    // a wildcard row down shifts which port it gets assigned —
-                    // so reorders go through the structure-changed path to
-                    // refresh the auto-pick labels.
-                    bool canMoveUp = i > 0;
-                    bool canMoveDown = i < list.Count - 1;
-                    Action onMoveUp = canMoveUp ? () => {
-                        ProductRef tmp = list[captured - 1];
-                        list[captured - 1] = list[captured];
-                        list[captured] = tmp;
-                        onStructureChanged();
-                    } : (Action)null;
-                    Action onMoveDown = canMoveDown ? () => {
-                        ProductRef tmp = list[captured + 1];
-                        list[captured + 1] = list[captured];
-                        list[captured] = tmp;
-                        onStructureChanged();
-                    } : (Action)null;
-                    listColumn.Add(buildProductRow(p, portLayouts, autoPort, () => {
-                        list.RemoveAt(captured);
-                        rebuild();
-                        onChanged?.Invoke();
-                    }, onChanged, onStructureChanged, onMoveUp, onMoveDown));
-                }
-                listColumn.Add(new ButtonText(
-                    new LocStrFormatted("+ add " + label.TrimEnd('s')),
-                    () => {
-                        // Default a fresh row's quantity to 1 — quantities are
-                        // 1-N per the API constraint, 0 isn't meaningful.
-                        list.Add(new ProductRef { Quantity = 1, Port = "*" });
-                        rebuild();
-                        onChanged?.Invoke();
-                    }));
-            };
-            rebuild();
-
-            Column wrapper = new Column {
-                new Label(new LocStrFormatted(label + ":")),
-                listColumn
-            };
-            wrapper.AlignItemsStretch();
-            return wrapper;
-        }
-
-        // Single row: [Product picker — name+icon] · qty · port-dropdown · ✕ remove.
-        // The picker resolves the bound id through TypedRefResolver when the
-        // recipe was loaded from a typed reference (Ids.Products.X); free-form
-        // string ids like "Product_LeadAcidBatteryEmpty" hit the direct lookup.
-        //
-        // Quantity is clamped to a minimum of 1 — 0-quantity Products don't
-        // make sense for ingredients or outputs and the runtime treats them
-        // as bugs.
-        //
-        // Port is a Dropdown<string> populated from the recipe's machine.
-        // "*" always leads (means "any matching port" per the API). When the
-        // recipe was loaded with a port that isn't in the machine's current
-        // port list — e.g. machine was changed externally — that legacy value
-        // is included as a tail option so the picker still displays it.
-        private UiComponent buildProductRow(
-                ProductRef p,
-                System.Collections.Generic.Dictionary<string, string> portLayouts,
-                string autoAssignedPort,
-                Action onRemove,
-                Action onChanged,
-                Action onStructureChanged,
-                Action onMoveUp,
-                Action onMoveDown) {
-            Row row = new Row();
-            row.Gap(2.pt()).AlignItemsCenter();
-
-            // Product change shifts the auto-assignment slot for every wildcard
-            // row downstream (new type changes which port pool we draw from),
-            // so it goes through onStructureChanged — rebuild + validate. The
-            // discrete click that picks a product doesn't lose focus, so the
-            // rebuild is safe here.
-            row.Add(new ProtoPicker<ProductProto>(
-                m_uiContext.ProtosDb,
-                getId: () => p.ProductId,
-                setId: id => { p.ProductId = id; onStructureChanged?.Invoke(); },
-                emptyLabel: new LocStrFormatted("(pick product…)"),
-                title: new LocStrFormatted("Pick product")).FlexGrow(1f));
-
-            // Quantity — int field. Sizing the inner BetterTextField directly
-            // (ForFieldSetMinWidth) is necessary because the outer TextField is
-            // a wrapper with padding + glow-on-hover decoration: a Width() on
-            // the wrapper leaves the actual <input> region narrower than the
-            // visible box, which clipped values like "160" into "16…" and let
-            // the placeholder bleed visually through short values ("2" → "2qty").
-            // Removing the placeholder is also intentional — rows always
-            // pre-populate Quantity (default 1 for new rows, parsed value for
-            // existing), so a hint serves no purpose and only confuses.
-            TextField qty = new TextField()
-                .Text(p.Quantity.ToString())
-                .PositiveIntegersOnly()
-                .ForFieldSetMinWidth(60.px())
-                .Width(80.px());
-            qty.OnValueChanged(v => {
-                if (int.TryParse(v, out int parsed)) {
-                    int clamped = parsed < 1 ? 1 : parsed;
-                    p.Quantity = clamped;
-                    if (clamped != parsed) qty.Text(clamped.ToString());
-                    onChanged?.Invoke();
-                }
-            });
-            row.Add(qty);
-
-            // Port — Dropdown<string> driven by the machine's port layout.
-            // Build the displayed option set: always "*" first, then valid
-            // machine ports, plus the current value when it's not already
-            // listed (lets the user see + correct stale values from when
-            // the machine was different).
-            //
-            // "VIRTUAL" is offered only when the row's product is a
-            // VirtualProductProto — that's the exact constraint the runtime
-            // enforces in RecipeProtoBuilder.resolvePortSelector: "VIRTUAL"
-            // is valid only for virtual products. Offering it unconditionally
-            // would let the modder pick an invalid combination that the game
-            // rejects at registration. Conversely, hiding it from virtual
-            // products would mask the only correct port selector for them.
-            ProductProto resolved = resolveProduct(p.ProductId);
-            bool isVirtualProduct = resolved != null
-                && resolved.Type == VirtualProductProto.ProductType;
-            System.Collections.Generic.List<string> options =
-                new System.Collections.Generic.List<string> { "*" };
-            if (portLayouts != null) {
-                foreach (string n in portLayouts.Keys) options.Add(n);
-            }
-            if (isVirtualProduct) options.Add("VIRTUAL");
-            string currentPort = string.IsNullOrEmpty(p.Port) ? "*" : p.Port;
-            if (!options.Contains(currentPort)) options.Add(currentPort);
-
-            // Capture portLayouts in a closure-backed option factory so the
-            // dropdown can render each entry with full layout context (type,
-            // shape, transport-only flag) in a monospace font. The bound value
-            // remains the plain port-name string so the model continues to
-            // round-trip identically.
-            System.Collections.Generic.Dictionary<string, string> layoutsForFactory =
-                portLayouts ?? new System.Collections.Generic.Dictionary<string, string>();
-            // autoAssignedPort is the port the Python runtime would pick when
-            // this row's port is "*" — pre-computed by computeAutoAssignedPorts
-            // for the whole list, then surfaced in the wildcard option label so
-            // modders see exactly where their output/input gets wired up.
-            string capturedAuto = autoAssignedPort;
-            Dropdown<string> portDropdown = new Dropdown<string>(
-                    (option, index, isInDropdown) =>
-                        portOptionFactory(option, layoutsForFactory, capturedAuto))
-                .SetOptions(options)
-                .MinWidth(260.px());
-            portDropdown.SetValue(currentPort);
-            // Port change also affects downstream wildcard rows' auto-assignment
-            // (an explicit letter removes that port from the wildcard pool),
-            // so route through onStructureChanged for the same reason the
-            // product picker does.
-            portDropdown.OnValueChanged((v, _) => {
-                p.Port = (v == "*" || string.IsNullOrEmpty(v)) ? null : v;
-                onStructureChanged?.Invoke();
-            });
-            row.Add(portDropdown);
-
-            // ▲▼ reorder buttons appear only when a neighbour exists in that
-            // direction. The "disabled but visible" alternative would leave
-            // misaligned columns when the topmost row's ▲ is greyed out — a
-            // visually quieter approach is to just skip the unusable arrow.
-            if (onMoveUp != null) row.Add(new ButtonText(new LocStrFormatted("▲"), onMoveUp));
-            if (onMoveDown != null) row.Add(new ButtonText(new LocStrFormatted("▼"), onMoveDown));
-            row.Add(new ButtonText(new LocStrFormatted("✕"), onRemove));
-
-            return row;
-        }
-
-        // Render one dropdown row in monospace so the layout columns align.
-        // Layout text for known ports comes from collectPortLayouts (Name padded
-        // + "IN/OUT" + shape name + optional transport-only suffix). Unknown
-        // ports (wildcard "*", stale legacy values) get a one-off line.
-        private static UiComponent portOptionFactory(
-                string option,
-                System.Collections.Generic.Dictionary<string, string> portLayouts,
-                string autoAssignedPort) {
-            string text;
-            if (option == "*") {
-                // When we know which port the runtime would auto-assign for
-                // this row, surface it next to the wildcard so the modder
-                // doesn't have to mentally simulate the assignment. Falls back
-                // to the generic label when we couldn't compute one (no
-                // machine resolved, or no ports of the row's product type).
-                text = !string.IsNullOrEmpty(autoAssignedPort)
-                    ? "*       (auto → " + autoAssignedPort + ")"
-                    : "*       (any matching port)";
-            } else if (option == "VIRTUAL") {
-                // VIRTUAL is the special selector for virtual products (energy,
-                // research, settler-flow). resolvePortSelector returns
-                // ImmutableArray.Empty for it — i.e. no physical port — so the
-                // runtime never tries to route this product through a tile.
-                text = "VIRTUAL (virtual products only)";
-            } else if (portLayouts != null && portLayouts.TryGetValue(option, out string layout)) {
-                text = layout;
-            } else {
-                // Stale port preserved from the loaded recipe — flag it so the
-                // user sees that the machine no longer exposes this port name.
-                text = (option ?? "") + "    (not on current machine)";
-            }
-            return new Label(new LocStrFormatted(text)).Class(Cls.fontMonospace);
-        }
-
-        // Compute, per row, the port the Python runtime would auto-assign for
-        // that row's "*" selector. Mirrors COI's load-time distribution:
-        //
-        //   1. First pass: collect all explicit ports already taken by rows in
-        //      this list, grouped by product type. Those ports are removed
-        //      from the wildcard pool so two rows don't claim the same port.
-        //   2. Second pass: walk the list in order; for each row with no
-        //      explicit port (Port == "*" / null / empty), pull the NEXT
-        //      available port of that row's product type off the machine in
-        //      port-declaration order. That port becomes the row's auto pick.
-        //
-        // Returns a parallel list where index i holds the would-be-assigned
-        // port for `list[i]`, or null when:
-        //   * the row has an explicit port already (the dropdown shows the
-        //     letter directly, no auto-pick needed)
-        //   * the machine couldn't be resolved
-        //   * the row's product type isn't represented on the machine
-        //   * we ran out of available ports of that type (recipe over-claims)
-        private System.Collections.Generic.List<string> computeAutoAssignedPorts(
-                System.Collections.Generic.List<ProductRef> list,
-                MachineProto machine, bool isInput) {
-            var result = new System.Collections.Generic.List<string>();
-            if (list == null) return result;
-            for (int i = 0; i < list.Count; i++) result.Add(null);
-            if (machine == null) return result;
-
-            Mafi.Collections.ImmutableCollections.ImmutableArray<Mafi.Core.Ports.Io.IoPortTemplate> ports =
-                isInput ? machine.InputPorts : machine.OutputPorts;
-
-            // typeKey → ordered list of port-name strings on the machine.
-            var portsByType = new System.Collections.Generic.Dictionary<string,
-                System.Collections.Generic.List<string>>(StringComparer.Ordinal);
-            foreach (var pt in ports) {
-                if (pt.Shape == null) continue;
-                string typeKey = pt.Shape.AllowedProductType.ToString();
-                if (!portsByType.TryGetValue(typeKey, out var bucket)) {
-                    bucket = new System.Collections.Generic.List<string>();
-                    portsByType[typeKey] = bucket;
-                }
-                bucket.Add(pt.Name.ToString());
-            }
-
-            // First pass: subtract explicitly-taken port letters from the pool
-            // for each product type. Resolve the row's ProductProto so we know
-            // which type's pool to touch.
-            var taken = new System.Collections.Generic.Dictionary<string,
-                System.Collections.Generic.HashSet<string>>(StringComparer.Ordinal);
-            foreach (ProductRef pr in list) {
-                if (string.IsNullOrEmpty(pr.Port) || pr.Port == "*" || pr.Port == "VIRTUAL")
-                    continue;
-                ProductProto proto = resolveProduct(pr.ProductId);
-                if (proto == null) continue;
-                string typeKey = proto.Type.ToString();
-                if (!taken.TryGetValue(typeKey, out var set)) {
-                    set = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
-                    taken[typeKey] = set;
-                }
-                set.Add(pr.Port);
-            }
-
-            // Second pass: walk wildcards in order, claim next free port of
-            // the row's product type from the machine's port-declaration order.
-            var nextIdx = new System.Collections.Generic.Dictionary<string, int>(StringComparer.Ordinal);
-            for (int i = 0; i < list.Count; i++) {
-                ProductRef pr = list[i];
-                if (!(string.IsNullOrEmpty(pr.Port) || pr.Port == "*")) continue;
-                ProductProto proto = resolveProduct(pr.ProductId);
-                if (proto == null) continue;
-                string typeKey = proto.Type.ToString();
-                if (!portsByType.TryGetValue(typeKey, out var bucket)) continue;
-                nextIdx.TryGetValue(typeKey, out int idx);
-                taken.TryGetValue(typeKey, out var takenSet);
-                while (idx < bucket.Count && takenSet != null && takenSet.Contains(bucket[idx])) idx++;
-                if (idx < bucket.Count) {
-                    result[i] = bucket[idx];
-                    idx++;
-                }
-                nextIdx[typeKey] = idx;
-            }
-
-            return result;
-        }
-
-        // Clear + repopulate the validation column with the latest issues.
-        // Called both at form-render time and on every row mutation (product
-        // change, port change, qty change, add/remove) — see refreshValidation
-        // wired through buildProductListEditor → buildProductRow. Doing this
-        // incrementally beats rebuilding the whole statement editor since a
-        // full rebuild would steal keyboard focus from whatever field the
-        // user is currently editing.
-        private void populateValidationColumn(Column validation, RecipeDef r, MachineProto machine) {
-            validation.Clear();
-            validation.Add(new Label(new LocStrFormatted("Validation:")).FontBold());
-            System.Collections.Generic.List<string> issues = validateRecipeIo(r, machine);
-            if (issues.Count == 0) {
-                validation.Add(new Label(new LocStrFormatted("✓ All ports valid"))
-                    .Color(ColorRgba.Green));
-            } else {
-                foreach (string msg in issues) {
-                    validation.Add(new Label(new LocStrFormatted("⚠ " + msg))
-                        .Color(ColorRgba.Red));
-                }
-            }
-        }
-
-        // Build a panel that summarizes the chosen machine's port layout.
-        // Inputs and outputs are split into two sub-lists rendered in
-        // monospace so the columns (port-letter / shape / transport-only)
-        // align. Falls back to a "machine unresolved" notice when the model
-        // references a machine id we can't find in ProtosDb — the user can
-        // then go fix the picker or load the missing dependency.
-        private UiComponent buildMachinePortsView(MachineProto machine, string machineId) {
-            Column panel = new Column();
-            panel.Gap(1.pt()).PaddingTopBottom(2.pt()).AlignItemsStretch();
-            panel.Add(new Label(new LocStrFormatted("Machine ports:")).FontBold());
-
-            if (machine == null) {
-                string msg = string.IsNullOrEmpty(machineId)
-                    ? "  (no machine selected)"
-                    : "  (machine '" + machineId + "' could not be resolved)";
-                panel.Add(new Label(new LocStrFormatted(msg))
-                    .Color(ColorRgba.LightGray));
-                return panel;
-            }
-
-            // Render the entity's ASCII layout grid first. EntityLayout exposes
-            // the raw source string the proto was authored from (typed by the
-            // game devs into MachineProto factories), where each character is a
-            // tile and port letters identify connection points. Showing this
-            // verbatim lets modders see WHERE on the machine a port lives —
-            // including the "ports stacked on top of each other" cases the
-            // single-line text summary can't convey. Each newline becomes a
-            // separate monospace label so columns align across rows.
-            string layoutStr = machine.Layout != null ? machine.Layout.SourceLayoutStr : null;
-            if (!string.IsNullOrEmpty(layoutStr)) {
-                panel.Add(new Label(new LocStrFormatted("  Layout:")));
-                foreach (string line in layoutStr.Split('\n')) {
-                    // TrimEnd of trailing '\r' so Windows line endings don't
-                    // bloat row width with phantom whitespace.
-                    string row = line.TrimEnd('\r');
-                    panel.Add(new Label(new LocStrFormatted("    " + row))
-                        .Class(Cls.fontMonospace));
-                }
-            }
-
-            // collectPortLayouts already produces the monospace-padded lines.
-            // Re-use it for both directions so the format stays in sync with
-            // the dropdown rendering.
-            var inputs  = collectPortLayouts(machine, isInput: true);
-            var outputs = collectPortLayouts(machine, isInput: false);
-
-            panel.Add(new Label(new LocStrFormatted("  Inputs:")));
-            if (inputs.Count == 0) {
-                panel.Add(new Label(new LocStrFormatted("    (none)")).Class(Cls.fontMonospace));
-            } else {
-                foreach (var kvp in inputs) {
-                    panel.Add(new Label(new LocStrFormatted("    " + kvp.Value))
-                        .Class(Cls.fontMonospace));
-                }
-            }
-            panel.Add(new Label(new LocStrFormatted("  Outputs:")));
-            if (outputs.Count == 0) {
-                panel.Add(new Label(new LocStrFormatted("    (none)")).Class(Cls.fontMonospace));
-            } else {
-                foreach (var kvp in outputs) {
-                    panel.Add(new Label(new LocStrFormatted("    " + kvp.Value))
-                        .Class(Cls.fontMonospace));
-                }
-            }
-            return panel;
-        }
-
-        // Resolve a ProductRef.ProductId to its live ProductProto. Same two-step
-        // strategy as resolveMachine: direct ProtosDb hit, then typed-ref path
-        // fallback through Mafi.Base.Ids reflection. Returns null when neither
-        // resolves — the validator then reports "unknown product" rather than
-        // a port-mismatch the user can't diagnose.
-        private ProductProto resolveProduct(string productId) {
-            if (string.IsNullOrEmpty(productId)) return null;
-            Option<ProductProto> direct =
-                m_uiContext.ProtosDb.Get<ProductProto>(new Proto.ID(productId));
-            if (direct.HasValue) return direct.Value;
-            string resolved = TypedRefResolver.ResolveOrNull(productId);
-            if (!string.IsNullOrEmpty(resolved)) {
-                Option<ProductProto> byPath =
-                    m_uiContext.ProtosDb.Get<ProductProto>(new Proto.ID(resolved));
-                if (byPath.HasValue) return byPath.Value;
-            }
-            return null;
-        }
-
-        // Replicate the machine I/O validation that RecipeProtoBuilder runs
-        // before accepting a recipe (see Mafi.Core.Factory.Recipes.RecipeProtoBuilder.verifyRecipeIo).
-        //
-        // The game throws ProtoBuilderException on registration if any of:
-        //   * the machine has no ports of a product type the recipe needs
-        //   * the machine has fewer ports of that type than the recipe asks for
-        //   * (outputs only) multiple wildcard outputs of the same type would
-        //     produce ambiguous routing
-        // …and an exception there means the pack fails to load. Surfacing the
-        // same failures in the editor lets modders correct the recipe BEFORE
-        // hitting that wall.
-        //
-        // Differences from the game's verifyRecipeIo:
-        //   * Virtual products are skipped from the recipe-side counts (matches
-        //     countGroupByProductType which excludes VirtualProductProto).
-        //   * If the machine has an ANY-typed port, all checks for that
-        //     direction are skipped (matches the ContainsKey(ProductType.ANY)
-        //     short-circuit).
-        //   * Unresolved machines / products are reported as warnings rather
-        //     than treated as "no matching port" — the modder may be editing
-        //     while a dependency is still being added.
-        //   * "Ports.Length > 1" in the ambiguity check corresponds to a port
-        //     selector that matches multiple ports — in our editor that's
-        //     simply Port == "*" or empty.
-        private System.Collections.Generic.List<string> validateRecipeIo(
-                RecipeDef r, MachineProto machine) {
-            var problems = new System.Collections.Generic.List<string>();
-            if (machine == null) {
-                if (!string.IsNullOrEmpty(r.MachineId)) {
-                    problems.Add("Machine '" + r.MachineId + "' could not be resolved — "
-                                 + "port validation skipped until dependency loads.");
-                }
-                return problems;
-            }
-            validateDirection(r.Ingredients, machine.InputPorts, isInput: true, problems);
-            validateDirection(r.Products,    machine.OutputPorts, isInput: false, problems);
-            return problems;
-        }
-
-        private void validateDirection(
-                System.Collections.Generic.List<ProductRef> refs,
-                Mafi.Collections.ImmutableCollections.ImmutableArray<Mafi.Core.Ports.Io.IoPortTemplate> ports,
-                bool isInput,
-                System.Collections.Generic.List<string> problems) {
-            if (refs == null || refs.Count == 0) return;
-
-            // IMPORTANT: ProductType's `==` operator returns true whenever EITHER
-            // side is ANY — see Mafi.Core.Products.ProductType:
-            //     if (pt1.m_protoType == typeof(ProductType)
-            //         || pt2.m_protoType == typeof(ProductType)) return true;
-            // That makes `port.AllowedProductType == ProductType.ANY` true for
-            // every port, not just ANY-typed ones, which silently broke the
-            // earlier short-circuit. Using a Dictionary<ProductType,…> is also
-            // unsafe because Dictionary.Equals delegates to that same operator.
-            // We sidestep both pitfalls by keying everything off ProductType.
-            // ToString() — which returns "ANY" for the wildcard and the proto
-            // class's simple name (e.g. "GasProductProto") otherwise — and the
-            // string keys collide only when product types genuinely match.
-
-            // Group machine ports by their AllowedProductType (as string key).
-            var machineCounts = new System.Collections.Generic.Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (var pt in ports) {
-                if (pt.Shape == null) continue;
-                string key = pt.Shape.AllowedProductType.ToString();
-                machineCounts.TryGetValue(key, out int existing);
-                machineCounts[key] = existing + 1;
-            }
-
-            // Universal-port short-circuit: matches verifyRecipeIo's
-            //     if (!valueCleared.ContainsKey(ProductType.ANY)) { … }
-            // Done AFTER the populate pass — see the comment above for why we
-            // can't use `==` directly on individual ports.
-            if (machineCounts.ContainsKey("ANY")) return;
-
-            // Group the recipe's products by Type — skip virtuals (the game does
-            // the same in countGroupByProductType) and also skip unresolved
-            // products with a dedicated warning so the modder sees the cause.
-            var recipeCounts = new System.Collections.Generic.Dictionary<string, int>(StringComparer.Ordinal);
-            // Track wildcard recipe entries per product type for the output
-            // ambiguity check below — a wildcard ("*" / null Port) corresponds
-            // to "Ports.Length > 1" in the game's verifyRecipeIo when the
-            // machine exposes >1 ports of that type.
-            var wildcardCounts = new System.Collections.Generic.Dictionary<string, int>(StringComparer.Ordinal);
-            string dirNoun = isInput ? "input" : "output";
-            string virtualKey = VirtualProductProto.ProductType.ToString();
-
-            foreach (ProductRef pr in refs) {
-                if (string.IsNullOrEmpty(pr.ProductId)) {
-                    problems.Add("Recipe " + dirNoun + " row has no product selected.");
-                    continue;
-                }
-                ProductProto proto = resolveProduct(pr.ProductId);
-                if (proto == null) {
-                    problems.Add("Recipe " + dirNoun + " '" + pr.ProductId
-                                 + "' could not be resolved to a ProductProto.");
-                    continue;
-                }
-                string protoTypeKey = proto.Type.ToString();
-                if (protoTypeKey == virtualKey) {
-                    // Virtual products don't consume machine ports — but if the
-                    // user picked a real port (not "*"/"VIRTUAL") flag it as
-                    // suspect. The game's resolvePortSelector accepts "VIRTUAL"
-                    // or "*" only for virtual products.
-                    string port = pr.Port;
-                    if (!string.IsNullOrEmpty(port) && port != "*" && port != "VIRTUAL") {
-                        problems.Add("Virtual product '" + pr.ProductId
-                                     + "' has port '" + port + "' — virtual products "
-                                     + "must use '*' or 'VIRTUAL'.");
-                    }
-                    continue;
-                }
-                // Non-virtual product picked the special VIRTUAL port — the
-                // game's resolvePortSelector rejects that combination.
-                if (pr.Port == "VIRTUAL") {
-                    problems.Add("Product '" + pr.ProductId
-                                 + "' has port 'VIRTUAL' but is not a virtual product.");
-                    continue;
-                }
-                recipeCounts.TryGetValue(protoTypeKey, out int existing);
-                recipeCounts[protoTypeKey] = existing + 1;
-                if (string.IsNullOrEmpty(pr.Port) || pr.Port == "*") {
-                    wildcardCounts.TryGetValue(protoTypeKey, out int wc);
-                    wildcardCounts[protoTypeKey] = wc + 1;
-                }
-            }
-
-            foreach (var kvp in recipeCounts) {
-                string needed = kvp.Key;
-                int need = kvp.Value;
-                if (!machineCounts.TryGetValue(needed, out int have)) {
-                    problems.Add("Not enough " + needed + " " + dirNoun
-                                 + " ports — machine has no port for that product type.");
-                    continue;
-                }
-                if (have < need) {
-                    problems.Add("Not enough " + needed + " " + dirNoun
-                                 + " ports — recipe needs " + need
-                                 + ", machine has " + have + ".");
-                    continue;
-                }
-                // NOTE: an older draft also surfaced an "ambiguous wildcard
-                // routing" warning when multiple outputs of the same type used
-                // port='*' on a machine with multiple ports of that type. That
-                // mirrored RecipeProtoBuilder.verifyRecipeIo's literal source,
-                // but in practice COI's Python load auto-distributes wildcards
-                // 1:1 when count(wildcards) == count(machine ports of type),
-                // so recipes like CustomRecipe_AirFilterIL_Scubbing (2 Loose
-                // outputs + 2 Loose ports, all `*`) load fine. Explicit port
-                // letters are only required when you genuinely want to pin
-                // outputs to specific ports — flagging the wildcard pattern
-                // here would produce false positives for the common, working
-                // case. The wildcardCounts dict is still populated above so
-                // we keep the data plumbed for future, narrower checks.
-            }
-        }
-
-        // Resolve r.MachineId to its live MachineProto via ProtosDb. Tries
-        // the direct id first, then falls back to TypedRefResolver for
-        // typed-ref paths (Ids.Machines.*). Returns null when neither works
-        // — port dropdowns then show only "*" + the current stored value.
-        private MachineProto resolveMachine(string machineId) {
-            if (string.IsNullOrEmpty(machineId)) return null;
-            Option<MachineProto> direct =
-                m_uiContext.ProtosDb.Get<MachineProto>(new Proto.ID(machineId));
-            if (direct.HasValue) return direct.Value;
-            string resolved = TypedRefResolver.ResolveOrNull(machineId);
-            if (!string.IsNullOrEmpty(resolved)) {
-                Option<MachineProto> byPath =
-                    m_uiContext.ProtosDb.Get<MachineProto>(new Proto.ID(resolved));
-                if (byPath.HasValue) return byPath.Value;
-            }
-            return null;
-        }
-
-        // Read the valid ports off the machine and build a map from port-name
-        // string (the modder-facing `port=` argument) to a monospace-aligned
-        // layout-description string. Producing the layout text here — instead
-        // of letting the option factory walk the PortSpec at render time —
-        // means the dropdown popup only has to do dictionary lookups and string
-        // formatting on a cold path.
-        //
-        // The layout format is fixed-width so the dropdown columns line up
-        // when rendered in Cls.fontMonospace:
-        //   "A | IN  | Loose"
-        //   "B | IN  | Fluid    | conveyor-only"
-        //
-        // Columns we care about per PortSpec:
-        //   Name              — single char, the port identifier
-        //   Type              — Input / Output  (filtered to one direction)
-        //   Shape.Strings.Name — shape display name (Loose, Fluid, Gas, …),
-        //                       falls back to Shape.LayoutChar then "?"
-        //   CanOnlyConnectToTransports — flagged as " | conveyor-only" suffix
-        //
-        // Only the direction matching `isInput` is emitted — ingredient rows
-        // see inputs, product rows see outputs. Ports of type Any would belong
-        // to both but the game's recipe runtime expects a direction-typed
-        // match, so we skip them rather than guess.
-        private static System.Collections.Generic.Dictionary<string, string> collectPortLayouts(
-                MachineProto machine, bool isInput) {
-            var result = new System.Collections.Generic.Dictionary<string, string>(
-                StringComparer.Ordinal);
-            if (machine == null) return result;
-            IoPortType target = isInput ? IoPortType.Input : IoPortType.Output;
-            string dirLabel = isInput ? "IN " : "OUT";
-            // MachineProto.Ports yields IoPortTemplate (not PortSpec). Template
-            // wraps the spec plus relative position/direction in the entity
-            // layout — we currently only surface the spec fields, but the
-            // position/direction is what would let us draw the multi-tile
-            // layout grid the user wants long-term.
-            foreach (var port in machine.Ports) {
-                if (port.Type != target) continue;
-                string shapeName;
-                if (port.Shape != null) {
-                    // Three-tier fallback so the shape column is never blank:
-                    //   1) Localized display name from the shape's Strings.Name
-                    //      (e.g. "Loose", "Fluid"). LocStr.Id and TranslatedString
-                    //      are both string fields — either can be empty even when
-                    //      the struct itself is populated, so check both.
-                    //   2) The shape's proto id (e.g. "PortShape_Loose") — always
-                    //      present for any registered prototype.
-                    //   3) The LayoutChar (the single-char glyph in the entity's
-                    //      ASCII grid) as last resort. We never want to render an
-                    //      empty column; an empty cell looks like a bug to modders.
-                    string translated = port.Shape.Strings.Name.TranslatedString;
-                    if (!string.IsNullOrEmpty(translated)) {
-                        shapeName = translated;
-                    } else if (!string.IsNullOrEmpty(port.Shape.Id.Value)) {
-                        shapeName = port.Shape.Id.Value;
-                    } else {
-                        shapeName = port.Shape.LayoutChar.ToString();
-                    }
-                } else {
-                    shapeName = "?";
-                }
-                // PadRight to fixed 10-char shape column so the optional
-                // transport-only suffix begins at the same x on every row.
-                string padded = shapeName.Length >= 10
-                    ? shapeName
-                    : shapeName + new string(' ', 10 - shapeName.Length);
-                string layout = port.Name + " | " + dirLabel + " | " + padded;
-                // CanOnlyConnectToTransports is on PortSpec, not IoPortTemplate.
-                if (port.Spec.CanOnlyConnectToTransports) layout += " | conveyor-only";
-                result[port.Name.ToString()] = layout;
-            }
-            return result;
-        }
-
-        private static int? parseNullableInt(string s) {
-            if (string.IsNullOrWhiteSpace(s)) return null;
-            return int.TryParse(s, out int i) ? i : (int?)null;
-        }
-
-        private static string formatProductRef(ProductRef p) {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(p.ProductId ?? "?").Append(" x ").Append(p.Quantity);
-            if (!string.IsNullOrEmpty(p.Port) && p.Port != "*") sb.Append(" @ ").Append(p.Port);
-            return sb.ToString();
-        }
 
         private void showEmptyStatement(string message) {
             m_statementColumn.Clear();
             m_statementColumn.Add(new Label(new LocStrFormatted(message)));
+            // Empty pane → no def to act on. The footer stays visible but
+            // every button is disabled so the modder sees the available
+            // actions even when nothing is selected (Save / Duplicate
+            // / Verify all greyed out).
+            rebuildEditorFooter(null, includeVerify: false);
+        }
+
+        // ---- Editor footer + Duplicate --------------------------------------
+
+        // Update the editor's bottom action bar for the currently-selected
+        // def. Buttons stay attached to the footer for the window's
+        // lifetime; this method only flips their Enabled state and stashes
+        // the new target in m_footerTarget so the persistent click
+        // handlers dispatch to the right def. The footer lives outside
+        // the scrollable body so it stays visible whatever the editor's
+        // content height is — modders editing long forms no longer have
+        // to scroll to find Save.
+        //
+        // Verify Round-Trip is only meaningful for recipes (the verifier
+        // round-trips the recipe form through the emitter and reloads it),
+        // so it's disabled for every other selection. The button stays
+        // visible in the footer either way so the panel doesn't reflow
+        // between selections.
+        private void rebuildEditorFooter(DefBase target, bool includeVerify) {
+            m_footerTarget = target;
+            if (m_saveBtn != null)      m_saveBtn.Enabled(target != null);
+            if (m_duplicateBtn != null) m_duplicateBtn.Enabled(target != null);
+            if (m_verifyBtn != null)    m_verifyBtn.Enabled(target != null && includeVerify);
+        }
+
+        // Deep-clone the selected def into a fresh entry, slot it into the
+        // model right after the original, and select it so the modder lands
+        // straight in its editor. The clone keeps SourceFile (so the new
+        // entry stays in the same file) but resets SourceStartLine/EndLine
+        // to 0 — PackEmitter treats that as "append at file end" on next
+        // save, which is what we want for a freshly minted entry.
+        //
+        // Primary id is renamed to "<origId>_copy" (uniquified with a
+        // numeric suffix if needed) so the new def doesn't collide with
+        // the original in the model's id-keyed lookups. Unlock kinds use
+        // a composite id and don't have a single rename target — those
+        // duplicate verbatim and the modder edits the composite parts in
+        // the form.
+        private void onDuplicateDef(DefBase src) {
+            if (m_currentModel == null || src == null) return;
+
+            DefBase copy = cloneDef(src);
+            if (copy == null) return;
+
+            // Reset bookkeeping that should not transfer.
+            copy.SourceStartLine = 0;
+            copy.SourceEndLine   = 0;
+            copy.AstStartLine    = 0;
+            copy.Dirty           = true;
+
+            string baseId = src.DisplayId;
+            string proposed = string.IsNullOrEmpty(baseId) ? null : baseId + "_copy";
+            if (!string.IsNullOrEmpty(proposed)) {
+                proposed = uniquifyId(proposed);
+                setPrimaryId(copy, proposed);
+            }
+
+            int idx = m_currentModel.Definitions.IndexOf(src);
+            if (idx >= 0) m_currentModel.Definitions.Insert(idx + 1, copy);
+            else          m_currentModel.Definitions.Add(copy);
+
+            rebuildTree();
+            if (copy is RecipeDef rd) onRecipeSelected(rd);
+            else                      onOtherDefSelected(copy);
+        }
+
+        // Reflection-based field copy. We deliberately walk public fields
+        // (not properties) — every DefBase subclass exposes its state as
+        // plain public fields, and PackEmitter / PackLoader already round-
+        // trip on that shape, so anything not visible here also wouldn't
+        // round-trip through save/load. List<T> values get a fresh list
+        // (with element-level clones for ProductRef so the two defs don't
+        // share mutable rows); dictionaries are passed by reference because
+        // SourceFileVariables is intentionally shared across every def in
+        // the same file.
+        private static DefBase cloneDef(DefBase src) {
+            if (src == null) return null;
+            System.Type t = src.GetType();
+            DefBase copy;
+            try {
+                copy = (DefBase)System.Activator.CreateInstance(t);
+            } catch (System.Exception ex) {
+                Log.Warning("Duplicate: cannot instantiate '" + t.Name + "' — " + ex.Message);
+                return null;
+            }
+
+            const System.Reflection.BindingFlags publicInstance =
+                System.Reflection.BindingFlags.Public
+                | System.Reflection.BindingFlags.Instance;
+
+            // Walk the entire inheritance chain so DefBase / NamedDef
+            // fields (Comment, SourceFile, Id, Name, …) are copied too —
+            // GetFields(publicInstance) on a derived type already returns
+            // inherited public fields, but we keep this explicit so the
+            // intent is obvious.
+            foreach (System.Reflection.FieldInfo f in t.GetFields(publicInstance)) {
+                if (f.IsInitOnly) continue;
+                object v = f.GetValue(src);
+                if (v == null) { f.SetValue(copy, null); continue; }
+                System.Type ft = f.FieldType;
+                if (ft.IsGenericType
+                        && ft.GetGenericTypeDefinition() == typeof(System.Collections.Generic.List<>)) {
+                    System.Collections.IList srcList = (System.Collections.IList)v;
+                    System.Collections.IList newList =
+                        (System.Collections.IList)System.Activator.CreateInstance(ft);
+                    foreach (object item in srcList) newList.Add(cloneItem(item));
+                    f.SetValue(copy, newList);
+                } else {
+                    f.SetValue(copy, v);
+                }
+            }
+            return copy;
+        }
+
+        // Element-level clone for items inside cloned List<T> fields.
+        // ProductRef is the only mutable element type that actually appears
+        // in the def models today (Ingredients / Products lists); strings
+        // and value types are immutable so a reference copy is correct.
+        private static object cloneItem(object item) {
+            switch (item) {
+                case ProductRef p: return new ProductRef(p.ProductId, p.Quantity, p.Port);
+                case PortRef pr:   return new PortRef {
+                    Name                       = pr.Name,
+                    Type                       = pr.Type,
+                    Shape                      = pr.Shape,
+                    PositionX                  = pr.PositionX,
+                    PositionY                  = pr.PositionY,
+                    PositionZ                  = pr.PositionZ,
+                    PositionExpression         = pr.PositionExpression,
+                    Direction                  = pr.Direction,
+                    CanOnlyConnectToTransports = pr.CanOnlyConnectToTransports,
+                };
+                case FuelPairRef fp: return new FuelPairRef(fp.FuelIn, fp.SpentFuelOut, fp.DurationSeconds);
+                default:           return item;
+            }
+        }
+
+        // Per-kind id-field write. createDef writes these on construction;
+        // here we mirror the same set so a duplicate gets a unique id in
+        // the field the model uses for lookups / display. Composite-id
+        // kinds (unlocks) have no single primary id to rewrite — they
+        // duplicate verbatim and the modder distinguishes the copy by
+        // editing the composite parts directly.
+        private static void setPrimaryId(DefBase def, string newId) {
+            switch (def) {
+                case RecipeDef r:          r.RecipeId    = newId; break;
+                case EditRecipeDef e:      e.RecipeId    = newId; break;
+                case ResearchDef rs:       rs.ResearchId = newId; break;
+                case ProductLooseDef pl:   pl.ProductId  = newId; break;
+                case ProductFluidDef pf:   pf.ProductId  = newId; break;
+                case ProductUnitDef pu:    pu.ProductId  = newId; break;
+                case TextureDef tx:        tx.Path       = newId; break;
+                case MaterialLooseDef ml:  ml.Path       = newId; break;
+                case MaterialTextureDef mt:mt.Path       = newId; break;
+                case PrefabBoxDef pb:      pb.Path       = newId; break;
+                case UnitPrefabDef upr:    upr.Path      = newId; break;
+                case GeneratorDef gd:      gd.GeneratorId = newId; break;
+                case ToolbarCategoryDef tc:tc.CategoryId  = newId; break;
+                case BuildMachineDef bmd:  bmd.MachineId  = newId; break;
+                case HousingDef hd:        hd.HousingId   = newId; break;
+                case SettlementDecorationDef sdd: sdd.DecorationId = newId; break;
+                case SettlementFoodDef sfd:       sfd.FoodModuleId = newId; break;
+                case SettlementIspDef sid:        sid.IspModuleId  = newId; break;
+                case HospitalDef hpd:             hpd.HospitalId   = newId; break;
+                case MineTowerDef mtd:            mtd.MineTowerId  = newId; break;
+                case ResearchLabDef rld:          rld.ResearchLabId= newId; break;
+                case NuclearReactorDef nrd:       nrd.ReactorId    = newId; break;
+            }
+        }
+
+        // Append _2, _3, … to <baseId> until no existing def claims the
+        // result. Same shape as freshId but seeded from an arbitrary
+        // candidate string instead of a kind prefix.
+        private string uniquifyId(string baseId) {
+            if (m_currentModel == null) return baseId;
+            string candidate = baseId;
+            int n = 1;
+            while (m_currentModel.Definitions.Any(d => d.DisplayId == candidate)) {
+                n++;
+                candidate = baseId + "_" + n;
+            }
+            return candidate;
         }
 
         // ---- Action handlers (most are placeholders until their flows land) ---
@@ -1386,62 +2153,55 @@ namespace CustomAssets.Ui {
             }
         }
 
-        // Append `fileName` to the dependencies(...) call in __init__.py — or
-        // create __init__.py with a single-entry dependencies call when missing.
-        // The append happens in place via line splice so any non-deps content
-        // (comments, helpers) the modder added stays put.
+        // Append `import <module>` to __init__.py — the canonical form for
+        // declaring load order in this pack convention (Batteries pack is
+        // the reference). `import` is sugar for dependencies("<module>")
+        // via LocalImportStatement, so the runtime resolves it the same
+        // way but the source reads as one line per file instead of a
+        // monolithic dependencies(...) call that grows wider every time.
+        //
+        // Module names are bare (no .py): CustomAssetRegistrator appends
+        // the extension itself when resolving each dep, so passing
+        // "foo.py" would resolve to "foo.py.py" and abort the pack with
+        // FileNotFoundException. Strip the extension defensively so
+        // callers can pass either form.
+        //
+        // Existing dependencies(...) calls and other top-level content
+        // (comments, helpers, prior imports) are left untouched — the new
+        // line is appended at the end of the file. Idempotent: a second
+        // call with the same module is a no-op once the import line is
+        // already present.
         private void appendToLoadOrder(string definitionsDir, string fileName) {
+            string moduleName = fileName != null && fileName.EndsWith(".py", StringComparison.OrdinalIgnoreCase)
+                ? fileName.Substring(0, fileName.Length - 3)
+                : fileName;
+            if (string.IsNullOrEmpty(moduleName)) return;
+
             string initPath = Path.Combine(definitionsDir, "__init__.py");
+            string importLine = "import " + moduleName;
+
             if (!File.Exists(initPath)) {
                 File.WriteAllText(initPath,
-                    "dependencies(\"" + fileName + "\")\n",
+                    importLine + "\n",
                     new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 return;
             }
-            // Find the existing dependencies() call's line range from the
-            // cached AST. If none, prepend a fresh call at the top.
-            int startLine = 0, endLine = 0;
-            System.Collections.Generic.List<string> existing = new System.Collections.Generic.List<string>();
-            bool found = false;
-            foreach (LoadedFile file in m_currentPack.Files) {
-                if (Path.GetFileName(file.AbsolutePath) != "__init__.py") continue;
-                if (file.Ast == null) continue;
-                foreach (PythonAPI.Statements.IStatement stmt in file.Ast.statements) {
-                    if (!(stmt is PythonAPI.EvaluateStatement ev)) continue;
-                    if (!(ev.Expression is PythonAPI.Expressions.CallExpression call)) continue;
-                    if (!(call.Calle is PythonAPI.Expressions.VariableExpression v)
-                        || v.Path != "dependencies") continue;
-                    startLine = ev.StartLine;
-                    endLine   = ev.EndLine;
-                    foreach (PythonAPI.Arguments.IArgument arg in call.Arguments) {
-                        if (arg is PythonAPI.Arguments.OrderedArgument
-                            && arg.Expression is PythonAPI.Expressions.StringConstant s) {
-                            existing.Add(s.Value);
-                        }
-                    }
-                    found = true;
-                    break;
-                }
-                if (found) break;
-            }
 
-            existing.Add(fileName);
-            StringBuilder rendered = new StringBuilder("dependencies(");
-            for (int i = 0; i < existing.Count; i++) {
-                if (i > 0) rendered.Append(", ");
-                rendered.Append('"').Append(existing[i]).Append('"');
-            }
-            rendered.Append(')');
-
+            // Skip the append if the import is already declared — covers
+            // re-runs from rescans and accidental double-clicks. Match
+            // exact "import <module>" (trimmed) so a substring of a longer
+            // module name doesn't fool the check.
             string[] lines = File.ReadAllLines(initPath, Encoding.UTF8);
-            System.Collections.Generic.List<string> output = new System.Collections.Generic.List<string>(lines);
-            if (found && startLine > 0 && endLine >= startLine && endLine <= output.Count) {
-                int startIdx = startLine - 1;
-                output.RemoveRange(startIdx, endLine - startIdx);
-                output.InsertRange(startIdx, rendered.ToString().Split('\n'));
-            } else {
-                output.Insert(0, rendered.ToString());
+            for (int i = 0; i < lines.Length; i++) {
+                if (lines[i].Trim() == importLine) return;
             }
+
+            // Append at the end. `import` lines stack densely in the
+            // reference layout (Batteries pack), no blank separator
+            // needed.
+            System.Collections.Generic.List<string> output =
+                new System.Collections.Generic.List<string>(lines);
+            output.Add(importLine);
             File.WriteAllLines(initPath, output,
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
@@ -1454,20 +2214,29 @@ namespace CustomAssets.Ui {
             // so all entries share the same shape — like a real list rather
             // than text-shrunk buttons. Click selects and closes; click-
             // outside also closes.
-            if (PackRegistry.Count == 0) return;
 
             FloatingColumn picker = new FloatingColumn(
                 FloaterPositionPolicy.ABOVE,
                 keepOpenOnHover: false,
                 openAfterDelay: false,
                 closeOnClickOutside: true);
-            // FloatingColumn renders transparent by default; Cls.panelBg gives
-            // the standard recessed-dark COI panel chrome so the popup looks
-            // like a real menu rather than glyphs floating over the editor.
-            picker.Class(Cls.panelBg)
+            // FloatingColumn renders transparent + borderless by default;
+            // Cls.panel ties bg + border + bolts into one chrome that matches
+            // every other popup in the editor (proto picker, deps dialog).
+            picker.Class(Cls.panel)
                   .Padding(2.pt()).Gap(1.pt())
                   .MinWidth(320.px())
                   .AlignItemsStretch();
+
+            // "+ Create new pack" entry at the top of the picker. Closes
+            // the picker first, then opens NewPackDialog as a standalone
+            // movable Window (same shape as TranslationsDialog) — the
+            // modder can drag it around while picking the id without it
+            // being clipped against the pack-card popup region.
+            picker.Add(new ButtonText(new LocStrFormatted("+ Create new pack"), () => {
+                picker.Close();
+                NewPackDialog.Open(m_uiContext, m_main);
+            }));
 
             foreach (LoadedPack pack in PackRegistry.Packs) {
                 LoadedPack captured = pack;
@@ -1512,6 +2281,17 @@ namespace CustomAssets.Ui {
             // visual region as the trigger button. closeOnClickOutside is
             // handled by FloatingColumn itself.
             PackDepsDialog.Open(m_currentPack, m_packCard);
+        }
+
+        // TT button on the pack card opens the translations editor scoped to
+        // the current pack. The dialog is its own movable Window (rather
+        // than a popup anchored to the card) so the modder can keep it open
+        // alongside the main recipe form and switch between the two while
+        // translating. Each language is saved to a separate file under
+        // <pack>/Localization/<lang>.json.
+        private void onOpenTranslations() {
+            if (m_currentPack == null || m_currentModel == null) return;
+            TranslationsDialog.Open(m_currentPack, m_currentModel, m_uiContext);
         }
 
         private void onMigrateNow() {

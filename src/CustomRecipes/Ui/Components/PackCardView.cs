@@ -23,6 +23,7 @@ namespace CustomAssets.Ui.Components {
 
         private readonly Action m_onSwitchPack;
         private readonly Action m_onOpenDeps;
+        private readonly Action m_onOpenTranslations;
 
         private readonly Label m_nameLabel;
         private readonly Label m_descLabel;
@@ -34,9 +35,10 @@ namespace CustomAssets.Ui.Components {
         /// a FloatingColumn popup to it for pack selection.</summary>
         public readonly ButtonText SwitchButton;
 
-        public PackCardView(Action onSwitchPack, Action onOpenDeps) {
-            m_onSwitchPack = onSwitchPack;
-            m_onOpenDeps   = onOpenDeps;
+        public PackCardView(Action onSwitchPack, Action onOpenDeps, Action onOpenTranslations) {
+            m_onSwitchPack       = onSwitchPack;
+            m_onOpenDeps         = onOpenDeps;
+            m_onOpenTranslations = onOpenTranslations;
 
             this.PaddingLeftRight(3.pt()).PaddingTopBottom(2.pt());
 
@@ -60,13 +62,24 @@ namespace CustomAssets.Ui.Components {
             };
             infoColumn.FlexGrow(1f);
 
-            // Top-right deps button.
+            // Top-right action buttons: deps (🔗) + translations (TT). Two
+            // separate buttons stacked horizontally so each affordance keeps
+            // its own tooltip. TT opens the translations dialog where the
+            // modder can add a language and scan all pack strings into it;
+            // each language is written to its own file so saving one
+            // doesn't disturb the rest of the pack.
             ButtonText depsBtn = new ButtonText(new LocStrFormatted("🔗"), m_onOpenDeps)
                             .Tooltip(new LocStrFormatted("Pack dependencies (manifest + load order)"));
+            ButtonText ttBtn = new ButtonText(new LocStrFormatted("TT"), m_onOpenTranslations)
+                            .Tooltip(new LocStrFormatted(
+                                "Translations — add a language and generate entries from pack strings"));
+
+            Row actions = new Row { depsBtn, ttBtn };
+            actions.Gap(1.pt());
 
             Add(m_thumbHolder);
             Add(infoColumn);
-            Add(depsBtn);
+            Add(actions);
         }
 
         /// <summary>Reflect a newly selected pack: load thumbnail from cache,

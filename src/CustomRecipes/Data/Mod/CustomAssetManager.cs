@@ -55,6 +55,14 @@ namespace CustomAssets.Data.Mod
         // resolved Material is available when we wire up MeshRenderer.sharedMaterial.
         internal static List<DeferredPrefab> PendingPrefabs { get; } = new List<DeferredPrefab>();
 
+        // Late-bound game textures. Key is the parent asset's path in
+        // Alternations (the prefab/material that needs the texture on its
+        // mainTexture slot); value is the game asset path to resolve
+        // against AssetsDb at injection time. Filled by consumers
+        // (add_prefab_box, add_unit_prefab, add_texture_material) when they
+        // receive a Tex marked loadedAsset=true from add_texture(...).
+        public static Dict<string, string> PendingGameTextures { get; } = new Dict<string, string>();
+
         // Mesh cache: a single Mesh instance is shared across every add_unit_prefab call that
         // references the same .obj path. Saves memory and mirrors Unity's typical asset-sharing
         // pattern (Mesh assets in a bundle are shared by all prefabs that reference them).
@@ -71,6 +79,7 @@ namespace CustomAssets.Data.Mod
             Alternations.Clear();
             PendingMaterials.Clear();
             PendingPrefabs.Clear();
+            PendingGameTextures.Clear();
             Meshes.Clear();
         }
 
@@ -147,8 +156,72 @@ namespace CustomAssets.Data.Mod
                 }
             }
 
-            if (alternsAdded > 0 || matsBuilt > 0 || prefabsBuilt > 0)
-                Log.Info($"[CAM] injected +{alternsAdded} assets, +{matsBuilt} materials, +{prefabsBuilt} prefabs (totals: {Alternations.Count}/{PendingMaterials.Count}/{PendingPrefabs.Count}).");
+            // Late-bound game textures: resolved AFTER prefabs/materials are
+            // in LoadedAssets so the parent objects we mutate are guaranteed
+            // present. Idempotent across re-injection passes â€” we just
+            // overwrite the texture each time, no harm done.
+            int gameTexturesBound = 0;
+            foreach (var kvp in PendingGameTextures) {
+                string parentPath = kvp.Key;
+                string gameAssetPath = kvp.Value;
+                try {
+                    if (!loadedAssets.TryGetValue(parentPath, out UnityEngine.Object parentObj)) {
+                        Log.Warning($"[CAM] PendingGameTextures: parent '{parentPath}' missing from " +
+                                    "LoadedAssets, skipping game-texture bind");
+                        continue;
+                    }
+                    Texture2D gameTex = m_assets.GetSharedTexture(gameAssetPath);
+                    if (gameTex == null || gameTex == m_assets.DefaultTexture) {
+                        Log.Warning($"[CAM] PendingGameTextures: game asset '{gameAssetPath}' not found " +
+                                    $"in AssetsDb (parent='{parentPath}')");
+                        continue;
+                    }
+                    if (bindMainTexture(parentObj, gameTex)) gameTexturesBound++;
+                } catch (Exception ex) {
+                    Log.Warning($"[CAM] PendingGameTextures: bind failed for '{parentPath}' â† '{gameAssetPath}': "
+                                + ex.Message);
+                }
+            }
+
+            if (alternsAdded > 0 || matsBuilt > 0 || prefabsBuilt > 0 || gameTexturesBound > 0)
+                Log.Info($"[CAM] injected +{alternsAdded} assets, +{matsBuilt} materials, +{prefabsBuilt} prefabs, "
+                    + $"+{gameTexturesBound} game-texture binds (totals: {Alternations.Count}/{PendingMaterials.Count}/{PendingPrefabs.Count}/{PendingGameTextures.Count}).");
+        }
+
+        // Push a Texture2D onto the parent asset's mainTexture slot. Handles
+        // the two parent shapes consumers can produce:
+        //   â€¢ Material â€” mainTexture is set directly.
+        //   â€¢ GameObject with MeshRenderer + Material â€” the renderer's
+        //     sharedMaterial gets its mainTexture set (also the _AlbedoTex
+        //     property when the shader exposes it, mirroring
+        //     ApplyMainTexture's albedo-aliasing behaviour).
+        // Returns true when a binding was applied so the caller can count
+        // it accurately. Logs a warning for unknown parent shapes.
+        private static bool bindMainTexture(UnityEngine.Object parent, Texture2D tex)
+        {
+            if (parent is Material mat) {
+                mat.mainTexture = tex;
+                if (mat.HasProperty("_AlbedoTex")) {
+                    mat.SetTexture("_AlbedoTex", tex);
+                }
+                return true;
+            }
+            if (parent is GameObject go) {
+                var renderer = go.GetComponent<MeshRenderer>();
+                if (renderer == null || renderer.sharedMaterial == null) {
+                    Log.Warning($"[CAM] PendingGameTextures: parent GameObject '{parent.name}' has no "
+                                + "MeshRenderer/sharedMaterial to bind onto");
+                    return false;
+                }
+                renderer.sharedMaterial.mainTexture = tex;
+                if (renderer.sharedMaterial.HasProperty("_AlbedoTex")) {
+                    renderer.sharedMaterial.SetTexture("_AlbedoTex", tex);
+                }
+                return true;
+            }
+            Log.Warning($"[CAM] PendingGameTextures: parent type '{parent.GetType().Name}' is not a "
+                        + "Material or GameObject; don't know how to bind a texture onto it");
+            return false;
         }
 
         // Construct a single-GameObject prefab carrying the given mesh and the resolved
