@@ -1,0 +1,48 @@
+@page "/"
+@page "/preview"
+@inject ModuleCatalog Catalog
+
+<PageTitle>ProgramableNetwork — Module Preview</PageTitle>
+
+<div class="pn-board" style="padding:16px; min-height:calc(100vh - 32px);">
+    <div class="pn-titlebar" style="margin:-16px -16px 16px;">Module Preview</div>
+
+    @if (!Catalog.Loaded)
+    {
+        <p>Loading modules…</p>
+    }
+    else
+    {
+        <p style="color:var(--pn-text-dim)">
+            @Catalog.Modules.Count modules loaded from the exported bundle.
+            @if (Catalog.LoadErrors.Count > 0)
+            {
+                <span> (@Catalog.LoadErrors.Count file(s) skipped — templates/unsupported)</span>
+            }
+        </p>
+
+        @foreach (var group in Catalog.ByCategory())
+        {
+            <h3 class="pn-category-title">@group.Key</h3>
+            <div class="pn-gallery">
+                @foreach (var def in group.OrderBy(m => m.Name))
+                {
+                    <div class="pn-gallery-item">
+                        <ModuleCard Def="def" />
+                        <div class="pn-card-meta">
+                            <div class="pn-card-name">@def.Name</div>
+                            <div>@def.Id</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Catalog.EnsureLoadedAsync();
+    }
+}

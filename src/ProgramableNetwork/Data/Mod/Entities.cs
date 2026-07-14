@@ -47,6 +47,25 @@ namespace ProgramableNetwork
             public static readonly string AntenaT2 = "Assets/ProgramableNetwork/Antena/AntenaT2.prefab";
             public static readonly string Speaker = "Assets/ProgramableNetwork/Speaker/Speaker.prefab";
         }
+
+        // In-display interactive control widgets (see ModuleView.ToggleDisplay_Button).
+        // Monochrome PNGs rasterized from Assets/.../Controls/*.svg at build time
+        // (ModBuilder svg2png) — a single runtime state-tint multiplies the white
+        // knob / gray track into the active colour.  On/off is the knob position.
+        public partial class Controls
+        {
+            public static readonly string ToggleOn = "Assets/ProgramableNetwork/Controls/Toggle_On.png";
+            public static readonly string ToggleOff = "Assets/ProgramableNetwork/Controls/Toggle_Off.png";
+            // Neutral mid position (pointer straight up) — used while the button is held
+            // and while the controller is paused.
+            public static readonly string ToggleMid = "Assets/ProgramableNetwork/Controls/Toggle_Mid.png";
+
+            // Pass-through gate knob ("[pass]" display): arrow down = passing, right =
+            // blocked, bottom-right = held/switching.
+            public static readonly string PassDown = "Assets/ProgramableNetwork/Controls/Pass_Down.png";
+            public static readonly string PassRight = "Assets/ProgramableNetwork/Controls/Pass_Right.png";
+            public static readonly string PassDiag = "Assets/ProgramableNetwork/Controls/Pass_Diag.png";
+        }
     }
 
     internal class Entities : AValidatedData

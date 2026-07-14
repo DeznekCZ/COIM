@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PN — Bit-field layout editor (design preview)</title>
+<style>
+  :root{
+    --bg:#171a1f; --panel:#20252d; --panel2:#272d37; --line:#39424f;
+    --txt:#d7dde5; --dim:#8b95a3; --accent:#5b9bd5; --good:#3fbf6f;
+    --warn:#e0b040; --bad:#e05555; --raw:#c06fd0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:13px/1.4 "Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt)}
+  header{padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+  h1{margin:0 0 2px;font-size:16px}
+  .sub{color:var(--dim);font-size:12px}
+  main{max-width:1000px;margin:0 auto;padding:16px}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .grp{display:flex;gap:6px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+  .grp label{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  button{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:5px;padding:5px 10px;cursor:pointer;font:inherit}
+  button:hover{border-color:var(--accent)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  .seg button{border:0;border-radius:0;background:var(--panel)}
+  .seg button.on{background:var(--accent);color:#08121c}
+  .badge{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.04em;background:rgba(192,111,208,.18);color:var(--raw);border:1px solid rgba(192,111,208,.5)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:14px}
+  .ptitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .ptitle b{font-size:13px}
+  .note{color:var(--dim);font-size:12px}
+
+  /* editable pin chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 6px 4px 8px;cursor:pointer}
+  .chip.active{border-color:#fff}
+  .chip .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+  .chip .nm{font-weight:600;min-width:38px}
+  .chip .fld{display:flex;align-items:center;gap:3px;color:var(--dim);font-size:11px}
+  .chip input{width:42px;background:#12151a;color:var(--txt);border:1px solid var(--line);border-radius:4px;padding:3px 4px;text-align:center;font:inherit}
+  .chip .x{border:0;background:transparent;color:var(--dim);cursor:pointer;font-size:14px;padding:0 4px;border-radius:6px}
+  .chip .x:hover{color:var(--bad)}
+  .addbtn{border-style:dashed;color:var(--dim)}
+  .toolrow{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+
+  /* 32-bit preview grid (read-only) */
+  .grid{display:grid;grid-template-columns:repeat(16,1fr);gap:3px}
+  .cell{height:38px;border-radius:4px;background:#2a3038;position:relative;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0c1218;overflow:hidden}
+  .cell .bi{position:absolute;top:2px;left:0;right:0;text-align:center;font-size:8px;color:var(--dim);font-weight:400}
+  .cell.free{color:transparent}
+  .cell.ov{background:var(--bad)!important;color:#fff}
+  .cell.hi{outline:2px solid #fff;outline-offset:-2px}
+
+  .msgs{margin-top:12px;display:flex;flex-direction:column;gap:4px}
+  .msg{padding:5px 9px;border-radius:5px;font-size:12px}
+  .msg.ok{background:rgba(63,191,111,.12);color:var(--good);border:1px solid rgba(63,191,111,.35)}
+  .msg.warn{background:rgba(224,176,64,.12);color:var(--warn);border:1px solid rgba(224,176,64,.35)}
+  .msg.bad{background:rgba(224,85,85,.12);color:var(--bad);border:1px solid rgba(224,85,85,.4)}
+  code{background:#12151a;border:1px solid var(--line);border-radius:4px;padding:2px 6px;color:#c9d4e0}
+  .store{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>Bit-field layout — custom field design preview</h1>
+  <div class="sub">Programable Network · <b>Bits: encode / decode</b> · edit pins above · grid below is a live preview · little-endian (bit 0 = LSB) · always raw 32-bit</div>
+</header>
+<main>
+
+  <div class="bar">
+    <div class="grp">
+      <label>Module</label>
+      <div class="seg" id="modeSeg">
+        <button data-mode="encode" class="on">Encoder</button>
+        <button data-mode="decode">Decoder</button>
+      </div>
+    </div>
+    <div class="grp">
+      <label>Preset</label>
+      <button data-preset="default">16×1</button>
+      <button data-preset="combine">Combiner 2×16</button>
+      <button data-preset="nibbles">8×4</button>
+    </div>
+    <span class="badge">OUTPUT: RAW 32-BIT</span>
+  </div>
+
+  <!-- EDITOR -->
+  <div class="panel">
+    <div class="ptitle">
+      <b>Pin editor</b>
+      <span class="note">each pin: offset (first bit) + length (size in bits)</span>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="toolrow">
+      <button class="addbtn" id="addPin">+ Add pin</button>
+      <button id="autopack">Auto-pack (no gaps)</button>
+      <span class="note" id="pinInfo"></span>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="panel">
+    <div class="ptitle">
+      <b>Preview — 32-bit word</b>
+      <span class="note">read-only · top row bits 0–15, bottom 16–31</span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="store">
+      <label class="note">Persisted in module <code>Array</code> (int, 2 per pin):</label>
+      <code id="storeArr"></code>
+    </div>
+    <div class="note" id="semText" style="margin-top:8px"></div>
+  </div>
+
+</main>
+<script>
+"use strict";
+
+let mode="encode";
+let pins=[];        // {offset,length}
+let active=-1;
+
+const COLORS=["#5b9bd5","#3fbf6f","#e0b040","#c06fd0","#4fb0c0","#d07f4f",
+              "#8f7fd0","#6fbf9f","#c05f7f","#7f9f5f","#5fa0d0","#bfa050",
+              "#a0709f","#60a070","#b06060","#7a86c0"];
+const col=i=>COLORS[i%COLORS.length];
+
+function defaultPins(n){const a=[];for(let i=0;i<n;i++)a.push({offset:i,length:1});return a;}
+function setPreset(p){
+  if(p==="default")pins=defaultPins(16);
+  else if(p==="combine")pins=[{offset:0,length:16},{offset:16,length:16}];
+  else if(p==="nibbles"){pins=[];for(let i=0;i<8;i++)pins.push({offset:i*4,length:4});}
+  active=-1;render();
+}
+function firstFreeBit(){const o=owners();for(let b=0;b<32;b++)if(o[b]===-1)return b;return 0;}
+function addPin(){pins.push({offset:firstFreeBit(),length:1});active=pins.length-1;render();}
+function autopack(){let at=0;pins.forEach(p=>{p.offset=at;at+=Math.max(1,p.length);});render();}
+
+function owners(){
+  const o=new Array(32).fill(-1);
+  pins.forEach((p,i)=>{for(let b=p.offset;b<p.offset+p.length;b++)if(b>=0&&b<32)o[b]=o[b]===-1?i:-2;});
+  return o;
+}
+function pinName(i){return (mode==="encode"?"in ":"out ")+"b"+i;}
+
+function validate(o){
+  const m=[];let ov=false,oor=false,maxBit=-1,unassigned=false;
+  o.forEach(x=>{if(x===-2)ov=true;});
+  pins.forEach(p=>{
+    if(p.length<1){unassigned=true;return;}
+    if(p.offset<0||p.offset+p.length>32)oor=true;
+    maxBit=Math.max(maxBit,p.offset+p.length-1);
+  });
+  if(oor)m.push(["bad","A field runs past bit 31 (offset + length must be ≤ 32)."]);
+  if(ov)m.push(["warn","Overlap on the red bits — encode OR-s the values; decode feeds those bits to several outputs."]);
+  if(unassigned)m.push(["warn","A pin has length 0 — contributes nothing (encode) / always reads 0 (decode)."]);
+  if(!oor&&!ov&&!unassigned)m.push(["ok","Layout is valid — every pin mapped, no overlaps, within 32 bits."]);
+  if(maxBit>20)m.push(["warn","Top bit is "+maxBit+" (>20): only the raw 32-bit signal can carry it — arithmetic/display modules will misread it."]);
+  return m;
+}
+
+// Module.Array packet: [offset0,length0, offset1,length1, ...]  (read directly in action())
+function storeArr(){const a=[];pins.forEach(p=>{a.push(p.offset,p.length);});return a;}
+
+function renderChips(){
+  const c=document.getElementById("chips");
+  c.innerHTML="";
+  pins.forEach((p,i)=>{
+    const el=document.createElement("div");
+    el.className="chip"+(i===active?" active":"");
+    el.dataset.sel=i;
+    el.innerHTML=
+      '<span class="dot" style="background:'+col(i)+'"></span>'+
+      '<span class="nm">'+pinName(i)+'</span>'+
+      '<span class="fld">off<input type="number" min="0" max="31" value="'+p.offset+'" data-i="'+i+'" data-k="offset"></span>'+
+      '<span class="fld">len<input type="number" min="0" max="32" value="'+p.length+'" data-i="'+i+'" data-k="length"></span>'+
+      '<button class="x" data-del="'+i+'" title="Remove pin">✕</button>';
+    c.appendChild(el);
+  });
+  document.getElementById("pinInfo").textContent =
+    pins.length+" pin"+(pins.length===1?"":"s")+" · extensible in-game via the module's right edge";
+}
+
+function renderPreview(){
+  const o=owners();
+  const g=document.getElementById("grid");
+  g.innerHTML="";
+  for(let b=0;b<32;b++){
+    const owner=o[b];
+    const cell=document.createElement("div");
+    cell.className="cell"+(owner===-1?" free":"")+(owner===-2?" ov":"")+(owner===active&&active>=0?" hi":"");
+    if(owner>=0)cell.style.background=col(owner);
+    cell.innerHTML='<span class="bi">'+b+'</span>'+(owner>=0?("b"+owner):(owner===-2?"×":""));
+    g.appendChild(cell);
+  }
+  const mb=document.getElementById("msgs");mb.innerHTML="";
+  validate(o).forEach(([cls,t])=>{const d=document.createElement("div");d.className="msg "+cls;d.textContent=t;mb.appendChild(d);});
+  document.getElementById("storeArr").textContent="["+storeArr().join(", ")+"]";
+  document.getElementById("semText").innerHTML = mode==="encode"
+    ? "Encode: each input's value is masked to its length bits, shifted to its offset, and OR-ed into one 32-bit word on <code>value</code> (<code>Fix32.FromRaw</code>). Length-1 = single bit. LED per input lights when its field ≠ 0."
+    : "Decode: the 32-bit word on <code>value</code> is sliced — output = (word ≫ offset) &amp; mask. Length-1 = single bit. LED per output lights when its field ≠ 0. Two outputs (0,16)+(16,16) = the decombiner/splitter.";
+}
+
+function render(){renderChips();renderPreview();}
+
+// ---- events --------------------------------------------------------------
+const chips=document.getElementById("chips");
+// edit offset/length without rebuilding chips (keep input focus): update model + preview only
+chips.addEventListener("input",e=>{
+  const i=e.target.dataset.i,k=e.target.dataset.k;
+  if(i===undefined)return;
+  pins[+i][k]=Math.max(0,parseInt(e.target.value||"0",10)||0);
+  renderPreview();
+});
+chips.addEventListener("click",e=>{
+  if(e.target.dataset.del!==undefined){
+    const i=+e.target.dataset.del;pins.splice(i,1);
+    if(active>=pins.length)active=pins.length-1;
+    render();return;
+  }
+  if(e.target.tagName==="INPUT")return;
+  const chip=e.target.closest("[data-sel]");
+  if(chip){active=active===+chip.dataset.sel?-1:+chip.dataset.sel;render();}
+});
+document.getElementById("addPin").addEventListener("click",addPin);
+document.getElementById("autopack").addEventListener("click",autopack);
+document.getElementById("modeSeg").addEventListener("click",e=>{
+  const m=e.target.dataset.mode;if(!m)return;mode=m;
+  [...document.querySelectorAll("#modeSeg button")].forEach(b=>b.classList.toggle("on",b.dataset.mode===m));
+  render();
+});
+document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>setPreset(b.dataset.preset)));
+
+setPreset("combine");
+</script>
+</body>
+</html>

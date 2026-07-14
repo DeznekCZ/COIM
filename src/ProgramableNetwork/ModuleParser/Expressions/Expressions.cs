@@ -823,13 +823,54 @@ namespace ProgramableNetwork.Python
             throw new NotImplementedException("__invert__");
         }
 
+        // Promotes a mixed numeric pair (int / float / Fix32) to a shared type
+        // so the arithmetic operators mix them the same way the comparison
+        // operators already do — Fix32 wins over float, float wins over int
+        // (matching __lt__base et al).  int + int stays int so integer math
+        // doesn't silently become fixed-point.  Returns false when either side
+        // isn't a plain number, leaving the caller to raise an accurate type
+        // error.  This is what lets `min(a, b) * self.Input["A"]` work when the
+        // min result is an int and the pin is a Fix32.
+        private static bool __coerce_numeric__(ref object left, ref object right)
+        {
+            bool leftNumeric = left is int || left is float || left is Fix32;
+            bool rightNumeric = right is int || right is float || right is Fix32;
+            if (!leftNumeric || !rightNumeric)
+            {
+                return false;
+            }
+            if (left is Fix32 || right is Fix32)
+            {
+                left = __fix__(left);
+                right = __fix__(right);
+            }
+            else if (left is float || right is float)
+            {
+                left = __float__(left);
+                right = __float__(right);
+            }
+            // else both are already int — leave them untouched.
+            return true;
+        }
+
+        // Human-readable "can not <verb> A and B" message for the arithmetic
+        // operators.  Names the operation and the actual script-facing types so
+        // the error strip shows e.g. "can not add int and str" instead of the
+        // old copy-pasted "Types has no divide yet or never (different type)".
+        private static string __op_error__(string verb, object left, object right)
+        {
+            return "can not " + verb + " " + __type_name__(left) + " and " + __type_name__(right)
+                + " — both values must be the same type (numbers int/float/Fix32 mix automatically)";
+        }
+
         public static object __mul__(object left, object right)
         {
             if (left is null || right is null) {
-				throw new NotImplementedException($"Cannot multiply null values");
+				throw new PythonRuntimeException(__op_error__("multiply", left, right));
 			}
+			__coerce_numeric__(ref left, ref right);
 			if (left.GetType() != right.GetType()) {
-				throw new NotImplementedException($"Types has no multiply yet or never (different type)");
+				throw new PythonRuntimeException(__op_error__("multiply", left, right));
 			}
 			if (left is Fix32 fix) {
 				return fix * (Fix32)right;
@@ -840,16 +881,17 @@ namespace ProgramableNetwork.Python
 			if (left is float f) {
 				return f * (float)right;
 			}
-			throw new NotImplementedException($"Types has no multiply yet or never (same type)");
+			throw new PythonRuntimeException(__op_error__("multiply", left, right));
         }
 
         public static object __div__(object left, object right)
         {
             if (left is null || right is null) {
-				throw new NotImplementedException($"Cannot divide null values");
+				throw new PythonRuntimeException(__op_error__("divide", left, right));
 			}
+			__coerce_numeric__(ref left, ref right);
 			if (left.GetType() != right.GetType()) {
-				throw new NotImplementedException($"Types has no divide yet or never (different type)");
+				throw new PythonRuntimeException(__op_error__("divide", left, right));
 			}
 			if (left is Fix32 fix) {
 				return fix / (Fix32)right;
@@ -860,16 +902,17 @@ namespace ProgramableNetwork.Python
 			if (left is float f) {
 				return f / (float)right;
 			}
-			throw new NotImplementedException($"Types has no divide yet or never (same type)");
+			throw new PythonRuntimeException(__op_error__("divide", left, right));
         }
 
         public static object __divint__(object left, object right)
         {
             if (left is null || right is null) {
-				throw new NotImplementedException($"Cannot divide null values");
+				throw new PythonRuntimeException(__op_error__("integer-divide", left, right));
 			}
+			__coerce_numeric__(ref left, ref right);
 			if (left.GetType() != right.GetType()) {
-				throw new NotImplementedException($"Types has no multiply yet or never (different type)");
+				throw new PythonRuntimeException(__op_error__("integer-divide", left, right));
 			}
 			if (left is Fix32 fix) {
 				return fix / (Fix32)right;
@@ -880,16 +923,17 @@ namespace ProgramableNetwork.Python
 			if (left is float f) {
 				return f / (float)right;
 			}
-			throw new NotImplementedException($"Types has no divide yet or never (same type)");
+			throw new PythonRuntimeException(__op_error__("integer-divide", left, right));
         }
 
         public static object __mod__(object left, object right)
         {
             if (left is null || right is null) {
-				throw new NotImplementedException($"Cannot divide null values");
+				throw new PythonRuntimeException(__op_error__("take the remainder of", left, right));
 			}
+			__coerce_numeric__(ref left, ref right);
 			if (left.GetType() != right.GetType()) {
-				throw new NotImplementedException($"Types has no divide yet or never (different type)");
+				throw new PythonRuntimeException(__op_error__("take the remainder of", left, right));
 			}
 			if (left is Fix32 fix) {
 				return fix % (Fix32)right;
@@ -900,7 +944,7 @@ namespace ProgramableNetwork.Python
 			if (left is float f) {
 				return f % (float)right;
 			}
-			throw new NotImplementedException($"Types has no divide yet or never (same type)");
+			throw new PythonRuntimeException(__op_error__("take the remainder of", left, right));
         }
 
         public static bool __not__(object v)
@@ -935,16 +979,186 @@ namespace ProgramableNetwork.Python
 			return __int__(left) >> __int__(right);
         }
 
+        // `min(...)` / `max(...)` — reductions shared by the PLC-PY runtime
+        // built-ins and the `.py` module `from Core.mafi import min, max`
+        // bindings.  Accept either several positional values (`min(a, b, c)`)
+        // or a single iterable (`min(some_list)`), matching CPython.  Any type
+        // is allowed, but every element must be the SAME type as the first —
+        // except numbers (int / float / Fix32 / bool), which form one comparable
+        // family so `max(fix(1.5), 2)` still works.  A type mismatch, a non-
+        // comparable type, a None, or an empty sequence raises a
+        // PythonRuntimeException whose message is written for a human — the
+        // PLC editor and the module log both surface Exception.Message verbatim,
+        // so the same clear text shows at compile time and at runtime.
+        public static object __min__(IArgumentValue[] args)
+        {
+            return __minmax__(args, wantMax: false);
+        }
+
+        public static object __max__(IArgumentValue[] args)
+        {
+            return __minmax__(args, wantMax: true);
+        }
+
+        private static object __minmax__(IArgumentValue[] args, bool wantMax)
+        {
+            string name = wantMax ? "max" : "min";
+            if (args.Length == 0)
+            {
+                throw new PythonRuntimeException(name + "() needs at least one argument, but none were given");
+            }
+
+            List<object> values;
+            if (args.Length == 1)
+            {
+                // Single-argument form: treat it as an iterable to reduce over.
+                // Strings are excluded — reducing over characters makes no sense
+                // in this DSL, so a lone string is returned as-is rather than
+                // picking a "smallest character".
+                object single = args[0].Value;
+                if (single is string || !(single is System.Collections.IEnumerable en))
+                {
+                    // A lone scalar (e.g. `min(x)`): nothing to compare against,
+                    // so return it unchanged instead of erroring — the least-
+                    // surprising behaviour for a script.
+                    return single;
+                }
+                values = new List<object>();
+                foreach (object o in en)
+                {
+                    values.Add(o);
+                }
+                if (values.Count == 0)
+                {
+                    throw new PythonRuntimeException(name + "() got an empty list, so there is no value to return");
+                }
+            }
+            else
+            {
+                values = new List<object>(args.Length);
+                foreach (IArgumentValue a in args)
+                {
+                    values.Add(a.Value);
+                }
+            }
+
+            object best = values[0];
+            for (int i = 1; i < values.Count; i++)
+            {
+                object candidate = values[i];
+                // Negative when best sorts before candidate, positive when after.
+                int order = __compare__(best, candidate, name);
+                if (wantMax ? order < 0 : order > 0)
+                {
+                    best = candidate;
+                }
+            }
+            return best;
+        }
+
+        // Three-way comparison for min()/max().  int / float / Fix32 are one
+        // comparable family (so `max(fix(1.5), 2)` mixes them like < / > do);
+        // every other value — including bool — must be the exact same type as
+        // `left` and implement IComparable (bool, str, etc. all do, and compare
+        // via CompareTo).  Every failure path throws a PythonRuntimeException
+        // with a plain-language message naming the offending types.
+        private static int __compare__(object left, object right, string fn)
+        {
+            if (left is null || right is null)
+            {
+                throw new PythonRuntimeException(
+                    fn + "() can not compare None with a value — every item must be a real value");
+            }
+
+            bool leftNumeric = __is_numeric__(left);
+            bool rightNumeric = __is_numeric__(right);
+            if (leftNumeric && rightNumeric)
+            {
+                if (__lt__(left, right))
+                {
+                    return -1;
+                }
+                if (__gt__(left, right))
+                {
+                    return 1;
+                }
+                return 0;
+            }
+
+            if (left.GetType() != right.GetType())
+            {
+                throw new PythonRuntimeException(
+                    fn + "() can only compare values of the same type, but got "
+                    + __type_name__(left) + " and " + __type_name__(right));
+            }
+
+            if (left is IComparable comparable)
+            {
+                return Math.Sign(comparable.CompareTo(right));
+            }
+
+            throw new PythonRuntimeException(
+                fn + "() can not order values of type " + __type_name__(left)
+                + " — only numbers, text and other comparable values are supported");
+        }
+
+        private static bool __is_numeric__(object v)
+        {
+            // Only the types __lt__/__gt__ know how to cross-compare.  bool,
+            // byte and short deliberately fall through to the same-type
+            // IComparable path so mixing them with an int gives the friendly
+            // "same type" error instead of __lt__'s internal one.
+            return v is int || v is float || v is Fix32;
+        }
+
+        // Script-facing type name for error messages — reports the names an
+        // author actually writes (int / float / Fix32 / bool / str / None)
+        // instead of the raw CLR type, falling back to the CLR name for
+        // anything else (e.g. an entity or product wrapper).
+        private static string __type_name__(object v)
+        {
+            if (v is null)
+            {
+                return "None";
+            }
+            if (v is int)
+            {
+                return "int";
+            }
+            if (v is float)
+            {
+                return "float";
+            }
+            if (v is Fix32)
+            {
+                return "Fix32";
+            }
+            if (v is bool)
+            {
+                return "bool";
+            }
+            if (v is string)
+            {
+                return "str";
+            }
+            return v.GetType().Name;
+        }
+
         public static object __add__(object left, object right)
         {
             if (left is null || right is null) {
-				throw new NotImplementedException($"Cannot add null values");
+				throw new PythonRuntimeException(__op_error__("add", left, right));
 			}
-			if (left is string ls) {
-				return ls + (right is string rs ? rs : right?.ToString());
+			// String concatenation: as soon as either side is text, both are
+			// rendered with __str__ so `"count: " + n` and `n + " items"` both
+			// read naturally (Python would reject the mixed form, but a stringy
+			// display value is the common intent in a PLC script).
+			if (left is string || right is string) {
+				return __str__(left) + __str__(right);
 			}
+			__coerce_numeric__(ref left, ref right);
 			if (left.GetType() != right.GetType()) {
-				throw new NotImplementedException($"Types has no divide yet or never (different type)");
+				throw new PythonRuntimeException(__op_error__("add", left, right));
 			}
 			if (left is Fix32 fix) {
 				return fix + (Fix32)right;
@@ -955,7 +1169,7 @@ namespace ProgramableNetwork.Python
 			if (left is float f) {
 				return f + (float)right;
 			}
-			throw new NotImplementedException($"Types has no divide yet or never (same type)");
+			throw new PythonRuntimeException(__op_error__("add", left, right));
         }
     }
 }

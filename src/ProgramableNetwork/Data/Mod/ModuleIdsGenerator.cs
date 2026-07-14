@@ -57,8 +57,16 @@ namespace ProgramableNetwork
                     sb.AppendLine($"    categories = [{cats}]");
                 }
 
-                sb.AppendLine($"    inputs = [{string.Join(", ", item.Inputs.Select(c => $"Input({Lit(c.Id)}, {LitLoc(c.Name.Name)})"))}]");
-                sb.AppendLine($"    outputs = [{string.Join(", ", item.Outputs.Select(c => $"Output({Lit(c.Id)}, {LitLoc(c.Name.Name)})"))}]");
+                // NOTE: the lexer does NOT accept an empty list literal `[]`, so only emit the
+                // inputs/outputs (and fields/displays/categories) lines when there's at least one item.
+                if (item.Inputs.Count > 0)
+                {
+                    sb.AppendLine($"    inputs = [{string.Join(", ", item.Inputs.Select(c => $"Input({Lit(c.Id)}, {LitLoc(c.Name.Name)})"))}]");
+                }
+                if (item.Outputs.Count > 0)
+                {
+                    sb.AppendLine($"    outputs = [{string.Join(", ", item.Outputs.Select(c => $"Output({Lit(c.Id)}, {LitLoc(c.Name.Name)})"))}]");
+                }
 
                 string fields = string.Join(", ", item.Fields.Select(FieldCtor).Where(s => s != null));
                 if (fields.Length > 0)

@@ -60,6 +60,17 @@ namespace ProgramableNetwork
     {
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
+            // Preload the in-display toggle-switch textures so ModuleView.ToggleDisplay_Button
+            // can tint them per state.  Registered here (into CustomAssetManager.Alternations)
+            // so they are spliced into AssetsDb.LoadedAssets before any inspector opens.
+            string modBasePath = registrator.ActiveMod.Manifest.RootDirectoryPath;
+            Data.Mod.CustomAssetManager.LoadTexture(modBasePath, NewAssets.Controls.ToggleOn);
+            Data.Mod.CustomAssetManager.LoadTexture(modBasePath, NewAssets.Controls.ToggleOff);
+            Data.Mod.CustomAssetManager.LoadTexture(modBasePath, NewAssets.Controls.ToggleMid);
+            Data.Mod.CustomAssetManager.LoadTexture(modBasePath, NewAssets.Controls.PassDown);
+            Data.Mod.CustomAssetManager.LoadTexture(modBasePath, NewAssets.Controls.PassRight);
+            Data.Mod.CustomAssetManager.LoadTexture(modBasePath, NewAssets.Controls.PassDiag);
+
             ToolbarCategoryProto networkCategoryProto = registrator.PrototypesDb.Get<ToolbarCategoryProto>(NewIds.Controllers.Category).ValueOrThrow("Missing game category");
 
             // Register the display-entity phantom (replacement shown when a saved display proto is missing).

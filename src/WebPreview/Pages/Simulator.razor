@@ -1,0 +1,303 @@
+@page "/simulator"
+@implements IDisposable
+@using System.Globalization
+@using System.Threading
+@using Mafi
+@using SimRunner = ProgramableNetwork.Runtime.Sim.Simulator
+@inject ModuleCatalog Catalog
+
+<PageTitle>ProgramableNetwork — Simulator</PageTitle>
+
+<div class="pn-board" style="padding:16px; min-height:calc(100vh - 32px);">
+    <div class="pn-toolbar">
+        <button class="pn-toolbar-btn @(running ? "is-active" : "")" @onclick="ToggleRun">@(running ? "⏸ Pause" : "▶ Run")</button>
+        <button class="pn-toolbar-btn" @onclick="StepOnce" disabled="@running">⏭ Step</button>
+        <button class="pn-toolbar-btn" @onclick="ResetSim">⟲ Reset</button>
+        <label class="pn-hint">Tick rate
+            <select @onchange="OnIntervalChanged" style="width:auto; display:inline-block; margin-left:4px;">
+                <option value="1000">1/s</option>
+                <option value="500" selected>2/s</option>
+                <option value="200">5/s</option>
+                <option value="50">20/s</option>
+            </select>
+        </label>
+        @if (pendingWire != null)
+        {
+            <span class="pn-wire-arming">Wiring from @SourceLabel(pendingWire.Value) — click an input pin (Esc to cancel)</span>
+        }
+        <span class="pn-tick">tick @sim?.Tick &nbsp; modules @controller.Modules.Count</span>
+    </div>
+
+    <div class="pn-sim">
+        <!-- palette -->
+        <div class="pn-sim-col pn-palette">
+            <h4 style="color:var(--pn-text);margin-top:0">Modules</h4>
+            @if (!Catalog.Loaded)
+            {
+                <p class="pn-hint">Loading…</p>
+            }
+            else
+            {
+                @foreach (var group in Catalog.ByCategory())
+                {
+                    <div class="pn-palette-cat">@group.Key</div>
+                    @foreach (var def in group.OrderBy(m => m.Name))
+                    {
+                        <div class="pn-palette-item" @onclick="() => AddModule(def)" title="@def.Description">
+                            <span class="pn-palette-sym">@(string.IsNullOrEmpty(def.Symbol) ? "?" : def.Symbol)</span>
+                            <span>@def.Name</span>
+                        </div>
+                    }
+                }
+            }
+        </div>
+
+        <!-- board -->
+        <div class="pn-sim-col pn-sim-board" @onclick="ClearSelection">
+            @if (controller.Modules.Count == 0)
+            {
+                <p class="pn-hint" style="padding:16px">Click a module on the left to place it, then click an output pin and an input pin to wire them. Select a module to set field values or constant inputs.</p>
+            }
+            <div class="pn-sim-modules">
+                @foreach (var m in controller.Modules)
+                {
+                    <div class="pn-sim-mod" @onclick:stopPropagation="true">
+                        <ModuleCard Def="m.Definition"
+                                    Live="m"
+                                    Picked="selected == m"
+                                    OnClick="() => SelectModule(m)"
+                                    OnOutputPinClick="(id) => OnOutputPinClick(m, id)"
+                                    OnInputPinClick="(id) => OnInputPinClick(m, id)" />
+                        <div class="pn-card-meta">
+                            <span class="pn-status @StatusClass(m)">@m.Status</span>
+                            <span> @m.Definition.Name #@m.Id</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- inspector -->
+        <div class="pn-sim-col pn-insp">
+            @if (selected == null)
+            {
+                <p class="pn-hint">Select a module to inspect.</p>
+            }
+            else
+            {
+                <h4>@selected.Definition.Name <span class="pn-hint">#@selected.Id</span></h4>
+                @if (selected.Status == ModuleStatus.Error)
+                {
+                    <p class="pn-status error" style="display:block">@selected.Error</p>
+                }
+                <button class="pn-toolbar-btn" @onclick="() => RemoveModule(selected)">🗑 Remove</button>
+
+                @if (selected.Definition.Fields.Count > 0)
+                {
+                    <h4 style="margin-top:14px">Fields</h4>
+                    @foreach (var f in selected.Definition.Fields)
+                    {
+                        <div class="pn-insp-field">
+                            <label title="@f.Description">@f.Name</label>
+                            @switch (f.Kind)
+                            {
+                                case FieldKind.Boolean:
+                                    <select @onchange="(e) => SetFieldBool(f.Id, e)">
+                                        <option value="true" selected="@(selected.FieldNumbers.TryGetValue(f.Id, out var bv) && bv.IsNotZero)">true</option>
+                                        <option value="false" selected="@(!(selected.FieldNumbers.TryGetValue(f.Id, out var bv2) && bv2.IsNotZero))">false</option>
+                                    </select>
+                                    break;
+                                case FieldKind.String:
+                                    <input type="text" value="@GetFieldString(f.Id)" @onchange="(e) => SetFieldString(f.Id, e)" />
+                                    break;
+                                case FieldKind.Entity:
+                                    <span class="pn-hint">(mock entity — not yet configurable)</span>
+                                    break;
+                                default:
+                                    <input type="number" value="@GetFieldNumber(f.Id)" @onchange="(e) => SetFieldNumber(f.Id, e)" />
+                                    break;
+                            }
+                        </div>
+                    }
+                }
+
+                <h4 style="margin-top:14px">Inputs</h4>
+                @for (int i = 0; i < selected.EffectiveInputCount; i++)
+                {
+                    var pin = selected.EffectiveInputId(i);
+                    if (string.IsNullOrEmpty(pin)) { continue; }
+                    var label = selected.Definition.FindInput(pin)?.Name ?? pin;
+                    <div class="pn-pin-row">
+                        <span class="lbl" title="@pin">@label</span>
+                        @if (selected.Connections.TryGetValue(pin, out var conn) && conn != null && conn.Kind == ConnectionKind.Module)
+                        {
+                            <span class="pn-output-val">← #@conn.SourceModuleId.@conn.SourceOutputId</span>
+                            <button class="pn-toolbar-btn" @onclick="() => ClearConnection(pin)">✕</button>
+                        }
+                        else
+                        {
+                            <input type="number" style="width:80px" value="@GetConstant(pin)" @onchange="(e) => SetConstant(pin, e)" />
+                        }
+                    </div>
+                }
+
+                <h4 style="margin-top:14px">Outputs</h4>
+                @foreach (var o in selected.Definition.Outputs)
+                {
+                    <div class="pn-pin-row">
+                        <span class="lbl" title="@o.Id">@o.Name</span>
+                        <span class="pn-output-val">@selected.GetOutput(o.Id, Fix32.Zero)</span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly SimController controller = new();
+    private SimRunner? sim;
+    private long nextId = 1;
+    private SimModule? selected;
+    private (long moduleId, string outputId)? pendingWire;
+    private bool running;
+    private int intervalMs = 500;
+    private Timer? timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Catalog.EnsureLoadedAsync();
+        sim = new SimRunner(controller);
+    }
+
+    private void AddModule(ModuleDefinition def)
+    {
+        var m = SimModuleFactory.Create(def, nextId++);
+        m.Column = controller.Modules.Count;
+        controller.Modules.Add(m);
+        sim!.Rebuild();
+        selected = m;
+    }
+
+    private void RemoveModule(SimModule m)
+    {
+        controller.Modules.Remove(m);
+        foreach (var other in controller.Modules)
+        {
+            var stale = other.Connections.Where(kv => kv.Value?.SourceModuleId == m.Id).Select(kv => kv.Key).ToList();
+            foreach (var k in stale) { other.Connections.Remove(k); }
+        }
+        if (selected == m) { selected = null; }
+        sim!.Rebuild();
+    }
+
+    private void SelectModule(SimModule m) => selected = m;
+    private void ClearSelection() { selected = null; pendingWire = null; }
+
+    private void OnOutputPinClick(SimModule m, string outputId)
+    {
+        pendingWire = (m.Id, outputId);
+        selected = m;
+    }
+
+    private void OnInputPinClick(SimModule m, string inputId)
+    {
+        if (pendingWire is { } src && src.moduleId != m.Id)
+        {
+            m.Connections[inputId] = new Connection
+            {
+                Kind = ConnectionKind.Module,
+                SourceModuleId = src.moduleId,
+                SourceOutputId = src.outputId
+            };
+            pendingWire = null;
+            sim!.Rebuild();
+        }
+        selected = m;
+    }
+
+    private void ClearConnection(string pin)
+    {
+        selected!.Connections.Remove(pin);
+        sim!.Rebuild();
+    }
+
+    // ---- field / constant editing ----
+    private string GetFieldNumber(string id) =>
+        selected!.FieldNumbers.TryGetValue(id, out var v) ? v.ToString() : "0";
+
+    private void SetFieldNumber(string id, ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+        {
+            selected!.FieldNumbers[id] = Fix32.FromFloat((float)d);
+        }
+    }
+
+    private string GetFieldString(string id) => selected!.FieldStrings.TryGetValue(id, out var v) ? v : "";
+    private void SetFieldString(string id, ChangeEventArgs e) => selected!.FieldStrings[id] = e.Value?.ToString() ?? "";
+    private void SetFieldBool(string id, ChangeEventArgs e) =>
+        selected!.FieldNumbers[id] = (e.Value?.ToString() == "true") ? Fix32.One : Fix32.Zero;
+
+    private string GetConstant(string pin) =>
+        selected!.Connections.TryGetValue(pin, out var c) && c != null && c.Kind == ConnectionKind.Constant
+            ? c.ConstantValue.ToString() : "0";
+
+    private void SetConstant(string pin, ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+        {
+            selected!.Connections[pin] = new Connection { Kind = ConnectionKind.Constant, ConstantValue = Fix32.FromFloat((float)d) };
+            sim!.Rebuild();
+        }
+    }
+
+    // ---- run loop ----
+    private void ToggleRun()
+    {
+        running = !running;
+        if (running)
+        {
+            timer = new Timer(_ => InvokeAsync(() => { sim!.Step(); StateHasChanged(); }), null, 0, intervalMs);
+        }
+        else
+        {
+            timer?.Dispose();
+            timer = null;
+        }
+    }
+
+    private void StepOnce() => sim!.Step();
+
+    private void ResetSim()
+    {
+        running = false;
+        timer?.Dispose();
+        timer = null;
+        sim!.Reset();
+    }
+
+    private void OnIntervalChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var ms))
+        {
+            intervalMs = ms;
+            if (running)
+            {
+                timer?.Dispose();
+                timer = new Timer(_ => InvokeAsync(() => { sim!.Step(); StateHasChanged(); }), null, 0, intervalMs);
+            }
+        }
+    }
+
+    private string StatusClass(SimModule m) => m.Status switch
+    {
+        ModuleStatus.Running => "running",
+        ModuleStatus.Error => "error",
+        _ => "init"
+    };
+
+    private string SourceLabel((long moduleId, string outputId) s) => $"#{s.moduleId}.{s.outputId}";
+
+    public void Dispose() => timer?.Dispose();
+}

@@ -44,12 +44,14 @@ using ProgramableNetwork.Data.DisplayEntity;
 using ProgramableNetwork.Data.DisplayEntity.Displays;
 using ProgramableNetwork.Data.Modules;
 using ProgramableNetwork.Data.Speaker;
+using ProgramableNetwork.ModuleParser.Registrator.Definitions;
 using ProgramableNetwork.Data.Variables;
 using ProgramableNetwork.Ui;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Mafi.Collections;
 using static Mafi.Unity.Assets.Unity;
 using static Mafi.Unity.Ui.Library.LogisticsZoneUIComponents;
 using CargoDepot = Mafi.Core.Buildings.Cargo.CargoDepot;
@@ -169,6 +171,23 @@ public class Modules : ModuleGroup, IModuleGroup {
 			inputIdMap: new Dictionary<string, string> { { "a", "A" }, { "b", "B" } },
 			outputIdMap: new Dictionary<string, string> { { "a", "max" }, { "b", "min" } });
 
+			// Runtime_Shift_N fixed-arity cyclic shifters → unified extensible
+			// Runtime_Shift (migrated from Custom/shift.py to C#, see Signals()).
+			// Base 2 channels (0, 1) + paired input/output extensions reproduce each
+			// old channel count.  Channel pin ids ("0", "1", "2", ...) and the shared
+			// "index" pin are unchanged, so no id remap is needed — only the paired
+			// extension counts.  These entries used to live in the Python module's
+			// `deprecates` table; they move here alongside the migration.
+			Deprecation.RegisterDeprecation(
+				new ModuleProto.ID("Runtime_Shift_2".ModuleId()),
+				new ModuleProto.ID("Runtime_Shift".ModuleId()), inputExt: 0, outputExt: 0);
+			Deprecation.RegisterDeprecation(
+				new ModuleProto.ID("Runtime_Shift_4".ModuleId()),
+				new ModuleProto.ID("Runtime_Shift".ModuleId()), inputExt: 2, outputExt: 2);
+			Deprecation.RegisterDeprecation(
+				new ModuleProto.ID("Runtime_Shift_7".ModuleId()),
+				new ModuleProto.ID("Runtime_Shift".ModuleId()), inputExt: 5, outputExt: 5);
+
 		Constants(registrator);
 		Buttons(registrator);
 		Variables(registrator);
@@ -178,6 +197,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 		Stats(registrator);
 		Forks(registrator);
 		Booleans(registrator);
+		Signals(registrator);
 		Decisions(registrator);
 		Display(registrator);
 		RadioAM(registrator);
@@ -202,9 +222,21 @@ public class Modules : ModuleGroup, IModuleGroup {
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
+
+		// Empty swap group for the notification modules (Info / Warning / Error, all sharing a
+		// single "in" pin).  They are Python-registered on the later PyModules pass and enrol
+		// themselves via their `swap_groups = ["notifications"]` class property — see
+		// ModuleRegistrator.  The group shares its member list by reference, so those late
+		// enrolments still appear here.
+		registrator.SwapGroupStart(SwapGroups.Notifications, Category.Display.Name)
+			.RegisterSwapable();
 	}
 
 	private void Constants(ProtoRegistrator registrator) {
+		// Swap group: integer / hex constants share output value + field number (both store a
+		// plain int), so swapping flips only the editor widget and display format, not the value.
+		var constantInt = registrator.SwapGroupStart(SwapGroups.ConstantInt, Category.Constants.Name);
+
 		registrator
 			.ModuleBuilderStart("Constant", "Constant (integer)", "#I")
 			.SetDescription("Outputs the integer stored in the <b>number</b> field on output <b>value</b>. Used as a literal source in arithmetic chains.")
@@ -219,7 +251,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Display["number"] = s.Length > 3 ? s.Substring(s.Length - 3) : s;
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(constantInt);
 
 		registrator
 			.ModuleBuilderStart("Constant_Hex", "Constant (hex)", "#H")
@@ -235,7 +268,10 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Display["number"] = s.Length > 3 ? s.Substring(s.Length - 3) : s;
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(constantInt);
+
+		constantInt.RegisterSwapable();
 
 		registrator
 			.ModuleBuilderStart("Constant_Product", "Constant (product)", "#P")
@@ -325,7 +361,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.SetDescription("Manual on/off toggle. Output <b>value</b> is 1 while the toggle display is active, 0 when inactive. Player clicks the display to flip it.")
 			.AddCategory(Category.Control)
 			.AddOutput("value", "On - 1, Off - 0")
-			.AddDisplay("toggle", "Toggle", 1, toggle: new[] { "( | )" })
+			.AddDisplay("toggle", "Toggle", 1, button: true)
 			.Action(m => m.Output["value"] = (m.Display["toggle", ""].Length > 0) ? Fix32.One : Fix32.Zero)
 			.AddControllerDevice()
 			.BuildAndAdd();
@@ -336,13 +372,19 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddCategory(Category.Control)
 			.AddInput("value", "Value")
 			.AddOutput("value", "Value")
-			.AddDisplay("toggle", "Toggle", 1, toggle: [PassTrough])
+			.AddDisplay("toggle", "Toggle", 1, pass: true)
 			.Action(m => m.Output["value"] = (m.Display["toggle", ""].Length > 0) ? m.Input["value"] : Fix32.Zero)
 			.AddControllerDevice()
 			.BuildAndAdd();
 	}
 
 	private void Arithmetic(ProtoRegistrator registrator) {
+		// Swap group for the arithmetic combiners: Sum/Sub/Multiply/Divide/Modulo all share
+		// inputs a,b(+ext) → output c and are uniformly extensible to 8 inputs / same width,
+		// so any swap between them is lossless — no per-member checks needed.  The inspector's
+		// swap button flips between them keeping cables + the 'b' constant.
+		var arithmetic = registrator.SwapGroupStart(SwapGroups.Arithmetic, Category.Arithmetic.Name);
+
 		registrator
 			.ModuleBuilderStart("Sum", "C = A + B", "A+B")
 			.SetDescription("Outputs <b>a</b> + <b>b</b> (+ extra inputs) to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is used instead of the input pin (see FieldOrInput). Up to six extra input pins (<b>c</b> through <b>h</b>) can be added on the right via the inspector and are included in the sum.")
@@ -364,7 +406,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Output["c"] = value;
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(arithmetic);
 
 		// Sum_4 / Sum_8 were the fixed-arity versions of "Sum" — no longer needed
 		// now that "Sum" itself is extensible up to 8 inputs.  Existing saves are
@@ -373,15 +416,24 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		registrator
 			.ModuleBuilderStart("Sub", "C = A - B", "A-B")
-			.SetDescription("Outputs <b>a</b> - <b>b</b> to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is subtracted instead of the input pin.")
+			.SetDescription("Outputs <b>a</b> - <b>b</b> (- extra inputs) to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is subtracted instead of the input pin. Up to six extra input pins (<b>c</b> through <b>h</b>) can be added on the right via the inspector and are subtracted in turn.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
 			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("c", "C")
-			.Action(m => { m.Output["c"] = m.Input["a"] - m.FieldOrInput["b", 0]; })
+			.AllowInputExtensions(6)
+			.Action(m => {
+				Fix32 value = m.Input["a", 0] - m.FieldOrInput["b", 0];
+				int extCount = System.Math.Min(m.InputExtensionCount, m.Prototype.MaxInputExtensions);
+				for (int i = 0; i < extCount; i++) {
+					value -= m.Input[m.Prototype.InputExtensions[i].Id, 0];
+				}
+				m.Output["c"] = value;
+			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(arithmetic);
 
 		registrator
 			.ModuleBuilderStart("Invert", "B = -A", "-A")
@@ -395,66 +447,111 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		registrator
 			.ModuleBuilderStart("Multiply", "C = A multiply by B", "A*B")
-			.SetDescription("Outputs <b>a</b> * <b>b</b> to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is used as the multiplier instead of the input pin.")
+			.SetDescription("Outputs <b>a</b> * <b>b</b> (* extra inputs) to <b>c</b>. If the <b>field_b</b> toggle is on, the constant <b>b</b> field is used as the multiplier instead of the input pin. Up to six extra input pins (<b>c</b> through <b>h</b>) can be added on the right via the inspector and are multiplied in.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
 			.AddFix32Field("b", "B", overrideInput: true)
 			.AddOutput("c", "C")
+			.AllowInputExtensions(6)
 			.Action(m => {
-				Fix32 a = m.Input["a"];
-				Fix32 b = m.FieldOrInput["b"];
-				Fix32 c = a * b;
-				m.Output["c"] = c;
+				Fix32 value = m.Input["a"] * m.FieldOrInput["b"];
+				int extCount = System.Math.Min(m.InputExtensionCount, m.Prototype.MaxInputExtensions);
+				for (int i = 0; i < extCount; i++) {
+					// Skip an added-but-unconnected extension pin — it reads as 0 and would
+					// otherwise zero the whole product.  Only wired (module or bus) pins fold in.
+					string extId = m.Prototype.InputExtensions[i].Id;
+					if (m.InputModules.ContainsKey(extId)) {
+						value *= m.Input[extId, 0];
+					}
+				}
+				m.Output["c"] = value;
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(arithmetic);
 
 		registrator
 			.ModuleBuilderStart("Divide", "C = A divide by B", "A/B")
-			.SetDescription("Outputs <b>a</b> / <b>b</b> to <b>c</b>. If <b>b</b> is zero, sets output <b>error</b> to 1 and <b>c</b> to Fix32.MaxValue; otherwise <b>error</b> is 0. <b>field_b</b> switches <b>b</b> to the constant field.")
+			.SetDescription("Outputs <b>a</b> / <b>b</b> (/ extra inputs) to <b>c</b>. If any divisor is zero, sets output <b>error</b> to 1 and <b>c</b> to Fix32.MaxValue; otherwise <b>error</b> is 0. <b>field_b</b> switches <b>b</b> to the constant field. Up to six extra input pins (<b>c</b> through <b>h</b>) can be added on the right via the inspector and are divided in turn (unconnected added pins are skipped).")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
 			.AddFix32Field("b", "B", overrideInput: true)
-			.AddOutput("c", "C")
 			.AddOutput("error", "Error")
+			.AddOutput("c", "C")
+			.AllowInputExtensions(6)
 			.Action(m => {
-				Fix32 a = m.Input["a"];
 				Fix32 b = m.FieldOrInput["b"];
 				if (b == 0) {
 					m.Output["error"] = 1;
 					m.Output["c"] = Fix32.MaxValue;
-				} else {
-					m.Output["error"] = 0;
-					m.Output["c"] = a / b;
+					return;
 				}
+				Fix32 value = m.Input["a"] / b;
+				int extCount = System.Math.Min(m.InputExtensionCount, m.Prototype.MaxInputExtensions);
+				for (int i = 0; i < extCount; i++) {
+					// Only wired extension pins participate; an unconnected added pin reads as
+					// 0 and would otherwise be a spurious divide-by-zero.
+					string extId = m.Prototype.InputExtensions[i].Id;
+					if (!m.InputModules.ContainsKey(extId)) {
+						continue;
+					}
+					Fix32 divisor = m.Input[extId, 0];
+					if (divisor == 0) {
+						m.Output["error"] = 1;
+						m.Output["c"] = Fix32.MaxValue;
+						return;
+					}
+					value /= divisor;
+				}
+				m.Output["error"] = 0;
+				m.Output["c"] = value;
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(arithmetic);
 
 		registrator
 			.ModuleBuilderStart("Modulo", "C = A modulo B", "A%B")
-			.SetDescription("Outputs rest of division between <b>a</b> and <b>b</b> to <b>c</b>. If <b>b</b> is zero, sets output <b>error</b> to 1 and <b>c</b> to 0; otherwise <b>error</b> is 0. <b>field_b</b> switches <b>b</b> to the constant field.")
+			.SetDescription("Outputs rest of division between <b>a</b> and <b>b</b> (then modulo the extra inputs) to <b>c</b>. If any modulus is zero, sets output <b>error</b> to 1 and <b>c</b> to 0; otherwise <b>error</b> is 0. <b>field_b</b> switches <b>b</b> to the constant field. Up to six extra input pins (<b>c</b> through <b>h</b>) can be added on the right via the inspector and applied in turn (unconnected added pins are skipped).")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("a", "A")
 			.AddInput("b", "B")
 			.AddFix32Field("b", "B", overrideInput: true)
-			.AddOutput("c", "C")
 			.AddOutput("error", "Error")
+			.AddOutput("c", "C")
+			.AllowInputExtensions(6)
 			.Action(m => {
-				Fix32 a = m.Input["a", 0];
 				Fix32 b = m.FieldOrInput["b", 0];
 				if (b == 0) {
 					m.Output["error"] = 1;
 					m.Output["c"] = 0;
-				} else {
-					m.Output["error"] = 0;
-					m.Output["c"] = a % b;
+					return;
 				}
+				Fix32 value = m.Input["a", 0] % b;
+				int extCount = System.Math.Min(m.InputExtensionCount, m.Prototype.MaxInputExtensions);
+				for (int i = 0; i < extCount; i++) {
+					// Only wired extension pins participate; an unconnected added pin reads as
+					// 0 and would otherwise be a spurious modulo-by-zero.
+					string extId = m.Prototype.InputExtensions[i].Id;
+					if (!m.InputModules.ContainsKey(extId)) {
+						continue;
+					}
+					Fix32 modulus = m.Input[extId, 0];
+					if (modulus == 0) {
+						m.Output["error"] = 1;
+						m.Output["c"] = 0;
+						return;
+					}
+					value %= modulus;
+				}
+				m.Output["error"] = 0;
+				m.Output["c"] = value;
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(arithmetic);
 
 		registrator
 			.ModuleBuilderStart("Average", "Average", "~A")
@@ -571,6 +668,10 @@ public class Modules : ModuleGroup, IModuleGroup {
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
+
+		// Runtime_Max is intentionally NOT enlisted — its pin layout (min/max outputs,
+		// index extensions) differs from the a,b→c combiners, so it is not swap-compatible.
+		arithmetic.RegisterSwapable();
 	}
 
 	private Fix32 Min(Fix32 a, Fix32 b) {
@@ -1246,6 +1347,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 		seven8.BuildAndAdd();
 
+		// Swap groups: 7-seg / 16-seg connected display drivers (share N,DP pins + display field),
+		// and the 7-seg / 16-seg arithmetic bit encoders (share V pin + bits,rest outputs).
+		var segConn = registrator.SwapGroupStart(SwapGroups.SegDisplayConn, Category.DevicesDisplay.Name);
+		var segArith = registrator.SwapGroupStart(SwapGroups.SegDisplayArith, Category.Arithmetic.Name);
+
 		registrator
 			.ModuleBuilderStart("Connection_Display_7SEG_B", "Connection: Display - 7 segment (2-inputs)", "7-SEG")
 			.SetDescription("Light up 7-segment display and activate lines by bits inside single number")
@@ -1302,7 +1408,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Display["bits"] = $"{m.FieldOrInput.Integer["N"]:D3}";
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(segConn);
 
 		registrator
 			.ModuleBuilderStart("Connection_Display_16SEG_B", "Connection: Display - 16 segment (2-inputs)", "16-SEG")
@@ -1345,7 +1452,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Display["bits"] = $"{m.FieldOrInput.Integer["N"]:D3}";
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(segConn);
 
 		registrator
 			.ModuleBuilderStart("Arithmetic_Display_7SEG_B", "Arithmetic: 7 segment", "7S-NB")
@@ -1399,7 +1507,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Display["bits"] = $"{m.Output.Integer["bits"]:D3}";
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(segArith);
 
 		registrator
 			.ModuleBuilderStart("Arithmetic_Display_16SEG_B", "Arithmetic: 16 segment", "16S-NB")
@@ -1453,7 +1562,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Display["bits"] = $"{m.Output.Integer["bits"]:D3}";
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(segArith);
+
+		segConn.RegisterSwapable();
+		segArith.RegisterSwapable();
 	}
 
 	private void Forks(ProtoRegistrator registrator) {
@@ -1487,6 +1600,9 @@ public class Modules : ModuleGroup, IModuleGroup {
 	}
 
 	private void Booleans(ProtoRegistrator registrator) {
+
+		ModuleSwapGroupBuilder booleanModules = registrator.SwapGroupStart(SwapGroups.Boolean, Category.Boolean.Name);
+
 		// Boolean AND — 2 static inputs (a, b) extensible to 8 total via the
 		// inspector.  Action iterates EffectiveInputs so any added pin participates
 		// in the conjunction; an unconnected ext input reads as 0 and short-circuits
@@ -1519,7 +1635,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Output.Bool["a"] = all;
 				m.Output.Bool["b"] = !all;
 			})
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(booleanModules);
 
 		// Boolean OR — same shape: 2 static + up to 6 extensions.  Action returns
 		// true the moment any effective input is > 0.  Replaces Boolean_Or_4.
@@ -1550,7 +1667,9 @@ public class Modules : ModuleGroup, IModuleGroup {
 				m.Output.Bool["a"] = any;
 				m.Output.Bool["b"] = !any;
 			})
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(booleanModules);
+
 		registrator
 			.ModuleBuilderStart($"Boolean_Xor", $"Boolean: XOR", $"XOR")
 			.SetDescription("Outputs <b>a</b> = 1 on <b>c</b> if exactly one of <b>a</b>, <b>b</b> is > 0 (logical XOR); otherwise 0. <b>b</b> (<b>not_c</b>) is the inverse.")
@@ -1574,7 +1693,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 			})
 			.AddDisplay("not_c", "not C", 1, led: true)
 			.AddDisplay("c", "C", 1, led: true)
-			.BuildAndAdd();
+			.BuildAndAdd()
+			// XOR has no extension pins, so block swapping a many-input AND/OR into it (which
+			// would silently drop those pins' cables); PreservesExtensions rejects when the
+			// source module's extension count exceeds XOR's max of 0.
+			.EnlistSwapable(booleanModules, ModuleSwapGroup.PreservesExtensions);
 
 		registrator
 			.ModuleBuilderStart($"Boolean_Not", $"Boolean: NOT", $"nA")
@@ -1587,6 +1710,229 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddControllerDevice()
 			// dynamic
 			.Action(m => m.Output["a"] = m.Input["a"] > 0 ? 0 : 1)
+			.BuildAndAdd();
+
+		booleanModules.RegisterSwapable();
+	}
+
+	// Bit-field packers (Bits: encode / decode) plus the migrated cyclic Shift.
+	// See the block comment inside each for the per-pin (offset, length) layout,
+	// the Array-backed storage, and the always-raw-32-bit wire representation.
+	private void Signals(ProtoRegistrator registrator) {
+		// ---- Bits: encode / decode ---------------------------------------
+		// Generalised bit-field packers.  Each pin maps to a contiguous
+		// (offset, length, format) window inside a 32-bit word; three ints per pin
+		// live in the module's integer Array (3*i offset, +1 length, +2 format:
+		// 0 hex / 1 int) and are
+		// edited through the BitLayoutField inspector UI.  A pin with no Array
+		// entry yet defaults to (offset = index, length = 1) — plain little-endian
+		// single bits, so a freshly placed module already behaves like a simple
+		// bit encoder/decoder.  The wire value is ALWAYS the raw 32-bit signal
+		// (Fix32.FromRaw), since a full 32-bit word can't fit Fix32's ~21-bit
+		// integer part.  A 2-pin encoder with lengths 16/16 is the old combiner;
+		// a 2-output decoder with the same layout is the decombiner/splitter.
+		// Pins are the normal input/output extensions (right-edge +/- buttons):
+		// base 2, up to 16 total (module footprint stays reasonable — one pin per
+		// column).  Each pin can still address any bit 0..31 of the word via its
+		// offset/length, so 16 pins covers combiner/splitter and typical layouts.
+		int bitPins = 16;
+
+		registrator
+			.ModuleBuilderStart("Bits_Encode", "Bits: encode (pins → word)", "|\\#")
+			.SetDescription("Packs its input pins into a single 32-bit word on <b>value</b>. Each pin owns an (offset, length, format) bit-field set in the module's <b>Bit layout</b> editor. Format picks how the pin's signal is read: <b>hex</b> = the input's raw 32-bit value (e.g. from Constant (hex)); <b>int</b> = the input's integer part. The field's low <i>length</i> bits are placed at <i>offset</i>. Unconfigured pins default to hex, length 1, at bit = pin index. The result rides in the signal's raw 32-bit value, so only a matching <b>Bits: decode</b> (or raw transport) reads it back. Add or remove pins from the right edge; each input's LED lights while its signal is non-zero.")
+			.AddCategory(Category.Boolean)
+			.AddCategory(Category.Arithmetic)
+			.AddInput("b0", "0")
+			.AddInput("b1", "1")
+			.AddOutput("value", "Value")
+			.AllowInputExtensions(bitPins - 2, i => ("b" + (i + 2), (i + 2).ToString()))
+			.AddDisplay("b0", "0", 1, led: true)
+			.AddDisplay("b1", "1", 1, led: true)
+			.AllowExtensionDisplays(ExtensionSide.Input,
+				Enumerable.Range(0, bitPins - 2).Select(i =>
+					(DisplayConstructorAction)(b => b.AddDisplay("b" + (i + 2), (i + 2).ToString(), 1, led: true))).ToArray())
+			.AddCustomField("layout", "Bit layout",
+				(inspector, container, module, refresh, reference) =>
+					container.Add(new BitLayoutField(inspector, module, ExtensionSide.Input)))
+			.Action(m => {
+				var inputs = m.EffectiveInputs;
+				var data = m.ArrayData;
+				int packed = 0;
+				for (int i = 0; i < inputs.Count; i++) {
+					int off = (data != null && data.Length > 3 * i) ? data[3 * i].IntegerPart : i;
+					int len = (data != null && data.Length > 3 * i + 1) ? data[3 * i + 1].IntegerPart : 1;
+					int fmt = (data != null && data.Length > 3 * i + 2) ? data[3 * i + 2].IntegerPart : 0;
+					if (len < 1 || off < 0 || off > 31) {
+						continue;
+					}
+					int mask = len >= 32 ? -1 : ((1 << len) - 1);
+					Fix32 sig = m.Input[inputs[i].Id, Fix32.Zero];
+					// fmt: 1 = int (integer part), else = hex (raw 32-bit value).
+					int field = fmt == 1 ? (sig.IntegerPart & mask) : (sig.RawValue & mask);
+					packed |= field << off;
+				}
+				m.Output["value"] = Fix32.FromRaw(packed);
+			})
+			.Display(m => {
+				var inputs = m.EffectiveInputs;
+				for (int i = 0; i < inputs.Count; i++) {
+					m.Display[inputs[i].Id] = m.Input[inputs[i].Id, Fix32.Zero].RawValue != 0 ? "1" : "";
+				}
+			})
+			.AddControllerDevice()
+			.BuildAndAdd();
+
+		registrator
+			.ModuleBuilderStart("Bits_Decode", "Bits: decode (word → pins)", "#|/")
+			.SetDescription("Splits the raw 32-bit word on <b>value</b> into its output pins. Each pin extracts an (offset, length, format) bit-field set in the module's <b>Bit layout</b> editor: field = (word &gt;&gt; offset) &amp; mask. Format picks how the field is emitted: <b>hex</b> = the field as a raw 32-bit value (e.g. into Constant (hex) consumers); <b>int</b> = the field as an integer. Unconfigured pins default to hex, length 1, at bit = pin index. A 2-output decoder with lengths 16/16 is the decombiner/splitter. Turn on <b>src_int</b> to read the input's integer part instead of its raw value, so the bits of a plain computed integer can be decoded. Add or remove pins from the right edge; each output's LED lights while its signal is non-zero.")
+			.AddCategory(Category.Boolean)
+			.AddCategory(Category.Arithmetic)
+			.AddInput("value", "Value")
+			// How to read the incoming word: OFF (default) = raw 32-bit backing value
+			// (matches a Bits: encode output / hex source); ON = the input's integer
+			// part, so the bits of a plain computed integer can be decoded directly —
+			// the read-side counterpart to an encode pin's int/hex format.
+			.AddBooleanField("src_int", "Read input as integer part (else raw 32-bit)")
+			.AddOutput("b0", "0")
+			.AddOutput("b1", "1")
+			.AllowOutputExtensions(bitPins - 2, i => ("b" + (i + 2), (i + 2).ToString()))
+			.AddDisplay("b0", "0", 1, led: true)
+			.AddDisplay("b1", "1", 1, led: true)
+			.AllowExtensionDisplays(ExtensionSide.Output,
+				Enumerable.Range(0, bitPins - 2).Select(i =>
+					(DisplayConstructorAction)(b => b.AddDisplay("b" + (i + 2), (i + 2).ToString(), 1, led: true))).ToArray())
+			.AddCustomField("layout", "Bit layout",
+				(inspector, container, module, refresh, reference) =>
+					container.Add(new BitLayoutField(inspector, module, ExtensionSide.Output)))
+			.Action(m => {
+				var outputs = m.EffectiveOutputs;
+				var data = m.ArrayData;
+				// Read the whole word either from the raw backing value (default, pairs
+				// with a Bits: encode / hex source) or from the integer part when the
+				// src_int field is on (decode the bits of a plain integer).
+				int word = m.Field.Bool["src_int"]
+					? m.Input["value"].IntegerPart
+					: m.Input["value"].RawValue;
+				for (int i = 0; i < outputs.Count; i++) {
+					int off = (data != null && data.Length > 3 * i) ? data[3 * i].IntegerPart : i;
+					int len = (data != null && data.Length > 3 * i + 1) ? data[3 * i + 1].IntegerPart : 1;
+					int fmt = (data != null && data.Length > 3 * i + 2) ? data[3 * i + 2].IntegerPart : 0;
+					int field = 0;
+					if (len >= 1 && off >= 0 && off <= 31) {
+						int mask = len >= 32 ? -1 : ((1 << len) - 1);
+						field = (word >> off) & mask;
+					}
+					string id = outputs[i].Id;
+					// fmt: 1 = int (integer part), else = hex (raw 32-bit value).
+					if (fmt == 1) {
+						m.Output.Integer[id] = field;
+					} else {
+						m.Output[id] = Fix32.FromRaw(field);
+					}
+				}
+			})
+			.Display(m => {
+				var outputs = m.EffectiveOutputs;
+				for (int i = 0; i < outputs.Count; i++) {
+					m.Display[outputs[i].Id] = m.Output[outputs[i].Id, Fix32.Zero].RawValue != 0 ? "1" : "";
+				}
+			})
+			.AddControllerDevice()
+			.BuildAndAdd();
+
+		// Raw <-> integer-part bridges between the raw-32-bit Bits world and normal
+		// arithmetic signals.  Fix32 stores a value as (integer << 10 | fraction);
+		// the Bits modules and Constant (hex) speak in the RawValue field, whereas
+		// Sum/Compare/Display etc. read the integer part — these two convert between
+		// the two conventions.
+		// Swap group: the Hex→Integer / Integer→Hex bridges share input v → output v, so the
+		// swap button flips the conversion direction in place.
+		var convertBridge = registrator.SwapGroupStart(SwapGroups.ConvertBridge, Category.Arithmetic.Name);
+		registrator
+			.ModuleBuilderStart("Convert_RawToInt", "Hex → Integer", "H>I")
+			.SetDescription("Outputs the hex (raw 32-bit backing) value of input <b>v</b> as a normal integer on <b>v</b>. Use to turn a hex/raw value — a Bits: decode 'hex' field, a Constant (hex), or a combined word — into an arithmetic-usable number. Values outside ±2,097,151 clamp to Fix32's integer range.")
+			.AddCategory(Category.Arithmetic)
+			.AddInput("v", "Hex value")
+			.AddOutput("v", "Integer")
+			.Action(m => { m.Output["v"] = Fix32.FromInt(m.Input["v", Fix32.Zero].RawValue); })
+			.AddDisplay("v", "Value", 1)
+			.Display(m => {
+				string s = m.Output.Integer["v"].ToString();
+				m.Display["v"] = s.Length > 3 ? s.Substring(s.Length - 3) : s;
+			})
+			.AddControllerDevice()
+			.BuildAndAdd()
+			.EnlistSwapable(convertBridge);
+
+		registrator
+			.ModuleBuilderStart("Convert_IntToRaw", "Integer → Hex", "I>H")
+			.SetDescription("Takes the integer part of input <b>v</b> and outputs a value whose hex (raw 32-bit) backing equals it on <b>v</b>. Use to feed a plain integer into something that reads the hex/raw value — a Bits: encode/decode 'hex' field or a Constant (hex) consumer. The display shows the value in hexadecimal.")
+			.AddCategory(Category.Arithmetic)
+			.AddInput("v", "Integer")
+			.AddOutput("v", "Hex value")
+			.Action(m => { m.Output["v"] = Fix32.FromRaw(m.Input["v", Fix32.Zero].IntegerPart); })
+			.AddDisplay("v", "Value", 1)
+			.Display(m => {
+				string s = m.Output["v"].RawValue.ToString("X");
+				m.Display["v"] = s.Length > 3 ? s.Substring(s.Length - 3) : s;
+			})
+			.AddControllerDevice()
+			.BuildAndAdd()
+			.EnlistSwapable(convertBridge);
+
+		convertBridge.RegisterSwapable();
+
+		// Cyclic Shift — migrated from Custom/shift.py (now commented out).  Same
+		// proto id and pin layout (shared "index" pin + channels "0", "1", plus up
+		// to 6 paired input/output extensions "2".."7").  Channel i's input is
+		// rotated onto output (i + index) mod channelCount; the wrapped index is
+		// echoed on the "index" output.  Deprecations for Runtime_Shift_2/4/7 are
+		// registered in RegisterData.
+		registrator
+			.ModuleBuilderStart("Runtime_Shift", "Control: Shift", "SHIFT")
+			.SetDescription("Cyclic shifter: <b>index</b> picks how far to rotate the channel inputs (<b>0</b>, <b>1</b>, plus any added extensions) onto the matching outputs. Output <b>index</b> echoes the wrapped index. Add more channel pin pairs from the right edge of the module.")
+			.AddCategory(Category.Control)
+			.AddInput("index", "Index")
+			.AddInput("0", "Input 0")
+			.AddInput("1", "Input 1")
+			.AddOutput("index", "Index")
+			.AddOutput("0", "Output 0")
+			.AddOutput("1", "Output 1")
+			.Width(3)
+			// 2 static channels + up to 6 paired extensions = 8 channels total.  The
+			// auto-namer continues from the last static id "1" → "2".."7", matching
+			// the ids the Python module produced so migrated saves keep their cables.
+			.AllowInputExtensions(6)
+			.AllowOutputExtensions(6)
+			.LinkInputOutputExtensions()
+			.Action(m => {
+				var inputs = m.EffectiveInputs;
+				var outputs = m.EffectiveOutputs;
+				// Channel count excludes the leading "index" pin (ordinal 0).
+				int channels = inputs.Count - 1;
+				if (channels < 1) {
+					return ModuleStatus.Running;
+				}
+				int shiftOffset = m.Input.Integer["index"];
+				if (shiftOffset >= channels) {
+					shiftOffset %= channels;
+				}
+				m.Output.Integer["index"] = shiftOffset;
+				for (int i = 0; i < channels; i++) {
+					int outIdx = i + shiftOffset;
+					if (outIdx >= channels) {
+						outIdx -= channels;
+					}
+					// Negative indices were dead code in the legacy module; skip any
+					// out-of-range target so its output simply keeps its default.
+					if (outIdx < 0 || outIdx >= channels) {
+						continue;
+					}
+					m.Output[outputs[outIdx + 1].Id] = m.Input[inputs[i + 1].Id, Fix32.Zero];
+				}
+				return ModuleStatus.Running;
+			})
+			.AddControllerDevice()
 			.BuildAndAdd();
 	}
 
@@ -2461,10 +2807,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 				return ModuleStatus.Running;
 			})
 			.AddDisplay("animal", "Animals", 1, image: true)
-			.AddDisplay("count", "Count", 1)
-			.AddDisplay("slaughter", "Slaughter", 1)
-			.AddDisplay("feed", "Animal feed", 0.5f.ToFix32(), image: true)
-			.AddDisplay("water", "Water", 0.5f.ToFix32(), image: true)
+			.AddDisplay("slaughter", "Slaughter", 1, image: true)
+			.AddDisplay("feed", "Animal feed", 1, image: true)
+			.AddDisplay("water", "Water", 1, image: true)
+			.AddDisplayFiller(0.ToFix32())
+			.AllowDisplayExtensions(2)
 			.Display(m => {
 				AnimalFarm farm = m.Field.Entity<AnimalFarm>("farm");
 				if (farm is null) {
@@ -2483,7 +2830,9 @@ public class Modules : ModuleGroup, IModuleGroup {
 
 				// Slaughter slider as a percentage of capacity to keep (step 0-10 →
 				// 0-100 %); "off" when slaughtering is disabled and the herd grows free.
-				m.Display["slaughter"] = farm.IsSlaughteringEnabled ? $"{farm.SlaughterStep * 10}%" : "off";
+				m.Display["slaughter"] = farm.IsSlaughteringEnabled
+					? (farm.CarcassBuffer?.Product.IconPath ?? "")
+					: (farm.ProductProducedBuffer.ValueOrNull?.Product.IconPath ?? "");
 
 				// Feed / water status lights: the resource's own icon, green (#P) while
 				// satisfied, red (#E) the moment the animals start missing it.
@@ -2492,6 +2841,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 			})
 			.AddControllerDevice()
 			.BuildAndAdd();
+
+		// Swap groups: Import/Export logistics-mode set & get.  Each pair shares its mode pin +
+		// field logistic (same IStaticEntity type & filter), so a swap keeps the linked building.
+		var modeSet = registrator.SwapGroupStart(SwapGroups.LogisticsModeSet, Category.Connection.Name);
+		var modeGet = registrator.SwapGroupStart(SwapGroups.LogisticsModeGet, Category.Connection.Name);
 
 		registrator
 			.ModuleBuilderStart("Connection_Import_Set", "Connection: Import (set)", "IMS")
@@ -2515,7 +2869,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(modeSet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Import_Get", "Connection: Import (get)", "IMG")
@@ -2539,7 +2894,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(modeGet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Export_Set", "Connection: Export (set)", "EXS")
@@ -2563,7 +2919,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(modeSet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Export_Get", "Connection: Export (get)", "EXG")
@@ -2587,7 +2944,11 @@ public class Modules : ModuleGroup, IModuleGroup {
 				}
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(modeGet);
+
+		modeSet.RegisterSwapable();
+		modeGet.RegisterSwapable();
 
 		registrator
 			.ModuleBuilderStart("Connection_Priority_Set", "Connection: Priority (set)", "P-S")
@@ -3400,6 +3761,12 @@ public class Modules : ModuleGroup, IModuleGroup {
 	}
 
 	private void Comparation(ProtoRegistrator registrator) {
+		// Swap group for the integer comparators: all five share inputs a,b → outputs c,not_c
+		// with identical width, so no space/extension checks are needed.  Compare_Int_LessGreater
+		// is excluded (different l,g outputs).  Reuses the Arithmetic category label for the
+		// picker header (compares are arithmetic-category members); no new translation keys.
+		var comparison = registrator.SwapGroupStart(SwapGroups.Comparison, Category.Arithmetic.Name);
+
 		registrator
 			.ModuleBuilderStart("Compare_Int_Equal", "Compare: A = B", "A=B")
 			.SetDescription("Outputs <b>c</b> = 1 if <b>a</b> equals <b>b</b> (input or <b>field_b</b> constant when enabled), else 0. <b>not_c</b> is the inverse.")
@@ -3421,7 +3788,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("not_c", "not C", 1, led: true)
 			.AddDisplay("c", "C", 1, led: true)
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(comparison);
 
 		registrator
 			.ModuleBuilderStart("Compare_Int_Greater", "Compare: A > B", "A>B")
@@ -3444,7 +3812,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("not_c", "not C", 1, led: true)
 			.AddDisplay("c", "C", 1, led: true)
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(comparison);
 
 		registrator
 			.ModuleBuilderStart("Compare_Int_Lower", "Compare: A < B", "A<B")
@@ -3467,7 +3836,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("not_c", "not C", 1, led: true)
 			.AddDisplay("c", "C", 1, led: true)
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(comparison);
 
 		registrator
 			.ModuleBuilderStart("Compare_Int_GreaterOrEqual", "Compare: A ≥ B", "A≥B")
@@ -3490,7 +3860,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("not_c", "not C", 1, led: true)
 			.AddDisplay("c", "C", 1, led: true)
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(comparison);
 
 		registrator
 			.ModuleBuilderStart("Compare_Int_LowerOrEqual", "Compare: A ≤ B", "A≤B")
@@ -3513,7 +3884,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("not_c", "not C", 1, led: true)
 			.AddDisplay("c", "C", 1, led: true)
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(comparison);
 
 		// Combined less/greater comparison.  Emits a tri-state result on
 		// both <b>L</b> ("Lesser") and <b>G</b> ("Greater") at once so a
@@ -3591,6 +3963,10 @@ public class Modules : ModuleGroup, IModuleGroup {
 		// Compare_Int_Max ("Maximum: A or B") superseded by the extensible Runtime_Max.
 		// Migration registered in RegisterData remaps its pins (a/b → A/B inputs,
 		// High/Low outputs → max/min).
+
+		// Compare_Int_LessGreater is intentionally NOT enlisted — its l,g outputs differ
+		// from the c,not_c pair shared by the five comparators above.
+		comparison.RegisterSwapable();
 	}
 
 	private void Display(ProtoRegistrator registrator) {
@@ -3629,6 +4005,10 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.Display(formatDigits)
 			.BuildAndAdd();
 
+		// Swap group: single-pin value displays share input a + display a, differing only in
+		// how they render it (product icon / entity icon / LED).
+		var displayScalar = registrator.SwapGroupStart(SwapGroups.DisplayScalar, Category.Display.Name);
+
 		registrator
 			.ModuleBuilderStart($"Display_Product", $"Display: product", $"F-P")
 			.SetDescription("Renders the icon of the product whose slim-id arrives on input <b>a</b> to display <b>a</b>. Used to visually identify the current product in a chain.")
@@ -3637,7 +4017,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("a", "Product", 1, image: true)
 			.AddControllerDevice()
 			.Display(m => m.Display["a"] = m.Input.Product("a")?.IconPath)
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(displayScalar);
 
 		registrator
 			.ModuleBuilderStart($"Display_Entity", $"Display: entity", $"F-E")
@@ -3647,7 +4028,8 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("a", "Entity", 1, image: true)
 			.AddControllerDevice()
 			.Display(m => m.Display["a"] = m.Input.EntityProtoIconified("a")?.IconPath)
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(displayScalar);
 
 		registrator
 			.ModuleBuilderStart($"Display_Bool", $"Display: LED", $"F-B")
@@ -3657,7 +4039,10 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.AddDisplay("a", "Product", 1, led: true)
 			.AddControllerDevice()
 			.Display(m => m.Display["a"] = m.Input["a", 0] > 0 ? "1" : "")
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(displayScalar);
+
+		displayScalar.RegisterSwapable();
 	}
 
 	private void RadioFM(ProtoRegistrator registrator) {

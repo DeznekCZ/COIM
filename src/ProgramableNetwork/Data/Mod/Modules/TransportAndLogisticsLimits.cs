@@ -14,11 +14,22 @@ namespace ProgramableNetwork;
 public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 
 	public override void RegisterData(ProtoRegistrator registrator) {
-		Transport(registrator);
-		Logistics(registrator);
+		// Swap groups for the storage-percentage modules.  All four *_Get share output p +
+		// field s (Storage), so they form one group.  The *_Set split into two groups by field
+		// type: the Flow_* use EntityField<Storage> while the Logistics_* use EntityField<IEntity>
+		// (Storage OR train station) — keeping them apart avoids a swap carrying a station entity
+		// into a Storage-only field.
+		var storageGet = registrator.SwapGroupStart(SwapGroups.StorageLimitGet, Category.Connection.Name);
+		var flowSet = registrator.SwapGroupStart(SwapGroups.StorageFlowSet, Category.Connection.Name);
+		var logisticsSet = registrator.SwapGroupStart(SwapGroups.StorageLogisticsSet, Category.Connection.Name);
+		Transport(registrator, storageGet, flowSet);
+		Logistics(registrator, storageGet, logisticsSet);
+		storageGet.RegisterSwapable();
+		flowSet.RegisterSwapable();
+		logisticsSet.RegisterSwapable();
 	}
 
-	private void Transport(ProtoRegistrator registrator) {
+	private void Transport(ProtoRegistrator registrator, ModuleSwapGroupBuilder storageGet, ModuleSwapGroupBuilder flowSet) {
 		registrator
 			.ModuleBuilderStart("Connection_Storage_Flow_In_Set", "Connection: Flow (in, set)", "FS")
 			.AddCategory(Category.Connection)
@@ -45,7 +56,8 @@ public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 			.AddDisplay("t", "Type", 1, image: true)
 			.Display(m => m.Display["t"] = $"#CAAAA00{UserInterface.Toolbar.Transports_svg}")
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(flowSet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Storage_Flow_In_Get", "Connection: Flow (in, get)", "FG")
@@ -70,7 +82,8 @@ public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 				m.Display["p"] = $"#CAAAA00{m.Output["p"].IntegerPart}";
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(storageGet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Storage_Flow_Out_Set", "Connection: Flow (out, set)", "FS")
@@ -98,7 +111,8 @@ public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 			.AddDisplay("t", "Type", 1, image: true)
 			.Display(m => m.Display["t"] = $"#C6688FF{UserInterface.Toolbar.Transports_svg}")
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(flowSet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Storage_Flow_Out_Get", "Connection: Flow (out, get)", "FG")
@@ -123,10 +137,11 @@ public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 				m.Display["p"] = $"#C6688FF{m.Output["p"].IntegerPart}";
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(storageGet);
 	}
 
-	private void Logistics(ProtoRegistrator registrator) {
+	private void Logistics(ProtoRegistrator registrator, ModuleSwapGroupBuilder storageGet, ModuleSwapGroupBuilder logisticsSet) {
 		registrator
 			.ModuleBuilderStart("Connection_Storage_Logistics_In_Set", "Connection: Logistics (in, set)", "LS")
 			.AddCategory(Category.Connection)
@@ -167,7 +182,8 @@ public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 			.AddDisplay("t", "Type", 1, image: true)
 			.Display(m => m.Display["t"] = $"#C00AA00{UserInterface.Toolbar.Vehicles_svg}")
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(logisticsSet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Storage_Logistics_In_Get", "Connection: Logistics (in, get)", "LG")
@@ -192,7 +208,8 @@ public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 				m.Display["p"] = $"#C00AA00{m.Output["p"].IntegerPart}";
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(storageGet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Storage_Logistics_Out_Set", "Connection: Logistics (out, set)", "LS")
@@ -234,7 +251,8 @@ public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 			.AddDisplay("t", "Type", 1, image: true)
 			.Display(m => m.Display["t"] = $"#CCC0000{UserInterface.Toolbar.Vehicles_svg}")
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(logisticsSet);
 
 		registrator
 			.ModuleBuilderStart("Connection_Storage_Logistics_Out_Get", "Connection: Logistics (out, get)", "LG")
@@ -259,6 +277,7 @@ public class TransportAndLogisticsLimits : ModuleGroup, IModuleGroup {
 				m.Display["p"] = $"#CCC0000{m.Output["p"].IntegerPart}";
 			})
 			.AddControllerDevice()
-			.BuildAndAdd();
+			.BuildAndAdd()
+			.EnlistSwapable(storageGet);
 	}
 }

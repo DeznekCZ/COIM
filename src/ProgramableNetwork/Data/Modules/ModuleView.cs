@@ -1,6 +1,7 @@
 ﻿using Mafi.Core.Syncers;
 using System.Linq;
 using Mafi;
+using Mafi.Core;
 using System;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
@@ -44,6 +45,10 @@ public partial class ControllerView
 			bool isExtensible = !preview && (module.Prototype.MaxInputExtensions > 0
 				|| module.Prototype.MaxOutputExtensions > 0
 				|| module.Prototype.MaxDisplayExtensions > 0);
+			// Prototype-swap: a module whose proto belongs to a ModuleSwapGroup with more than
+			// one member gets a swap button in its bottom-left corner (see swapGroupFor cache).
+			ModuleSwapGroup swapGroup = preview ? null : swapGroupFor(module);
+			bool isSwappable = swapGroup != null && swapGroup.Members.Count > 1;
 
 			this.Size(width * Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE * 4);
 			this.Class(Cls.panel);
@@ -219,7 +224,9 @@ public partial class ControllerView
 				// stays free for the keybind hint floater attached below.
 				Icon errorIcon = new Icon(UserInterface.General.Warning128_png)
 					.Size(16.px(), 16.px());
-				errorIcon.AbsolutePosition(bottom: 0.px(), left: 0.px());
+				// Nudge the badge one cell right when the swap button occupies the corner so
+				// the two 16-px widgets sit side by side instead of overlapping.
+				errorIcon.AbsolutePosition(bottom: 0.px(), left: (isSwappable ? 16 : 0).px());
 				errorIcon.SetVisible(false);
 				this.Observe(() => module.Status)
 					.Observe(() => module.Error)
@@ -256,6 +263,28 @@ public partial class ControllerView
 				// Bottom-left status badge — same 16-px footprint as the +/- extension
 				// buttons.  Visible only when there's diagnostic text to show.
 				fieldsRow.Add(errorIcon);
+
+				// Bottom-left swap button — offered only for modules whose prototype is in a
+				// ModuleSwapGroup.  A "⇄" glyph (same 16-px footprint / styling as the +/-
+				// extension buttons) opens a small picker of compatible prototypes; picking one
+				// replaces this module's prototype in place, keeping cables + field values.
+				// Added as a sibling of fieldsPanel (not a child), so a click on it never falls
+				// through to fieldsPanel's Edit-dialog handler.
+				if (isSwappable)
+				{
+					ButtonText swapBtn = new ButtonText("⇄".AsLoc())
+						.Size(16.px(), 16.px())
+						.MinWidth(16.px())
+						.MaxWidth(16.px())
+						.Padding(Px.Zero)
+						.Margin(Px.Zero)
+						.TextAlign(TextAlignment.CenterMiddle)
+						.FontSize(10);
+					swapBtn.AbsolutePosition(bottom: 0.px(), left: 0.px());
+					swapBtn.Tooltip("Swap operation".ToDoLoc());
+					swapBtn.OnClick(() => openSwapPicker(module, swapBtn, swapGroup, uiContext));
+					fieldsRow.Add(swapBtn);
+				}
 
 				// Keybind hint floater — Mafi-style hover tooltip listing the LMB /
 				// Alt+LMB / Shift+LMB / RMB / Shift+RMB shortcuts.  Now that
@@ -904,6 +933,14 @@ public partial class ControllerView
 			{
 				displaysPanel.Add(ImageDisplay(uiContext, module, display));
 			}
+			else if (display.DefaultText.StartsWith("[button]"))
+			{
+				displaysPanel.Add(ToggleDisplay_Button(uiContext, module, display, preview));
+			}
+			else if (display.DefaultText.StartsWith("[pass]"))
+			{
+				displaysPanel.Add(PassDisplay_Button(uiContext, module, display, preview));
+			}
 			else if (display.DefaultText.StartsWith("[toggle]"))
 			{
 				displaysPanel.Add(ToggleDisplay(uiContext, module, display, preview));
@@ -1152,6 +1189,160 @@ public partial class ControllerView
 			return text;
 		}
 
+		// Interactive SVG rotary toggle knob (display type "[button]").  One of three
+		// monochrome knob PNGs (rasterized from the mod's Controls/*.svg) is chosen by
+		// state and tinted — the white face takes the full colour, the gray bezel a
+		// darker shade, and the black ring / pointer stay dark under the multiply-tint:
+		//   off    -> pointer up-left  (Toggle_Off), red
+		//   on     -> pointer up-right (Toggle_On),  green
+		//   held   -> pointer straight up (Toggle_Mid), the current state's colour
+		//   paused -> gray (controller paused), rotation still shows the on/off value
+		// On/off is the module display value (non-empty == on, matching "[toggle]").
+		private UiComponent ToggleDisplay_Button(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview)
+		{
+			ColorRgba offColor = new ColorRgba(210, 70, 60);     // inactive — red
+			ColorRgba onColor = new ColorRgba(70, 195, 110);     // active — green
+			ColorRgba pausedColor = new ColorRgba(140, 146, 156); // controller paused — gray
+
+			bool isOn() => module.Display[display.Id, ""].Length > 0;
+			bool isPaused() => module.Controller != null && module.Controller.IsPaused;
+
+			// Full-cell click target; the square knob icon is centred inside it so a
+			// wider-than-1 display cell doesn't stretch the art horizontally.
+			Row container = new Row()
+				.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE)
+				.AlignItemsCenterMiddle();
+
+			Icon icon = new Icon(NewAssets.Controls.ToggleOff);
+			// Fill the cell — the knob art carries its own margin inside the viewBox so
+			// the black ring isn't clipped at full size.
+			icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+			container.Add(icon);
+
+			// Held state — while pressed the pointer rotates to the neutral mid (up)
+			// position; the colour still reflects the current on/off value.
+			bool pressed = false;
+
+			void repaint()
+			{
+				bool on = isOn();
+				string tex = pressed
+					? NewAssets.Controls.ToggleMid
+					: (on ? NewAssets.Controls.ToggleOn : NewAssets.Controls.ToggleOff);
+				// Paused wins on colour (gray); otherwise the on/off hue.
+				ColorRgba color = isPaused() ? pausedColor : (on ? onColor : offColor);
+				icon.Value(tex, color);
+			}
+			repaint();
+
+			// React to value flips (Python action / input pin) and to the controller
+			// being paused / resumed.
+			icon.Observe(() => isOn())
+				.Observe(() => isPaused())
+				.Do((on, paused) => repaint());
+
+			if (!preview)
+			{
+				container.RegisterCallback<UnityEngine.UIElements.PointerDownEvent>(_ => { pressed = true; repaint(); });
+				container.RegisterCallback<UnityEngine.UIElements.PointerLeaveEvent>(_ =>
+				{
+					// Pointer left while held — cancel the press (no toggle) and redraw.
+					if (pressed) {
+						pressed = false;
+						repaint();
+					}
+				});
+				container.RegisterCallback<UnityEngine.UIElements.PointerUpEvent>(evt =>
+				{
+					bool wasPressed = pressed;
+					pressed = false;
+					// Only left-button releases that started as a press on this widget flip
+					// the toggle — mirrors a real button's click semantics.
+					if (wasPressed && evt.button == 0)
+					{
+						module.Display[display.Id] = isOn() ? "" : "1";
+						evt.StopPropagation();
+					}
+					repaint();
+				});
+			}
+			return container;
+		}
+
+		// Interactive SVG pass-through gate knob (display type "[pass]").  Like the
+		// "[button]" knob but the pointer is a flow ARROW and the light tracks the input:
+		//   passing (on)  -> arrow down,  green while the input is non-zero else red
+		//   blocked (off) -> arrow right, light off (gray)
+		//   held          -> arrow bottom-right, keeps the current light colour
+		// On/off (gate open) is the module display value (non-empty == passing), matching
+		// the Button (pass value) module's Action.
+		private UiComponent PassDisplay_Button(UiContext uiContext, Module module, ModuleConnectorProto display, bool preview)
+		{
+			ColorRgba litColor = new ColorRgba(70, 195, 110);  // passing, input on — green
+			ColorRgba noInputColor = new ColorRgba(210, 70, 60); // passing, input off — red
+			ColorRgba offColor = new ColorRgba(140, 146, 156); // blocked — gray
+
+			bool isPassing() => module.Display[display.Id, ""].Length > 0;
+			bool inputActive() => module.Input["value"] != Fix32.Zero;
+
+			Row container = new Row()
+				.Size(Sizes.BLOCK_SIZE * display.Width.ToFloat(), Sizes.BLOCK_SIZE)
+				.AlignItemsCenterMiddle();
+
+			Icon icon = new Icon(NewAssets.Controls.PassRight);
+			icon.Size(Sizes.BLOCK_SIZE, Sizes.BLOCK_SIZE);
+			container.Add(icon);
+
+			// Held state — while pressed the arrow rotates to the bottom-right neutral
+			// position; the light still reflects the current passing/input state.
+			bool pressed = false;
+
+			void repaint()
+			{
+				bool passing = isPassing();
+				string tex = pressed
+					? NewAssets.Controls.PassDiag
+					: (passing ? NewAssets.Controls.PassDown : NewAssets.Controls.PassRight);
+				// While passing: green if a signal is present on the input, red if not.
+				// While blocked: gray (light off).
+				ColorRgba color = passing
+					? (inputActive() ? litColor : noInputColor)
+					: offColor;
+				icon.Value(tex, color);
+			}
+			repaint();
+
+			// React to the gate flipping (click / Python / input pin) and to the input
+			// signal turning on/off so the light follows it live.
+			icon.Observe(() => isPassing())
+				.Observe(() => inputActive())
+				.Do((passing, active) => repaint());
+
+			if (!preview)
+			{
+				container.RegisterCallback<UnityEngine.UIElements.PointerDownEvent>(_ => { pressed = true; repaint(); });
+				container.RegisterCallback<UnityEngine.UIElements.PointerLeaveEvent>(_ =>
+				{
+					if (pressed) {
+						pressed = false;
+						repaint();
+					}
+				});
+				container.RegisterCallback<UnityEngine.UIElements.PointerUpEvent>(evt =>
+				{
+					bool wasPressed = pressed;
+					pressed = false;
+					if (wasPressed && evt.button == 0)
+					{
+						module.Display[display.Id] = isPassing() ? "" : "1";
+						evt.StopPropagation();
+					}
+					repaint();
+				});
+			}
+			return container;
+		}
+
 		// TODO(displays): revisit the slider/display abstraction — the display
 		// definition needs richer fields (similar to inputs/outputs/cable info) so a
 		// single proto entry carries enough to render and bind data without parsing
@@ -1297,6 +1488,148 @@ public partial class ControllerView
 			Row buttons = new Row(gap: 5.px()) { removeBtn, cancelBtn };
 			body.BodyAdd(c => c.Padding(8).Gap(5.px()), prompt, buttons);
 
+			dialog.Open(anchor);
+		}
+
+		// Static reverse-lookup cache: prototype id → its ModuleSwapGroup.  Built once lazily
+		// from the (immutable-after-registration) ModuleSwapGroup protos so each ModuleView
+		// build is a single dictionary hit rather than a scan over every group.  Never
+		// invalidated — the group protos are the same instances for the whole process.
+		private static Dictionary<ModuleProto.ID, ModuleSwapGroup> s_swapGroupByProto;
+
+		private static ModuleSwapGroup swapGroupFor(Module module)
+		{
+			if (module?.Prototype == null || module.Context?.ProtosDb == null)
+			{
+				return null;
+			}
+			if (s_swapGroupByProto == null)
+			{
+				Dictionary<ModuleProto.ID, ModuleSwapGroup> map = new Dictionary<ModuleProto.ID, ModuleSwapGroup>();
+				foreach (ModuleSwapGroup group in module.Context.ProtosDb.All<ModuleSwapGroup>())
+				{
+					foreach (ModuleProto member in group.Members)
+					{
+						map[member.Id] = group;
+					}
+				}
+				s_swapGroupByProto = map;
+			}
+			return s_swapGroupByProto.TryGetValue(module.Prototype.Id, out ModuleSwapGroup found) ? found : null;
+		}
+
+		// Standard dropdown-style picker of the swap group's other members — modelled on the
+		// new-module picker (PickNewModule) but without the category column, since a swap group
+		// IS a single category.  Header carries a search icon, a search field, and the group
+		// name; the body is a scrollable list where each row renders the candidate as a live
+		// module preview (same as the new-module selector) plus its name.  Allowed rows schedule
+		// a ModuleSwapPrototypeCmd (and redraw the grid on apply so the new pins/width render);
+		// blocked rows are disabled with the failing check's reason as tooltip so the player
+		// sees WHY it can't swap.
+		private void openSwapPicker(Module module, UiComponent anchor, ModuleSwapGroup group, UiContext uiContext)
+		{
+			// Card width used both for the row layout and for the dropdown's left shift below.
+			const int cardWidth = 320;
+			// How far left to pull the dropdown so the module-preview column (which sits after the
+			// title/description card in each row) lines up under the module being swapped: the card
+			// width + the ButtonVariant gap (5) + the panel/scroll/button-row inner padding (~15).
+			// Bump the trailing term if the preview lands a hair right/left of the module.
+			const int previewLeftInset = cardWidth + 5 + 8;
+
+			FloatingColumn dialog = new FloatingColumn(
+				new SwapPickerPositionPolicy(previewLeftInset), false, false, true);
+
+			PanelWithHeader panel = dialog.AddAndReturn(new PanelWithHeader().Height(Px.Auto));
+
+			// Header: search icon + text field + group name.  Live-filter query is held in a
+			// captured local read by the per-row Observe below.
+			string searchText = "";
+			TextField search = new TextField();
+			search.Placeholder(Tr.Search);
+			search.MinWidth(150.px());
+			search.FlexGrow(1);
+			search.FocusOnShow();
+			search.OnValueChanged(text => searchText = text);
+			dialog.OnShow(() => search.SetValue("".AsLoc()));
+
+			panel.Header.Gap(5.px());
+			panel.Header.Add(
+				new Icon(UserInterface.General.Search_svg),
+				search,
+				new Label(group.DisplayName).TextAlign(TextAlignment.CenterMiddle).FlexGrow(1));
+
+			ScrollColumn list = panel.Body.AddAndReturn(new ScrollColumn())
+				.Width(Px.Auto)
+				.Height(Px.Auto);
+			// Render the candidate buttons as one connected group (segmented look) rather than
+			// separate floating rows.
+			list.Class(Cls.group);
+
+			foreach (ModuleProto candidate in group.Members)
+			{
+				if (candidate.Id == module.Prototype.Id)
+				{
+					continue;
+				}
+				LocStrFormatted blockedReason = group.Check(module, candidate);
+				bool allowed = blockedReason.IsEmptyOrNull;
+				string name = candidate.Strings.Name.TranslatedString;
+				string searchString = name + " " + candidate.Symbol;
+
+				// Ghost preview of the candidate carrying THIS module's current extension counts
+				// (clamped to the candidate's own maxes, no topology side effect) so the preview
+				// shows the actual post-swap footprint rather than the candidate's bare default.
+				Module ghost = new Module(candidate, m_controller.Entity.Context, m_controller.Entity, 0);
+				ghost.InputExtensionCount = System.Math.Min(module.InputExtensionCount, candidate.MaxInputExtensions);
+				ghost.OutputExtensionCount = System.Math.Min(module.OutputExtensionCount, candidate.MaxOutputExtensions);
+				ghost.DisplayExtensionCount = System.Math.Min(module.DisplayExtensionCount, candidate.MaxDisplayExtensions);
+				ghost.Prototype.ExecuteInit(ghost, log: false);
+				ghost.Prototype.DisplayUpdate(ghost);
+				ModuleView preview = new ModuleView(ghost, m_controller, uiContext, true, () => { });
+				preview.IgnoreInputPicking();   // clicks fall through to the row button
+
+				// Titled card + description, same layout as the new-module picker
+				// (NewModule.CreateUi): [ name header + description ][ module preview ].
+				PanelWithHeader card = new PanelWithHeader().Height(Sizes.BLOCK_SIZE * 4).Width(cardWidth);
+				card.Header.AddAndReturn(new Label(candidate.Strings.Name))
+					.Class(Cls.bold).Fill().TextCenterMiddle();
+				card.BodyAdd(
+					new ScrollColumn() {
+						c => c.FlexGrow(1).AlignSelf(Mafi.Unity.UiToolkit.Component.Align.Stretch),
+						new Label(candidate.Strings.DescShort)
+							.TextOverflow(TextOverflow.Wrap)
+							.TextAlign(TextAlignment.LeftTop)
+							.AlignSelf(Mafi.Unity.UiToolkit.Component.Align.Stretch)
+					});
+
+				ButtonRow optionBtn = new ButtonRow(new ButtonVariant().Gap(5));
+				optionBtn.Add(card);
+				optionBtn.Add(preview);
+				optionBtn.Tooltip((allowed ? name : name + " — " + blockedReason.Value).AsLoc());
+				if (allowed)
+				{
+					ModuleProto target = candidate;
+					optionBtn.OnClick(() =>
+					{
+						uiContext.InputScheduler.ScheduleAndOnApplied(
+							new ModuleSwapPrototypeCmd(module.Controller.Id, module.Id, target.Id.Value),
+							optionBtn,
+							() => { dialog.Close(); m_controller.RedrawComponents(); });
+					});
+				}
+				else
+				{
+					optionBtn.ObserveEnabled(() => false);
+				}
+				list.Add(optionBtn);
+
+				// Live search filter — hide rows whose name/symbol don't contain the query.
+				dialog.Observe(() => searchText)
+					.Do(query => optionBtn.Visible(
+						searchString.Contains(query, StringComparison.InvariantCultureIgnoreCase)));
+			}
+
+			dialog.Height(Px.Auto);
 			dialog.Open(anchor);
 		}
 	}

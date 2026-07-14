@@ -166,6 +166,17 @@ namespace ProgramableNetwork.Python
                 }).Call(p => context[p.value] = p.Item2).ToList();
             }
 
+            else if (name == "Core.swap_groups")
+            {
+                // `SwapGroups` — constant ids of the built-in groups (see the SwapGroups class).
+                // `SwapGroup` — base class a module author subclasses to DEFINE a named group:
+                //     class MyOps(SwapGroup):
+                //         id = "my_ops"
+                //         name = "My Operations"        # or: category = DefaultCategories.Arithmetic
+                context["SwapGroups"] = typeof(SwapGroups);
+                context["SwapGroup"] = typeof(ModuleSwapGroup);
+            }
+
             else if (name == "Core.module")
             {
                 context["Module"] = typeof(Module);
@@ -202,6 +213,8 @@ namespace ProgramableNetwork.Python
                 context["int"] = new Constructor((args) => Expressions.__int__(args[0].Value), new string[] { "value" });
                 context["raw"] = new Constructor((args) => Expressions.__raw__(args[0].Value), new string[] { "value" });
                 context["hex"] = new Constructor((args) => Fix32.FromRaw(Expressions.__int__(args[0].Value)), new string[] { "value" });
+                context["min"] = new Constructor(Expressions.__min__, new string[] { "values" });
+                context["max"] = new Constructor(Expressions.__max__, new string[] { "values" });
                 context["Fix32"] = typeof(Fix32);
             }
 

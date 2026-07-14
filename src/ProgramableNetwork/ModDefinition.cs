@@ -34,6 +34,11 @@ namespace ProgramableNetwork
             Log.Info($"{nameof(ProgramableNetwork)}: registering prototypes");
             CustomAssetManager.Clear();
 
+            // Reach distance every module's entity field uses when picking an entity to connect to.
+            // Read from config.json here — before any IModuleGroup / PyModules registration below —
+            // because the field distance is baked into each ModuleProto.Builder at build time.
+            ModuleProto.ControllerReachDistance = JsonConfig.GetInt("controller_reach_distance", 20).ToFix32();
+
 			registrator.PrototypesDb.RegisterPhantom(ModuleProto.Phantom);
 
             // Register all prototypes here.

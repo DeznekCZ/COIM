@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Rotary toggle knob, ON. See Toggle_Off.svg for the tinting rationale.
+     ON points up-right (+45deg) and is tinted green. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+    <circle cx="64" cy="64" r="52" fill="none" stroke="#000000" stroke-width="6"/>
+    <circle cx="64" cy="64" r="46" fill="#808080" stroke="#1c1c1c" stroke-width="3"/>
+    <circle cx="64" cy="64" r="35" fill="#ffffff" stroke="#1c1c1c" stroke-width="3"/>
+    <line x1="64" y1="64" x2="86" y2="42" stroke="#1c1c1c" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="64" cy="64" r="7" fill="#1c1c1c"/>
+</svg>

@@ -307,7 +307,7 @@
 
 	<ItemGroup Condition=" '$(ProjectDir)' != '*Undefined*' ">
 		<AssetBundles Include="$(ProjectDir)..\$(UnityProjectName)\AssetBundles\**\*" Exclude="**\AssetBundles;**\AssetBundles.manifest" />
-		<Assets Include="$(ProjectDir)Assets\**\*" Exclude="$(ProjectDir)Assets\**\*.pdn" />
+		<Assets Include="$(ProjectDir)Assets\**\*" Exclude="$(ProjectDir)Assets\**\*.pdn;$(ProjectDir)Assets\**\*.svg" />
 		<Modules Include="$(ProjectDir)..\ProgramableNetwork.Modules\Custom\**\*" />
 		<CoreAPI Include="$(ProjectDir)..\ProgramableNetwork.Modules\Core\**\*" />
 		<Translations Include="$(ProjectDir)Translations\**\*" />

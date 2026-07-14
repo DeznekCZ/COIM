@@ -424,7 +424,7 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 	// shadowed it.
 	private static readonly HashSet<string> SYSTEM_CONTEXT_KEYS = new HashSet<string>
 	{
-		"self", "Fix32", "fix", "int", "raw", "hex", "ModuleStatus", "range", "len",
+		"self", "Fix32", "fix", "int", "raw", "hex", "ModuleStatus", "range", "len", "min", "max",
 	};
 
 	// True when at least one preamble-level definition (function OR class)
@@ -496,6 +496,8 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 			["ModuleStatus"] = typeof(ModuleStatus),
 			["range"] = new Constructor(rangeCtor, ["start", "stop", "step"]),
 			["len"] = new Constructor(lenCtor, ["value"]),
+			["min"] = new Constructor(Expressions.__min__, ["values"]),
+			["max"] = new Constructor(Expressions.__max__, ["values"]),
 		};
 
 		// Same live-runtime publish RunBlock does — preamble can have
@@ -632,6 +634,8 @@ public class PlcPy : ModuleGroup, IModuleGroup {
 			["ModuleStatus"] = typeof(ModuleStatus),
 			["range"] = new Constructor(rangeCtor, ["start", "stop", "step"]),
 			["len"] = new Constructor(lenCtor, ["value"]),
+			["min"] = new Constructor(Expressions.__min__, ["values"]),
+			["max"] = new Constructor(Expressions.__max__, ["values"]),
 		};
 		// Pre-load any player vars from the previous tick (or from init's
 		// pass when this is the first run after init).  Done after the

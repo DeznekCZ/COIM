@@ -4,6 +4,7 @@ using Mafi.Core;
 using Mafi.Core.Entities;
 using Mafi.Core.Input;
 using Mafi.Core.Prototypes;
+using Mafi.Localization;
 using ProgramableNetwork.Data.Variables;
 using ProgramableNetwork.Ui;
 
@@ -24,6 +25,8 @@ namespace ProgramableNetwork
 		ICommandProcessor<ModuleClearFieldCmd>,
 		ICommandProcessor<ModuleSetInputConnectionCmd>,
 		ICommandProcessor<ModuleSetExtensionCountCmd>,
+		ICommandProcessor<ModuleSetArrayCmd>,
+		ICommandProcessor<ModuleSwapPrototypeCmd>,
 		ICommandProcessor<ControllerSetColorCmd>,
 		ICommandProcessor<ModuleRemoveCmd>,
 		ICommandProcessor<ModuleMoveToCmd>,
@@ -151,6 +154,69 @@ namespace ProgramableNetwork
 			// flop).  No separate InputModules reconciliation needed — the side
 			// setters already handle it.
 			module.SetExtensionCountLinked(cmd.Side, cmd.NewCount);
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModuleSetArrayCmd cmd)
+		{
+			if (!tryGetModule(cmd.ControllerId, cmd.ModuleId, out _, out Module module, out string error)) {
+				cmd.SetResultError(error);
+				return;
+			}
+			// Replace the whole Array buffer: resize to the payload length then copy the
+			// values in through the bounds-safe ArrayAccess.  The bit-field editor sends
+			// the full offset/length layout each time, so a plain overwrite is correct.
+			Module.ArrayAccess array = module.Array;
+			array.Resize(cmd.Values.Length);
+			for (int i = 0; i < cmd.Values.Length; i++) {
+				array[i] = cmd.Values[i];
+			}
+			cmd.SetResultSuccess();
+		}
+
+		public void Invoke(ModuleSwapPrototypeCmd cmd)
+		{
+			if (!tryGetModule(cmd.ControllerId, cmd.ModuleId, out _, out Module module, out string error)) {
+				cmd.SetResultError(error);
+				return;
+			}
+
+			Option<ModuleProto> target = m_protosDb.Get<ModuleProto>(new Proto.ID(cmd.NewProtoId));
+			if (!target.HasValue) {
+				cmd.SetResultError($"Module proto '{cmd.NewProtoId}' not found.");
+				return;
+			}
+			ModuleProto newProto = target.Value;
+
+			// Authoritative validation on the sim thread: current + target must share a swap
+			// group, and the group's per-instance checks (space, extension preservation) must
+			// pass — so a stale/hacked client UI can never force an illegal swap.
+			ModuleSwapGroup group = m_protosDb.All<ModuleSwapGroup>()
+				.FirstOrDefault(g => g.Contains(module.Prototype.Id) && g.Contains(newProto.Id));
+			if (group == null) {
+				cmd.SetResultError($"'{module.Prototype.Id}' and '{newProto.Id}' are not in the same swap group.");
+				return;
+			}
+			LocStrFormatted reason = group.Check(module, newProto);
+			if (!reason.IsEmptyOrNull) {
+				cmd.SetResultError(reason.Value);
+				return;
+			}
+
+			module.Prototype = newProto;
+			// Re-clamp the extension counts to the new prototype's maxes and drop any cable now
+			// bound to a pin that no longer exists — SetInputExtensionCount prunes this module's
+			// incoming cables, SetOutputExtensionCount prunes consumer cables pointing at removed
+			// outputs (e.g. a dropped 'error' pin).  Both also InvalidateTopology.
+			module.SetInputExtensionCount(module.InputExtensionCount);
+			module.SetOutputExtensionCount(module.OutputExtensionCount);
+			module.SetDisplayExtensionCount(module.DisplayExtensionCount);
+			// Clear any stale error/status and run the new prototype's Init action WITHOUT the
+			// per-field InitData reset (ExecuteInit), so shared fields like the 'b' constant keep
+			// their value.  Outputs recompute on the next tick via the controller's Execute loop.
+			module.SetError("");
+			module.SetStatus(newProto.Init.Invoke(module));
+			module.Controller?.InvalidateTopology();
 			cmd.SetResultSuccess();
 		}
 

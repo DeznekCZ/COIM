@@ -23,6 +23,25 @@ namespace ProgramableNetwork.Data.Mod
             StringBuilder logBuilder = new();
 
             int failed = 0;
+
+            // Pass 1 — create every Python-defined swap group (`class X(SwapGroup)`) across ALL
+            // files first, so any module can join a group by id with the author's chosen name
+            // already set.  Failures here are logged but not fatal; the module parse below reports
+            // authoritative errors.
+            foreach (FileInfo file in modules.EnumerateFiles())
+            {
+                try
+                {
+                    ModuleRegistrator.RegisterSwapGroups(registrator, file.FullName);
+                }
+                catch (System.Exception e)
+                {
+                    Log.Error("Parsing of python swap groups failed: " + file.Name);
+                    Log.Exception(e);
+                }
+            }
+
+            // Pass 2 — modules, templates and controllers.
             foreach (FileInfo file in modules.EnumerateFiles())
             {
                 try

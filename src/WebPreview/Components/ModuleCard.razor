@@ -1,0 +1,130 @@
+@*
+    Renders one module in the Mafi/Unity style, matching the original ModuleView sizing:
+      - the module is ALWAYS 4 cells (BLOCK_SIZE*4) tall,
+      - width = (BaseWidth + max active extension count) * BLOCK_SIZE,
+      - rows: input header (1 cell) · grey body with the symbol (2 cells, or 1 when displays exist) ·
+        displays row (1 cell, only when the module has displays) · output footer (1 cell).
+    Works statically (Def only) for the preview gallery, or live (Live set) for the simulator.
+*@
+@using System.Globalization
+
+<div class="pn-module @StateClass" style="width:@(Cells * 32)px" @onclick="OnClick">
+    <div class="pn-ports pn-inputs">
+        @for (int i = 0; i < Def.Inputs.Count; i++)
+        {
+            var id = Def.Inputs[i].Id;
+            <span class="pn-pin @(IsInputConnected(id) ? "is-connected" : "")"
+                  title="@($"{Def.Inputs[i].Name} ({id})")"
+                  @onclick:stopPropagation="true"
+                  @onclick="() => OnInputPinClick.InvokeAsync(id)"></span>
+        }
+    </div>
+
+    <div class="pn-body">
+        <div class="pn-symbol">@(string.IsNullOrEmpty(Def.Symbol) ? Def.Name : Def.Symbol)</div>
+    </div>
+
+    @if (Def.Displays.Count > 0)
+    {
+        <div class="pn-displays-row">
+            @foreach (var d in Def.Displays)
+            {
+                @RenderDisplay(d)
+            }
+        </div>
+    }
+
+    <div class="pn-ports pn-outputs">
+        @for (int i = 0; i < Def.Outputs.Count; i++)
+        {
+            var id = Def.Outputs[i].Id;
+            <span class="pn-pin"
+                  title="@($"{Def.Outputs[i].Name} ({id}) = {OutputValue(id)}")"
+                  @onclick:stopPropagation="true"
+                  @onclick="() => OnOutputPinClick.InvokeAsync(id)"></span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ModuleDefinition Def { get; set; } = default!;
+    [Parameter] public SimModule? Live { get; set; }
+    [Parameter] public bool Picked { get; set; }
+    [Parameter] public bool Hovered { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public EventCallback<string> OnInputPinClick { get; set; }
+    [Parameter] public EventCallback<string> OnOutputPinClick { get; set; }
+
+    // Width in cells = BaseWidth, grown (live) by the largest active extension count — exactly the
+    // formula ModuleLayout.GetWidth uses.
+    private int Cells
+    {
+        get
+        {
+            int ext = Live == null ? 0 : Math.Max(Live.InputExtensionCount,
+                Math.Max(Live.OutputExtensionCount, Live.DisplayExtensionCount));
+            return Math.Max(1, Def.Width + ext);
+        }
+    }
+
+    private string StateClass =>
+        (Live != null && Live.Status == ModuleStatus.Error) ? "is-error"
+        : Picked ? "is-picked"
+        : Hovered ? "is-hovered"
+        : "";
+
+    private bool IsInputConnected(string id) =>
+        Live != null && Live.Connections.TryGetValue(id, out var c) && c != null && c.Kind != ConnectionKind.None;
+
+    private string OutputValue(string outputId) =>
+        Live == null ? "0" : Live.GetOutput(outputId, Mafi.Fix32.Zero).ToString();
+
+    private RenderFragment RenderDisplay(ModuleProto.DisplayDef d) => builder =>
+    {
+        string? live = Live != null && Live.Displays.TryGetValue(d.Id, out var v) ? v : null;
+        switch (d.Kind)
+        {
+            case ModuleProto.DisplayKind.Led:
+                bool on = !string.IsNullOrEmpty(live);
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "class", on ? "pn-led on" : "pn-led");
+                builder.AddAttribute(2, "title", d.Name);
+                builder.CloseElement();
+                break;
+
+            case ModuleProto.DisplayKind.Slider:
+                double pct = SliderPct(d, live);
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "class", "pn-slider");
+                builder.AddAttribute(2, "style", $"width:{Math.Max(40, d.Width * 28)}px");
+                builder.AddAttribute(3, "title", d.Name);
+                builder.OpenElement(4, "i");
+                builder.AddAttribute(5, "style", $"width:{pct.ToString("0.#", CultureInfo.InvariantCulture)}%");
+                builder.CloseElement();
+                builder.CloseElement();
+                break;
+
+            default: // Text / Icon / Filler
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "class", "pn-text-display");
+                builder.AddAttribute(2, "title", d.Name);
+                builder.AddContent(3, string.IsNullOrEmpty(live) ? "" : live);
+                builder.CloseElement();
+                break;
+        }
+    };
+
+    private static double SliderPct(ModuleProto.DisplayDef d, string? live)
+    {
+        if (string.IsNullOrEmpty(live) || !double.TryParse(live, NumberStyles.Any, CultureInfo.InvariantCulture, out double val))
+        {
+            return 0;
+        }
+        double min = d.Min, max = d.Max;
+        if (max <= min)
+        {
+            return 0;
+        }
+        return Math.Clamp((val - min) / (max - min) * 100.0, 0, 100);
+    }
+}

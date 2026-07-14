@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.8" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProgramableNetwork.Runtime\ProgramableNetwork.Runtime.csproj" />
+  </ItemGroup>
+
+  <!--
+    Dev convenience: copy the mod's Python module sources into wwwroot/data so the app can fetch and
+    parse them directly (no manual export needed during development), and emit an index.json listing
+    them. Runs before static web assets are resolved so the dev server serves them. The pn_exportWebData
+    console command (Part B) produces the same bundle shape for end users + icons.
+  -->
+  <Target Name="CopyModuleData" BeforeTargets="ResolveStaticWebAssetsInputs;BeforeBuild">
+    <ItemGroup>
+      <CustomPy Include="..\ProgramableNetwork.Modules\Custom\*.py" />
+      <CorePy Include="..\ProgramableNetwork.Modules\Core\*.py" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CustomPy)"
+          DestinationFiles="@(CustomPy->'wwwroot\data\modules\%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(CorePy)"
+          DestinationFiles="@(CorePy->'wwwroot\data\core\%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <PropertyGroup>
+      <_Modules>@(CustomPy->'    "modules/%(Filename)%(Extension)"', ',%0A')</_Modules>
+      <_Core>@(CorePy->'    "core/%(Filename)%(Extension)"', ',%0A')</_Core>
+    </PropertyGroup>
+    <WriteLinesToFile File="wwwroot\data\index.json" Overwrite="true"
+      Lines="{%0A  &quot;modules&quot;: [%0A$(_Modules)%0A  ]%2C%0A  &quot;core&quot;: [%0A$(_Core)%0A  ]%0A}" />
+
+    <!-- The C#-defined modules only exist as metadata at game runtime. If the player has run the
+         in-game `pn_exportWebData` command, pull the generated ids.py (all modules) so the dev app
+         shows them too. Best-effort: skipped when the deployed mod / export isn't present. -->
+    <PropertyGroup>
+      <ExportedIdsPath>$(APPDATA)\Captain of Industry\Mods\ProgramableNetwork\WebExport\core\ids.py</ExportedIdsPath>
+    </PropertyGroup>
+    <Copy Condition="Exists('$(ExportedIdsPath)')"
+          SourceFiles="$(ExportedIdsPath)"
+          DestinationFiles="wwwroot\data\core\ids.py"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

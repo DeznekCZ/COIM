@@ -21,5 +21,13 @@
     "min": 1.0,
     "max": 100.0,
     "description": "Range multiplier for tier-2 antena (multiplied with the data-band base distance)."
+  },
+
+  "controller_reach_distance": {
+    "default": 20,
+    "is_integer": true,
+    "min": 1,
+    "max": 10000,
+    "description": "How far (in tiles) a controller module can reach to pick an entity to connect to."
   }
 }

@@ -84,6 +84,8 @@ public static class PlcPySyntax {
 					new Completion("in",       "Loop binder (for x in xs:) and membership test."),
 					new Completion("range",    "range(stop) / (start, stop) / (start, stop, step) — int sequence."),
 					new Completion("len",      "len(value) — string/list/dict size."),
+					new Completion("min",      "min(a, b, ...) or min(iterable) — smallest value."),
+					new Completion("max",      "max(a, b, ...) or max(iterable) — largest value."),
 					new Completion("init",     "init: section — runs once after compile or after any non-Running result. Seeds variables that main: reuses each tick."),
 					new Completion("main",     "main: section — body executed every tick. Default when no init:/main: split is given."),
 				};
@@ -359,6 +361,8 @@ public static class PlcPySyntax {
 		{ "in",            "Inside `for VAR in EXPR:` introduces the iteration; elsewhere it's a membership test (`x in xs`)." },
 		{ "range",         "range(stop) / range(start, stop) / range(start, stop, step) — returns a list of ints to iterate." },
 		{ "len",           "len(value) — length of a string, list, dict, or any iterable." },
+		{ "min",           "min(a, b, ...) or min(iterable) — smallest value. Any type works, but every item must be the same type (numbers int/float/Fix32 may mix)." },
+		{ "max",           "max(a, b, ...) or max(iterable) — largest value. Any type works, but every item must be the same type (numbers int/float/Fix32 may mix)." },
 		{ "init",          "init: section header at column 0. Body runs once after the script compiles, and again after any tick that returns a non-Running ModuleStatus. Use it to seed scratch variables and per-instance state. Variables you assign here survive into main: and across main: ticks; they're saved with the world (whitelisted types only — primitives, strings, Fix32)." },
 		{ "main",          "main: section header at column 0. Body runs every tick against the same scope as init: and the preamble. If the script has no `init:` / `main:` headers at all, the entire source is treated as main:." },
 		{ "def",           "def NAME(args): … — top-level function definition. Place it OUTSIDE any init: / main: section (the preamble) to make it callable from both. The function survives across ticks within a session; saves drop it (Methods aren't serialisable) but the preamble re-runs on load to recreate it." },

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Rotary toggle knob, OFF. Monochrome so the runtime state-tint (which MULTIPLIES)
+     reads correctly:
+       black ring = stays black under any tint (the circle "around" the knob)
+       bezel      = mid-gray  -> darker shade of the state color
+       face       = white     -> full-brightness state color (the knob)
+       pointer    = near-black -> dark indicator under any tint
+     OFF points up-left (-45deg) and is tinted red.  ON = up-right (green),
+     held = straight up (Toggle_Mid.svg, keeps the current colour). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+    <circle cx="64" cy="64" r="52" fill="none" stroke="#000000" stroke-width="6"/>
+    <circle cx="64" cy="64" r="46" fill="#808080" stroke="#1c1c1c" stroke-width="3"/>
+    <circle cx="64" cy="64" r="35" fill="#ffffff" stroke="#1c1c1c" stroke-width="3"/>
+    <line x1="64" y1="64" x2="42" y2="42" stroke="#1c1c1c" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="64" cy="64" r="7" fill="#1c1c1c"/>
+</svg>

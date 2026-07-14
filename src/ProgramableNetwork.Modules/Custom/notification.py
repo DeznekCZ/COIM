@@ -1,6 +1,7 @@
 from Core.categories import DefaultCategories
 from Core.io import Input
 from Core.module import DefaultControllers, Module, ModuleStatus
+from Core.swap_groups import SwapGroups
 
 class Notification_Info(Module):
     name = "Notification: Info"
@@ -9,6 +10,7 @@ class Notification_Info(Module):
     inputs = [ Input("in", "State") ]
     width = 2
     categories = [ DefaultCategories.Display ]
+    swap_groups = [ SwapGroups.Notifications ]
     controllers = [ DefaultControllers.Controller ]
 
     def Action(self):
@@ -22,6 +24,7 @@ class Notification_Warning(Module):
     inputs = [ Input("in", "State") ]
     width = 2
     categories = [ DefaultCategories.Display ]
+    swap_groups = [ SwapGroups.Notifications ]
     controllers = [ DefaultControllers.Controller ]
 
     def Action(self):
@@ -35,6 +38,7 @@ class Notification_Error(Module):
     inputs = [ Input("in", "State") ]
     width = 2
     categories = [ DefaultCategories.Display ]
+    swap_groups = [ SwapGroups.Notifications ]
     controllers = [ DefaultControllers.Controller ]
 
     def Action(self):

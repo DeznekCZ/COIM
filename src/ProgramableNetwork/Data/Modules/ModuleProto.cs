@@ -21,6 +21,13 @@ namespace ProgramableNetwork
 {
     public class ModuleProto : EntityProto, IProtoWithIcon
     {
+        /// <summary>
+        /// How far (in tiles) a module's entity field may reach when picking an entity to connect to.
+        /// Populated from the mod's <c>config.json</c> (<c>controller_reach_distance</c>) by
+        /// <see cref="ModDefinition.RegisterPrototypes"/> before any module group is registered; the
+        /// 20-tile fallback keeps headless/test runs (which never touch config) behaving as before.
+        /// </summary>
+        public static Fix32 ControllerReachDistance { get; set; } = 20.ToFix32();
 
         [DebuggerStepThrough]
         [DebuggerDisplay("{Value,nq}")]
@@ -768,12 +775,14 @@ namespace ProgramableNetwork
             /// <param name="name">Displayerd tooltip value</param>
             /// <param name="width">taken module width</param>
             /// <returns></returns>
-            public Builder AddDisplay(string id, string name, Fix32 width, string defaultText = null, bool image = false, string[] toggle = null, bool entity = false, bool led = false)
+            public Builder AddDisplay(string id, string name, Fix32 width, string defaultText = null, bool image = false, string[] toggle = null, bool entity = false, bool led = false, bool button = false, bool pass = false)
             {
                 (m_displaysTargetOverride ?? m_displays).Add(new ModuleConnectorProto(id, m_id.Display(id, name), width,
                     defaultText ?? (
                     image ? "[image]" :
                     led ? "[led]":
+                    button ? "[button]" :
+                    pass ? "[pass]" :
                     toggle != null ? "[toggle]" + WriteToggleArray(toggle) :
                     (new string('0', width.IntegerPart * 2) + "|")
                     )));
@@ -1006,40 +1015,40 @@ namespace ProgramableNetwork
 
             public Builder AddEntityField(string id, string name, Func<Module, IEntity, bool> entitySelector = null)
             {
-                m_fields.Add(new EntityField(id, m_id.Field(id, name), entitySelector, 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name), entitySelector, ControllerReachDistance));
                 return this;
             }
 
             public Builder AddEntityField<T>(string id, string name)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, m_id.Field(id, name), (module, entity) => entity is T, 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name), (module, entity) => entity is T, ControllerReachDistance));
                 return this;
             }
 
             public Builder AddEntityField<T>(string id, string name, string shortDesc)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity is T, 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity is T, ControllerReachDistance));
                 return this;
             }
 
             public Builder AddEntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null)
             {
-                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), filter, 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), filter, ControllerReachDistance));
                 return this;
             }
 
             public Builder AddEntityField<T>(string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, bool showInTooltip = false)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity is T && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity is T && (filter?.Invoke(module, entity) ?? true), ControllerReachDistance));
                 return this;
             }
 
             public Builder AddEntityField(Type t, string id, string name, string shortDesc, Func<Module, IEntity, bool> filter = null, bool showInTooltip = false)
             {
-                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity?.GetType()?.IsAssignableTo(t) ?? false && (filter?.Invoke(module, entity) ?? true), 20.ToFix32()));
+                m_fields.Add(new EntityField(id, m_id.Field(id, name, shortDesc), (module, entity) => entity?.GetType()?.IsAssignableTo(t) ?? false && (filter?.Invoke(module, entity) ?? true), ControllerReachDistance));
                 return this;
             }
 

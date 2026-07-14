@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Base;
 using Mafi.Core.Mods;
+using Mafi.Localization;
 using ProgramableNetwork.ModuleParser.Registrator.Definitions;
 using System;
 using System.Collections;
@@ -11,6 +12,54 @@ namespace ProgramableNetwork.Python
 {
     public class ModuleRegistrator
     {
+        // First pass (before any module is built): create the swap groups this file DEFINES via
+        // `class MyGroup(SwapGroup)`, so modules — in this or any other file — can join them by id
+        // with the author's chosen name already in place.  PyModules runs this over every file
+        // before it runs Register, so group definitions are always "loaded before" the modules.
+        public static void RegisterSwapGroups(ProtoRegistrator registrator, string file)
+        {
+            Token[] tokens = Tokenizer.ParseFile(file);
+            Block block = Lexer.Parse(tokens);
+
+            Dictionary<string, object> context = new Dictionary<string, object>();
+            foreach (IStatement statement in block.statements)
+            {
+                statement.Execute(context);
+            }
+
+            foreach (Class classEntry in context.Values
+                .Where(v => v is Class c && c.baseTypes.Contains(typeof(ModuleSwapGroup)))
+                .Cast<Class>())
+            {
+                string id = classEntry.classContext.TryGetValue("id", out object idObj) ? idObj as string : null;
+                if (string.IsNullOrEmpty(id))
+                {
+                    Log.Error($"[ModuleRegistrator] SwapGroup '{classEntry.name}' is missing a string `id`");
+                    continue;
+                }
+                // Already declared (by C# or an earlier file) — don't create a duplicate builder.
+                if (ModuleSwapGroupBuilder.Find(id) != null)
+                {
+                    continue;
+                }
+                registrator.SwapGroupStart(id, ResolveSwapGroupName(classEntry, id)).RegisterSwapable();
+            }
+        }
+
+        // Display name for a Python-defined swap group: prefer an explicit `category` (a real,
+        // translatable LocStr), else mint one from the `name` string, else fall back to the id.
+        private static LocStr ResolveSwapGroupName(Class classEntry, string id)
+        {
+            if (classEntry.classContext.TryGetValue("category", out object cat) && cat is Category category)
+            {
+                return category.Name;
+            }
+            string name = classEntry.classContext.TryGetValue("name", out object nameObj) ? nameObj as string : null;
+            return Loc.Str("ProgramableNetwork_SwapGroup_" + id + "__name",
+                string.IsNullOrEmpty(name) ? id : name,
+                "custom swap group display name");
+        }
+
         public static void Register(ProtoRegistrator registrator, string file, out List<Class> templates, out List<Class> controllers)
         {
             Token[] tokens = Tokenizer.ParseFile(file);
@@ -153,7 +202,17 @@ namespace ProgramableNetwork.Python
 				// TODO search for variable of device
                 builder.AddControllerDevice();
 
-                builder.BuildAndAdd();
+                ModuleProto proto = builder.BuildAndAdd();
+
+                // `swap_groups` — list of swap-group ids this module opts into, e.g.
+                //   swap_groups = [ "notifications" ]
+                // Each id is resolved to the group builder registered by the C# SwapGroupStart
+                // (the IModuleGroup pass runs before PyModules), and this prototype is enrolled
+                // into it so the inspector's swap button offers it alongside the group's members.
+                if (classEntry.classContext.TryGetValue("swap_groups", out object swapGroups))
+                {
+                    AddSwapGroups(registrator, proto, swapGroups as IList);
+                }
 
                 // `deprecates` — list of fixed-arity ids this extensible module
                 // supersedes.  Each entry is a tuple/list:
@@ -279,6 +338,40 @@ namespace ProgramableNetwork.Python
             foreach (object item in list)
             {
                 builder.AddCategory(item as Category);
+            }
+        }
+
+        // Enrols a Python module's prototype into each swap group named in its `swap_groups`
+        // class property.  A built-in id resolves to the group a C# IModuleGroup already declared
+        // (that pass runs before PyModules) via ModuleSwapGroupBuilder.Find; an id no C# group
+        // declared is treated as a Python-defined group and CREATED on first reference, so mod
+        // authors can introduce their own swap groups with no C# change.
+        private static void AddSwapGroups(ProtoRegistrator registrator, ModuleProto proto, IList list)
+        {
+            if (list == null)
+            {
+                return;
+            }
+            foreach (object item in list)
+            {
+                string groupId = item as string;
+                if (string.IsNullOrEmpty(groupId))
+                {
+                    continue;
+                }
+                ModuleSwapGroupBuilder group = ModuleSwapGroupBuilder.Find(groupId);
+                if (group == null)
+                {
+                    // First module to name this id creates the group; later modules naming the
+                    // same id find it here and just join.  The picker header reuses the module's
+                    // first category (as the built-in groups do), falling back to Display.
+                    var name = proto.Categories.Length > 0
+                        ? proto.Categories[0].Name
+                        : Category.Display.Name;
+                    group = registrator.SwapGroupStart(groupId, name);
+                    group.RegisterSwapable();
+                }
+                proto.EnlistSwapable(group);
             }
         }
 
