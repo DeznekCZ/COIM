@@ -27,6 +27,7 @@ using ProgramableNetwork.Data.Variables;
 using UnityEngine;
 using static Mafi.Unity.Assets.Unity;
 using Display = Mafi.Unity.Ui.Library.Display;
+using EntityId = Mafi.Core.EntityId;
 using TextAlignment = Mafi.Unity.UiToolkit.Component.TextAlignment;
 
 namespace ProgramableNetwork.Ui;

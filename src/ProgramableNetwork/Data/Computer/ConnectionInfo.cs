@@ -17,6 +17,7 @@ using Mafi.Unity.UiToolkit.Library;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Localization;
 using static Mafi.Unity.Assets.Unity;
+using EntityId = Mafi.Core.EntityId;
 
 namespace ProgramableNetwork.Ui
 {

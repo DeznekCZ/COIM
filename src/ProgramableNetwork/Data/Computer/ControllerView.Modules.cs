@@ -23,6 +23,7 @@ using UnityEngine;
 using System.Xml.Serialization;
 using Mafi.Unity.Ports.Io;
 using Mafi.Unity.UiToolkit;
+using EntityId = Mafi.Core.EntityId;
 
 namespace ProgramableNetwork.Ui
 {

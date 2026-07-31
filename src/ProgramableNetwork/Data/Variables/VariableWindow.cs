@@ -18,6 +18,7 @@ using UnityEngine;
 using Mafi.Unity.Ui.Library;
 using Mafi.Unity.Ui;
 using Display = Mafi.Unity.Ui.Library.Display;
+using EntityId = Mafi.Core.EntityId;
 
 namespace ProgramableNetwork.Data.Variables;
 

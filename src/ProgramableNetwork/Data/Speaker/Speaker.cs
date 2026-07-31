@@ -19,6 +19,7 @@ using Mafi.Unity.Audio;
 using Mafi.Unity;
 using Mafi.Unity.Ui;
 using UnityEngine;
+using EntityId = Mafi.Core.EntityId;
 
 namespace ProgramableNetwork.Data.Speaker
 {

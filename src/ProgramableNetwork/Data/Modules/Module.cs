@@ -11,6 +11,7 @@ using Mafi.Collections.ImmutableCollections;
 using Mafi.Core.Research;
 using ProgramableNetwork.Python;
 using UnityEngine;
+using EntityId = Mafi.Core.EntityId;
 
 namespace ProgramableNetwork
 {

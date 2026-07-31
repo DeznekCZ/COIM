@@ -9,6 +9,7 @@ using Mafi.Unity.Ui.Library;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using System;
+using System.Linq;
 
 namespace ProgramableNetwork.Ui
 {
@@ -21,8 +22,14 @@ namespace ProgramableNetwork.Ui
             Action onClick = () =>
             {
                 picker = new RecipePicker(inspector.Context,
-                    assignedRecipesFn: () => module.Field.Entity<Machine>("entity")?.RecipesAssigned.AsEnumerable() ?? new Lyst<RecipeProto>(),
-                    allRecipesFn: () => module.Field.Entity<Machine>("entity")?.Prototype.Recipes.AsEnumerable() ?? new Lyst<RecipeProto>(),
+                    assignedRecipesFn: () => {
+						Machine machine = module.Field.Entity<Machine>("entity");
+						return machine is null ? [] : machine.RecipesAssigned.AsEnumerable().Select(r => machine.Prototype.GetRecipeForUi(r));
+					},
+                    allRecipesFn: () => {
+						Machine machine = module.Field.Entity<Machine>("entity");
+						return machine is null ? [] : machine.Prototype.RecipesForUi.AsEnumerable();
+					},
                     onRecipeAdded: (r) => {
                         module.Field["recipe", false] = r.Id.Value;
                         picker.Close();
@@ -61,7 +68,7 @@ namespace ProgramableNetwork.Ui
                     return;
                 }
 
-                Body.AddAndReturn(new MachineRecipeUi(() => new NoExecutor(), recipeProto).OnClick(onClick));
+                Body.AddAndReturn(new MachineRecipeUi(() => new NoExecutor(), machine.Prototype.GetRecipeForUi(recipeProto)).OnClick(onClick));
             };
 
             refreshRecipe(module.Field.Entity<Machine>("entity"), module.Field["recipe", false]);
@@ -85,7 +92,11 @@ namespace ProgramableNetwork.Ui
                 return Quantity.Zero;
             }
 
-            public Quantity GetInputQuantityFor(ProductProto product)
+			public ExecutorDurationInfoUi GetDurationInfoFor(IRecipeForUi recipe) {
+				return new ExecutorDurationInfoUi();
+			}
+
+			public Quantity GetInputQuantityFor(ProductProto product)
             {
                 return Quantity.Zero;
             }
