@@ -134,6 +134,45 @@ namespace CustomAssets.Python
             }
         }
 
+        // `with <expr> [as <name>]:` + indented body. Mirrors ParseIf. The
+        // optional `as <name>` binds the context value (e.g. the RecipeProto a
+        // `build_recipe(...)` returns) to a variable for the body; when omitted
+        // the body relies purely on the runtime context (see WithStatement /
+        // the recipe-bind context).
+        private void ParseWith(Block tree, int headerLine)
+        {
+            IExpression contextExpr = ParseExpression();
+            string asName = null;
+            if (IsNext(PythonTokens.asp, out Token _))
+            {
+                Token nameTok = RequireNext(PythonTokens.name);
+                asName = nameTok.value;
+            }
+            RequireNext(PythonTokens.block);
+
+            if (IsNext(PythonTokens.newline, out Token _))
+            {
+                RequireNext(PythonTokens.indent);
+
+                Block block = ParseBlock(tree, PythonTokens.dedent);
+                tree.Add(new WithStatement(contextExpr, asName, block) {
+                    StartLine = headerLine,
+                    EndLine = lastBodyLine(headerLine)
+                });
+
+                RequireNext(PythonTokens.dedent);
+            }
+            else
+            {
+                // Single-line `with expr: stmt`.
+                Block block = ParseBlock(tree, PythonTokens.newline);
+                tree.Add(new WithStatement(contextExpr, asName, block) {
+                    StartLine = headerLine,
+                    EndLine = lastBodyLine(headerLine)
+                });
+            }
+        }
+
         // Pick the line of the body's last non-trivial token after ParseBlock
         // returned. m_lastNonTrivialToken tracks all dequeues except whitespace
         // (see Dequeue() in Lexer.cs); reading it AFTER the body parse means we

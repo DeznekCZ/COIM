@@ -19,6 +19,23 @@ namespace CustomAssets.Ui.Editors {
     /// </summary>
     internal static class EditorHelpers {
 
+        /// Comma-separated id text → trimmed id list, or null when nothing is left.
+        /// Null (rather than an empty list) so the emitter omits the argument
+        /// entirely instead of writing `replaces = []`.
+        internal static List<string> SplitIdList(string text) {
+            if (string.IsNullOrWhiteSpace(text)) {
+                return null;
+            }
+            List<string> ids = new List<string>();
+            foreach (string part in text.Split(',')) {
+                string trimmed = part.Trim();
+                if (trimmed.Length > 0) {
+                    ids.Add(trimmed);
+                }
+            }
+            return ids.Count == 0 ? null : ids;
+        }
+
         /// Inline RgbColorPicker wrapped in a CollapsibleGroup (expanded by
         /// default). Writes back as a Python `(R, G, B)` tuple. Returns the
         /// CollapsibleGroup so the editor can add it as one component.

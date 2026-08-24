@@ -60,6 +60,8 @@
         ifp,
         elif,
         elsep,
+        withp,
+        asp,
         block,
         name,
         comment,

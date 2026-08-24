@@ -1,9 +1,11 @@
 ﻿using Mafi;
 using PythonAPI.Runtime;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace PythonAPI.Expressions {
 	public class Expressions {
@@ -110,6 +112,57 @@ namespace PythonAPI.Expressions {
 			return __int__(v1) ^ __int__(v2);
 		}
 
+		// Dispatch for `obj.method(...)`. MemberCall carries EVERY public method of
+		// that name, so pick the one whose parameter list can take the supplied
+		// argument count, then fill any trailing optional parameters with their
+		// declared defaults. That is what lets a single C# method with an optional
+		// parameter — `get(string name, object fallback = null)` on ConfigValues —
+		// serve both `config.get("x")` and `config.get("x", 0)` from .py.
+		private static object __invoke_member__(MemberCall member, List<(string name, object value)> arguments) {
+			object[] values = arguments.Select(a => a.value).ToArray();
+			MethodInfo target = __select_overload__(member.Type, values.Length);
+			ParameterInfo[] parameters = target.GetParameters();
+
+			if (parameters.Length <= values.Length) {
+				// Exact arity, or a mismatch reflection will report better than we can.
+				return target.Invoke(member.Target, values);
+			}
+
+			object[] bound = new object[parameters.Length];
+			for (int i = 0; i < parameters.Length; i++) {
+				if (i < values.Length) {
+					bound[i] = values[i];
+					continue;
+				}
+				if (!parameters[i].HasDefaultValue) {
+					// Too few arguments for any overload — let reflection raise the
+					// TargetParameterCountException with the original values.
+					return target.Invoke(member.Target, values);
+				}
+				bound[i] = parameters[i].DefaultValue;
+			}
+			return target.Invoke(member.Target, bound);
+		}
+
+		// Exact parameter-count match wins; otherwise the first overload whose
+		// remaining parameters are all optional. Falls back to the first candidate so
+		// the failure mode stays what it always was for unresolvable calls.
+		private static MethodInfo __select_overload__(MethodInfo[] candidates, int argumentCount) {
+			MethodInfo optionalMatch = null;
+			foreach (MethodInfo candidate in candidates) {
+				ParameterInfo[] parameters = candidate.GetParameters();
+				if (parameters.Length == argumentCount) {
+					return candidate;
+				}
+				if (optionalMatch is null
+						&& parameters.Length > argumentCount
+						&& parameters[argumentCount].HasDefaultValue) {
+					optionalMatch = candidate;
+				}
+			}
+			return optionalMatch ?? candidates[0];
+		}
+
 		public static object __call__(object executable, List<(string name, object value)> arguments) {
 			if (executable is null) {
 				throw new NullReferenceException("Cannot call null");
@@ -125,11 +178,7 @@ namespace PythonAPI.Expressions {
 				return constructor.Invoke(named);
 			}
 			if (executable is MemberCall member) {
-				ParameterInfo[] parameters = member.Type[0].GetParameters();
-				object[] values = arguments
-					.Select(a => a.value)
-					.ToArray();
-				return member.Type[0].Invoke(member.Target, values);
+				return __invoke_member__(member, arguments);
 			}
 			if (executable is Method function) {
 				NamedValue[] named = new NamedValue[arguments.Count];
@@ -170,11 +219,7 @@ namespace PythonAPI.Expressions {
 				return constructor.InvokeAsync(named);
 			}
 			if (executable is MemberCall member) {
-				ParameterInfo[] parameters = member.Type[0].GetParameters();
-				object[] values = arguments
-					.Select(a => a.value)
-					.ToArray();
-				return member.Type[0].Invoke(member.Target, values);
+				return __invoke_member__(member, arguments);
 			}
 			if (executable is Method function) {
 				NamedValue[] named = new NamedValue[arguments.Count];
@@ -211,7 +256,9 @@ namespace PythonAPI.Expressions {
 				if (__eq__base(left, right, out bool result)) {
 					return result;
 				}
-				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				if (!__promote__(ref left, ref right)) {
+					throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				}
 			}
 			if (left is Fix32 fix) {
 				return fix == (Fix32)right;
@@ -224,6 +271,11 @@ namespace PythonAPI.Expressions {
 			}
 			if (left is bool b) {
 				return b == (bool)right;
+			}
+			// Ordinal string equality: the idiom for gating on a string config field
+			// (`if config.difficulty == "hard":`) and for comparing ids read as text.
+			if (left is string s) {
+				return string.Equals(s, (string)right, StringComparison.Ordinal);
 			}
 			throw new NotImplementedException($"Types has no comparison yet or never (same type)");
 		}
@@ -268,7 +320,9 @@ namespace PythonAPI.Expressions {
 				if (__ne__base(left, right, out bool result)) {
 					return result;
 				}
-				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				if (!__promote__(ref left, ref right)) {
+					throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				}
 			}
 			if (left is Fix32 fix) {
 				return fix != (Fix32)right;
@@ -281,6 +335,10 @@ namespace PythonAPI.Expressions {
 			}
 			if (left is bool b) {
 				return b != (bool)right;
+			}
+			// Mirror of __eq__: ordinal string inequality.
+			if (left is string s) {
+				return !string.Equals(s, (string)right, StringComparison.Ordinal);
 			}
 			throw new NotImplementedException($"Types has no comparison yet or never (same type)");
 		}
@@ -314,7 +372,11 @@ namespace PythonAPI.Expressions {
 				if (__ge__base(left, right, out bool result)) {
 					return result;
 				}
-				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				// int vs float compares as float instead of refusing outright —
+				// `if config.ratio >= 1:` has one of each by construction.
+				if (!__promote__(ref left, ref right)) {
+					throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				}
 			}
 			if (left is Fix32 fix) {
 				return fix >= (Fix32)right;
@@ -360,7 +422,9 @@ namespace PythonAPI.Expressions {
 				if (__gt__base(left, right, out bool result)) {
 					return result;
 				}
-				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				if (!__promote__(ref left, ref right)) {
+					throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				}
 			}
 			if (left is Fix32 fix) {
 				return fix > (Fix32)right;
@@ -406,7 +470,9 @@ namespace PythonAPI.Expressions {
 				if (__le__base(left, right, out bool result)) {
 					return result;
 				}
-				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				if (!__promote__(ref left, ref right)) {
+					throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				}
 			}
 			if (left is Fix32 fix) {
 				return fix <= (Fix32)right;
@@ -452,7 +518,9 @@ namespace PythonAPI.Expressions {
 				if (__lt__base(left, right, out bool result)) {
 					return result;
 				}
-				throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				if (!__promote__(ref left, ref right)) {
+					throw new NotImplementedException($"Types has no comparison yet or never (different type)");
+				}
 			}
 			if (left is Fix32 fix) {
 				return fix < (Fix32)right;
@@ -495,28 +563,126 @@ namespace PythonAPI.Expressions {
 		}
 
 		public static object __index__(object left, object right) {
-			throw new NotImplementedException("Index operator is not defined");
+			return __getitem__(left, right);
 		}
 
+		// `target[index] = value`. Reached through IndexExpression.GetReference, which is
+		// what AssignmentStatement writes through. Mirrors __getitem__'s target kinds;
+		// a dictionary key that does not exist yet is CREATED (Python semantics), which
+		// also matches how `some_map.new_key = v` behaves in PropertyExpression.
 		public static void __setitem__(object target, object index, object value) {
-			if (target is List<object> list) {
-				list[__int__(index)] = value;
+			if (target is null) {
+				throw new NullReferenceException("None does not support item assignment");
+			}
+			if (target is string) {
+				throw new NotImplementedException("Strings are immutable, cannot assign to text[i]");
+			}
+			if (target is IDictionary<string, object> dict) {
+				if (dict.IsReadOnly) {
+					// `config["x"] = 1` — the subscript twin of the guard in
+					// PropertyExpression. Config values are constants.
+					throw new InvalidOperationException(
+						$"\"{__str__(index)}\" belongs to a read-only object — its values are "
+						+ "constants. Assign to a local variable instead.");
+				}
+				dict[__str__(index)] = value;
 				return;
 			}
-			if (target is IDictionary<string, object> dict) {
-				dict[__str__(index)] = value;
+			if (target is IList list) {
+				if (list.IsReadOnly) {
+					throw new InvalidOperationException("This list is read-only.");
+				}
+				list[__item_index__(index, list.Count, "list")] = value;
+				return;
 			}
-			throw new NotImplementedException("__setitem__");
+			if (target is IDictionary map) {
+				map[index] = value;
+				return;
+			}
+
+			PropertyInfo indexer = __find_indexer__(target.GetType(), index);
+			if (indexer != null && indexer.CanWrite) {
+				indexer.SetValue(target, value, new object[] { index });
+				return;
+			}
+			throw new NotImplementedException($"{target.GetType().Name} does not support item assignment (x[i] = v)");
 		}
 
+		// `target[index]`. Handles the shapes the dialect can actually produce:
+		// resolver/config dictionaries (string keys), lists and tuples (int keys, negative
+		// counts from the end as in Python), strings, and — through a reflected indexer —
+		// game collections such as IReadOnlyList<T> that implement none of the above.
+		// A missing DICTIONARY key raises rather than returning None, so a typo in
+		// `config["enable_x"]` fails the same way `config.enable_x` does.
 		public static object __getitem__(object target, object index) {
-			if (target is List<object> list) {
-				return list[__int__(index)];
+			if (target is null) {
+				throw new NullReferenceException("None is not subscriptable");
 			}
+
 			if (target is IDictionary<string, object> dict) {
-				return dict.TryGetValue(__str__(index), out object value) ? value : null;
+				string key = __str__(index);
+				if (dict.TryGetValue(key, out object value)) {
+					return value;
+				}
+				throw new KeyNotFoundException(MissingMember.Describe(target, dict, key));
 			}
-			throw new NotImplementedException("__getitem__");
+
+			if (target is string text) {
+				return text[__item_index__(index, text.Length, "string")].ToString();
+			}
+
+			if (target is IList list) {
+				return list[__item_index__(index, list.Count, "list")];
+			}
+
+			if (target is ITuple tuple) {
+				return tuple[__item_index__(index, tuple.Length, "tuple")];
+			}
+
+			if (target is IDictionary map) {
+				if (map.Contains(index)) {
+					return map[index];
+				}
+				throw new KeyNotFoundException($"\"{__str__(index)}\" is not defined");
+			}
+
+			PropertyInfo indexer = __find_indexer__(target.GetType(), index);
+			if (indexer != null) {
+				return indexer.GetValue(target, new object[] { index });
+			}
+			throw new NotImplementedException($"{target.GetType().Name} does not support indexing (x[i])");
+		}
+
+		// Python-style positional index: must be a whole number, and a negative one counts
+		// back from the end. `kind` names the target in the error so the message says what
+		// was actually indexed.
+		private static int __item_index__(object index, int count, string kind) {
+			if (!(index is int) && !(index is byte) && !(index is short) && !(index is bool)) {
+				throw new NotImplementedException(
+					$"{kind} indices must be whole numbers, got {(index is null ? "None" : index.GetType().Name)}");
+			}
+
+			int i = __int__(index);
+			int resolved = i < 0 ? count + i : i;
+			if (resolved < 0 || resolved >= count) {
+				throw new IndexOutOfRangeException($"{kind} index {i} is out of range (length {count})");
+			}
+			return resolved;
+		}
+
+		// Public single-argument indexer whose parameter accepts this index value — the
+		// fallback for game collections that are neither IList nor IDictionary.
+		private static PropertyInfo __find_indexer__(Type type, object index) {
+			foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance)) {
+				ParameterInfo[] parameters = property.GetIndexParameters();
+				if (parameters.Length != 1) {
+					continue;
+				}
+				if (index != null && parameters[0].ParameterType.IsInstanceOfType(index)) {
+					return property;
+				}
+			}
+			return null;
 		}
 
 		public static bool __contains__(object target, object key) {
@@ -536,11 +702,28 @@ namespace PythonAPI.Expressions {
 			throw new NotImplementedException("__invert__");
 		}
 
+		// Mixing an int and a float in one expression — `belt_speed * 1.5` — is the
+		// first thing anyone writes, but every arithmetic operator below requires two
+		// operands of the SAME runtime type. Promote the int side to float, as a
+		// Python-shaped dialect is expected to. Returns false for any other type pair,
+		// leaving the caller to raise its own error.
+		private static bool __promote__(ref object left, ref object right) {
+			if (left is int li && right is float) {
+				left = (float)li;
+				return true;
+			}
+			if (left is float && right is int ri) {
+				right = (float)ri;
+				return true;
+			}
+			return false;
+		}
+
 		public static object __mul__(object left, object right) {
 			if (left is null || right is null) {
 				throw new NotImplementedException($"Cannot multiply null values");
 			}
-			if (left.GetType() != right.GetType()) {
+			if (left.GetType() != right.GetType() && !__promote__(ref left, ref right)) {
 				throw new NotImplementedException($"Types has no multiply yet or never (different type)");
 			}
 			if (left is Fix32 fix) {
@@ -559,7 +742,7 @@ namespace PythonAPI.Expressions {
 			if (left is null || right is null) {
 				throw new NotImplementedException($"Cannot divide null values");
 			}
-			if (left.GetType() != right.GetType()) {
+			if (left.GetType() != right.GetType() && !__promote__(ref left, ref right)) {
 				throw new NotImplementedException($"Types has no divide yet or never (different type)");
 			}
 			if (left is Fix32 fix) {
@@ -648,7 +831,9 @@ namespace PythonAPI.Expressions {
 				if (__add__base(left, right, out object result)) {
 					return result;
 				}
-				throw new NotImplementedException($"Types has no add yet or never (different type)");
+				if (!__promote__(ref left, ref right)) {
+					throw new NotImplementedException($"Types has no add yet or never (different type)");
+				}
 			}
 			if (left is Fix32 fix) {
 				return fix + (Fix32)right;
@@ -658,6 +843,11 @@ namespace PythonAPI.Expressions {
 			}
 			if (left is float f) {
 				return f + (float)right;
+			}
+			// String concatenation — the natural way to build a key or an id
+			// (`config["prefix_" + name]`), and what the docs have always claimed.
+			if (left is string s) {
+				return s + (string)right;
 			}
 			throw new NotImplementedException($"Types has no add yet or never (same type)");
 		}
@@ -699,7 +889,9 @@ namespace PythonAPI.Expressions {
 				if (__sub__base(left, right, out object result)) {
 					return result;
 				}
-				throw new NotImplementedException($"Types has no subtract yet or never (different type)");
+				if (!__promote__(ref left, ref right)) {
+					throw new NotImplementedException($"Types has no subtract yet or never (different type)");
+				}
 			}
 			if (left is Fix32 fix) {
 				return fix - (Fix32)right;

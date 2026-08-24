@@ -27,6 +27,7 @@ namespace CustomAssets.Ui.Editors {
         protected readonly TextField m_description;
         protected readonly AssetPathPicker m_icon;
         protected readonly ResearchIdPicker m_research;
+        protected readonly TextField m_isLocked;
 
         // Bool flag wrap-row that lives right under the research picker.
         // Subclasses fill it via AddBoolFlag(...) calls in their own
@@ -72,6 +73,36 @@ namespace CustomAssets.Ui.Editors {
                     setId: id => { if (value != null) value.ResearchId = string.IsNullOrEmpty(id) ? null : id; },
                     title: new LocStrFormatted("Pick research")),
                 onRefresh: () => m_research.RefreshDisplay());
+
+            // isLocked is tri-state rather than a toggle in the flag row,
+            // because its runtime default is "locked when a research is set" —
+            // so blank, True and False are three distinct outcomes and a plain
+            // checkbox could not express "leave it to the default".
+            m_isLocked = AddField(
+                "isLocked (true / false / blank = locked only when a research is set)",
+                new TextField().OnValueChanged(v => {
+                    if (value == null)
+                    {
+                        return;
+                    }
+                    string normalized = (v ?? "").Trim().ToLowerInvariant();
+                    if (normalized == "true")
+                    {
+                        value.IsLocked = true;
+                    }
+                    else if (normalized == "false")
+                    {
+                        value.IsLocked = false;
+                    }
+                    else
+                    {
+                        value.IsLocked = null;
+                    }
+                    MarkEdited();
+                }),
+                onRefresh: () => m_isLocked.Text(value.IsLocked.HasValue
+                    ? (value.IsLocked.Value ? "true" : "false")
+                    : ""));
 
             // Reserve the bool-grid slot now. The Row is empty at this
             // point; subclasses append toggles via AddBoolFlag(...).

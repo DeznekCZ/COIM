@@ -20,6 +20,7 @@ using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Core.Research;
 using Mafi.Core.UnlockingTree;
+using Mafi.Localization;
 using Mafi.Unity;
 using System;
 using System.Collections;
@@ -89,7 +90,11 @@ public class CustomAssetRegistrator : IModData {
 			tokenPostProcesssor:          src.TokenPostProcesssor.ValueOrNull);
 	}
 
-	private Dictionary<string, object> m_configValues = new Dictionary<string, object>();
+	// config.json fields of the pack currently loading, exposed to .py as `config`.
+	// Replaced by ConfigLoader.Load in RegisterData once m_modBasePath is known; the
+	// placeholder keeps `config.x` failing with the normal named error rather than a
+	// NullReferenceException if anything reads it before then.
+	private ConfigValues m_configValues = new ConfigValues("config.json", configFileExists: false);
 
 	// Resolve an icon path. Two distinct cases:
 	//   1. A raw string path like `Assets/Base/Products/Icons/Iron.svg` is a REFERENCE to an
@@ -451,6 +456,93 @@ public class CustomAssetRegistrator : IModData {
 			.Where(pt => pt.Type == Mafi.IoPortType.Input).ToImmutableArray());
 		outputPortsField?.SetValue(proto, newLayout.Ports
 			.Where(pt => pt.Type == Mafi.IoPortType.Output).ToImmutableArray());
+	}
+
+	// Overwrite MachineProto.UseAllRecipesAtStartOrAfterUnlock on an
+	// already-constructed proto. The property is get-only (set in the ctor),
+	// so we write the compiler-generated backing field directly — the same
+	// technique replaceLayoutOnProto uses for the Layout field. Must run
+	// during the ProtoRegistrator phase, before LockAndInitializeProtos, so
+	// the flag is in place before any machine entity reads it on placement.
+	private static void setUseAllRecipesOnProto(MachineProto proto, bool value) {
+		FieldInfo backing = typeof(MachineProto)
+			.GetField("<UseAllRecipesAtStartOrAfterUnlock>k__BackingField",
+				BindingFlags.NonPublic | BindingFlags.Instance);
+		if (backing == null) {
+			Log.Warning("setUseAllRecipesOnProto: backing field not found; " +
+				"auto_select_recipes override had no effect.");
+			return;
+		}
+		backing.SetValue(proto, value);
+	}
+
+	// Overwrite EntityProto.Costs on an already-constructed proto. The property is
+	// `{ get; private set; }`, so we drive its non-public setter and fall back to the
+	// compiler-generated backing field — the same technique replaceLayoutOnProto uses
+	// for Layout. Must run during the ProtoRegistrator phase, before
+	// LockAndInitializeProtos, so the new price is in place before anything reads it.
+	//
+	// m_originalPrice is cleared alongside the write. EntityProto caches the
+	// pre-multiplier price there the first time the game's ConstructionCostsMultiplier
+	// property fires; leaving a stale cache behind would let a later multiplier update
+	// recompute Costs from the VANILLA price and silently undo this edit.
+	private static void replaceCostsOnProto(EntityProto proto, EntityCosts newCosts) {
+		bool applied = false;
+		MethodInfo setter = typeof(EntityProto)
+			.GetProperty("Costs", BindingFlags.Public | BindingFlags.Instance)
+			?.GetSetMethod(nonPublic: true);
+		if (setter != null) {
+			setter.Invoke(proto, new object[] { newCosts });
+			applied = true;
+		} else {
+			FieldInfo backing = typeof(EntityProto)
+				.GetField("<Costs>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
+			if (backing != null) {
+				backing.SetValue(proto, newCosts);
+				applied = true;
+			}
+		}
+		if (!applied) {
+			Log.Warning("replaceCostsOnProto: no writable `Costs` member found on EntityProto "
+				+ "— the cost override had no effect. The game's proto layout likely changed.");
+			return;
+		}
+		FieldInfo originalPrice = typeof(EntityProto)
+			.GetField("m_originalPrice", BindingFlags.NonPublic | BindingFlags.Instance);
+		originalPrice?.SetValue(proto, null);
+	}
+
+	// Coerce whatever Python handed us for an entity argument into a bare id string.
+	// Entity ids are spread across a whole family of nested `*Proto.ID` structs —
+	// StaticEntityProto.ID, MachineProto.ID, DynamicEntityProto.ID (that's where the
+	// vehicles live), EntityProto.ID, and one-off types like CargoDepotProto.ID — so
+	// enumerating them with .When<T> clauses would be both long and incomplete the
+	// moment another mod introduces its own. Every one of them is an
+	// [InlineValue("Value")] struct wrapping a public string, so reading that field
+	// reflectively covers the whole family including types we've never heard of.
+	private static string entityIdStringOf(object raw) {
+		if (raw == null) {
+			return null;
+		}
+		if (raw is string s) {
+			return s;
+		}
+		if (raw is Proto proto) {
+			return proto.Id.Value;
+		}
+		if (raw is Proto.ID protoId) {
+			return protoId.Value;
+		}
+		Type type = raw.GetType();
+		FieldInfo valueField = type.GetField("Value", BindingFlags.Public | BindingFlags.Instance);
+		if (valueField != null && valueField.FieldType == typeof(string)) {
+			return (string)valueField.GetValue(raw);
+		}
+		PropertyInfo valueProp = type.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
+		if (valueProp != null && valueProp.PropertyType == typeof(string)) {
+			return (string)valueProp.GetValue(raw);
+		}
+		return raw.ToString();
 	}
 
 	// Map a product to the IoPortShapeProto a conveyor/pipe needs in order to physically
@@ -1355,15 +1447,29 @@ public class CustomAssetRegistrator : IModData {
 
 			#region Build research
 
+			// Argument order is the contract for POSITIONAL calls, and PackLoader's
+			// bindResearchPositional mirrors it exactly — if the two drift, the
+			// editor reads a slot as one argument while the game reads it as
+			// another, and the next save rewrites the call into the editor's
+			// (wrong) reading.
+			//
+			// Slot 3 used to be declared "difficulty" while the body below reads
+			// "costs", so a positional cost was bound to a name nothing ever read
+			// and silently fell back to the default. "difficulty" is still
+			// accepted as a named alias — the API docs used that spelling.
+			// "icon" was likewise read but never declared, so it could only ever
+			// be passed by name.
 			["build_research"] = new Constructor(
-				["researchId", "name", "description", "difficulty", "position", "parents"], (args) => {
+				["researchId", "name", "description", "costs", "position", "parents", "icon",
+				 "difficulty"], (args) => {
 					var builder = registrator.ResearchNodeProtoBuilder.Start(
 						name: args.GetArgument<string>("name")
 							.ElseRequiredThrow(),
 						nodeId: args.GetArgument<ResearchNodeProto.ID>("researchId")
 							.When<string>(s => new ResearchNodeProto.ID(s))
 							.ElseRequiredThrow(),
-						costMonths: args.GetArgument<int>("costs").ElseDefault(1));
+						costMonths: args.GetArgument<int>("costs")
+							.ElseDefault(args.GetArgument<int>("difficulty").ElseDefault(1)));
 
 					if (args.GetArgument<List<ResearchNodeProto>>("parents")
 						.When<List<object>>(o => {
@@ -1398,6 +1504,61 @@ public class CustomAssetRegistrator : IModData {
 						.When<(int x, int y)>(pt => new Vector2i(pt.x, pt.y))
 						.ElseDefault(Vector2i.Zero);
 					node.GridPositionWherePossible(registrator.PrototypesDb, position);
+					return node;
+				}),
+
+			// rename_research(research, name, description) — retitle a node the
+			// game (or another pack) already registered. The edit_* sibling of
+			// build_research, and the reason it exists at all: a rebalance pack
+			// that repurposes a vanilla node wants the tech tree to say what the
+			// node now does, and there is no vanilla call for that.
+			//
+			// `name` and `description` are independent overrides — omitting one
+			// leaves that half of the title exactly as it was, so a pack can
+			// reword a description without restating a name it did not change.
+			//
+			// Why this needs no Harmony patch: the title a node shows is just
+			// `Proto.Strings`, a getter-only auto-property read at render time.
+			// Overwriting its backing field during the registration phase is
+			// enough — nothing has snapshotted the value yet.
+			//
+			// The replacement text is a genuinely NEW localized string rather
+			// than a raw literal, registered under this pack's own loc id (see
+			// ModTranslations.RenameLocId). That is what makes the rename
+			// translatable: the id shows up as its own row in the pack's
+			// Translations panel, and the panel's per-language JSON is spliced
+			// into LocalizationManager BEFORE this call runs, so Loc.Str hands
+			// back the translated form in one step.
+			["rename_research"] = new Constructor(
+				["research", "name", "description"], args => {
+					requireArg(args, "rename_research", "research");
+					string researchId = entityIdStringOf(args["research"].Value);
+					ResearchNodeProto node = registrator.PrototypesDb
+						.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(researchId));
+
+					string newName = args.GetArgument<string>("name").ElseDefault(null);
+					string newDesc = args.GetArgument<string>("description").ElseDefault(null);
+					if (string.IsNullOrEmpty(newName) && string.IsNullOrEmpty(newDesc)) {
+						throw new ArgumentException(
+							$"rename_research[{researchId}]: nothing to rename — pass `name`, " +
+							"`description`, or both. A call that overrides neither is a no-op, " +
+							"which is far more likely a typo'd argument name than an intent.");
+					}
+
+					Proto.Str current = node.Strings;
+					LocStr name = current.Name;
+					LocStr desc = current.DescShort;
+					if (!string.IsNullOrEmpty(newName)) {
+						name = renameLocStr(researchId, newName, isDescription: false);
+					}
+					if (!string.IsNullOrEmpty(newDesc)) {
+						desc = renameLocStr(researchId, newDesc, isDescription: true);
+					}
+					setProtoStrings(node, new Proto.Str(name, desc));
+
+					DiagnosticTrace.Step($"rename_research[{researchId}]: " +
+						$"name='{node.Strings.Name.TranslatedString}', " +
+						$"desc='{node.Strings.DescShort.TranslatedString}'");
 					return node;
 				}),
 
@@ -1437,6 +1598,21 @@ public class CustomAssetRegistrator : IModData {
 						.ElseRequiredThrow(),
 					port = args.GetArgument<string>("port")
 						.ElseDefault("*"),
+				};
+			}),
+
+			// Python-side `PortMap(product, port)` — product + port only, no
+			// quantity. Consumed by bind_recipe(..., ports=[...]).
+			["PortMap"] = new Constructor(["product", "port"], (args) => {
+				return new PortMap() {
+					product = args.GetArgument<ProductProto>("product")
+						.When<ProductProto.ID>(id
+							=> registrator.PrototypesDb.GetOrThrow<ProductProto>((Proto.ID)id))
+						.When<string>(id
+							=> registrator.PrototypesDb.GetOrThrow<ProductProto>((Proto.ID)new ProductProto.ID(id)))
+						.ElseRequiredThrow(),
+					port = args.GetArgument<string>("port")
+						.ElseRequiredThrow(),
 				};
 			}),
 
@@ -1574,7 +1750,7 @@ public class CustomAssetRegistrator : IModData {
 
 			#region Build recipe
 
-			["build_recipe"] = new Constructor([
+			["build_recipe"] = new ContextConstructor([
 				"recipeId",
 				"name",
 				"description",
@@ -1583,127 +1759,181 @@ public class CustomAssetRegistrator : IModData {
 				"duration",
 				"ingredients",
 				"products",
-				"power"
+				"power",
+				"replaces",
+				"unlock_machine"
 			], (args) => {
-				MachineProto machine = args.GetArgument<MachineProto>("machine")
-					.When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
-					.When<string>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(new MachineProto.ID(id)))
-					.ElseRequiredThrow();
+				// 0.3.0 API: build a MACHINE-LESS recipe. Inputs/outputs/power live
+				// on the RecipeProto; per-Product `port` selectors are captured into
+				// the binding builder's port map (used only when the recipe is bound
+				// to a machine, either legacy-inline below or via bind_recipe).
 				RecipeProtoBuilder.State builder = registrator.RecipeProtoBuilder
-					.Start(
-							name: args.GetArgument<string>("name").ElseRequiredThrow(),
-							recipeId:
-							args.GetArgument<RecipeProto.ID>("recipeId")
-								.When<string>(v => new RecipeProto.ID(v))
-								.ElseRequiredThrow(),
-							machine: machine
-						);
+					.Start(args.GetArgument<RecipeProto.ID>("recipeId")
+						.When<string>(v => new RecipeProto.ID(v))
+						.ElseRequiredThrow());
 
-				if (args.GetArgument<string>("description").WhenExists(out string description)) {
-					builder = builder.Description(description);
+				foreach (Product e in readProductArg(args, "ingredients")) {
+					builder = builder.AddInput(e.product, e.quantity, portOrNull(e.port));
 				}
-
-				if (args.GetArgument<List<object>>("ingredients").WhenExists(out var ingredientsList)) {
-					ingredientsList.Select(e => (Product)e)
-						.Call(e => builder = builder.AddInput(
-								portSelector: e.port,
-								product: e.product,
-								quantity: e.quantity
-							))
-						.Loop(); // invoke ling actions
+				foreach (Product e in readProductArg(args, "products")) {
+					builder = builder.AddOutput(e.product, e.quantity, portOrNull(e.port));
 				}
-
-				if (args.GetArgument<List<object>>("products").WhenExists(out var productsList)) {
-					PortEntry[] ports = machine.Ports
-						.Where(p => p.Spec.Type == IoPortType.Output)
-						.Select(p => new PortEntry(p.Name, p.Shape.AllowedProductType))
-						.ToArray();
-					productsList.Select(e => (Product)e)
-						.Call(e => builder = builder.AddOutput(
-								portSelector: e.port == "VIRTUAL" ? e.port
-									: e.port != "*" && e.port != "VIRTUAL"
-									? ports
-										.Where(p => p.Name == e.port)
-										.Where(p => p.Type == e.product.Type)
-										.Where(p => !p.Used)
-										.Select(p => {
-											p.Used = true;
-											return p.Name;
-										})
-										.FirstOrDefault()
-									?? throw new ArgumentException($"Port '{e.port}' is already used")
-									: ports
-										.Where(p => p.Type == e.product.Type)
-										.Where(p => !p.Used)
-										.Select(p => {
-											p.Used = true;
-											return p.Name;
-										})
-										.FirstOrDefault()
-									?? throw new ArgumentException(
-										$"Cannot get empty port for product: {e.product.Id.Value}"),
-								product: e.product,
-								quantity: e.quantity
-							))
-						.Loop(); // invoke ling actions
-				}
-
-				builder.SetDuration(args.GetArgument<Duration>("duration").When<int>(Duration.FromSec)
-					.ElseDefault(Duration.FromSec(60)));
 
 				if (args.GetArgument<Percent>("power")
 					.When<int>(i => i.Percent())
 					.WhenExists(out Percent power)) {
-					builder.SetPowerMultiplier(power);
+					builder = builder.SetPowerMultiplier(power);
 				}
 
-				RecipeProto recipe = builder.BuildAndAdd();
-				if (args.GetArgument<ResearchNodeProto>("research")
-					.When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
-					.When<string>(id
-						=> registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
-					.WhenExists(out ResearchNodeProto research)) {
-					typeof(ResearchNodeProto).GetField("<Units>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
-						.SetValue(research, research.Units
-							.AsEnumerable()
-							.Concat(new IUnlockNodeUnit[] {
-								new RecipeUnlock(recipe, machine, false, true),
-								//new ProtoWithIconUnlock(machine, false)
-							})
-							//.Distinct(i => {
-							//	if (i is ProtoWithIconUnlock protoUnlock) {
-							//		return protoUnlock.Proto.Id.Value;
-							//	}
-							//	return DateTime.Now.Ticks.ToString();
-							//})
-							.ToImmutableArray());
+				RecipeBindingBuilder binding = builder.BuildAndAdd();
+				RecipeProto recipe = binding.Recipe;
 
-					typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
-							BindingFlags.NonPublic | BindingFlags.Instance)
-						.SetValue(research.Graphics, research.Graphics.IconsProtos
-							.AsEnumerable()
-							.Concat([machine])
-							.Distinct()
-							.ToImmutableArray());
+				// `replaces` — inline tombstones for recipe ids this one supersedes.
+				// Identical to a standalone migrate_recipe(old, new) per entry, just
+				// written where the replacement is defined so the two cannot drift
+				// apart. `since` is left to default to the pack's manifest version.
+				//
+				// CAVEAT worth knowing: remapping the id is only half the job. The
+				// game also drops any assigned recipe the machine no longer lists
+				// (Machine.initSelf), so a save is only fully rescued if THIS recipe
+				// ends up bound to the machine the old one was on.
+				foreach (string supersededId in readReplacesArg(args, "replaces")) {
+					RecipeMigrationBuffer.Declare(
+						s_currentModId, supersededId, recipe.Id.Value, sinceLiteral: null, registrator: registrator);
+				}
 
-					_ = builder.SetAsLockedOnInit();
+				// LEGACY one-shot: when `machine` is supplied, immediately bind the
+				// recipe to it (using the ports captured above + `duration`) and, if
+				// `research` is set, wire the recipe unlock — reproducing the pre-0.3.0
+				// build_recipe(machine=...) behaviour. Omit `machine` and use
+				// bind_recipe(...) for the machine-less flow.
+				if (args["machine"]?.Value != null) {
+					MachineProto machine = args.GetArgument<MachineProto>("machine")
+						.When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
+						.When<string>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(new MachineProto.ID(id)))
+						.ElseRequiredThrow();
+					Duration duration = args.GetArgument<Duration>("duration").When<int>(Duration.FromSec)
+						.ElseDefault(Duration.FromSec(60));
+					// Auto-distribute ports across the machine (honouring any per-
+					// Product pins) so same-type products get distinct ports — the
+					// disambiguation the pre-0.3.0 build_recipe did inline.
+					Dictionary<string, string> pins = explicitPortDict(
+						readProductArg(args, "ingredients").Concat(readProductArg(args, "products")));
+					ImmutableArray<(ProductProto.ID product, string port)> inMap  = assignPortMap(recipe.AllInputs,  machine.InputPorts,  pins, autoAssignWildcards: false);
+					ImmutableArray<(ProductProto.ID product, string port)> outMap = assignPortMap(recipe.AllOutputs, machine.OutputPorts, pins, autoAssignWildcards: true);
+					machine.AddRecipe(recipe, duration, 1, null, inMap, outMap);
+					wireRecipeUnlock(registrator, recipe, machine,
+						resolveResearch(registrator, args), readUnlockMachineArg(args));
 				}
 
 				return recipe;
+			},
+			// Context-manager hooks for `with build_recipe(...) as r:` — push the
+			// created recipe so body bind_recipe(...) calls (which omit the recipe)
+			// attach to it, pop on block exit. Bare `r = build_recipe(...)` is
+			// unaffected (Enter/Exit only fire from a `with`).
+			enter: (result, _) => RecipeBindContext.Push(result as RecipeProto),
+			exit:  (result, _) => RecipeBindContext.Pop()),
+
+			#endregion
+
+			#region Bind recipe
+
+			["bind_recipe"] = new Constructor([
+				"recipe",
+				"machine",
+				"duration",
+				"ports",
+				"multiplier",
+				"minPartialUtilization",
+				"research",
+				"unlock_machine"
+			], (args) => {
+				// Dual call form:
+				//   • explicit:  bind_recipe(recipe, machine, …)
+				//   • context:   inside `with build_recipe(...) as r:` the recipe is
+				//                omitted, so the first positional is the MACHINE and
+				//                the recipe comes from RecipeBindContext. Detected by
+				//                a missing `machine` slot + an active context; then the
+				//                machine simply lives in the "recipe" slot instead.
+				// NOTE: detection is by the missing named "machine" slot only — it
+				// does not remap further POSITIONAL args in the context form (so pass
+				// everything but the machine by name there). A future enhancement:
+				// give Constructor multiple argument-name layouts (a "multidefinition"
+				// arg list) so context vs explicit forms map positionals automatically.
+				bool contextMode = args["machine"]?.Value == null && RecipeBindContext.Current != null;
+				RecipeProto recipe = contextMode
+					? RecipeBindContext.Current
+					: args.GetArgument<RecipeProto>("recipe")
+						.When<RecipeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(id))
+						.When<string>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(new RecipeProto.ID(id)))
+						.ElseRequiredThrow();
+				MachineProto machine = args.GetArgument<MachineProto>(contextMode ? "recipe" : "machine")
+					.When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
+					.When<string>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(new MachineProto.ID(id)))
+					.ElseRequiredThrow();
+				Duration duration = args.GetArgument<Duration>("duration").When<int>(Duration.FromSec)
+					.ElseDefault(Duration.FromSec(60));
+				int multiplier = args.GetArgument<int>("multiplier").ElseDefault(1);
+				Percent? minPartial = null;
+				if (args.GetArgument<Percent>("minPartialUtilization")
+						.When<int>(i => i.Percent())
+						.WhenExists(out Percent mp)) {
+					minPartial = mp;
+				}
+
+				// `ports` is a single Product(...) list of modder pins; the rest
+				// auto-assign to distinct machine ports per side (so multi-product-
+				// of-one-type recipes stay unambiguous).
+				Dictionary<string, string> pins = explicitPortDict(readPortMapArg(args, "ports"));
+				var inMap  = assignPortMap(recipe.AllInputs,  machine.InputPorts,  pins, autoAssignWildcards: false);
+				var outMap = assignPortMap(recipe.AllOutputs, machine.OutputPorts, pins, autoAssignWildcards: true);
+
+				machine.AddRecipe(recipe, duration, multiplier, minPartial, inMap, outMap);
+				wireRecipeUnlock(registrator, recipe, machine,
+					resolveResearch(registrator, args), readUnlockMachineArg(args));
+				return recipe;
+			}),
+
+			#endregion
+
+			#region Migrate recipe
+
+			// Tombstone for a recipe this pack has RENAMED or MERGED AWAY. Machines and
+			// blueprints in existing saves that still point at `old` get remapped to `new`
+			// on load; without it they silently lose the recipe (Machine.initSelf drops
+			// any assigned recipe the machine no longer supports).
+			//
+			// The declaration is buffered and registered once the whole pack has loaded —
+			// see RecipeMigrationBuffer for why, and for how a pack version becomes the
+			// game's `sinceVersion`.
+			["migrate_recipe"] = new Constructor(["old", "new", "since"], (args) => {
+				string oldId = args.GetArgument<string>("old")
+					.When<RecipeProto.ID>(id => id.Value)
+					.When<RecipeProto>(r => r.Id.Value)
+					.ElseRequiredThrow();
+				string newId = args.GetArgument<string>("new")
+					.When<RecipeProto.ID>(id => id.Value)
+					.When<RecipeProto>(r => r.Id.Value)
+					.ElseRequiredThrow();
+				string since = args.GetArgument<string>("since").ElseDefault(null);
+				RecipeMigrationBuffer.Declare(s_currentModId, oldId, newId, since, registrator);
+				return oldId;
 			}),
 
 			#endregion
 
 			#region Edit recipe
 
-			["edit_recipe"] = new Constructor([
+			["edit_recipe"] = new ContextConstructor([
 				"recipe",
 				"machine",
 				"research",
 				"duration",
 				"ingredients",
 				"products",
-				"power"
+				"power",
+				"unlock_machine"
 			], (args) => {
 				RecipeProto recipe = args.GetArgument<RecipeProto>("recipe")
 					.When<RecipeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(id))
@@ -1747,12 +1977,13 @@ public class CustomAssetRegistrator : IModData {
 						.Loop(); // invoke ling actions
 				}
 
+				Duration? editDuration = null;
 				if (args.GetArgument<Duration>("duration")
-					.When<int>(Duration.FromSec)
-					.WhenExists(out Duration duration)) {
-					typeof(RecipeProto)
-						.GetField("<Duration>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
-						?.SetValue(recipe, duration);
+						.When<int>(Duration.FromSec)
+						.WhenExists(out Duration duration)) {
+					// 0.3.0: duration is a property of the per-machine binding, not
+					// the recipe. Captured here and applied when (re)binding below.
+					editDuration = duration;
 				}
 
 				if (args.GetArgument<Percent>("power")
@@ -1763,11 +1994,10 @@ public class CustomAssetRegistrator : IModData {
 						?.SetValue(recipe, power);
 				}
 
-				if (args.GetArgument<ResearchNodeProto>("research")
-					.When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
-					.When<string>(id
-						=> registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
-					.WhenExists(out ResearchNodeProto research)) {
+				// machine (optional): bind the recipe to it if not already bound
+				// (honouring the edited duration + any per-Product ports) and wire
+				// the recipe unlock when `research` is set.
+				if (args["machine"]?.Value != null) {
 					MachineProto machine = args.GetArgument<MachineProto>("machine")
 						.When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
 						.When<string>(id
@@ -1775,32 +2005,78 @@ public class CustomAssetRegistrator : IModData {
 						.ElseRequiredThrow();
 
 					if (!machine.Recipes.Any(r => r.Id == recipe.Id)) {
-						machine.AddRecipe(recipe);
+						Dictionary<string, string> pins = explicitPortDict(
+							readProductArg(args, "ingredients").Concat(readProductArg(args, "products")));
+						var inMap  = assignPortMap(recipe.AllInputs,  machine.InputPorts,  pins, autoAssignWildcards: false);
+						var outMap = assignPortMap(recipe.AllOutputs, machine.OutputPorts, pins, autoAssignWildcards: true);
+						machine.AddRecipe(recipe, editDuration ?? Duration.FromSec(60), 1, null, inMap, outMap);
+					} else if (editDuration.HasValue) {
+						DiagnosticTrace.Step($"edit_recipe[{recipe.Id.Value}]: already bound to '{machine.Id.Value}'; " +
+							"per-binding duration can't be changed in place — re-create the binding to change it.");
 					}
 
-					typeof(ResearchNodeProto).GetField("<Units>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
-						?.SetValue(research, research.Units
-							.AsEnumerable()
-							.Concat([
-								new RecipeUnlock(recipe, machine, false, true),
-								//new ProtoWithIconUnlock(machine, false)
-							])
-							//.Distinct(i => {
-							//	if (i is ProtoWithIconUnlock protoUnlock) {
-							//		return protoUnlock.Proto.Id.Value;
-							//	}
-							//	return DateTime.Now.Ticks.ToString();
-							//})
-							.ToImmutableArray());
-
-					typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
-							BindingFlags.NonPublic | BindingFlags.Instance)
-						?.SetValue(research.Graphics, research.Graphics.IconsProtos
-							.AsEnumerable()
-							.Concat([machine])
-							.ToImmutableArray());
+					wireRecipeUnlock(registrator, recipe, machine,
+						resolveResearch(registrator, args), readUnlockMachineArg(args));
+				} else if (editDuration.HasValue) {
+					DiagnosticTrace.Step($"edit_recipe[{recipe.Id.Value}]: 'duration' has no effect without 'machine' in 0.3.0 " +
+						"(duration lives on the machine binding). Pass machine=... as well.");
 				}
 
+				return recipe;
+			},
+			// `with edit_recipe(recipe) as r:` — push the resolved recipe so the
+			// body sub-actions (set_/remove_ingredient, set_/remove_product,
+			// bind_recipe, unbind_recipe) attach to it without repeating the id.
+			// A plain `edit_recipe(...)` call runs the same body but never fires
+			// these, so the two forms coexist: the legacy positional form still
+			// works, the block form just shifts the edits into sub-statements.
+			enter: (result, _) => RecipeBindContext.Push(result as RecipeProto),
+			exit:  (result, _) => RecipeBindContext.Pop()),
+
+			#endregion
+
+			#region Edit-recipe sub-actions
+
+			// The verbs that live inside `with edit_recipe(recipe):`. Each reads the
+			// context recipe from RecipeBindContext — so, like context-form
+			// bind_recipe, they take NO recipe argument and are meaningful only
+			// inside the block. Called bare (no context) they throw, rather than
+			// silently doing nothing, so a misplaced sub-action is a load error.
+
+			["set_ingredient"]  = makeSetProductAction(registrator, isInput: true),
+			["set_product"]     = makeSetProductAction(registrator, isInput: false),
+			["remove_ingredient"] = makeRemoveProductAction(registrator, isInput: true),
+			["remove_product"]    = makeRemoveProductAction(registrator, isInput: false),
+
+			// Detach a machine from the context recipe and drop the research
+			// unlock(s) that pointed at that (recipe, machine) pair. `research` is
+			// resolved through the protos only to validate/scope; when omitted,
+			// every node unlocking the pair is cleaned up.
+			["unbind_recipe"] = new Constructor([
+				"machine",
+				"research"
+			], (args) => {
+				RecipeProto recipe = RecipeBindContext.Current;
+				if (recipe == null) {
+					throw new InvalidOperationException(
+						"unbind_recipe(...) is only valid inside `with edit_recipe(recipe):`.");
+				}
+				MachineProto machine = args.GetArgument<MachineProto>("machine")
+					.When<MachineProto.ID>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(id))
+					.When<string>(id => registrator.PrototypesDb.GetOrThrow<MachineProto>(new MachineProto.ID(id)))
+					.ElseRequiredThrow();
+
+				bool wasBound = removeMachineBinding(machine, recipe);
+				if (!wasBound) {
+					DiagnosticTrace.Step($"unbind_recipe[{recipe.Id.Value}]: recipe was not bound to '"
+						+ machine.Id.Value + "' — nothing to detach.");
+				}
+
+				int nodes = removeRecipeUnlocks(registrator, recipe, machine);
+				if (nodes == 0) {
+					DiagnosticTrace.Step($"unbind_recipe[{recipe.Id.Value}]: no research node unlocked this "
+						+ "recipe on '" + machine.Id.Value + "' — no unlock removed.");
+				}
 				return recipe;
 			}),
 
@@ -1857,7 +2133,12 @@ public class CustomAssetRegistrator : IModData {
 
 			#region Unlock
 
-			["add_unlock_recipe"] = new Constructor(["research", "machine", "recipe"], (args) => {
+			// add_unlock_recipe(research, machine, recipe, unlock_machine=True).
+			// The node grants the machine as well as the recipe unless the pack
+			// opts out with unlock_machine=False — the default that every pre-0.4.2
+			// pack was written against. Pass False when the recipe goes onto a
+			// machine the player already has. See wireRecipeUnlock.
+			["add_unlock_recipe"] = new Constructor(["research", "machine", "recipe", "unlock_machine"], (args) => {
 				RecipeProto recipe = args.GetArgument<RecipeProto>("recipe")
 					.When<RecipeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(id))
 					.When<string>(id => registrator.PrototypesDb.GetOrThrow<RecipeProto>(new RecipeProto.ID(id)))
@@ -1872,27 +2153,7 @@ public class CustomAssetRegistrator : IModData {
 						=> registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
 					.ElseRequiredThrow();
 
-				typeof(ResearchNodeProto).GetField("<Units>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
-					.SetValue(research, research.Units
-						.AsEnumerable()
-						.Concat(new IUnlockNodeUnit[] {
-							new RecipeUnlock(recipe, machine, false, true),
-							new ProtoWithIconUnlock(machine, false)
-						})
-						.Distinct(i => {
-							Thread.Sleep(1);
-							return i is ProtoWithIconUnlock protoUnlock
-								? protoUnlock.Proto.Id.Value
-								: DateTime.Now.Ticks.ToString();
-						})
-						.ToImmutableArray());
-
-				typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
-						BindingFlags.NonPublic | BindingFlags.Instance)
-					.SetValue(research.Graphics, research.Graphics.IconsProtos
-						.AsEnumerable()
-						.Concat([machine])
-						.ToImmutableArray());
+				wireRecipeUnlock(registrator, recipe, machine, research, readUnlockMachineArg(args));
 				return null;
 			}),
 
@@ -1912,6 +2173,64 @@ public class CustomAssetRegistrator : IModData {
 						.AsEnumerable()
 						.Concat(new IUnlockNodeUnit[] { new ProductUnlock(product, false) })
 						.ToImmutableArray());
+				return null;
+			}),
+
+			// General form of add_unlock_machine. The game's ProtoWithIconUnlock
+			// takes any IProtoWithIcon, so a research node can list a truck, a
+			// locomotive, a cargo wagon or a building just as readily as a
+			// machine — the machine-shaped restriction on add_unlock_machine was
+			// only ever ours. That call is left exactly as it was so existing
+			// packs keep working; new packs should reach for this one, which
+			// accepts machines too.
+			["add_unlock_entity"] = new Constructor(["research", "entity"], (args) => {
+				if (args["entity"]?.Value == null) {
+					throw new ArgumentException(
+						"add_unlock_entity: required argument `entity` is missing or None. " +
+						"Pass an entity proto, its typed id (e.g. Ids.Vehicles.TruckT2), " +
+						"or the id as a string.");
+				}
+				string unlockTargetId = entityIdStringOf(args["entity"].Value);
+				Proto unlockTarget = registrator.PrototypesDb
+					.GetOrThrow<Proto>(new Proto.ID(unlockTargetId));
+				if (!(unlockTarget is IProtoWithIcon entity)) {
+					throw new ArgumentException(
+						$"add_unlock_entity: '{unlockTargetId}' resolves to " +
+						$"{unlockTarget.GetType().Name}, which carries no icon. A research " +
+						"node can only list protos implementing IProtoWithIcon — machines, " +
+						"buildings, vehicles and train cars all qualify. For products use " +
+						"add_unlock_product instead.");
+				}
+
+				ResearchNodeProto entityResearch = args.GetArgument<ResearchNodeProto>("research")
+					.When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+					.When<string>(id
+						=> registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
+					.ElseRequiredThrow();
+
+				// Same Units + IconsProtos append that add_unlock_machine does.
+				// Distinct on the unlocked proto's id keeps a pack that adds the
+				// same entity twice (or adds one the node already lists) from
+				// producing a duplicated research entry.
+				typeof(ResearchNodeProto).GetField("<Units>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+					?.SetValue(entityResearch, entityResearch.Units
+						.AsEnumerable()
+						.Concat([new ProtoWithIconUnlock(entity, false)])
+						.Distinct(i => i is ProtoWithIconUnlock protoUnlock
+							? protoUnlock.Proto.Id.Value
+							: DateTime.Now.Ticks.ToString())
+						.ToImmutableArray());
+
+				typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
+						BindingFlags.NonPublic | BindingFlags.Instance)
+					?.SetValue(entityResearch.Graphics, entityResearch.Graphics.IconsProtos
+						.AsEnumerable()
+						.Concat([entity])
+						.Distinct()
+						.ToImmutableArray());
+
+				DiagnosticTrace.Step($"add_unlock_entity[{entityResearch.Id.Value}]: " +
+					$"listed {unlockTargetId}");
 				return null;
 			}),
 
@@ -1942,6 +2261,79 @@ public class CustomAssetRegistrator : IModData {
 						.AsEnumerable()
 						.Concat([machine])
 						.ToImmutableArray());
+				return null;
+			}),
+
+			// Take something back OUT of a research node — the counterpart to the
+			// whole add_unlock_* family. Removal needs no type split the way adding
+			// does: whatever a unit puts on the node (product, machine, building,
+			// vehicle, train car, recipe) is matched by its proto id, so this one
+			// verb undoes all four add_unlock_* calls.
+			//
+			// `machine` scopes recipe unlocks. The same node routinely unlocks one
+			// recipe on several machines, so passing the machine drops just that
+			// pair; omitted, every unit on the node unlocking `target` goes.
+			["remove_unlock"] = new Constructor(["research", "target", "machine"], (args) => {
+				ResearchNodeProto research = args.GetArgument<ResearchNodeProto>("research")
+					.When<ResearchNodeProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(id))
+					.When<string>(id
+						=> registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(new ResearchNodeProto.ID(id)))
+					.ElseRequiredThrow();
+
+				if (args["target"]?.Value == null) {
+					throw new ArgumentException(
+						"remove_unlock: required argument `target` is missing or None. Pass the " +
+						"product, machine, entity or recipe to take off the node — a proto, its " +
+						"typed id (e.g. Ids.Products.Fertilizer), or the id as a string.");
+				}
+				// Both ids stay as strings and are deliberately NOT resolved through
+				// the protos db: a pack removing an unlock for something a game
+				// update dropped would otherwise turn a harmless no-op into a load
+				// failure.
+				string targetId = entityIdStringOf(args["target"].Value);
+				string machineId = args["machine"]?.Value == null
+					? null
+					: entityIdStringOf(args["machine"].Value);
+
+				ImmutableArray<IUnlockNodeUnit> kept = machineId == null
+					? research.Units.Filter(u => unlockTargetIdOf(u) != targetId)
+					: research.Units.Filter(u => !(u is RecipeUnlock ru
+						&& ru.Proto.Id.Value == targetId
+						&& ru.MachineProto.Id.Value == machineId));
+
+				int removed = research.Units.Length - kept.Length;
+				if (removed == 0) {
+					DiagnosticTrace.Step($"remove_unlock[{research.Id.Value}]: nothing on this node "
+						+ "unlocks '" + targetId + "'"
+						+ (machineId == null ? "" : " on '" + machineId + "'")
+						+ " — no unlock removed.");
+					return null;
+				}
+				setPrivate(research, "<Units>k__BackingField", kept);
+
+				// Icons are shared across the node's units, so one may only be
+				// dropped once nothing that stayed still needs it — otherwise
+				// removing one recipe would strip the machine icon from the node's
+				// other recipes on that same machine. Only ids that took part in
+				// the removal are ever considered, so the node's own canonical
+				// icons are never touched.
+				HashSet<string> stillNeeded = new HashSet<string>();
+				foreach (IUnlockNodeUnit unit in kept) {
+					string id = unlockTargetIdOf(unit);
+					if (id != null) stillNeeded.Add(id);
+					if (unit is RecipeUnlock keptRecipe) stillNeeded.Add(keptRecipe.MachineProto.Id.Value);
+				}
+				HashSet<string> dropIcons = new HashSet<string>();
+				if (!stillNeeded.Contains(targetId)) dropIcons.Add(targetId);
+				if (machineId != null && !stillNeeded.Contains(machineId)) dropIcons.Add(machineId);
+				if (dropIcons.Count > 0) {
+					setPrivate(research.Graphics, "<IconsProtos>k__BackingField",
+						research.Graphics.IconsProtos.Filter(p => !dropIcons.Contains(p.Id.Value)));
+				}
+
+				DiagnosticTrace.Step($"remove_unlock[{research.Id.Value}]: dropped {removed} unlock(s) "
+					+ "of '" + targetId + "'"
+					+ (machineId == null ? "" : " on '" + machineId + "'"));
 				return null;
 			}),
 
@@ -2002,13 +2394,20 @@ public class CustomAssetRegistrator : IModData {
 				var product = new LooseProductProto(
 						id: id,
 						strings: Proto.CreateStr(id, name, desc),
+						// 0.3.0: LooseProductProto.Gfx replaced prefabPath +
+						// useRoughPileMeshes with a shared ProductMeshFamily. Map
+						// the rough/smooth flag onto the vanilla pile families.
 						graphics: new LooseProductProto.Gfx(
-								prefabPath: prefabPath,
 								pileMaterialAssetPath: material.path,
-								useRoughPileMeshes: isRough,
 								resourcesVizColor: color,
+								meshFamily: new Mafi.Core.Products.ProductMeshFamilyProto.ID(
+									isRough
+										? "ProductMeshFamily_PileRough"
+										: "ProductMeshFamily_PileSmooth"),
 								particleColor: particleColor,
-								customIconPath: icon
+								customIconPath: string.IsNullOrEmpty(icon)
+									? Option<string>.None
+									: Option.Some(icon)
 							),
 						isDumpedOnTerrainByDefault: isDumped,
 						isStorable: isStorable,
@@ -2074,7 +2473,7 @@ public class CustomAssetRegistrator : IModData {
 					.When<string>(s => (CountableProductStackingMode)Enum.Parse(typeof(CountableProductStackingMode), s, ignoreCase: true))
 					.ElseDefault(CountableProductStackingMode.Auto);
 				var allowPackingNoise = args.GetArgument<bool>("allowPackingNoise").ElseDefault(false);
-				var rotateSecondPacked = args.GetArgument<bool>("rotateSecondPackedItem90Degs").ElseDefault(false);
+				//var rotateSecondPacked = args.GetArgument<bool>("rotateSecondPackedItem90Degs").ElseDefault(false);
 				var isStorable = args.GetArgument<bool>("isStorable").ElseDefault(false);
 				var isWaste = args.GetArgument<bool>("isWaste").ElseDefault(false);
 
@@ -2087,8 +2486,7 @@ public class CustomAssetRegistrator : IModData {
 								prefabPath: prefab,
 								customIconPath: icon,
 								packingMode: packing,
-								allowPackingNoise: allowPackingNoise,
-								rotateSecondPackedItem90Degs: rotateSecondPacked
+								allowPackingNoise: allowPackingNoise
 							),
 						isWaste: isWaste
 					);
@@ -2215,10 +2613,13 @@ public class CustomAssetRegistrator : IModData {
 							: builder.Description(description);
 				}
 
-				string[] layout = args.GetArgument<List<string>>("layout")
-					.When<List<object>>(l => [.. l.ElementsToString()])
-					.ElseRequiredThrow()
-					.ToArray();
+				// Same dynamic rectangular padding as layout_str overrides:
+				// jagged rows (a port overflowing the widest line) are filled
+				// with void-cell triplets instead of failing Mafi's parser.
+				string[] layout = sanitizeLayoutLines(string.Join("\n",
+					args.GetArgument<List<string>>("layout")
+						.When<List<object>>(l => [.. l.ElementsToString()])
+						.ElseRequiredThrow()));
 
 				EntityLayoutParams layoutParams =
 					args.GetArgument<EntityLayoutParams>("layoutParams")
@@ -2463,7 +2864,12 @@ public class CustomAssetRegistrator : IModData {
 				"name", // name
 				"icon", // texture or path to texture
 				"parent", // ToolbarCategoryProto | Proto.ID | str
-				"machines", // list[StaticEntityProto | StaticEntityProto.ID | str]
+				// Declared name must match what the body reads below
+				// (`entities`) and what the stub documents. It said "machines",
+				// so a POSITIONAL 5th argument bound to a name nothing looked
+				// up and the entity list was silently ignored; only the named
+				// form worked.
+				"entities", // list[StaticEntityProto | StaticEntityProto.ID | str]
 			], args => {
 				Proto.ID id = args.GetArgument<Proto.ID>("categoryId")
 					.When<string>(s => new Proto.ID(s))
@@ -2535,7 +2941,7 @@ public class CustomAssetRegistrator : IModData {
 			// THEN protos are locked + initialized). Calling this on an already-initialized
 			// proto would corrupt port-routing state — we don't guard against it because
 			// the Python load path runs only during registration.
-			["edit_machine_ports"] = new Constructor(["machine", "add_ports"], args => {
+			["edit_machine_ports"] = new Constructor(["machine", "add_ports", "auto_select_recipes"], args => {
 				// Required arg check up-front. The AnyArgument matcher
 				// chain below throws a "no matching type ... received: "
 				// (with an empty received-half) when Value is None,
@@ -2552,6 +2958,25 @@ public class CustomAssetRegistrator : IModData {
 					.When<StaticEntityProto.ID>(id => registrator.PrototypesDb.GetOrThrow<LayoutEntityProto>(id))
 					.When<string>(s => registrator.PrototypesDb.GetOrThrow<LayoutEntityProto>(new Proto.ID(s)))
 					.ElseRequiredThrow();
+
+				// auto_select_recipes flips the target's
+				// UseAllRecipesAtStartOrAfterUnlock in place (blank = leave
+				// unchanged). Applied before the no-extra-ports early return so
+				// a modder can call edit_machine_ports purely to change the
+				// recipe auto-select behaviour of an existing machine. Only
+				// MachineProto carries the flag; other LayoutEntityProtos
+				// (rare targets here) are skipped with a warning.
+				if (args["auto_select_recipes"]?.Value != null) {
+					bool autoSelect = args.GetArgument<bool>("auto_select_recipes").ElseDefault(false);
+					if (target is MachineProto machineTarget) {
+						setUseAllRecipesOnProto(machineTarget, autoSelect);
+						DiagnosticTrace.Step($"edit_machine_ports[{target.Id.Value}]: " +
+							$"auto_select_recipes set to {autoSelect}");
+					} else {
+						Log.Warning($"edit_machine_ports[{target.Id.Value}]: auto_select_recipes " +
+							"ignored — target is not a MachineProto.");
+					}
+				}
 
 				List<Mafi.Core.Ports.Io.IoPortTemplate> extras =
 					parsePortList(registrator.PrototypesDb, args, "add_ports");
@@ -2572,6 +2997,125 @@ public class CustomAssetRegistrator : IModData {
 				replaceLayoutOnProto(target, newLayout);
 				DiagnosticTrace.Step($"edit_machine_ports[{target.Id.Value}]: " +
 					$"added {extras.Count} port(s), total={newLayout.Ports.Length}");
+				return target;
+			}),
+
+			#endregion
+
+			#region edit_entity_costs
+
+			// Retune what an already-registered entity costs to build.
+			//
+			// Unlike edit_machine_ports this is deliberately NOT machine-scoped:
+			// `Costs` lives on EntityProto, the shared base of machines, buildings,
+			// trucks, excavators, locomotives, cargo wagons and ships — so a single
+			// call covers every buildable thing in the game rather than needing one
+			// call per entity family.
+			//
+			// Every argument except `entity` is an independent override; absent means
+			// "leave this facet alone". That lets a rebalance pack bump only the
+			// worker count, or only scale the price, without restating the rest of
+			// the vanilla cost (and without going stale when the game retunes the
+			// parts it didn't touch).
+			//
+			// Facets the target cannot actually use are refused rather than written:
+			// the game only charges workers to an IEntityWithWorkers and maintenance
+			// to an IMaintainedEntity, and EntityProto's own constructor asserts on
+			// the latter. We bypass that constructor, so the check has to live here
+			// or a bad pack would produce an entity with an upkeep nothing collects.
+			//
+			// Like every other edit_* call this must run during the ProtoRegistrator
+			// phase, before LockAndInitializeProtos.
+			["edit_entity_costs"] = new Constructor(
+				["entity", "workers", "maintenance", "maintenanceProduct",
+				 "maintenanceBufferMonths", "initialMaintenancePercent",
+				 "priority", "products", "multiplyPercent"], args => {
+				if (args["entity"]?.Value == null) {
+					throw new ArgumentException(
+						"edit_entity_costs: required argument `entity` is missing or None. " +
+						"Pass an entity proto, its typed id (e.g. Ids.Vehicles.TruckT2), " +
+						"or the id as a string.");
+				}
+				string entityId = entityIdStringOf(args["entity"].Value);
+				EntityProto target = registrator.PrototypesDb
+					.GetOrThrow<EntityProto>(new Proto.ID(entityId));
+				EntityCosts current = target.Costs;
+
+				// ---- construction cost -------------------------------------
+				// `products` replaces the material list outright;
+				// `multiplyPercent` then scales whatever is in place. Applying
+				// them in that order means a pack can restate a price AND scale
+				// it in one call, and that a lone multiplier scales vanilla.
+				Mafi.Core.Economy.AssetValue cost = current.BaseConstructionCost;
+				List<Product> costProducts = readProductArg(args, "products");
+				if (costProducts.Count > 0) {
+					cost = new Mafi.Core.Economy.AssetValue(costProducts
+						.Select(p => new ProductQuantity(p.product, p.quantity))
+						.ToImmutableArray());
+				}
+				if (args.GetArgument<int>("multiplyPercent").WhenExists(out int multiplyPercent)) {
+					if (multiplyPercent < 0) {
+						throw new ArgumentException(
+							$"edit_entity_costs[{entityId}]: `multiplyPercent` must not be " +
+							$"negative (got {multiplyPercent}). 100 means unchanged, 150 means 1.5x.");
+					}
+					cost = cost.ScaledBy(multiplyPercent.Percent());
+				}
+
+				// ---- workers -----------------------------------------------
+				int workers = current.Workers;
+				if (args.GetArgument<int>("workers").WhenExists(out int workersArg)) {
+					if (!typeof(Mafi.Core.Population.IEntityWithWorkers)
+							.IsAssignableFrom(target.EntityType)) {
+						Log.Warning($"edit_entity_costs[{entityId}]: `workers` ignored — " +
+							$"'{target.EntityType.Name}' does not implement IEntityWithWorkers, " +
+							"so the game never staffs it.");
+					} else if (workersArg < 0) {
+						throw new ArgumentException(
+							$"edit_entity_costs[{entityId}]: `workers` must not be negative " +
+							$"(got {workersArg}).");
+					} else {
+						workers = workersArg;
+					}
+				}
+
+				// ---- construction priority ---------------------------------
+				int priority = current.DefaultPriority;
+				if (args.GetArgument<int>("priority").WhenExists(out int priorityArg)) {
+					if (!typeof(Mafi.Core.Entities.Priorities.IEntityWithGeneralPriority)
+							.IsAssignableFrom(target.EntityType)) {
+						Log.Warning($"edit_entity_costs[{entityId}]: `priority` ignored — " +
+							$"'{target.EntityType.Name}' has no general priority.");
+					} else {
+						priority = priorityArg;
+					}
+				}
+
+				// ---- maintenance -------------------------------------------
+				// Treated as one unit: any of the four maintenance arguments
+				// opens the block, and whichever of them the pack omitted keeps
+				// its current value. That way `maintenance = 6` doesn't silently
+				// wipe a buffer duration the entity already had.
+				Mafi.Core.Maintenance.MaintenanceCosts maintenance = current.Maintenance;
+				bool editsMaintenance = args["maintenance"]?.Value != null
+					|| args["maintenanceProduct"]?.Value != null
+					|| args["maintenanceBufferMonths"]?.Value != null
+					|| args["initialMaintenancePercent"]?.Value != null;
+				if (editsMaintenance) {
+					if (!typeof(Mafi.Core.Maintenance.IMaintainedEntity)
+							.IsAssignableFrom(target.EntityType)) {
+						Log.Warning($"edit_entity_costs[{entityId}]: maintenance ignored — " +
+							$"'{target.EntityType.Name}' does not implement IMaintainedEntity, " +
+							"so the game never charges it upkeep.");
+					} else {
+						maintenance = buildMaintenanceCosts(registrator, args, entityId, maintenance);
+					}
+				}
+
+				replaceCostsOnProto(target, new EntityCosts(cost, priority, workers, maintenance));
+				DiagnosticTrace.Step($"edit_entity_costs[{entityId}]: " +
+					$"cost={cost}, workers={workers}, priority={priority}, " +
+					$"maintenance={maintenance.MaintenancePerMonth}");
 				return target;
 			}),
 
@@ -2632,6 +3176,10 @@ public class CustomAssetRegistrator : IModData {
 			// come from the source — only the numeric fuel + power knobs
 			// are tunable through the Python surface.
 			["build_mine_tower"]      = makeBuildMineTowerCtor(registrator),
+			["build_farm"]            = makeBuildFarmCtor(registrator),
+			["add_crop"]              = makeAddCropCtor(registrator),
+			["clone_crop"]            = makeCloneCropCtor(registrator),
+			["edit_crop"]             = makeEditCropCtor(registrator),
 			["build_research_lab"]    = makeBuildResearchLabCtor(registrator),
 			["build_nuclear_reactor"] = makeBuildNuclearReactorCtor(registrator),
 			["edit_nuclear_reactor_fuels"] = makeEditNuclearReactorFuelsCtor(registrator),
@@ -2847,6 +3395,598 @@ public class CustomAssetRegistrator : IModData {
 			throw new ArgumentException(
 				fnName + ": required argument `" + argName + "` is missing or None.");
 		}
+	}
+
+	// -- Recipe / binding helpers (0.3.0 machine-less recipe API) -----------
+
+	// Read a Product(...) list argument into typed Product structs; empty list
+	// when the argument is absent / None. Shared by build_recipe / bind_recipe /
+	// edit_recipe.
+	private static List<Product> readProductArg(Constructor.CallArguments args, string argName) {
+		if (args.GetArgument<List<object>>(argName).WhenExists(out var raw) && raw != null) {
+			return raw.Select(e => (Product)e).ToList();
+		}
+		return new List<Product>();
+	}
+
+	// Merge edit_entity_costs' four maintenance arguments over the target's existing
+	// MaintenanceCosts. Each argument that the pack omitted keeps its current value,
+	// so a call that only changes the monthly rate doesn't drop a buffer duration or
+	// an initial boost the entity already had.
+	//
+	// `maintenance` is read through Convert rather than GetArgument<double> on
+	// purpose: vanilla values are fractional (a T2 truck pays 4.0/month) but modders
+	// naturally write `maintenance = 4`, which arrives as an int. Converting covers
+	// both without making the caller think about it.
+	private static Mafi.Core.Maintenance.MaintenanceCosts buildMaintenanceCosts(
+		ProtoRegistrator registrator, Constructor.CallArguments args, string entityId,
+		Mafi.Core.Maintenance.MaintenanceCosts current)
+	{
+		VirtualProductProto product = current.Product;
+		if (args["maintenanceProduct"]?.Value != null) {
+			string productId = entityIdStringOf(args["maintenanceProduct"].Value);
+			product = registrator.PrototypesDb
+				.GetOrThrow<VirtualProductProto>(new Proto.ID(productId));
+		}
+		if (product == null) {
+			throw new ArgumentException(
+				$"edit_entity_costs[{entityId}]: `maintenanceProduct` is required here — " +
+				"the target has no existing maintenance product to inherit. Pass one of " +
+				"Ids.Products.MaintenanceT1 / MaintenanceT2 / MaintenanceT3.");
+		}
+
+		PartialQuantity perMonth = current.MaintenancePerMonth;
+		object rawPerMonth = args["maintenance"]?.Value;
+		if (rawPerMonth != null) {
+			double parsed = Convert.ToDouble(rawPerMonth,
+				System.Globalization.CultureInfo.InvariantCulture);
+			if (parsed < 0) {
+				throw new ArgumentException(
+					$"edit_entity_costs[{entityId}]: `maintenance` must not be negative " +
+					$"(got {parsed}).");
+			}
+			perMonth = new PartialQuantity(parsed.ToFix32());
+		}
+
+		Duration buffer = current.ExtraBufferDuration;
+		if (args.GetArgument<int>("maintenanceBufferMonths").WhenExists(out int bufferMonths)) {
+			if (bufferMonths < 0) {
+				throw new ArgumentException(
+					$"edit_entity_costs[{entityId}]: `maintenanceBufferMonths` must not be " +
+					$"negative (got {bufferMonths}).");
+			}
+			buffer = bufferMonths.Months();
+		}
+
+		Percent boost = current.InitialMaintenanceBoost;
+		if (args.GetArgument<int>("initialMaintenancePercent").WhenExists(out int boostPercent)) {
+			if (boostPercent < 0) {
+				throw new ArgumentException(
+					$"edit_entity_costs[{entityId}]: `initialMaintenancePercent` must not be " +
+					$"negative (got {boostPercent}).");
+			}
+			boost = boostPercent.Percent();
+		}
+
+		return new Mafi.Core.Maintenance.MaintenanceCosts(product, perMonth, buffer, boost);
+	}
+
+	// Read a PortMap(...) list argument (bind_recipe's `ports`) into typed
+	// PortMap structs; empty when absent / None.
+	private static List<PortMap> readPortMapArg(Constructor.CallArguments args, string argName) {
+		if (args.GetArgument<List<object>>(argName).WhenExists(out var raw) && raw != null) {
+			return raw.Select(e => (PortMap)e).ToList();
+		}
+		return new List<PortMap>();
+	}
+
+	// build_recipe(replaces = …) — one superseded recipe id or a list of them.
+	// A list is the common shape: consolidating several tiered recipes into one is
+	// the usual reason a recipe id disappears (the base game's own migration table
+	// is almost entirely N->1 tier collapses).
+	//
+	// Read through the raw slot rather than GetArgument<T> because the arg is
+	// genuinely polymorphic — a bare string and a list are both valid — and the
+	// AnyArgument coercion chain is built around one target type per argument.
+	private static List<string> readReplacesArg(Constructor.CallArguments args, string argName) {
+		List<string> result = new List<string>();
+		object raw = args[argName]?.Value;
+		if (raw == null) {
+			return result;
+		}
+		if (raw is string || !(raw is System.Collections.IEnumerable)) {
+			addReplacesEntry(result, raw, argName);
+			return result;
+		}
+		foreach (object entry in (System.Collections.IEnumerable)raw) {
+			addReplacesEntry(result, entry, argName);
+		}
+		return result;
+	}
+
+	private static void addReplacesEntry(List<string> into, object entry, string argName) {
+		if (entry == null) {
+			return;
+		}
+		string id = entry switch {
+			string s => s,
+			RecipeProto.ID rid => rid.Value,
+			RecipeProto proto => proto.Id.Value,
+			_ => null
+		};
+		if (id == null) {
+			throw new ArgumentException(
+				$"build_recipe: '{argName}' entries must be a recipe id (string) or a recipe, got {entry.GetType().Name}.");
+		}
+		if (!string.IsNullOrWhiteSpace(id)) {
+			into.Add(id.Trim());
+		}
+	}
+
+	// Normalise a Product.port selector to what MachineProto.AddRecipe expects:
+	// null means "auto-resolve to any compatible port". "*" (any) and "VIRTUAL"
+	// (mechanical-power / virtual products, which resolve to no port regardless)
+	// both collapse to null so they never end up as an explicit port-map entry.
+	private static string portOrNull(string port) {
+		if (string.IsNullOrEmpty(port) || port == "*" || port == "VIRTUAL") return null;
+		return port;
+	}
+
+	// Build a productId -> explicit-port-selector dict from a Product(...) list,
+	// keeping only real pins (non-"*"/virtual).
+	private static Dictionary<string, string> explicitPortDict(IEnumerable<Product> entries) {
+		var d = new Dictionary<string, string>();
+		foreach (Product e in entries) {
+			if (e.product == null) continue;
+			string port = portOrNull(e.port);
+			if (port != null) d[e.product.Id.Value] = port;
+		}
+		return d;
+	}
+
+	// Same, for PortMap(product, port) entries (bind_recipe's `ports`).
+	private static Dictionary<string, string> explicitPortDict(IEnumerable<PortMap> entries) {
+		var d = new Dictionary<string, string>();
+		foreach (PortMap e in entries) {
+			if (e.product == null) continue;
+			string port = portOrNull(e.port);
+			if (port != null) d[e.product.Id.Value] = port;
+		}
+		return d;
+	}
+
+	// Distribute one recipe side's products across a machine's ports of that
+	// side, producing a CONCRETE (product, portName) map. Modder-pinned
+	// selectors (explicitByProductId) win; every other non-virtual product is
+	// assigned the first still-unused port whose type matches. This mirrors the
+	// pre-0.3.0 build_recipe port distribution: without it, 0.3.0's
+	// MachineProto.AddRecipe refuses to guess when a recipe has several products
+	// of one type and the machine has several ports of that type ("output port
+	// matching is ambiguous"). `portTemplates` = machine.InputPorts / OutputPorts.
+	// `autoAssignWildcards`: when true, every non-pinned non-virtual product is
+	// given a distinct concrete port (needed for OUTPUTS, which 0.3.0 refuses to
+	// disambiguate). When false, only explicit pins are emitted and the rest stay
+	// wildcard "*" — used for INPUTS, which have no ambiguity check and where the
+	// pre-0.3.0 API left routing flexible (either matching port accepts the feed).
+	private static ImmutableArray<(ProductProto.ID product, string port)> assignPortMap<T>(
+			ImmutableArray<T> products,
+			ImmutableArray<Mafi.Core.Ports.Io.IoPortTemplate> portTemplates,
+			Dictionary<string, string> explicitByProductId,
+			bool autoAssignWildcards) where T : RecipeProduct {
+		var map = new List<(ProductProto.ID, string)>();
+		var used = new HashSet<char>();
+		// pass 1 — honour explicit pins and reserve their ports.
+		foreach (T p in products.AsEnumerable()) {
+			if (explicitByProductId != null
+					&& explicitByProductId.TryGetValue(p.Product.Id.Value, out string sel)
+					&& !string.IsNullOrEmpty(sel)) {
+				map.Add((p.Product.Id, sel));
+				if (sel.Length == 1) used.Add(sel[0]);
+			}
+		}
+		// pass 2 — assign each remaining non-virtual product a distinct unused
+		// port of a matching type, so same-type products land on different ports.
+		if (!autoAssignWildcards) {
+			return map.Count == 0 ? default : map.ToImmutableArray();
+		}
+		foreach (T p in products.AsEnumerable()) {
+			if (explicitByProductId != null && explicitByProductId.ContainsKey(p.Product.Id.Value)) continue;
+			if (p.Product.Type.Matches(VirtualProductProto.ProductType)) continue;
+			foreach (Mafi.Core.Ports.Io.IoPortTemplate t in portTemplates.AsEnumerable()) {
+				if (used.Contains(t.Name)) continue;
+				if (!t.Shape.AllowedProductType.Matches(p.Product.Type)) continue;
+				map.Add((p.Product.Id, t.Name.ToString()));
+				used.Add(t.Name);
+				break;
+			}
+		}
+		return map.Count == 0 ? default : map.ToImmutableArray();
+	}
+
+	// Carry a source binding's already-resolved ports onto a clone: for each
+	// product whose source resolved to exactly one port, pin that port name;
+	// leave the rest to auto-resolve. Used by build_machine's copy_recipes so
+	// the clone reproduces the source's unambiguous port assignment.
+	private static ImmutableArray<(ProductProto.ID product, string port)> resolvedPortMap<T>(
+			ImmutableArray<T> products,
+			ImmutableArray<ImmutableArray<Mafi.Core.Ports.Io.IoPortTemplate>> resolved)
+			where T : RecipeProduct {
+		var map = new List<(ProductProto.ID, string)>();
+		for (int i = 0; i < products.Length && i < resolved.Length; i++) {
+			if (resolved[i].Length == 1) {
+				map.Add((products[i].Product.Id, resolved[i][0].Name.ToString()));
+			}
+		}
+		return map.Count == 0 ? default : map.ToImmutableArray();
+	}
+
+	// Wire a recipe unlock for a (recipe, machine) pair onto a research node.
+	// Single implementation behind build_recipe(machine=…), bind_recipe,
+	// edit_recipe(machine=…) and add_unlock_recipe. No-op when research is null.
+	//
+	// What the game's own RecipeUnlock means: its UnlockedProtos are the recipe
+	// plus every input/output PRODUCT — the MachineProto it also carries is
+	// documented in Mafi.Core.UnlockingTree.RecipeUnlock as "used only to inform
+	// the player in UI". The machine is unlocked only when the unit's
+	// EnsureMachineIsUnlocked flag is set, which Mafi's own
+	// ResearchNodeProtoBuilderExtensions.AddRecipeToUnlock defaults to FALSE.
+	//
+	// This framework deliberately defaults the other way — `unlockMachine` is
+	// TRUE unless a pack says otherwise (Python `unlock_machine=False`). Every
+	// pack written before 0.4.2 was authored against a hard-coded machine unlock,
+	// so flipping the default would silently change what their research nodes
+	// hand out; the flag exists to opt OUT, per call, once a pack is ready.
+	//
+	// Know what leaving it on costs, because both effects are easy to hit by
+	// accident:
+	//   • the node grants the whole machine, so a node that binds several recipes
+	//     on several machines hands out every one of those machines;
+	//   • ResearchManager.LockProtosFromResearchTree derives the game-start LOCKED
+	//     set from exactly these units, so naming a machine here also TAKES IT
+	//     AWAY until the node is researched — adding one recipe to a vanilla
+	//     Flare locks the Flare.
+	// Pass unlock_machine=False whenever the recipe goes onto a machine the
+	// player already has.
+	//
+	// The machine's icon is added to the node either way — that comes from the
+	// Gfx.IconsProtos append below, not from an unlock unit.
+	private static void wireRecipeUnlock(ProtoRegistrator registrator, RecipeProto recipe,
+			MachineProto machine, ResearchNodeProto research, bool unlockMachine) {
+		if (research == null) return;
+
+		// Machine-granting is the default. Both halves are emitted for it: the
+		// flag covers "unlock it if still locked", the explicit
+		// ProtoWithIconUnlock gives the node a proper titled+iconed machine row
+		// (RecipeUnlock is not an IUnlockUnitWithTitleAndIcon). With
+		// unlock_machine=False only the recipe unlock goes on.
+		IUnlockNodeUnit[] appended = unlockMachine
+			? new IUnlockNodeUnit[] {
+				new RecipeUnlock(recipe, machine, false, true),
+				new ProtoWithIconUnlock(machine, false)
+			}
+			: new IUnlockNodeUnit[] {
+				new RecipeUnlock(recipe, machine, false, false)
+			};
+
+		typeof(ResearchNodeProto).GetField("<Units>k__BackingField",
+				BindingFlags.NonPublic | BindingFlags.Instance)
+			?.SetValue(research, research.Units
+				.AsEnumerable()
+				.Concat(appended)
+				// Keyed so a repeated machine unlock collapses onto the one the
+				// node already has (Distinct keeps the FIRST occurrence, i.e. the
+				// pre-existing unit), while every RecipeUnlock stays distinct.
+				.Distinct(i => i is ProtoWithIconUnlock pu
+					? pu.Proto.Id.Value
+					: "recipe:" + i.GetHashCode())
+				.ToImmutableArray());
+		typeof(ResearchNodeProto.Gfx).GetField("<IconsProtos>k__BackingField",
+				BindingFlags.NonPublic | BindingFlags.Instance)
+			?.SetValue(research.Graphics, research.Graphics.IconsProtos
+				.AsEnumerable()
+				.Concat(new IProtoWithIcon[] { machine })
+				.Distinct()
+				.ToImmutableArray());
+	}
+
+	// Reads the shared `unlock_machine` argument. Default TRUE, matching what
+	// every pack written before 0.4.2 was authored against — see wireRecipeUnlock
+	// for what that grants and why a pack usually wants to pass False.
+	private static bool readUnlockMachineArg(Constructor.CallArguments args) {
+		return args.GetArgument<bool>("unlock_machine").ElseDefault(true);
+	}
+
+	// set_ingredient(product, quantity) / set_product(product, quantity) — change
+	// the amount of a product the recipe ALREADY has. "edit amount only": it will
+	// not add a product the recipe lacks (that needs a machine-port assignment the
+	// sub-action has no way to express), so a missing product is a load error, the
+	// same way the legacy edit_recipe ingredients= arg behaved.
+	private static Constructor makeSetProductAction(ProtoRegistrator registrator, bool isInput) {
+		string verb = isInput ? "set_ingredient" : "set_product";
+		string noun = isInput ? "ingredient" : "product";
+		return new Constructor(["product", "quantity"], (args) => {
+			RecipeProto recipe = requireContextRecipe(verb);
+			ProductProto product = args.GetArgument<ProductProto>("product")
+				.When<ProductProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ProductProto>(id))
+				.When<string>(id => registrator.PrototypesDb.GetOrThrow<ProductProto>(new ProductProto.ID(id)))
+				.ElseRequiredThrow();
+			Quantity quantity = args.GetArgument<Quantity>("quantity")
+				.When<int>(i => i.Quantity())
+				.ElseRequiredThrow();
+
+			if (isInput) {
+				ImmutableArray<RecipeInput> inputs = recipe.AllInputs;
+				int idx = indexOfProduct(inputs, product);
+				if (idx < 0) throwNoSuchProduct(recipe, noun, product);
+				RecipeInput old = inputs[idx];
+				inputs = replaceAt(inputs, idx,
+					new RecipeInput(old.Product, quantity, old.HideInUi));
+				rewriteRecipeProducts(recipe, inputs, recipe.AllOutputs);
+			} else {
+				ImmutableArray<RecipeOutput> outputs = recipe.AllOutputs;
+				int idx = indexOfProduct(outputs, product);
+				if (idx < 0) throwNoSuchProduct(recipe, noun, product);
+				RecipeOutput old = outputs[idx];
+				outputs = replaceAt(outputs, idx,
+					new RecipeOutput(old.Product, quantity, old.TriggerAtStart, old.HideInUi));
+				rewriteRecipeProducts(recipe, recipe.AllInputs, outputs);
+			}
+			return recipe;
+		});
+	}
+
+	// remove_ingredient(product) / remove_product(product) — drop a product from
+	// the context recipe entirely. Missing product is a warning, not an error:
+	// removing something already absent is the state the modder asked for.
+	private static Constructor makeRemoveProductAction(ProtoRegistrator registrator, bool isInput) {
+		string verb = isInput ? "remove_ingredient" : "remove_product";
+		string noun = isInput ? "ingredient" : "product";
+		return new Constructor(["product"], (args) => {
+			RecipeProto recipe = requireContextRecipe(verb);
+			ProductProto product = args.GetArgument<ProductProto>("product")
+				.When<ProductProto.ID>(id => registrator.PrototypesDb.GetOrThrow<ProductProto>(id))
+				.When<string>(id => registrator.PrototypesDb.GetOrThrow<ProductProto>(new ProductProto.ID(id)))
+				.ElseRequiredThrow();
+
+			if (isInput) {
+				ImmutableArray<RecipeInput> kept =
+					recipe.AllInputs.Filter(p => p.Product.Id != product.Id);
+				if (kept.Length == recipe.AllInputs.Length) {
+					DiagnosticTrace.Step($"{verb}[{recipe.Id.Value}]: no {noun} '"
+						+ product.Id.Value + "' to remove.");
+					return recipe;
+				}
+				rewriteRecipeProducts(recipe, kept, recipe.AllOutputs);
+			} else {
+				ImmutableArray<RecipeOutput> kept =
+					recipe.AllOutputs.Filter(p => p.Product.Id != product.Id);
+				if (kept.Length == recipe.AllOutputs.Length) {
+					DiagnosticTrace.Step($"{verb}[{recipe.Id.Value}]: no {noun} '"
+						+ product.Id.Value + "' to remove.");
+					return recipe;
+				}
+				rewriteRecipeProducts(recipe, recipe.AllInputs, kept);
+			}
+			return recipe;
+		});
+	}
+
+	private static RecipeProto requireContextRecipe(string verb) {
+		RecipeProto recipe = RecipeBindContext.Current;
+		if (recipe == null) {
+			throw new InvalidOperationException(
+				verb + "(...) is only valid inside `with edit_recipe(recipe):`.");
+		}
+		return recipe;
+	}
+
+	private static int indexOfProduct<T>(ImmutableArray<T> products, ProductProto product)
+			where T : RecipeProduct {
+		for (int i = 0; i < products.Length; i++) {
+			if (products[i].Product.Id == product.Id) return i;
+		}
+		return -1;
+	}
+
+	private static ImmutableArray<T> replaceAt<T>(ImmutableArray<T> arr, int idx, T value) {
+		T[] copy = arr.ToArray(x => x);
+		copy[idx] = value;
+		return copy.ToImmutableArray();
+	}
+
+	private static void throwNoSuchProduct(RecipeProto recipe, string noun, ProductProto product) {
+		throw new ArgumentException("edit_recipe[" + recipe.Id.Value + "]: no " + noun
+			+ " '" + product.Id.Value + "' on this recipe — set_" + noun
+			+ " changes an existing amount, it does not add a new " + noun + ".");
+	}
+
+	// Replace a recipe's input/output sets in place, recomputing EVERY field the
+	// RecipeProto constructor derives from them. Used by the `with edit_recipe(…)`
+	// sub-actions (set_/remove_ingredient, set_/remove_product).
+	//
+	// Six fields, not two. AllInputs/AllOutputs are the source of truth, but the
+	// ctor also precomputes AllUserVisibleInputs/Outputs (HideInUi filter),
+	// OutputsAtEnd/OutputsAtStart (TriggerAtStart split) and QuantitiesGcd. Writing
+	// only the first two leaves the rest describing the OLD product set — a removed
+	// product keeps showing in the machine UI because AllUserVisible* still lists
+	// it, and the factory's throughput maths keeps using a stale GCD.
+	//
+	// The GCD matters for quantity edits too, not just add/remove: it is derived
+	// from every input and output quantity, so changing one amount invalidates it.
+	// That is why set_ingredient/set_product route through here rather than poking
+	// RecipeInput.Quantity directly the way the legacy edit_recipe args did.
+	private static void rewriteRecipeProducts(RecipeProto recipe,
+			ImmutableArray<RecipeInput> inputs, ImmutableArray<RecipeOutput> outputs) {
+		setPrivate(recipe, "AllInputs", inputs);
+		setPrivate(recipe, "AllOutputs", outputs);
+		setPrivate(recipe, "<AllUserVisibleInputs>k__BackingField",
+			inputs.Filter(x => !x.HideInUi));
+		setPrivate(recipe, "<AllUserVisibleOutputs>k__BackingField",
+			outputs.Filter(x => !x.HideInUi));
+		setPrivate(recipe, "OutputsAtEnd", outputs.Filter(x => !x.TriggerAtStart));
+		setPrivate(recipe, "OutputsAtStart", outputs.Filter(x => x.TriggerAtStart));
+
+		// Mirrors the ctor: GCD over all input AND output quantities, 1 when the
+		// recipe has no products left at all. The ctor throws on a non-positive
+		// GCD, so guard rather than write a value that would have been rejected.
+		ImmutableArray<RecipeProduct> all =
+			inputs.As<RecipeProduct>().Concat(outputs.As<RecipeProduct>());
+		int gcd = all.IsEmpty ? 1 : MafiMath.Gcd(all.Select(x => x.Quantity.Value));
+		if (gcd <= 0) {
+			throw new ArgumentException("edit_recipe[" + recipe.Id.Value
+				+ "]: product quantities produce an invalid GCD of " + gcd
+				+ " — check for a zero or negative amount.");
+		}
+		setPrivate(recipe, "QuantitiesGcd", gcd);
+	}
+
+	// Reflection write to a readonly/auto-property backing field. Throws rather
+	// than silently no-opping when the field is missing: these names are the
+	// game's internals, so a rename between game builds must surface as a loud
+	// failure at pack-load rather than a recipe that half-applied its edits.
+	private static void setPrivate(object target, string fieldName, object value) {
+		findField(target, fieldName).SetValue(target, value);
+	}
+
+	// GetField does not find a base class's PRIVATE field when the runtime object
+	// is a subclass, so walk the hierarchy explicitly — MachineProto/RecipeProto
+	// may be cloned into a derived type. Throws when the field is nowhere in the
+	// chain (a game-internals rename), rather than silently no-opping.
+	private static FieldInfo findField(object target, string fieldName) {
+		for (Type t = target.GetType(); t != null; t = t.BaseType) {
+			FieldInfo field = t.GetField(fieldName,
+				BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+			if (field != null) return field;
+		}
+		throw new InvalidOperationException(target.GetType().Name + " has no field '"
+			+ fieldName + "' — the game version may have changed its internals.");
+	}
+
+	// Build the replacement LocStr for a rename_* call.
+	//
+	// The id is namespaced to the pack (ModTranslations.RenameLocId) rather
+	// than reusing the target proto's own "<id>__name": that one is already in
+	// LocalizationManager's en-US dict, so re-registering it logs a duplicate,
+	// and splicing a translation into it would come far too late — the target
+	// proto froze its LocStr when the game built it, long before any mod ran.
+	//
+	// ignoreDuplicates is set because a pack legitimately re-runs this id when
+	// it renames the same node from two files (or renames it back); the id is
+	// ours, so a repeat is an overwrite, not a collision worth an error line.
+	private static LocStr renameLocStr(string protoId, string text, bool isDescription) {
+		string locId = ModTranslations.RenameLocId(s_currentModId, protoId, isDescription);
+		return LocalizationManager.GetLocalizedString0Arg(
+			locId, text, isDescription ? "short description" : "name",
+			skipForExport: false, ignoreDuplicates: true);
+	}
+
+	// Overwrite a proto's display strings in place.
+	//
+	// `Proto.Strings` is a getter-only auto-property declared on Proto itself,
+	// so its backing field lives on the BASE type — findField's hierarchy walk
+	// is what makes this work for ResearchNodeProto and friends. The bare
+	// "Strings" fallback covers a game build that turns the property back into
+	// a plain field.
+	private static void setProtoStrings(Proto proto, Proto.Str strings) {
+		for (Type t = proto.GetType(); t != null; t = t.BaseType) {
+			FieldInfo field =
+				t.GetField("<Strings>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
+				?? t.GetField("Strings",
+					BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+			if (field != null && field.FieldType == typeof(Proto.Str)) {
+				field.SetValue(proto, strings);
+				return;
+			}
+		}
+		throw new InvalidOperationException(
+			$"setProtoStrings: {proto.GetType().Name} exposes no writable `Strings` storage — "
+			+ "the game version may have changed how prototypes hold their display text.");
+	}
+
+	// Undo wireRecipeUnlock for a (recipe, machine) pair across EVERY research
+	// node. There is no index from a recipe back to the nodes unlocking it, so
+	// this is a full scan of ResearchNodeProto — and it must be a full scan rather
+	// than a first-match, because a recipe is routinely unlocked by more than one
+	// node (campaign and sandbox trees are separate, plus optional unlocks).
+	//
+	// Returns how many nodes were touched so the caller can warn on zero, which
+	// usually means the modder named a machine the recipe was never unlocked on.
+	private static int removeRecipeUnlocks(ProtoRegistrator registrator,
+			RecipeProto recipe, MachineProto machine) {
+		int touched = 0;
+		foreach (ResearchNodeProto node in registrator.PrototypesDb.All<ResearchNodeProto>()) {
+			ImmutableArray<IUnlockNodeUnit> kept = node.Units.Filter(u =>
+				!(u is RecipeUnlock ru
+					&& ru.Proto == recipe
+					&& ru.MachineProto == machine));
+			if (kept.Length == node.Units.Length) continue;
+
+			setPrivate(node, "<Units>k__BackingField", kept);
+			touched++;
+
+			// The machine's icon is shared by every unlock on the node, so it may
+			// only be dropped once nothing else on this node still references the
+			// machine. Otherwise unbinding one recipe would strip the icon from
+			// the node's other recipes on the same machine.
+			bool machineStillUsed = kept.Any(u =>
+				(u is RecipeUnlock other && other.MachineProto == machine)
+				|| (u is ProtoWithIconUnlock pu && pu.Proto == machine));
+			if (!machineStillUsed) {
+				setPrivate(node.Graphics, "<IconsProtos>k__BackingField",
+					node.Graphics.IconsProtos.Filter(p => p != machine));
+			}
+		}
+		return touched;
+	}
+
+	// The one thing an unlock unit actually puts on a research node.
+	//
+	// Deliberately NOT ProtoUnlock.UnlockedProtos: a RecipeUnlock lists every
+	// ingredient and product of its recipe in there, so matching on that array
+	// would let remove_unlock(target = someProduct) tear out every recipe that
+	// merely touches the product. Each unit type's own primary field is the
+	// only honest answer.
+	//
+	// Returns null for units that unlock no single proto (e.g.
+	// VehicleLimitIncreaseUnlock), which therefore never match a target.
+	private static string unlockTargetIdOf(IUnlockNodeUnit unit) {
+		switch (unit) {
+			case RecipeUnlock recipeUnlock:
+				return recipeUnlock.Proto.Id.Value;
+			case ProductUnlock productUnlock:
+				return productUnlock.Proto.Id.Value;
+			case ProtoWithIconUnlock protoUnlock:
+				return protoUnlock.Proto.Id.Value;
+			case ProtoUnlock plain:
+				// Plain ProtoUnlock(proto) — a single entry, and it IS the target.
+				return plain.UnlockedProtos.Length == 1 ? plain.UnlockedProtos[0].Id.Value : null;
+			default:
+				return null;
+		}
+	}
+
+	// Detach a recipe from a machine: drop it from both lists AddRecipe appends to.
+	//
+	// MachineProto exposes Recipes/RecipeBindings as IIndexable over private Lyst
+	// fields — readonly references to MUTABLE lists, so removal is reachable even
+	// though the game ships no RemoveRecipe. m_recipesForUi is deliberately left
+	// alone: AddRecipe never writes it either.
+	//
+	// Returns false when the recipe was not bound to that machine in the first
+	// place, so the caller can warn instead of silently doing nothing.
+	private static bool removeMachineBinding(MachineProto machine, RecipeProto recipe) {
+		Lyst<RecipeProto> recipes =
+			(Lyst<RecipeProto>)getPrivateField(machine, "m_recipes");
+		Lyst<MachineRecipeBinding> bindings =
+			(Lyst<MachineRecipeBinding>)getPrivateField(machine, "m_recipeBindings");
+
+		int removed = recipes.RemoveWhere(r => r.Id == recipe.Id);
+		bindings.RemoveWhere(b => b.Recipe.Id == recipe.Id);
+		return removed > 0;
+	}
+
+	private static object getPrivateField(object target, string fieldName) {
+		return findField(target, fieldName).GetValue(target);
 	}
 
 	// build_settlement_decoration — clones SettlementDecorationModuleProto.
@@ -3080,6 +4220,350 @@ public class CustomAssetRegistrator : IModData {
 			wireProtoUnlock(registrator, clone, clone, research, locked);
 			return clone;
 		});
+	}
+
+	// build_farm — clones a source FarmProto (FarmT1..FarmT4) with
+	// per-field overrides. FarmProto extends LayoutEntityProto, so it
+	// plugs into the same buildLayoutFromOverrides pipeline as the other
+	// entity-clone factories. waterCollected is exposed as a single
+	// Product(id, quantity) wrapper matching the recipe idiom.
+	private static Constructor makeBuildFarmCtor(ProtoRegistrator registrator) {
+		return new Constructor([
+			"farmId", "source", "name", "description",
+			"yieldMultiplierPercent", "demandsMultiplierPercent",
+			"fertilityReplenishPercent",
+			"waterCollected",
+			"waterEvaporationPerDay",
+			"hasIrrigationAndFertilizerSupport", "isGreenhouse",
+			"add_ports", "layout_str",
+			"research", "lockedOnInit",
+		], args => {
+			requireArg(args, "build_farm", "farmId");
+			requireArg(args, "build_farm", "source");
+			string newIdStr = args.GetArgument<string>("farmId")
+				.When<Proto.ID>(p => p.Value).When<StaticEntityProto.ID>(p => p.Value)
+				.ElseRequiredThrow();
+			Mafi.Core.Buildings.Farms.FarmProto src = args.GetArgument<Mafi.Core.Buildings.Farms.FarmProto>("source")
+				.When<StaticEntityProto.ID>(id => registrator.PrototypesDb.GetOrThrow<Mafi.Core.Buildings.Farms.FarmProto>(id))
+				.When<Proto.ID>(id => registrator.PrototypesDb.GetOrThrow<Mafi.Core.Buildings.Farms.FarmProto>(id))
+				.When<string>(s => registrator.PrototypesDb.GetOrThrow<Mafi.Core.Buildings.Farms.FarmProto>(new Proto.ID(s)))
+				.ElseRequiredThrow();
+
+			string name = args.GetArgument<string>("name").ElseDefault(src.Strings.Name.TranslatedString ?? src.Id.Value);
+			string desc = args.GetArgument<string>("description").ElseDefault(src.Strings.DescShort.TranslatedString ?? "");
+
+			Mafi.Percent yieldMul = args.GetArgument<int>("yieldMultiplierPercent")
+				.WhenExists(out int yp) ? Mafi.Percent.FromPercentVal(yp) : src.YieldMultiplier;
+			Mafi.Percent demandsMul = args.GetArgument<int>("demandsMultiplierPercent")
+				.WhenExists(out int dp) ? Mafi.Percent.FromPercentVal(dp) : src.DemandsMultiplier;
+			Mafi.Percent fertReplenish = args.GetArgument<int>("fertilityReplenishPercent")
+				.WhenExists(out int fp) ? Mafi.Percent.FromPercentVal(fp) : src.FertilityReplenishPerDay;
+
+			// waterCollected accepts a Product(...) wrapper. When omitted
+			// we inherit the source's full PartialProductQuantity — a
+			// Product-only override reuses the source's product + gets
+			// the modder's quantity, and vice versa.
+			Mafi.Core.PartialProductQuantity waterCollected = src.WaterCollectedPerDay;
+			if (args["waterCollected"]?.Value is Product waterPy) {
+				Mafi.Core.Products.ProductProto waterProto = waterPy.product ?? src.WaterCollectedPerDay.Product;
+				Mafi.PartialQuantity waterQty = waterPy.quantity.Value > 0
+					? new Mafi.PartialQuantity(waterPy.quantity.Value)
+					: src.WaterCollectedPerDay.Quantity;
+				waterCollected = new Mafi.Core.PartialProductQuantity(waterProto, waterQty);
+			}
+
+			Mafi.PartialQuantity waterEvap = args.GetArgument<int>("waterEvaporationPerDay")
+				.WhenExists(out int we) ? new Mafi.PartialQuantity(we) : src.WaterEvaporationPerDay;
+
+			bool hasIrrigation = args.GetArgument<bool>("hasIrrigationAndFertilizerSupport")
+				.ElseDefault(src.HasIrrigationAndFertilizerSupport);
+			bool isGreenhouse = args.GetArgument<bool>("isGreenhouse")
+				.ElseDefault(src.IsGreenhouse);
+
+			EntityLayout layoutToUse = buildLayoutFromOverrides(registrator, src.Layout, args, "build_farm", newIdStr);
+			StaticEntityProto.ID newId = new StaticEntityProto.ID(newIdStr);
+			Mafi.Core.Buildings.Farms.FarmProto clone = new Mafi.Core.Buildings.Farms.FarmProto(
+				id:                                 newId,
+				strings:                            Proto.CreateStr(newId, name, desc, null),
+				layout:                             layoutToUse,
+				costs:                              src.Costs,
+				waterCollectedPerDay:               waterCollected,
+				fertilityReplenishPerDay:           fertReplenish,
+				yieldMultiplier:                    yieldMul,
+				demandsMultiplier:                  demandsMul,
+				hasIrrigationAndFertilizerSupport:  hasIrrigation,
+				isGreenhouse:                       isGreenhouse,
+				waterEvaporationPerDay:             waterEvap,
+				graphics:                           src.Graphics);
+			ResearchNodeProto research = resolveResearch(registrator, args);
+			bool locked = args.GetArgument<bool>("lockedOnInit").ElseDefault(research != null);
+			wireProtoUnlock(registrator, clone, clone, research, locked);
+			return clone;
+		});
+	}
+
+	// add_crop — registers a fresh CropProto from scratch. Product +
+	// growth duration + icon are required; wind/scale variation defaults
+	// mirror the vanilla range so a newly-added crop reads like a stock
+	// one at the field. See makeCloneCropCtor for the source-clone variant.
+	private static Constructor makeAddCropCtor(ProtoRegistrator registrator) {
+		return new Constructor([
+			"cropId", "name", "productProduced", "consumedWaterPerDay",
+			"consumedFertilityPercentPerDay", "minFertilityToStartGrowthPercent",
+			"growthDurationDays", "surviveWithNoWaterDays",
+			"icon", "prefab",
+			"requiresGreenhouse", "plantByDefault",
+			"description", "research",
+			"farms",
+		], args => buildCropProto(registrator, args, cloneSource: null));
+	}
+
+	// edit_crop — retune an EXISTING crop's rates in place. Stands to
+	// add_crop / clone_crop exactly as edit_entity_costs stands to the build_*
+	// calls, and uses the same argument names so there is only one crop
+	// vocabulary to learn.
+	//
+	// CropProto's rate fields are `public readonly`, set once by its
+	// constructor, so each override is written straight to the field. Must run
+	// during the ProtoRegistrator phase like every other edit_* call.
+	private static Constructor makeEditCropCtor(ProtoRegistrator registrator) {
+		return new Constructor([
+			"crop", "productProduced", "multiplyYieldPercent",
+			"growthDurationDays", "consumedWaterPerDay",
+			"consumedFertilityPercentPerDay", "minFertilityToStartGrowthPercent",
+			"surviveWithNoWaterDays", "requiresGreenhouse", "plantByDefault",
+		], args => {
+			requireArg(args, "edit_crop", "crop");
+			string cropId = entityIdStringOf(args["crop"].Value);
+			Mafi.Core.Buildings.Farms.CropProto crop = registrator.PrototypesDb
+				.GetOrThrow<Mafi.Core.Buildings.Farms.CropProto>(new Proto.ID(cropId));
+
+			// ---- harvest ------------------------------------------------
+			// productProduced replaces the harvest outright; multiplyYieldPercent
+			// then scales whatever is in place. Same order (and same reasoning)
+			// as edit_entity_costs' products / multiplyPercent pair.
+			Mafi.Core.ProductQuantity harvest = crop.ProductProduced;
+			if (args["productProduced"]?.Value is Product harvestArg) {
+				harvest = new Mafi.Core.ProductQuantity(harvestArg.product, harvestArg.quantity);
+			}
+			if (args.GetArgument<int>("multiplyYieldPercent").WhenExists(out int yieldPercent)) {
+				if (yieldPercent < 0) {
+					throw new ArgumentException(
+						$"edit_crop[{cropId}]: `multiplyYieldPercent` must not be negative " +
+						$"(got {yieldPercent}). 100 means unchanged, 150 means 1.5x.");
+				}
+				harvest = harvest.ScaledBy(Percent.FromPercentVal(yieldPercent));
+			}
+			setProtoField(crop, "ProductProduced", harvest);
+
+			// ---- growth and demands -------------------------------------
+			if (args.GetArgument<int>("growthDurationDays").WhenExists(out int growthDays)) {
+				if (growthDays <= 0) {
+					throw new ArgumentException(
+						$"edit_crop[{cropId}]: `growthDurationDays` must be positive " +
+						$"(got {growthDays}) — the game asserts on a non-positive growth time.");
+				}
+				setProtoField(crop, "DaysToGrow", growthDays);
+			}
+			if (args.GetArgument<int>("consumedWaterPerDay").WhenExists(out int waterPerDay)) {
+				setProtoField(crop, "ConsumedWaterPerDay", new PartialQuantity(waterPerDay));
+			}
+			// Negative fertility is meaningful, not a mistake: that's how a
+			// green-manure crop REPLENISHES the soil, so this one isn't clamped.
+			if (args.GetArgument<int>("consumedFertilityPercentPerDay").WhenExists(out int fertPerDay)) {
+				setProtoField(crop, "ConsumedFertilityPerDay", Percent.FromPercentVal(fertPerDay));
+			}
+			if (args.GetArgument<int>("minFertilityToStartGrowthPercent").WhenExists(out int minFert)) {
+				setProtoField(crop, "MinFertilityToStartGrowth", Percent.FromPercentVal(minFert));
+			}
+			if (args.GetArgument<int>("surviveWithNoWaterDays").WhenExists(out int surviveDays)) {
+				if (surviveDays <= 0) {
+					throw new ArgumentException(
+						$"edit_crop[{cropId}]: `surviveWithNoWaterDays` must be positive " +
+						$"(got {surviveDays}).");
+				}
+				setProtoField(crop, "DaysToSurviveWithNoWater", (int?)surviveDays);
+			}
+
+			// ---- flags ---------------------------------------------------
+			if (args.GetArgument<bool>("requiresGreenhouse").WhenExists(out bool requiresGreenhouse)) {
+				setProtoField(crop, "RequiresGreenhouse", requiresGreenhouse);
+			}
+			if (args.GetArgument<bool>("plantByDefault").WhenExists(out bool plantByDefault)) {
+				setProtoField(crop, "PlantByDefault", plantByDefault);
+			}
+
+			// IsEmptyCrop is derived in the constructor, not stored independently
+			// — recompute it or a crop edited down to nothing (or up from the
+			// empty crop) would keep the stale classification.
+			setProtoField(crop, "IsEmptyCrop",
+				crop.ProductProduced.IsEmpty
+				&& crop.ConsumedWaterPerDay.IsZero
+				&& crop.ConsumedFertilityPerDay.IsZero);
+
+			DiagnosticTrace.Step($"edit_crop[{cropId}]: " +
+				$"harvest={crop.ProductProduced.Quantity.Value}x{crop.ProductProduced.Product?.Id.Value}, " +
+				$"grow={crop.DaysToGrow}d, water={crop.ConsumedWaterPerDay}, " +
+				$"fertility={crop.ConsumedFertilityPerDay}");
+			return crop;
+		});
+	}
+
+	// Write a `public readonly` field on an already-constructed proto. Protos are
+	// immutable by design, so every edit_* path that changes one goes through
+	// reflection; this is the plain-field counterpart of replaceCostsOnProto's
+	// auto-property handling.
+	private static void setProtoField(object target, string fieldName, object value) {
+		FieldInfo field = target.GetType().GetField(fieldName,
+			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+				| BindingFlags.FlattenHierarchy);
+		if (field == null) {
+			throw new InvalidOperationException(
+				$"setProtoField: field '{fieldName}' not found on {target.GetType().FullName}. " +
+				"The game's proto layout likely changed.");
+		}
+		field.SetValue(target, value);
+	}
+
+	// clone_crop — same fields as add_crop but seeded from a source
+	// CropProto so the modder tunes deltas instead of typing everything.
+	private static Constructor makeCloneCropCtor(ProtoRegistrator registrator) {
+		return new Constructor([
+			"cropId", "source",
+			"name", "productProduced", "consumedWaterPerDay",
+			"consumedFertilityPercentPerDay", "minFertilityToStartGrowthPercent",
+			"growthDurationDays", "surviveWithNoWaterDays",
+			"icon", "prefab",
+			"requiresGreenhouse", "plantByDefault",
+			"description", "research",
+			"farms",
+		], args => {
+			requireArg(args, "clone_crop", "source");
+			Mafi.Core.Buildings.Farms.CropProto srcCrop = args.GetArgument<Mafi.Core.Buildings.Farms.CropProto>("source")
+				.When<Proto.ID>(id => registrator.PrototypesDb.GetOrThrow<Mafi.Core.Buildings.Farms.CropProto>(id))
+				.When<string>(s => registrator.PrototypesDb.GetOrThrow<Mafi.Core.Buildings.Farms.CropProto>(new Proto.ID(s)))
+				.ElseRequiredThrow();
+			return buildCropProto(registrator, args, srcCrop);
+		});
+	}
+
+	// Shared body for add_crop / clone_crop. When cloneSource is non-null,
+	// every omitted field inherits from it (including graphics); otherwise
+	// name / productProduced / growthDurationDays / icon are all required.
+	private static object buildCropProto(ProtoRegistrator registrator,
+			Constructor.CallArguments args, Mafi.Core.Buildings.Farms.CropProto cloneSource) {
+		string funcName = cloneSource != null ? "clone_crop" : "add_crop";
+		requireArg(args, funcName, "cropId");
+		string newIdStr = args.GetArgument<string>("cropId")
+			.When<Proto.ID>(p => p.Value)
+			.ElseRequiredThrow();
+		Proto.ID id = new Proto.ID(newIdStr);
+
+		string name = args.GetArgument<string>("name")
+			.ElseDefault(cloneSource?.Strings.Name.TranslatedString ?? newIdStr);
+		string desc = args.GetArgument<string>("description")
+			.ElseDefault(cloneSource?.Strings.DescShort.TranslatedString ?? "");
+
+		Mafi.Core.ProductQuantity productProduced;
+		if (args["productProduced"]?.Value is Product py) {
+			int qty = py.quantity.Value;
+			productProduced = new Mafi.Core.ProductQuantity(py.product, new Mafi.Quantity(qty));
+		} else if (cloneSource != null) {
+			productProduced = cloneSource.ProductProduced;
+		} else {
+			throw new ArgumentException(
+				funcName + ": 'productProduced' is required. Pass a Product(id, quantity) wrapper.");
+		}
+
+		Mafi.PartialQuantity consumedWater = args.GetArgument<int>("consumedWaterPerDay")
+			.WhenExists(out int cw) ? new Mafi.PartialQuantity(cw)
+			: (cloneSource?.ConsumedWaterPerDay ?? Mafi.PartialQuantity.Zero);
+		Mafi.Percent consumedFert = args.GetArgument<int>("consumedFertilityPercentPerDay")
+			.WhenExists(out int cf) ? Mafi.Percent.FromPercentVal(cf)
+			: (cloneSource?.ConsumedFertilityPerDay ?? Mafi.Percent.Zero);
+		Mafi.Percent minFert = args.GetArgument<int>("minFertilityToStartGrowthPercent")
+			.WhenExists(out int mf) ? Mafi.Percent.FromPercentVal(mf)
+			: (cloneSource?.MinFertilityToStartGrowth ?? Mafi.Percent.Zero);
+
+		Mafi.Duration growth;
+		if (args.GetArgument<int>("growthDurationDays").WhenExists(out int gd)) {
+			growth = Mafi.Duration.FromDays(gd); // day = 24h
+		} else if (cloneSource != null) {
+			growth = cloneSource.DaysToGrow.Days();
+		} else {
+			throw new ArgumentException(
+				funcName + ": 'growthDurationDays' is required.");
+		}
+
+		Mafi.Duration? surviveNoWater = args.GetArgument<int>("surviveWithNoWaterDays")
+			.WhenExists(out int sw)
+			? (Mafi.Duration?)Mafi.Duration.FromDays(sw)
+			: (cloneSource?.DaysToSurviveWithNoWater ?? 0).Days();
+
+		string iconPath = args.GetArgument<string>("icon")
+			.When<Tex>(t => t.path)
+			.ElseDefault(cloneSource?.Graphics.IconPath);
+		if (string.IsNullOrEmpty(iconPath)) {
+			throw new ArgumentException(funcName + ": 'icon' is required.");
+		}
+		string prefabPath = args.GetArgument<string>("prefab")
+			.ElseDefault(cloneSource?.Graphics.PrefabPath);
+		if (string.IsNullOrEmpty(prefabPath)) {
+			throw new ArgumentException(funcName + ": 'prefab' is required.");
+		}
+
+		bool requiresGreenhouse = args.GetArgument<bool>("requiresGreenhouse")
+			.ElseDefault(cloneSource?.RequiresGreenhouse ?? false);
+		bool plantByDefault = args.GetArgument<bool>("plantByDefault")
+			.ElseDefault(cloneSource?.PlantByDefault ?? false);
+
+		Mafi.Core.Buildings.Farms.CropProto.Gfx gfx = cloneSource != null
+			? cloneSource.Graphics
+			: new Mafi.Core.Buildings.Farms.CropProto.Gfx(
+				iconPath: iconPath,
+				prefabPath: prefabPath,
+				scaleVariation: 0.15f,
+				windTimeScale: 0.5f,
+				windWaviness: 0.5f,
+				windAmplitude: 0.1f);
+		if (cloneSource != null && (iconPath != cloneSource.Graphics.IconPath || prefabPath != cloneSource.Graphics.PrefabPath)) {
+			gfx = new Mafi.Core.Buildings.Farms.CropProto.Gfx(
+				iconPath: iconPath,
+				prefabPath: prefabPath,
+				scaleVariation: 0.15f,
+				windTimeScale: 0.5f,
+				windWaviness: 0.5f,
+				windAmplitude: 0.1f);
+		}
+
+		Mafi.Core.Buildings.Farms.CropProto crop = new Mafi.Core.Buildings.Farms.CropProto(
+			id:                        id,
+			strings:                   Proto.CreateStr(id, name, desc, null),
+			productProduced:           productProduced,
+			consumedWaterPerDay:       consumedWater,
+			consumedFertilityPerDay:   consumedFert,
+			minFertilityToStartGrowth: minFert,
+			growthDuration:            growth,
+			surviveWithNoWaterDuration:surviveNoWater,
+			graphics:                  gfx,
+			requiresGreenhouse:        requiresGreenhouse,
+			plantByDefault:            plantByDefault);
+		registrator.PrototypesDb.Add(crop);
+
+		// farms= restrict list. Vanilla auto-linking (via FarmProto's
+		// initializer) offers every registered crop to every compatible
+		// farm — filtered only by RequiresGreenhouse. We don't currently
+		// have a verified reflection target on FarmProto for the restrict-
+		// to path, so log the intent and let the vanilla auto-link cover
+		// the common case. Follow-up: hook post-LockAndInitializeProtos
+		// and reflect into FarmProto's crops list to enforce.
+		if (args.GetArgument<List<object>>("farms").WhenExists(out var farmList) && farmList.Count > 0) {
+			DiagnosticTrace.Step($"{funcName}[{newIdStr}]: 'farms' restrict-to list supplied ({farmList.Count} entries) — currently NOT enforced; the crop will auto-link to every compatible farm via the vanilla initializer.");
+		}
+
+		ResearchNodeProto research = resolveResearch(registrator, args);
+		if (research != null) wireProtoUnlock(registrator, crop, crop, research, true);
+		return crop;
 	}
 
 	// build_research_lab — clones ResearchLabProto. Tunable knobs cover
@@ -3816,6 +5300,7 @@ public class CustomAssetRegistrator : IModData {
 			"copy_layout",
 			"copy_ports",
 			"copy_graphics",
+			"auto_select_recipes",  // bool — optional; override source's UseAllRecipesAtStartOrAfterUnlock (blank = inherit)
 			"layout_str",  // str — optional, authored footprint that overrides copy_layout
 			"lockedOnInit",
 		], args => {
@@ -3875,6 +5360,16 @@ public class CustomAssetRegistrator : IModData {
 			bool copyLayout   = args.GetArgument<bool>("copy_layout").ElseDefault(true);
 			bool copyPorts    = args.GetArgument<bool>("copy_ports").ElseDefault(true);
 			bool copyGraphics = args.GetArgument<bool>("copy_graphics").ElseDefault(true);
+
+			// auto_select_recipes overrides the source's
+			// UseAllRecipesAtStartOrAfterUnlock. When true a freshly-placed
+			// machine auto-assigns every unlocked recipe; when false it
+			// starts with none selected so the player picks (the game still
+			// force-selects when exactly one recipe is unlocked — see
+			// Machine..ctor). Blank inherits the source's value so existing
+			// clones keep behaving as before.
+			bool autoSelectRecipes = args.GetArgument<bool>("auto_select_recipes")
+				.ElseDefault(sourceProto.UseAllRecipesAtStartOrAfterUnlock);
 
 			// Resolve the base layout the new machine starts from. Priority:
 			//   layout_str  → parse the authored footprint (OVERRIDES copy_layout);
@@ -3946,7 +5441,8 @@ public class CustomAssetRegistrator : IModData {
 
 			DiagnosticTrace.Step($"build_machine[{newIdStr}]: source={sourceProto.Id.Value}, " +
 				$"extra_ports={extras.Count}, total_ports={layout.Ports.Length}, " +
-				$"copy_layout={copyLayout}, copy_ports={copyPorts}, copy_graphics={copyGraphics}");
+				$"copy_layout={copyLayout}, copy_ports={copyPorts}, copy_graphics={copyGraphics}, " +
+				$"auto_select_recipes={autoSelectRecipes}");
 
 			MachineProto.ID newId = new MachineProto.ID(newIdStr);
 			MachineProto clone = new MachineProto(
@@ -3957,7 +5453,7 @@ public class CustomAssetRegistrator : IModData {
 				consumedPowerPerTick:               powerOverride,
 				computingConsumed:                  sourceProto.ComputingConsumed,
 				buffersMultiplier:                  sourceProto.BuffersMultiplier,
-				useAllRecipesAtStartOrAfterUnlock:  sourceProto.UseAllRecipesAtStartOrAfterUnlock,
+				useAllRecipesAtStartOrAfterUnlock:  autoSelectRecipes,
 				animationParams:                    sourceProto.AnimationParams,
 				graphics:                           graphics,
 				emissionWhenRunning:                sourceProto.EmissionWhenRunning,
@@ -3968,8 +5464,14 @@ public class CustomAssetRegistrator : IModData {
 
 			bool copyRecipes = args.GetArgument<bool>("copy_recipes").ElseDefault(true);
 			if (copyRecipes) {
-				foreach (RecipeProto r in sourceProto.Recipes.AsEnumerable()) {
-					clone.AddRecipe(r);
+				// 0.3.0: recipes bind with a per-machine duration/multiplier carried
+				// on MachineRecipeBinding. Re-add each source binding to the clone,
+				// carrying the source's resolved port assignment forward so a recipe
+				// with several same-type products stays unambiguous on the clone.
+				foreach (var b in sourceProto.RecipeBindings.AsEnumerable()) {
+					var inMap  = resolvedPortMap(b.Recipe.AllInputs,  b.InputPorts);
+					var outMap = resolvedPortMap(b.Recipe.AllOutputs, b.OutputPorts);
+					clone.AddRecipe(b.Recipe, b.Duration, b.Multiplier, b.MinPartialUtilization, inMap, outMap);
 				}
 			}
 
@@ -4013,75 +5515,70 @@ public class CustomAssetRegistrator : IModData {
 	// transformations ran. Returns the final EntityLayout.
 	// Normalize a layout_str into the rectangular grid Mafi's LayoutParser
 	// expects. Mafi rejects ANY mismatch between line[i].Length and line
-	// [0].Length (after a "% 3 == 0" check), so spurious leading/trailing
-	// whitespace on a single line — common after editor textarea edits —
-	// fails the whole pack with "Length 51 of line 16 does not match
-	// layout line length 48". Three contiguous spaces tokenize as the
-	// "void" token in Mafi (see EntityLayoutParser line 259), so adding
-	// or removing whitespace around the actual content is safe — it just
-	// shifts where the implicit void cells live without changing real
-	// tile coords.
+	// [0].Length (after a "% 3 == 0" check), so a port token overflowing
+	// one row past the others — or spurious trailing whitespace after
+	// editor textarea edits — fails the whole pack with "Length 51 of
+	// line 16 does not match layout line length 48". Three contiguous
+	// spaces tokenize as the "void" token in Mafi (see EntityLayoutParser
+	// line 259), so padding rows with whole empty cells is safe — it only
+	// adds implicit void cells without changing real tile coords.
 	//
 	// Steps:
-	//   1. Split on CR/LF.
-	//   2. Right-trim every line (strips any accumulated trailing space).
-	//   3. Canonical width = line 0's length (matches Mafi's own rule).
-	//      Bumped up to a multiple of 3 if line 0 itself wasn't aligned.
-	//   4. For each subsequent line:
-	//        - Longer and the excess is leading whitespace → left-trim
-	//          exactly the excess (preserves real content position).
-	//        - Shorter → right-pad with spaces to canonical (adds void
-	//          tokens to fill).
-	//        - Otherwise leave alone — Mafi's own error message will
-	//          point at the bad line with the original length info.
-	//   5. Log a warning when any normalization happened so the modder
-	//      can audit the layout for the underlying typo.
+	//   1. Split on CR/LF and right-trim every line (strips accumulated
+	//      trailing whitespace, including tabs Mafi would reject).
+	//   2. Drop trailing empty lines (a final newline would otherwise
+	//      become a spurious all-void row).
+	//   3. Canonical width = the WIDEST line, rounded up to a whole
+	//      3-char cell. The width is dynamic — derived from the content
+	//      itself, never anchored to line 0 — so a port overflowing any
+	//      row simply widens the grid instead of failing the parse.
+	//   4. Right-pad every shorter line with spaces to canonical (fills
+	//      the missing amount of void-cell triplets).
+	//   5. Log a warning when any line CHANGED versus the source so the
+	//      modder can audit the layout for the underlying jagged row.
 	private static string[] sanitizeLayoutLines(string layoutStr) {
 		string[] raw = layoutStr.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
-		for (int i = 0; i < raw.Length; i++) {
+		string[] source = (string[])raw.Clone();
+		int count = raw.Length;
+		for (int i = 0; i < count; i++) {
 			raw[i] = raw[i].TrimEnd();
 		}
-		if (raw.Length == 0) return raw;
+		while (count > 0 && raw[count - 1].Length == 0) {
+			count--;
+		}
+		if (count != raw.Length) {
+			Array.Resize(ref raw, count);
+		}
+		if (count == 0) {
+			return raw;
+		}
 
-		int canonical = raw[0].Length;
+		int canonical = 0;
+		for (int i = 0; i < count; i++) {
+			if (raw[i].Length > canonical) {
+				canonical = raw[i].Length;
+			}
+		}
 		if (canonical % 3 != 0) {
-			// Round line 0 up to nearest multiple of 3 so it parses at all.
-			int padded = ((canonical / 3) + 1) * 3;
-			raw[0] = raw[0].PadRight(padded);
-			canonical = padded;
+			canonical = ((canonical / 3) + 1) * 3;
 		}
 
 		int normalized = 0;
-		for (int i = 1; i < raw.Length; i++) {
-			int len = raw[i].Length;
-			if (len == canonical) continue;
-			if (len > canonical) {
-				int excess = len - canonical;
-				// Only safe to left-trim if every leading character we'd
-				// drop is whitespace — otherwise we'd silently delete
-				// real tile content. Same idea for trailing: if the line
-				// still has trailing whitespace after the earlier
-				// TrimEnd (e.g. line ended in tabs that we left alone),
-				// try trimming there. We do trailing first because it's
-				// more common and lower-risk.
-				if (raw[i].Substring(canonical, excess).Trim().Length == 0) {
-					raw[i] = raw[i].Substring(0, canonical);
-					normalized++;
-				} else if (raw[i].Substring(0, excess).Trim().Length == 0) {
-					raw[i] = raw[i].Substring(excess);
-					normalized++;
-				}
-				// else: real content sits outside canonical → leave it
-				// alone, Mafi will throw the original mismatch error.
-			} else {
+		for (int i = 0; i < count; i++) {
+			if (raw[i].Length < canonical) {
 				raw[i] = raw[i].PadRight(canonical);
+			}
+			// Count against the ORIGINAL line, not the trimmed one — a line
+			// whose trailing void cells were trimmed and padded straight
+			// back is byte-identical and should not trip the audit warning.
+			if (raw[i] != source[i]) {
 				normalized++;
 			}
 		}
 
 		if (normalized > 0) {
-			Log.Warning($"layout_str sanitized: normalized {normalized} line(s) to canonical width {canonical}. " +
-				"Check the source layout for spurious leading/trailing whitespace.");
+			Log.Warning($"layout_str sanitized: padded {normalized} line(s) to canonical width {canonical}. " +
+				"Check the source layout for jagged rows or spurious whitespace.");
 		}
 		return raw;
 	}
@@ -4261,6 +5758,14 @@ public struct Product {
 	public string port;
 	public ProductProto product;
 	public Quantity quantity;
+}
+
+// Python-side `PortMap(product, port)` — a quantity-free (product → machine
+// port) assignment used by `bind_recipe(..., ports=[...])`. Unlike Product it
+// carries no quantity; a binding only decides which port each product routes to.
+public struct PortMap {
+	public ProductProto product;
+	public string port;
 }
 
 public struct FuelPair {

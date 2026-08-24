@@ -6,6 +6,7 @@ using Mafi.Core;
 using Mafi.Core.Products;
 using Mafi.Unity;
 using Mafi.Unity.InstancedRendering;
+using Mafi.Unity.InstancedRendering.Products;
 using Mafi.Unity.Terrain;
 using UnityEngine;
 

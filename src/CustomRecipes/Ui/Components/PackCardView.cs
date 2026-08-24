@@ -2,6 +2,7 @@ using System;
 using CustomAssets.Data.Mod;
 using Mafi;
 using Mafi.Localization;
+using Mafi.Unity.UiToolkit;
 using Mafi.Unity.UiToolkit.Component;
 using Mafi.Unity.UiToolkit.Library;
 using UnityEngine;
@@ -24,6 +25,7 @@ namespace CustomAssets.Ui.Components {
         private readonly Action m_onSwitchPack;
         private readonly Action m_onOpenDeps;
         private readonly Action m_onOpenTranslations;
+        private readonly Action m_onOpenConfig;
 
         private readonly Label m_nameLabel;
         private readonly Label m_descLabel;
@@ -35,10 +37,35 @@ namespace CustomAssets.Ui.Components {
         /// a FloatingColumn popup to it for pack selection.</summary>
         public readonly ButtonText SwitchButton;
 
-        public PackCardView(Action onSwitchPack, Action onOpenDeps, Action onOpenTranslations) {
+        // The three pane buttons, kept so SetActivePane can light the active one.
+        private ButtonText m_depsBtn;
+        private ButtonText m_ttBtn;
+        private ButtonText m_configBtn;
+
+        /// Which pack-level pane the editor is currently showing in its main area.
+        /// <see cref="PackPane.None"/> means a definition is selected instead.
+        public enum PackPane {
+            None,
+            Deps,
+            Translations,
+            Config
+        }
+
+        /// Light the button whose pane is on screen, the way a selected tree row is
+        /// lit — these buttons choose what the main pane shows, so they are a
+        /// selection, not one-shot actions.
+        public void SetActivePane(PackPane pane) {
+            m_depsBtn?.ClassIff(Cls.selected, pane == PackPane.Deps);
+            m_ttBtn?.ClassIff(Cls.selected, pane == PackPane.Translations);
+            m_configBtn?.ClassIff(Cls.selected, pane == PackPane.Config);
+        }
+
+        public PackCardView(Action onSwitchPack, Action onOpenDeps, Action onOpenTranslations,
+                Action onOpenConfig) {
             m_onSwitchPack       = onSwitchPack;
             m_onOpenDeps         = onOpenDeps;
             m_onOpenTranslations = onOpenTranslations;
+            m_onOpenConfig       = onOpenConfig;
 
             this.PaddingLeftRight(3.pt()).PaddingTopBottom(2.pt());
 
@@ -68,13 +95,27 @@ namespace CustomAssets.Ui.Components {
             // modder can add a language and scan all pack strings into it;
             // each language is written to its own file so saving one
             // doesn't disturb the rest of the pack.
-            ButtonText depsBtn = new ButtonText(new LocStrFormatted("🔗"), m_onOpenDeps)
+            m_depsBtn = new ButtonText(new LocStrFormatted("🔗"), m_onOpenDeps)
                             .Tooltip(new LocStrFormatted("Pack dependencies (manifest + load order)"));
-            ButtonText ttBtn = new ButtonText(new LocStrFormatted("TT"), m_onOpenTranslations)
+            ButtonText depsBtn = m_depsBtn;
+            m_ttBtn = new ButtonText(new LocStrFormatted("TT"), m_onOpenTranslations)
                             .Tooltip(new LocStrFormatted(
                                 "Translations — add a language and generate entries from pack strings"));
+            ButtonText ttBtn = m_ttBtn;
 
-            Row actions = new Row { depsBtn, ttBtn };
+            // CFG edits THIS pack's config.json fields — the author's view: names, kinds,
+            // constraints. The player-facing counterpart (values across every loaded
+            // pack) is NOT here: this window is sandbox-gated, so it does not exist in an
+            // ordinary game. That one is its own toolbar window, ModSettingsWindow.
+            //
+            // Text labels, not a gear glyph: the game's UI font has no ⚙ (U+2699), so it
+            // rendered as a missing-glyph box. Only the few symbols already shipped
+            // elsewhere in this UI (🔗 📋 ⚠ ▲ ▼ ✕ ⓘ) are known to be in the atlas —
+            // anything else belongs in text, like the TT button beside these.
+            m_configBtn = new ButtonText(new LocStrFormatted("CFG"), m_onOpenConfig)
+                            .Tooltip(new LocStrFormatted(
+                                "Config fields (config.json) — add, type and constrain this pack's settings"));
+            Row actions = new Row { depsBtn, ttBtn, m_configBtn };
             actions.Gap(1.pt());
 
             Add(m_thumbHolder);

@@ -39,6 +39,7 @@ namespace CustomAssets.Ui.Editors {
         private readonly Label m_sourcePreviewLabel;
         private readonly Column m_sourcePreviewCol;
         private readonly ButtonText m_fillBtn;
+        private readonly TextField m_unlockMachine;
         private readonly Column m_dynamicCol;
 
         public EditRecipeDefEditor(ProtosDb protosDb, PackModel packModel) {
@@ -80,9 +81,11 @@ namespace CustomAssets.Ui.Editors {
             AddField("original (source recipe)", previewBlock,
                 onRefresh: refreshSourcePreview);
 
-            AddNullableIntField("duration (seconds; blank = unchanged)",
+            AddExpressionIntField("duration (seconds; blank = unchanged)",
                 getter: d => d.DurationSeconds,
-                setter: (d, v) => d.DurationSeconds = v);
+                setter: (d, v) => d.DurationSeconds = v,
+                expressionGetter: d => d.DurationExpression,
+                expressionSetter: (d, v) => d.DurationExpression = v);
 
             // Machine override picker. allowNone so the modder can leave
             // the original recipe's machine in place. MachineIdPicker so
@@ -113,6 +116,16 @@ namespace CustomAssets.Ui.Editors {
                     setId: id => { if (value != null) value.ResearchId = id; },
                     title: new LocStrFormatted("Pick research")));
             });
+
+            // Blank = the API default (true). Type "false" to make the node
+            // teach only the recipe and leave the machine alone.
+            m_unlockMachine = AddField(
+                "unlock_machine (blank = also grant the machine; false = unlock the recipe only)",
+                new TextField().OnValueChanged(v => {
+                    if (value == null) return;
+                    value.UnlockMachine = (v ?? "").Trim().ToLowerInvariant() != "false";
+                }),
+                onRefresh: () => m_unlockMachine.Text(value != null && !value.UnlockMachine ? "false" : ""));
 
             AddNullableIntField("power (percent; blank = unchanged)",
                 getter: d => d.PowerPercent,
@@ -200,7 +213,7 @@ namespace CustomAssets.Ui.Editors {
             RecipeProto gameSrc = findGameSource(value.RecipeId);
             if (gameSrc == null) return;
 
-            value.DurationSeconds = gameSrc.Duration.SecondsFloored;
+            value.DurationSeconds = findBindingDurationSeconds(gameSrc);
             value.Ingredients     = refsFromGameProducts(gameSrc.AllInputs);
             value.Products        = refsFromGameProducts(gameSrc.AllOutputs);
             value.MachineId       = findOwningMachineId(gameSrc);
@@ -249,6 +262,22 @@ namespace CustomAssets.Ui.Editors {
             return null;
         }
 
+        // 0.3.0: a recipe's duration lives on its per-machine binding
+        // (MachineRecipeBinding.Duration), not the RecipeProto. Return the
+        // duration of the first machine binding that references this recipe,
+        // in whole seconds, or null when the recipe isn't bound anywhere.
+        private int? findBindingDurationSeconds(RecipeProto recipe) {
+            if (m_protosDb == null || recipe == null) return null;
+            foreach (MachineProto m in m_protosDb.All<MachineProto>()) {
+                foreach (var b in m.RecipeBindings) {
+                    if (b.Recipe.Id.Value == recipe.Id.Value) {
+                        return b.Duration.SecondsFloored;
+                    }
+                }
+            }
+            return null;
+        }
+
         private static List<ProductRef> cloneRefs(List<ProductRef> source) {
             List<ProductRef> result = new List<ProductRef>();
             if (source == null) return result;
@@ -263,12 +292,11 @@ namespace CustomAssets.Ui.Editors {
                 where T : RecipeProduct {
             List<ProductRef> result = new List<ProductRef>();
             foreach (T p in products) {
-                // Ports.Length == 1 → use that single port name; otherwise
-                // leave the port wildcarded (null → "*") so the overlay
-                // keeps the recipe routable wherever the original machine
-                // accepted it.
-                string port = p.Ports.Length == 1 ? p.Ports[0].Name.ToString() : null;
-                result.Add(new ProductRef(p.Product.Id.Value, p.Quantity.Value, port));
+                // 0.3.0: ports are no longer stored on the recipe product; they
+                // live on each machine binding (MachineRecipeBinding). Leave the
+                // port wildcarded (null → "*") so the overlay stays routable
+                // wherever the original machine accepted it.
+                result.Add(new ProductRef(p.Product.Id.Value, p.Quantity.Value, null));
             }
             return result;
         }

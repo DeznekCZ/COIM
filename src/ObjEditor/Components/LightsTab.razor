@@ -1,0 +1,113 @@
+@inject LightingStore Lights
+@implements IDisposable
+
+<section class="panel">
+    <h3>Lights</h3>
+    <div class="row">
+        <label class="lbl-wide">Ambient</label>
+        <input type="range" min="0" max="1" step="0.01" value="@Fmt(Lights.Ambient)"
+               @oninput="OnAmbientChanged" />
+        <span class="mono muted small">@Fmt(Lights.Ambient)</span>
+    </div>
+    <div class="muted small" style="padding:4px 0;">@Lights.Lights.Count / @LightingStore.MaxLights light(s)</div>
+
+    @for (int i = 0; i < Lights.Lights.Count; i++)
+    {
+        var idx = i;
+        var l = Lights.Lights[idx];
+        <div class="light-card">
+            <div class="light-card-head">
+                <input class="light-name" value="@l.Name"
+                       @onchange="e => Lights.Update(idx, x => x.Name = (e.Value?.ToString() ?? x.Name).Trim())" />
+                @if (idx > 0)
+                {
+                    <button class="danger sg-step" title="Remove this light"
+                            @onclick="() => Lights.RemoveLight(idx)">×</button>
+                }
+            </div>
+            <div class="row">
+                <label class="lbl-wide">Azim</label>
+                <input type="number" step="5" value="@Fmt(l.Azim)"
+                       @onchange="e => OnAngleChanged(idx, 0, e.Value)" class="tb-num" />
+                <label class="muted small">Elev</label>
+                <input type="number" step="5" value="@Fmt(l.Elev)"
+                       @onchange="e => OnAngleChanged(idx, 1, e.Value)" class="tb-num" />
+            </div>
+            <div class="row">
+                <label class="lbl-wide">Color</label>
+                <input type="color" value="@HexOf(l)"
+                       @onchange="e => OnColorChanged(idx, e.Value?.ToString())" />
+                <label class="muted small">Intensity</label>
+                <input type="number" min="0" max="5" step="0.1" value="@Fmt(l.Intensity)"
+                       @onchange="e => OnIntensityChanged(idx, e.Value)" class="tb-num" />
+            </div>
+        </div>
+    }
+
+    @if (Lights.Lights.Count < LightingStore.MaxLights)
+    {
+        <div class="row" style="margin-top:8px;">
+            <button @onclick="() => Lights.AddLight()">+ Add light</button>
+        </div>
+    }
+</section>
+
+@code {
+    protected override void OnInitialized() { Lights.OnChange += Rerender; }
+    private async void Rerender() { await InvokeAsync(StateHasChanged); }
+    public void Dispose() { Lights.OnChange -= Rerender; }
+
+    private void OnAmbientChanged(ChangeEventArgs e)
+    {
+        if (!TryParse(e.Value, out var v)) return;
+        Lights.SetAmbient(v);
+    }
+
+    private void OnAngleChanged(int idx, int axis, object? value)
+    {
+        if (!TryParse(value, out var v)) return;
+        Lights.Update(idx, l =>
+        {
+            if (axis == 0) l.Azim = ((v % 360) + 360) % 360;
+            else l.Elev = Math.Clamp(v, -89, 89);
+        });
+    }
+
+    private void OnColorChanged(int idx, string? hex)
+    {
+        if (string.IsNullOrEmpty(hex) || !hex.StartsWith("#") || hex.Length != 7) return;
+        if (!int.TryParse(hex.AsSpan(1, 2), System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out var r)) return;
+        if (!int.TryParse(hex.AsSpan(3, 2), System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out var g)) return;
+        if (!int.TryParse(hex.AsSpan(5, 2), System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture, out var b)) return;
+        Lights.Update(idx, l => { l.R = r / 255.0; l.G = g / 255.0; l.B = b / 255.0; });
+    }
+
+    private void OnIntensityChanged(int idx, object? value)
+    {
+        if (!TryParse(value, out var v)) return;
+        Lights.Update(idx, l => l.Intensity = Math.Clamp(v, 0, 10));
+    }
+
+    private static bool TryParse(object? value, out double result)
+    {
+        result = 0;
+        var s = value?.ToString();
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        if (double.TryParse(s, System.Globalization.NumberStyles.Float, inv, out result)) return true;
+        return double.TryParse(s.Replace(',', '.'),
+            System.Globalization.NumberStyles.Float, inv, out result);
+    }
+
+    private static string Fmt(double d) =>
+        d.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string HexOf(Light l)
+    {
+        int To255(double d) => Math.Clamp((int)Math.Round(d * 255), 0, 255);
+        return $"#{To255(l.R):x2}{To255(l.G):x2}{To255(l.B):x2}";
+    }
+}

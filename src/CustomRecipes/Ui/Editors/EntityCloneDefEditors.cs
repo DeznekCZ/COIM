@@ -61,6 +61,13 @@ namespace CustomAssets.Ui.Editors {
             m_getSourceId = getSourceId;
             m_setSourceId = setSourceId;
 
+            // A clone becomes a brand-new proto, and the build menu / unlock
+            // lists are assembled once at load. Lead with that so the modder
+            // doesn't hunt for a toolbar entry that can't exist yet.
+            Add(new RestartNotice(
+                "Cloned entities are registered when the game loads — save this " +
+                "pack, then restart the game before looking for it in the build menu."));
+
             AddStringField(idLabel, d => d.Id, (d, v) => d.Id = v);
             AddStringField("name (defaults to source name)",
                 d => d.Name, (d, v) => d.Name = v);
@@ -345,6 +352,71 @@ namespace CustomAssets.Ui.Editors {
             getLayoutSourceStr: d => d.LayoutSourceStr,
             setLayoutSourceStr: (d, v) => d.LayoutSourceStr = v) { }
         protected override void buildOverrideFields() { }
+    }
+
+    public sealed class FarmDefEditor : EntityCloneDefEditor<FarmDef, Mafi.Core.Buildings.Farms.FarmProto> {
+        public FarmDefEditor(PackModel m, ProtosDb p) : base(m, p,
+            "farmId (new id for the farm)",
+            "source farm (pick the proto to clone)",
+            d => d.SourceId, (d, v) => d.SourceId = v,
+            d => d.ResearchId, (d, v) => d.ResearchId = v,
+            d => d.LockedOnInit, (d, v) => d.LockedOnInit = v,
+            fillFromSource: (def, src) => {
+                // Percent.RawValue divides by 1000 to recover the integer
+                // percent (100% → 100), matching EnrichmentRefEditor's
+                // load-existing path.
+                def.YieldMultiplierPercent    = src.YieldMultiplier.RawValue / 1000;
+                def.DemandsMultiplierPercent  = src.DemandsMultiplier.RawValue / 1000;
+                def.FertilityReplenishPercent = src.FertilityReplenishPerDay.RawValue / 1000;
+                def.WaterCollectedProductId   = src.WaterCollectedPerDay.Product?.Id.Value;
+                // PartialQuantity.Value is Fix32 — IntegerPart floors to
+                // the whole-unit quantity, adequate for the modder's
+                // starting point (they can bump it to a fractional
+                // approximation via the source's exact Value if needed).
+                def.WaterCollectedQuantity    = src.WaterCollectedPerDay.Quantity.Value.IntegerPart;
+                def.WaterEvaporationPerDay    = src.WaterEvaporationPerDay.Value.IntegerPart;
+                def.HasIrrigationAndFertilizerSupport = src.HasIrrigationAndFertilizerSupport;
+                def.IsGreenhouse              = src.IsGreenhouse;
+            },
+            getLayoutSourceStr: d => d.LayoutSourceStr,
+            setLayoutSourceStr: (d, v) => d.LayoutSourceStr = v) { }
+        protected override void buildOverrideFields() {
+            AddNullableIntField("yieldMultiplierPercent (100 = 1× base; blank = inherit)",
+                d => d.YieldMultiplierPercent, (d, v) => d.YieldMultiplierPercent = v);
+            AddNullableIntField("demandsMultiplierPercent (water/fertilizer scale; blank = inherit)",
+                d => d.DemandsMultiplierPercent, (d, v) => d.DemandsMultiplierPercent = v);
+            AddNullableIntField("fertilityReplenishPercent (natural regen/day; blank = inherit)",
+                d => d.FertilityReplenishPercent, (d, v) => d.FertilityReplenishPercent = v);
+            // Water-collected — two fields (product id + quantity) that
+            // together form the Product(...) wrapper the emitter writes.
+            AddStringField("waterCollectedProductId (product harvested on rainy days; blank = inherit)",
+                d => d.WaterCollectedProductId,
+                (d, v) => d.WaterCollectedProductId = string.IsNullOrEmpty(v) ? null : v);
+            AddNullableIntField("waterCollectedQuantity (per rainy day; blank = inherit)",
+                d => d.WaterCollectedQuantity, (d, v) => d.WaterCollectedQuantity = v);
+            AddNullableIntField("waterEvaporationPerDay (idle loss; blank = inherit)",
+                d => d.WaterEvaporationPerDay, (d, v) => d.WaterEvaporationPerDay = v);
+            // Nullable bool as free-text field. Blank = inherit, "true"/"false"
+            // toggle. Same idiom as lockedOnInit in the base ctor.
+            AddStringField("hasIrrigationAndFertilizerSupport (true / false / blank = inherit)",
+                getter: d => d.HasIrrigationAndFertilizerSupport.HasValue
+                    ? (d.HasIrrigationAndFertilizerSupport.Value ? "true" : "false") : "",
+                setter: (d, v) => {
+                    string s = (v ?? "").Trim().ToLowerInvariant();
+                    if (s == "true")       d.HasIrrigationAndFertilizerSupport = true;
+                    else if (s == "false") d.HasIrrigationAndFertilizerSupport = false;
+                    else                   d.HasIrrigationAndFertilizerSupport = null;
+                });
+            AddStringField("isGreenhouse (true / false / blank = inherit)",
+                getter: d => d.IsGreenhouse.HasValue
+                    ? (d.IsGreenhouse.Value ? "true" : "false") : "",
+                setter: (d, v) => {
+                    string s = (v ?? "").Trim().ToLowerInvariant();
+                    if (s == "true")       d.IsGreenhouse = true;
+                    else if (s == "false") d.IsGreenhouse = false;
+                    else                   d.IsGreenhouse = null;
+                });
+        }
     }
 
     public sealed class ResearchLabDefEditor : EntityCloneDefEditor<ResearchLabDef, ResearchLabProto> {

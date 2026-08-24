@@ -1,0 +1,304 @@
+@inject SceneStore Store
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@*
+    ViewMode controls which projection the JS side renders. Default is
+    "perspective" — the existing behavior. Ortho modes ("top", "front",
+    "side") share the same camera target/distance fields so panning + wheel
+    zoom still work, just with a fixed view direction.
+*@
+
+<div class="viewport-host" @ref="_host">
+    <canvas @ref="_canvas"></canvas>
+    <div class="viewport-hint">
+        @if (Store.IsPlacingFace)
+        {
+            <span><b>Place face:</b> click vertices in order. Green = start. Yellow = latest. Blue arrow = predicted front.</span>
+        }
+        else if (Store.IsCuttingFace)
+        {
+            <span><b>Cut face:</b> click two non-adjacent corners of the highlighted face. The face splits along that chord.</span>
+        }
+        else
+        {
+            <span>Drag = orbit · Shift+drag / middle = pan · Wheel = zoom · Right-click for actions · <button class="link" @onclick="FrameAll">Frame all</button></span>
+        }
+    </div>
+    @if (_ctx is { } ctx)
+    {
+        <div class="ctx-overlay" @onclick="CloseContext" @oncontextmenu:preventDefault="true"></div>
+        <div class="ctx-menu" style="left:@(ctx.X)px; top:@(ctx.Y)px;" @onclick:stopPropagation="true">
+            @if (ctx.VertexId != 0)
+            {
+                <div class="ctx-header">Vertex v@(ctx.VertexId)</div>
+                <button class="ctx-item" @onclick="() => RunCtx(() => Store.SelectVertex(ctx.VertexId, false))">Select</button>
+                <button class="ctx-item" @onclick="() => RunCtx(() => DeleteVertex(ctx.VertexId))">Delete</button>
+            }
+            else if (ctx.FaceId != 0)
+            {
+                <div class="ctx-header">Face f@(ctx.FaceId)</div>
+                <button class="ctx-item" @onclick="() => RunCtx(() => Store.SelectFace(ctx.FaceId, false))">Select</button>
+                <button class="ctx-item" @onclick="() => RunCtx(() => Store.ReverseFaceWinding(ctx.FaceId))">Flip winding</button>
+                @if (CanCutFace(ctx.FaceId))
+                {
+                    <button class="ctx-item" @onclick="() => RunCtx(() => StartCutOn(ctx.FaceId))">Cut face…</button>
+                }
+                <button class="ctx-item" @onclick="() => RunCtx(() => DeleteFace(ctx.FaceId))">Delete</button>
+            }
+            else
+            {
+                <div class="ctx-header">Viewport</div>
+                <button class="ctx-item" @onclick="() => RunCtx(() => _ = FrameAll())">Frame all</button>
+                @if (Store.SelectedFaces.Count > 0 || Store.SelectedVertices.Count > 0)
+                {
+                    <button class="ctx-item" @onclick="() => RunCtx(() => Store.SelectVertex(0, false))">Clear selection</button>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string ViewMode { get; set; } = "perspective";
+
+    private ElementReference _canvas;
+    private ElementReference _host;
+    private DotNetObjectReference<Viewport3DTab>? _ref;
+    private bool _attached;
+
+    protected override void OnInitialized()
+    {
+        _ref = DotNetObjectReference.Create(this);
+        // Subscribe only for re-rendering the .razor hint / context-menu
+        // overlay on state changes. The JS-side setState broadcast is owned
+        // by Editor.razor — with N viewports, having each subscribe and call
+        // setState would multiply rebuilds N times unnecessarily.
+        Store.OnChange += OnSceneChanged;
+    }
+
+    private async void OnSceneChanged()
+    {
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Diag.Log("Viewport3DTab.OnSceneChanged failed: " + ex);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("objEditor.attachViewport", _canvas, _host, _ref, ViewMode);
+            _attached = true;
+            await PushStateAsync();
+            await JS.InvokeVoidAsync("objEditor.frameAll");
+        }
+    }
+
+    private async Task PushStateAsync()
+    {
+        if (!_attached) return;
+        var snapshot = new
+        {
+            // While cutting, the user picks vertices (corners of the highlighted
+            // face) even though Store.Mode stays Face for the selection state.
+            mode = (Store.Mode == SelectionMode.Vertex || Store.IsCuttingFace) ? "vertex" : "face",
+            selectedVertexIds = Store.SelectedVertices.ToArray(),
+            selectedFaceIds = Store.SelectedFaces.ToArray(),
+            placing = Store.IsPlacingFace,
+            placingVertexIds = Store.PlacingVertexIds.ToArray(),
+            placingFanRoot = Store.PlacingFanRoot,
+            vertices = Store.Mesh.Vertices.Values.Select(v => new
+            {
+                id = v.Id,
+                x = v.Position.X,
+                y = v.Position.Y,
+                z = v.Position.Z,
+            }).ToArray(),
+            faces = Store.Mesh.Faces.Values.Select(f => new
+            {
+                id = f.Id,
+                v = f.VertexIds.ToArray(),
+                // Per-corner UV id, parallel to v. Null means "no UV" → (0,0).
+                uv = f.UvIds.Select(id => (object?)id).ToArray(),
+                m = f.MaterialId,
+                // Smoothing group id; 0 = flat. Renderer accumulates corner
+                // normals per (vertex, group) so different groups give hard edges.
+                s = f.SmoothingGroup,
+            }).ToArray(),
+            uvs = Store.Mesh.Uvs.Values.Select(u => new
+            {
+                id = u.Id,
+                u = u.Uv.U,
+                v = u.Uv.V,
+            }).ToArray(),
+            materials = Store.Mesh.Materials.Values.Select(m => new
+            {
+                id = m.Id,
+                r = m.Diffuse.R,
+                g = m.Diffuse.G,
+                b = m.Diffuse.B,
+                // True if this material has a texture image — JS uses this
+                // to know whether to put the face in a textured batch.
+                tex = m.TextureBytes is { Length: > 0 },
+            }).ToArray(),
+        };
+        try
+        {
+            await JS.InvokeVoidAsync("objEditor.setState", snapshot);
+        }
+        catch (Microsoft.JSInterop.JSException ex)
+        {
+            // Swallow so async-void OnSceneChanged doesn't bubble into an
+            // unhandled-exception crash. Keep enough info to debug — full
+            // JS stack is in the WebView devtools console (see setState's
+            // own try/catch in objeditor.js).
+            Diag.Log("PushStateAsync JS error: " + ex.Message);
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException)
+        {
+            // Tab swap / shutdown race — viewport went away mid-call.
+        }
+    }
+
+    private async Task FrameAll()
+    {
+        if (_attached) await JS.InvokeVoidAsync("objEditor.frameAll");
+    }
+
+    [JSInvokable]
+    public Task OnPickVertex(int id, bool additive)
+    {
+        try
+        {
+            // Tool-aware routing: when the place-face tool is active, picks
+            // append to the placement instead of changing the selection.
+            if (Store.IsPlacingFace)
+            {
+                if (id != 0) Store.AddVertexToPlacement(id);
+                return Task.CompletedTask;
+            }
+            // Cut-face tool: picks must land on a corner of the highlighted
+            // face. Hits on other vertices are silently ignored by the store.
+            if (Store.IsCuttingFace)
+            {
+                if (id != 0) Store.AddCutCornerByVertex(id);
+                return Task.CompletedTask;
+            }
+            Store.SelectVertex(id, additive);
+        }
+        catch (Exception ex) { Diag.Log("OnPickVertex: " + ex); }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnPickFace(int id, bool additive)
+    {
+        try { Store.SelectFace(id, additive); }
+        catch (Exception ex) { Diag.Log("OnPickFace: " + ex); }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnVertexMoved(int id, double x, double y, double z)
+    {
+        // Fires continuously while the user drags the single-vertex translate
+        // gizmo. SetVertexPosition fires OnChange which refreshes the sidebar
+        // and bottom bar inputs in real time.
+        try { Store.SetVertexPosition(id, new Vec3(x, y, z)); }
+        catch (Exception ex) { Diag.Log("OnVertexMoved: " + ex); }
+        return Task.CompletedTask;
+    }
+
+    public sealed record VertexMove(int Id, double X, double Y, double Z);
+
+    [JSInvokable]
+    public Task OnVerticesMoved(VertexMove[] moves)
+    {
+        try
+        {
+            if (moves is null || moves.Length == 0) return Task.CompletedTask;
+            foreach (var m in moves)
+            {
+                if (Store.Mesh.Vertices.TryGetValue(m.Id, out var v))
+                    v.Position = new Vec3(m.X, m.Y, m.Z);
+            }
+            Store.Notify();
+        }
+        catch (Exception ex) { Diag.Log("OnVerticesMoved threw: " + ex); }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task LogFromJs(string message)
+    {
+        Diag.Log("[JS] " + message);
+        return Task.CompletedTask;
+    }
+
+    private sealed record CtxState(int VertexId, int FaceId, double X, double Y);
+    private CtxState? _ctx;
+
+    [JSInvokable]
+    public Task OnContextMenu(int vertexId, int faceId, double cssX, double cssY)
+    {
+        try
+        {
+            if (Store.IsPlacingFace || Store.IsCuttingFace) return Task.CompletedTask;
+            _ctx = new CtxState(vertexId, faceId, cssX, cssY);
+            return InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex) { Diag.Log("OnContextMenu: " + ex); }
+        return Task.CompletedTask;
+    }
+
+    private void CloseContext() { _ctx = null; }
+
+    private void RunCtx(Action act)
+    {
+        try { act(); }
+        catch (Exception ex) { Diag.Log("ctx action: " + ex); }
+        _ctx = null;
+    }
+
+    private void DeleteVertex(int id)
+    {
+        Store.SelectVertex(id, false);
+        Store.SetMode(SelectionMode.Vertex);
+        // SelectVertex was cleared by SetMode — re-select for delete.
+        Store.SelectVertex(id, false);
+        Store.DeleteSelection();
+    }
+
+    private void DeleteFace(int id)
+    {
+        Store.SetMode(SelectionMode.Face);
+        Store.SelectFace(id, false);
+        Store.DeleteSelection();
+    }
+
+    private bool CanCutFace(int faceId)
+        => Store.Mesh.Faces.TryGetValue(faceId, out var f) && f.VertexIds.Count >= 4;
+
+    private void StartCutOn(int faceId)
+    {
+        Store.SetMode(SelectionMode.Face);
+        Store.SelectFace(faceId, false);
+        Store.BeginCutFace();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Store.OnChange -= OnSceneChanged;
+        // Pass the canvas so a stale detach (us being unmounted *after* a new
+        // viewport already attached itself) becomes a no-op on the JS side
+        // instead of wiping the live state.
+        try { await JS.InvokeVoidAsync("objEditor.detachViewport", _canvas); } catch { }
+        _ref?.Dispose();
+    }
+}

@@ -44,7 +44,11 @@ namespace CustomAssets.Editor.Io {
                 return model;
             }
 
-            string normalized = layoutStr.Replace("\r\n", "\n").Replace("\r", "\n");
+            // Jagged-but-token-aligned rows are accepted by padding them with
+            // empty cells first; only rows that aren't a multiple of 3 chars
+            // (which PadRectangular leaves alone) still fail the width check
+            // below and fall back to verbatim passthrough.
+            string normalized = PadRectangular(layoutStr).Replace("\r\n", "\n").Replace("\r", "\n");
             string[] lines = normalized.Split('\n');
             // Drop a single trailing empty line that a final '\n' produces, but
             // keep genuinely blank interior rows (they'd be all-spaces tokens).
@@ -160,6 +164,57 @@ namespace CustomAssets.Editor.Io {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) sb.Append(grid[x, y]);
                 if (y < height - 1) sb.Append('\n');
+            }
+            return sb.ToString();
+        }
+
+        /// Pad jagged rows with whole empty cells ("   ") so every row is the
+        /// same length. COI's EntityLayoutParser hard-fails on rows of unequal
+        /// length ("Length ... of line ... does not match layout line length"),
+        /// and jagged rows arise naturally when a port token widens one row
+        /// past the others (base-game SourceLayoutStr values do this too, so a
+        /// cloned layout can be jagged without the modder touching it). Rows
+        /// are only ever extended, never trimmed. A layout that is already
+        /// rectangular is returned unchanged — byte-identical, so untouched
+        /// well-formed layouts never churn. One whose rows are not
+        /// token-aligned (some length % 3 != 0) is also returned unchanged:
+        /// padding cannot repair a malformed token and the verbatim fallback
+        /// should keep carrying it as-is.
+        public static string PadRectangular(string layoutStr) {
+            if (string.IsNullOrEmpty(layoutStr)) {
+                return layoutStr;
+            }
+
+            string[] lines = layoutStr.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
+            int lineCount = lines.Length;
+            while (lineCount > 0 && lines[lineCount - 1].Length == 0) {
+                lineCount--;
+            }
+
+            int maxLen = 0;
+            bool jagged = false;
+            for (int i = 0; i < lineCount; i++) {
+                if (lines[i].Length % 3 != 0) {
+                    return layoutStr;
+                }
+                if (lines[i].Length != lines[0].Length) {
+                    jagged = true;
+                }
+                if (lines[i].Length > maxLen) {
+                    maxLen = lines[i].Length;
+                }
+            }
+            if (!jagged) {
+                return layoutStr;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < lineCount; i++) {
+                sb.Append(lines[i]);
+                sb.Append(' ', maxLen - lines[i].Length);
+                if (i < lineCount - 1) {
+                    sb.Append('\n');
+                }
             }
             return sb.ToString();
         }
@@ -318,6 +373,27 @@ namespace CustomAssets.Editor.Io {
                 string outp = Emit(m, lib);
                 if (outp != c) return "round-trip mismatch:\n  in : <" + c + ">\n  out: <" + outp + ">";
             }
+
+            // Jagged rows (a port overflowing the footprint) are padded with
+            // whole empty cells — by PadRectangular directly, and by a
+            // structured parse -> emit round-trip.
+            string jagged = "{1}{1}B@>\n{1}{1}";
+            string padded = "{1}{1}B@>\n{1}{1}   ";
+            string padOut = PadRectangular(jagged);
+            if (padOut != padded) {
+                return "PadRectangular mismatch:\n  in : <" + jagged + ">\n  out: <" + padOut + ">";
+            }
+            LayoutModel jm = TryParse(jagged, lib);
+            if (!jm.ParsedOk) return "parse failed on jagged layout: <" + jagged + ">";
+            jm.IsStructured = true;
+            string jaggedOut = Emit(jm, lib);
+            if (jaggedOut != padded) {
+                return "jagged round-trip mismatch:\n  in : <" + jagged + ">\n  out: <" + jaggedOut + ">";
+            }
+            // Already-rectangular and non-token-aligned inputs pass through
+            // byte-identical (padding must never introduce churn there).
+            if (PadRectangular(padded) != padded) return "PadRectangular churned a rectangular layout";
+            if (PadRectangular("{1}{1\n{1}") != "{1}{1\n{1}") return "PadRectangular touched a malformed layout";
             return null;
         }
     }

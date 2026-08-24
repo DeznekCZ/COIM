@@ -1,0 +1,17 @@
+{
+  "id": "CustomAssets_RecipeSplitTest",
+  "display_name": "Recipe split test [CAL]",
+  "version": "0.0.1",
+  "description_short": "Test pack exercising the 0.3.0 recipe split (build_recipe + bind_recipe + with-form).",
+  "description_long": "Not a content mod — a load-time test pack for the CustomAssets 0.3.0 recipe API. Registers four throwaway recipes over vanilla products/machines that exercise: the `with build_recipe(...) as r:` context form binding one recipe to two machines with different durations and a throughput multiplier; the `with` form without an `as` clause; the explicit machine-less build_recipe + bind_recipe pair; automatic output-port distribution for a recipe with several same-type (fluid) outputs; and the legacy one-shot build_recipe(machine=...) form. If the pack loads with no errors, all five paths work.",
+  "authors": [ "DeznekCZ" ],
+  "mod_dependencies": [
+    "CustomAssets>=0.2.1"
+  ],
+  "can_add_to_saved_game": true,
+  "can_remove_from_saved_game": true,
+  "non_locking_dll_load": true,
+  "min_game_version": "0.8.4",
+  "primary_dlls": [ "CustomAssetPack.dll" ],
+  "primary_mod_class_name": "CustomAssetPack"
+}

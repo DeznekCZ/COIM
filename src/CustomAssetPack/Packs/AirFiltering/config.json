@@ -1,0 +1,21 @@
+{
+    "$schema": "../../config.schema.json",
+    "enable_tier2_mixing": {
+        "default": true,
+        "editable": "on_add",
+        "description": "Register the Industrial Mixer T2 variant of the iron+limestone filter media recipe."
+    },
+    "scrubber_media_per_batch": {
+        "default": 2,
+        "is_integer": true,
+        "min": 1,
+        "max": 8,
+        "description": "Filter media consumed by one air-scrubbing batch. Lower is cheaper."
+    },
+    "mixer_t2_output": {
+        "default": 8,
+        "is_integer": true,
+        "expression": "scrubber_media_per_batch * 4",
+        "description": "Filter media produced by one T2 mixing batch. Computed from the scrubber batch size."
+    }
+}

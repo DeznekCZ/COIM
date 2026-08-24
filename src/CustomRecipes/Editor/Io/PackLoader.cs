@@ -25,7 +25,10 @@ namespace CustomAssets.Editor.Io {
     public static class PackLoader {
 
         private const string BuildRecipeFnName     = "build_recipe";
+        private const string EditRecipeFnName      = "edit_recipe";
+        private const string BindRecipeFnName      = "bind_recipe";
         private const string ProductFnName         = "Product";
+        private const string PortMapFnName         = "PortMap";
         private const string DurationFnName        = "Duration";
         private const string DurationFromSecName   = "Duration.FromSec";
         private const string DurationFromMinName   = "Duration.FromMin";
@@ -107,7 +110,17 @@ namespace CustomAssets.Editor.Io {
                 string conditionChain,
                 string scopeKey,
                 PackModel model,
-                System.Collections.Generic.Dictionary<string, string> fileVariables) {
+                System.Collections.Generic.Dictionary<string, string> fileVariables,
+                // Non-null while walking the body of a `with build_recipe(...)`
+                // block: bind_recipe(...) statements there omit the recipe (context
+                // form) and belong to this recipe.
+                RecipeDef contextRecipe = null,
+                // Non-null while walking a `with edit_recipe(recipe):` body. Carries
+                // just the recipe id — the edit sub-actions (set_/remove_ingredient,
+                // set_/remove_product, bind_recipe, unbind_recipe) omit the recipe
+                // and refer to this one. Unlike contextRecipe there is no owner def
+                // to link: the body renders by scope, not by ownership.
+                string contextEditRecipeId = null) {
             // Run index for this scope. Increments past every if-chain so
             // defs landing after it form a fresh draggable group, with the
             // clause structure acting as a fixed boundary between them.
@@ -140,7 +153,8 @@ namespace CustomAssets.Editor.Io {
                     // resolve through.
                     DefBase added = handleApiCall(asnCallName, asnCall,
                         asn.StartLine, asn.EndLine,
-                        sourceFile, sourceLines, conditionChain, scopeKey, runIndex, model, fileVariables);
+                        sourceFile, sourceLines, conditionChain, scopeKey, runIndex, model, fileVariables,
+                        contextRecipe, contextEditRecipeId);
                     if (added != null && !string.IsNullOrEmpty(asn.Name)) {
                         // Pin the variable name onto the def so the emitter
                         // can write the assignment back. Without this the
@@ -160,9 +174,83 @@ namespace CustomAssets.Editor.Io {
                     string callName = calleeAsPath(call.Calle);
                     if (pendingRunBump) { runIndex++; pendingRunBump = false; }
                     handleApiCall(callName, call, ev.StartLine, ev.EndLine,
-                                  sourceFile, sourceLines, conditionChain, scopeKey, runIndex, model, fileVariables);
+                                  sourceFile, sourceLines, conditionChain, scopeKey, runIndex, model, fileVariables,
+                        contextRecipe, contextEditRecipeId);
                     continue;
                 }
+                // `with <expr> [as var]:` — a block statement, handled exactly like
+                // an if-clause: the HEADER becomes its own def occupying only the
+                // header lines, and the BODY is walked recursively under its own
+                // scope key. That keeps every body statement independently
+                // addressable (own source range ⇒ own save / delete / reorder) and
+                // lets blocks nest to any depth in either order.
+                if (statement is WithStatement ws) {
+                    if (pendingRunBump) { runIndex++; pendingRunBump = false; }
+
+                    // `with build_recipe(...)` — the header is a recipe definition.
+                    // `with edit_recipe(...)` — the header is an edit definition.
+                    // Either makes the body a context: build binds bind_recipe to
+                    // the recipe; edit routes its sub-actions to the edited recipe.
+                    RecipeDef ownerRecipe = null;
+                    string ownerEditRecipeId = null;
+                    string hdrName = ws.ContextExpr is CallExpression hc
+                        ? calleeAsPath(hc.Calle) : null;
+                    if (hdrName == EditRecipeFnName) {
+                        CallExpression editCall = (CallExpression)ws.ContextExpr;
+                        EditRecipeDef ownerEdit = parseEditRecipe(editCall);
+                        ownerEdit.VariableName = ws.AsName;
+                        ownerEdit.EmitAsWithBlock = true;
+                        attachSourceLocation(ownerEdit, ws.StartLine,
+                            withHeaderEndLine(ws), sourceFile, conditionChain,
+                            "blockheader:" + ws.StartLine, 0);
+                        ownerEdit.SourceFileVariables = fileVariables;
+                        if (sourceLines != null) extractAndAttachComment(ownerEdit, sourceLines);
+                        model.Definitions.Add(ownerEdit);
+                        ownerEditRecipeId = ownerEdit.RecipeId;
+                        if (!string.IsNullOrEmpty(ws.AsName)
+                                && !string.IsNullOrEmpty(ownerEdit.RecipeId)) {
+                            fileVariables[ws.AsName] = ownerEdit.RecipeId;
+                        }
+                    } else if (ws.ContextExpr is CallExpression hdrCall
+                            && calleeAsPath(hdrCall.Calle) == BuildRecipeFnName) {
+                        ownerRecipe = parseBuildRecipe(hdrCall);
+                        // The `as <var>` clause plays the role the `<var> = `
+                        // assignment prefix plays for a plain statement.
+                        ownerRecipe.VariableName = ws.AsName;
+                        ownerRecipe.EmitAsWithBlock = true;
+
+                        // Range covers the HEADER ONLY (`with build_recipe(...):`),
+                        // not the body — body statements splice themselves.
+                        //
+                        // Scope is the block's own "blockheader:<line>" rather than the
+                        // enclosing run: the tree renders this row inside the block's
+                        // group (walking the AST), so it must NOT also be picked up as
+                        // an ordinary member of the surrounding run or it would render
+                        // twice, in two different places.
+                        attachSourceLocation(ownerRecipe, ws.StartLine,
+                            withHeaderEndLine(ws), sourceFile, conditionChain,
+                            "blockheader:" + ws.StartLine, 0);
+                        ownerRecipe.SourceFileVariables = fileVariables;
+                        if (sourceLines != null) extractAndAttachComment(ownerRecipe, sourceLines);
+                        model.Definitions.Add(ownerRecipe);
+
+                        if (!string.IsNullOrEmpty(ws.AsName)
+                                && !string.IsNullOrEmpty(ownerRecipe.RecipeId)) {
+                            fileVariables[ws.AsName] = ownerRecipe.RecipeId;
+                        }
+                    }
+
+                    if (ws.Block != null) {
+                        walkStatements(ws.Block.statements, sourceFile, sourceLines,
+                                       conditionChain, "block:" + ws.StartLine, model, fileVariables,
+                                       contextRecipe: ownerRecipe,
+                                       contextEditRecipeId: ownerEditRecipeId);
+                    }
+                    // Like an if-chain, a block ends the current run.
+                    pendingRunBump = true;
+                    continue;
+                }
+
                 // Anything else (function defs, dependencies, helper calls)
                 // is left untouched â€” the tree only surfaces recognised
                 // definition statements.
@@ -194,9 +282,13 @@ namespace CustomAssets.Editor.Io {
                             // emitter rewrites by SourceStartLine, not by
                             // scope key, so the key only needs to be unique
                             // among scopes in the same file.
-                            string clauseScope = "clause:" + clause.StartLine;
+                            string clauseScope = "block:" + clause.StartLine;
+                            // An `if` nested inside a `with build_recipe(...)` body is
+                            // still in that recipe's context, so bind_recipe(...) calls
+                            // inside the clause keep binding to it.
                             walkStatements(clause.Block.statements, sourceFile, sourceLines,
-                                           childChain, clauseScope, model, fileVariables);
+                                           childChain, clauseScope, model, fileVariables,
+                                           contextRecipe, contextEditRecipeId);
                         }
                         clause = clause.Parent;
                     }
@@ -332,10 +424,16 @@ namespace CustomAssets.Editor.Io {
                 case 2: def.Description = ExpressionToString(expr); return;
                 case 3: def.MachineId   = ExpressionToId(expr);     return;
                 case 4: def.ResearchId  = ExpressionToIdOrNull(expr); return;
-                case 5: def.DurationSeconds = ExpressionToDurationSeconds(expr); return;
+                case 5: def.DurationSeconds = ExpressionToDurationSeconds(expr);
+                        def.DurationExpression = ExpressionToDurationText(expr); return;
                 case 6: def.Ingredients = ExpressionToProductList(expr); return;
                 case 7: def.Products    = ExpressionToProductList(expr); return;
                 case 8: def.PowerPercent = ExpressionToPowerPercent(expr); return;
+                // 9 is `replaces`; 10 is `unlock_machine` — both realistically
+                // only ever written by name, but the slots must line up with the
+                // Constructor's argument array either way.
+                case 9: def.Replaces    = ExpressionToIdList(expr); return;
+                case 10: def.UnlockMachine = ExpressionToUnlockMachine(expr); return;
             }
         }
 
@@ -346,10 +444,13 @@ namespace CustomAssets.Editor.Io {
                 case "description": def.Description = ExpressionToString(expr); break;
                 case "machine":     def.MachineId   = ExpressionToId(expr); break;
                 case "research":    def.ResearchId  = ExpressionToIdOrNull(expr); break;
-                case "duration":    def.DurationSeconds = ExpressionToDurationSeconds(expr); break;
+                case "duration":    def.DurationSeconds = ExpressionToDurationSeconds(expr);
+                                    def.DurationExpression = ExpressionToDurationText(expr); break;
                 case "ingredients": def.Ingredients = ExpressionToProductList(expr); break;
                 case "products":    def.Products    = ExpressionToProductList(expr); break;
                 case "power":       def.PowerPercent = ExpressionToPowerPercent(expr); break;
+                case "replaces":    def.Replaces    = ExpressionToIdList(expr); break;
+                case "unlock_machine": def.UnlockMachine = ExpressionToUnlockMachine(expr); break;
                 // Unknown name â†’ ignore. Future build_recipe params would need a model
                 // bump anyway; silently dropping here is safer than throwing on every
                 // experimental modder recipe.
@@ -460,6 +561,52 @@ namespace CustomAssets.Editor.Io {
             return ExpressionToInt(expr);
         }
 
+        /// Source text for a quantity slot that is NOT a plain number, or null when it
+        /// is one (the caller already has the number) or cannot be printed.
+        /// `Quantity(config.batch)` â†’ `config.batch`, matching how ExpressionToInt
+        /// unwraps the Quantity(...) call — the model stores the inner value either way.
+        ///
+        /// Without this the loader dropped every non-literal argument and the emitter
+        /// wrote the int back, silently turning `Quantity(config.batch)` into
+        /// `Quantity(0)` the first time the recipe was saved.
+        public static string ExpressionToQuantityText(IExpression expr) {
+            if (expr == null || expr is NoneConst) return null;
+            if (expr is CallExpression qcall
+                && qcall.Calle is VariableExpression qv
+                && qv.Path == QuantityFnName) {
+                foreach (IArgument a in qcall.Arguments) {
+                    if (a is OrderedArgument) return ExpressionPrinter.PrintIfNotLiteral(a.Expression);
+                }
+                return null;
+            }
+            return ExpressionPrinter.PrintIfNotLiteral(expr);
+        }
+
+        /// Source text for a duration slot that is not a plain number, expressed in
+        /// SECONDS so it can be re-emitted as `Duration.FromSec(<text>)`. A minutes
+        /// form keeps its meaning by being scaled: `Duration.FromMin(config.x)` â†’
+        /// `(config.x) * 60`.
+        public static string ExpressionToDurationText(IExpression expr) {
+            if (expr == null || expr is NoneConst) return null;
+            if (expr is CallExpression call) {
+                string calleePath = calleeAsPath(call.Calle);
+                foreach (IArgument a in call.Arguments) {
+                    if (!(a is OrderedArgument)) continue;
+                    string text = ExpressionPrinter.PrintIfNotLiteral(a.Expression);
+                    if (text == null) return null;
+                    if (calleePath == DurationFnName || calleePath == DurationFromSecName) {
+                        return text;
+                    }
+                    if (calleePath == DurationFromMinName) {
+                        return "(" + text + ") * 60";
+                    }
+                    return null;
+                }
+                return null;
+            }
+            return ExpressionPrinter.PrintIfNotLiteral(expr);
+        }
+
         /// `Percent(20)` â†’ 20. Bare int (`20`) â†’ 20. None â†’ null.
         public static int? ExpressionToPowerPercent(IExpression expr) {
             if (expr is NoneConst) return null;
@@ -498,6 +645,59 @@ namespace CustomAssets.Editor.Io {
             return result;
         }
 
+        /// `["a", "b"]` or a bare `"a"` → id list. Used by build_recipe's `replaces`,
+        /// which accepts either shape (a single supersession is common enough that
+        /// requiring a one-element list would be noise). `None` → empty.
+        public static List<string> ExpressionToIdList(IExpression expr) {
+            List<string> result = new List<string>();
+            if (expr is NoneConst) return result;
+            if (expr is ListExpression list) {
+                foreach (IExpression item in list.Items) {
+                    string id = ExpressionToId(item);
+                    if (!string.IsNullOrWhiteSpace(id)) result.Add(id);
+                }
+                return result;
+            }
+            string single = ExpressionToId(expr);
+            if (!string.IsNullOrWhiteSpace(single)) result.Add(single);
+            return result;
+        }
+
+        /// `[PortMap(product, port), …]` → PortMapRef list. Used by bind_recipe's
+        /// `ports` argument (quantity-free, unlike ExpressionToProductList).
+        public static List<PortMapRef> ExpressionToPortMapList(IExpression expr) {
+            List<PortMapRef> result = new List<PortMapRef>();
+            if (expr is NoneConst) return result;
+            if (!(expr is ListExpression list)) return result;
+            foreach (IExpression item in list.Items) {
+                if (item is CallExpression pmCall && isCallTo(pmCall, PortMapFnName)) {
+                    result.Add(parsePortMapCall(pmCall));
+                }
+            }
+            return result;
+        }
+
+        /// PortMap(product, port).
+        private static PortMapRef parsePortMapCall(CallExpression call) {
+            PortMapRef pm = new PortMapRef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument named) {
+                    switch (named.Name) {
+                        case "product": pm.ProductId = ExpressionToId(named.Expression); break;
+                        case "port":    pm.Port      = ExpressionToString(named.Expression); break;
+                    }
+                } else {
+                    switch (positional) {
+                        case 0: pm.ProductId = ExpressionToId(arg.Expression); break;
+                        case 1: pm.Port      = ExpressionToString(arg.Expression); break;
+                    }
+                    positional++;
+                }
+            }
+            return pm;
+        }
+
         /// Product(product, quantity, port="*").
         private static ProductRef parseProductCall(CallExpression call) {
             ProductRef pr = new ProductRef();
@@ -506,19 +706,104 @@ namespace CustomAssets.Editor.Io {
                 if (arg is NamedArgument named) {
                     switch (named.Name) {
                         case "product":  pr.ProductId = ExpressionToId(named.Expression); break;
-                        case "quantity": pr.Quantity  = ExpressionToInt(named.Expression) ?? 0; break;
+                        case "quantity": pr.Quantity  = ExpressionToInt(named.Expression) ?? 0;
+                                         pr.QuantityExpression = ExpressionToQuantityText(named.Expression); break;
                         case "port":     pr.Port      = ExpressionToString(named.Expression); break;
                     }
                 } else {
                     switch (positional) {
                         case 0: pr.ProductId = ExpressionToId(arg.Expression); break;
-                        case 1: pr.Quantity  = ExpressionToInt(arg.Expression) ?? 0; break;
+                        case 1: pr.Quantity  = ExpressionToInt(arg.Expression) ?? 0;
+                                pr.QuantityExpression = ExpressionToQuantityText(arg.Expression); break;
                         case 2: pr.Port      = ExpressionToString(arg.Expression); break;
                     }
                     positional++;
                 }
             }
             return pr;
+        }
+
+        /// Convert a legacy one-shot `build_recipe(machine=…, duration=…, research=…)`
+        /// into the split model AT LOAD TIME, so everything downstream (editor,
+        /// emitter) only ever sees the new shape and the next save writes a
+        /// `with build_recipe(...):` block.
+        ///
+        /// The inline machine becomes a single binding carrying the duration, the
+        /// research, and the per-`Product` port pins — the ports move onto the
+        /// binding the same way the machine does, because in the split model ports
+        /// belong to the (recipe, machine) pair, not to the recipe. The recipe's
+        /// own `Product` entries therefore lose their `port` here, which is also
+        /// why the recipe form no longer shows a port column.
+        ///
+        /// <see cref="RecipeDef.LoadedAsLegacy"/> is set so the editor can warn
+        /// that the FILE is still in the old format until it is saved.
+        private static void migrateLegacyRecipe(RecipeDef def, PackModel model, string sourceFile) {
+            if (def == null || string.IsNullOrEmpty(def.MachineId)) return;
+
+            def.LoadedAsLegacy = true;
+            // The recipe becomes a `with` block on the next save; its binding is a
+            // PENDING statement (no source range of its own yet) that the save flow
+            // inserts into the newly written block body.
+            def.EmitAsWithBlock = true;
+
+            BindRecipeDef bind = new BindRecipeDef {
+                OwnerRecipe         = def,
+                RecipeId            = def.RecipeId,
+                MachineId           = def.MachineId,
+                DurationSeconds     = def.DurationSeconds,
+                DurationExpression  = def.DurationExpression,
+                ResearchId          = def.ResearchId,
+                UnlockMachine       = def.UnlockMachine,
+                SourceFile          = sourceFile,
+                SourceFileVariables = def.SourceFileVariables,
+                // NO ScopeKey/RunIndex: a pending owned binding has no place in
+                // any run. It is reachable only through OwnerRecipe, drawn only
+                // inside its recipe's group, and written only as part of the
+                // recipe's `with` body. Copying the recipe's scope here is what
+                // made it render a second time as a loose sibling.
+                Ports               = new List<PortMapRef>(),
+            };
+
+            foreach (List<ProductRef> side in new[] { def.Ingredients, def.Products }) {
+                if (side == null) continue;
+                foreach (ProductRef p in side) {
+                    if (!string.IsNullOrEmpty(p.Port) && p.Port != "*"
+                            && !string.IsNullOrEmpty(p.ProductId)) {
+                        bind.Ports.Add(new PortMapRef(p.ProductId, p.Port));
+                    }
+                    p.Port = null;   // ports now live on the binding
+                }
+            }
+
+            model?.Definitions.Add(bind);
+            def.MachineId       = null;
+            def.DurationSeconds = null;
+            def.ResearchId      = null;
+            def.UnlockMachine   = true;   // back to the neutral default; it lives on the binding now
+        }
+
+        /// Last line of a `with …:` block HEADER — i.e. the line carrying the
+        /// colon, which is the line before the first body statement. The recipe
+        /// def occupies only this range so its body statements can splice
+        /// themselves independently. Falls back to the block's end for an empty
+        /// body (the grammar shouldn't produce one, but a `pass` body would).
+        private static int withHeaderEndLine(WithStatement ws) {
+            int firstBody = firstStatementLine(ws.Block);
+            return firstBody > ws.StartLine ? firstBody - 1 : ws.EndLine;
+        }
+
+        /// Source line of the first statement in a block, or 0 when unknown.
+        /// IStatement has no common line member, so match the kinds the parser
+        /// can actually produce inside a block body.
+        private static int firstStatementLine(Block block) {
+            if (block == null) return 0;
+            foreach (IStatement s in block.statements) {
+                if (s is EvaluateStatement e)   return e.StartLine;
+                if (s is AssignmentStatement a) return a.StartLine;
+                if (s is IfStatement i)         return i.StartLine;
+                if (s is WithStatement w)       return w.StartLine;
+            }
+            return 0;
         }
 
         // Per-call dispatch shared by both EvaluateStatement and
@@ -544,14 +829,46 @@ namespace CustomAssets.Editor.Io {
                 string scopeKey,
                 int runIndex,
                 PackModel model,
-                System.Collections.Generic.Dictionary<string, string> fileVariables) {
+                System.Collections.Generic.Dictionary<string, string> fileVariables,
+                RecipeDef contextRecipe = null,
+                string contextEditRecipeId = null) {
+            // Inside a `with edit_recipe(recipe):` body the recipe is implicit, so
+            // the sub-action verbs carry only their own operands. Handle them
+            // before the generic dispatch so they never fall through to UnknownDef.
+            if (contextEditRecipeId != null) {
+                DefBase editChild = parseEditSubAction(callName, call, contextEditRecipeId);
+                if (editChild != null) {
+                    attachSourceLocation(editChild, startLine, endLine, sourceFile,
+                        conditionChain, scopeKey, runIndex);
+                    editChild.SourceFileVariables = fileVariables;
+                    if (sourceLines != null) extractAndAttachComment(editChild, sourceLines);
+                    model.Definitions.Add(editChild);
+                    return editChild;
+                }
+            }
+
             if (callName == BuildRecipeFnName) {
                 RecipeDef def = parseBuildRecipe(call);
                 attachSourceLocation(def, startLine, endLine, sourceFile, conditionChain, scopeKey, runIndex);
                 def.SourceFileVariables = fileVariables;
                 if (sourceLines != null) extractAndAttachComment(def, sourceLines);
+                migrateLegacyRecipe(def, model, sourceFile);
                 model.Definitions.Add(def);
                 return def;
+            }
+
+            // Inside a `with build_recipe(...)` body the recipe is implicit, so the
+            // call's first positional is the MACHINE. Parse it in context form and
+            // link it to the owning recipe; elsewhere it's a standalone binding that
+            // names its recipe explicitly.
+            if (callName == BindRecipeFnName && contextRecipe != null) {
+                BindRecipeDef bind = parseBindRecipe(call, contextRecipe.RecipeId);
+                bind.OwnerRecipe = contextRecipe;
+                attachSourceLocation(bind, startLine, endLine, sourceFile, conditionChain, scopeKey, runIndex);
+                bind.SourceFileVariables = fileVariables;
+                if (sourceLines != null) extractAndAttachComment(bind, sourceLines);
+                model.Definitions.Add(bind);
+                return bind;
             }
 
             DefBase typed = tryParseTypedDef(callName, call);
@@ -589,9 +906,13 @@ namespace CustomAssets.Editor.Io {
         private static DefBase tryParseTypedDef(string callName, CallExpression call) {
             switch (callName) {
                 case "build_research":      return parseBuildResearch(call);
+                case "bind_recipe":         return parseBindRecipe(call);
                 case "add_unlock_recipe":   return parseUnlockRecipe(call);
+                case "migrate_recipe":      return parseMigrateRecipe(call);
                 case "add_unlock_product":  return parseUnlockProduct(call);
                 case "add_unlock_machine":  return parseUnlockMachine(call);
+                case "add_unlock_entity":   return parseUnlockEntity(call);
+                case "remove_unlock":       return parseRemoveUnlock(call);
                 case "build_product_loose": return parseProductLoose(call);
                 case "build_product_fluid": return parseProductFluid(call);
                 case "build_product_unit":  return parseProductUnit(call);
@@ -604,6 +925,7 @@ namespace CustomAssets.Editor.Io {
                 case "build_generator":     return parseGenerator(call);
                 case "edit_recipe":         return parseEditRecipe(call);
                 case "edit_machine_ports":  return parseEditMachinePorts(call);
+                case "edit_entity_costs":   return parseEditEntityCosts(call);
                 case "build_machine":       return parseBuildMachine(call);
                 case "build_housing":       return parseBuildHousing(call);
                 case "build_settlement_decoration": return parseSettlementDecoration(call);
@@ -611,6 +933,10 @@ namespace CustomAssets.Editor.Io {
                 case "build_settlement_isp":        return parseSettlementIsp(call);
                 case "build_hospital":              return parseHospital(call);
                 case "build_mine_tower":            return parseMineTower(call);
+                case "build_farm":                  return parseFarm(call);
+                case "add_crop":                    return parseAddCrop(call);
+                case "clone_crop":                  return parseCloneCrop(call);
+                case "edit_crop":                   return parseEditCrop(call);
                 case "build_research_lab":          return parseResearchLab(call);
                 case "build_nuclear_reactor":       return parseNuclearReactor(call);
                 case "edit_nuclear_reactor_fuels":  return parseEditNuclearReactorFuels(call);
@@ -621,6 +947,126 @@ namespace CustomAssets.Editor.Io {
                 case "layout_token":                return parseBoxType(call);
             }
             return null;
+        }
+
+        // bind_recipe(recipe, machine, duration, ports, multiplier,
+        // minPartialUtilization, research) → BindRecipeDef. Positional order
+        // mirrors the Python signature; `ports` is a Product(...) list where
+        // only product + port matter.
+        /// <paramref name="contextRecipeId"/> non-null ⇒ the call sits inside a
+        /// `with build_recipe(...)` block, so the recipe is implicit and the
+        /// positionals shift by one (the first is the MACHINE).
+        private static BindRecipeDef parseBindRecipe(CallExpression call, string contextRecipeId = null) {
+            BindRecipeDef def = new BindRecipeDef();
+            bool contextForm = contextRecipeId != null;
+            def.IsContextForm = contextForm;
+            if (contextForm) def.RecipeId = contextRecipeId;
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument named) {
+                    bindBindRecipeNamed(def, named.Name, named.Expression);
+                } else {
+                    bindBindRecipePositional(def, contextForm ? positional + 1 : positional, arg.Expression);
+                    positional++;
+                }
+            }
+            return def;
+        }
+
+        // The sub-actions that live inside `with edit_recipe(recipe):`. bind_recipe
+        // reuses the context-form binding parser; the rest are edit-specific.
+        // Returns null for a call that is not an edit sub-action, so the caller
+        // falls through to the ordinary dispatch (e.g. a build_research nested in
+        // an edit block is still a build_research).
+        private static DefBase parseEditSubAction(string callName, CallExpression call,
+                string contextRecipeId) {
+            switch (callName) {
+                case BindRecipeFnName: {
+                    // Context form: recipe implicit, first positional is the machine.
+                    BindRecipeDef bind = parseBindRecipe(call, contextRecipeId);
+                    return bind;
+                }
+                case "set_ingredient":    return parseProductAction(call, contextRecipeId, isInput: true,  isRemoval: false);
+                case "set_product":       return parseProductAction(call, contextRecipeId, isInput: false, isRemoval: false);
+                case "remove_ingredient": return parseProductAction(call, contextRecipeId, isInput: true,  isRemoval: true);
+                case "remove_product":    return parseProductAction(call, contextRecipeId, isInput: false, isRemoval: true);
+                case "unbind_recipe":     return parseUnbindRecipe(call, contextRecipeId);
+            }
+            return null;
+        }
+
+        // set_ingredient(product, quantity) / set_product(product, quantity) /
+        // remove_ingredient(product) / remove_product(product). The removal forms
+        // take a single product positional; the set forms add a quantity (bare int
+        // or Quantity(N)).
+        private static RecipeProductActionDef parseProductAction(CallExpression call,
+                string contextRecipeId, bool isInput, bool isRemoval) {
+            RecipeProductActionDef def = new RecipeProductActionDef {
+                RecipeId  = contextRecipeId,
+                IsInput   = isInput,
+                IsRemoval = isRemoval,
+            };
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument named) {
+                    switch (named.Name) {
+                        case "product":  def.ProductId = ExpressionToId(named.Expression); break;
+                        case "quantity": def.Quantity  = ExpressionToInt(named.Expression); break;
+                    }
+                } else {
+                    if (positional == 0) def.ProductId = ExpressionToId(arg.Expression);
+                    else if (positional == 1 && !isRemoval) def.Quantity = ExpressionToInt(arg.Expression);
+                    positional++;
+                }
+            }
+            return def;
+        }
+
+        // unbind_recipe(machine, research=None) in context form.
+        private static UnbindRecipeDef parseUnbindRecipe(CallExpression call, string contextRecipeId) {
+            UnbindRecipeDef def = new UnbindRecipeDef { RecipeId = contextRecipeId };
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument named) {
+                    switch (named.Name) {
+                        case "machine":  def.MachineId  = ExpressionToId(named.Expression); break;
+                        case "research": def.ResearchId = ExpressionToIdOrNull(named.Expression); break;
+                    }
+                } else {
+                    if (positional == 0) def.MachineId = ExpressionToId(arg.Expression);
+                    else if (positional == 1) def.ResearchId = ExpressionToIdOrNull(arg.Expression);
+                    positional++;
+                }
+            }
+            return def;
+        }
+
+        private static void bindBindRecipePositional(BindRecipeDef def, int idx, IExpression expr) {
+            switch (idx) {
+                case 0: def.RecipeId  = ExpressionToId(expr); return;
+                case 1: def.MachineId = ExpressionToId(expr); return;
+                case 2: def.DurationSeconds = ExpressionToDurationSeconds(expr);
+                        def.DurationExpression = ExpressionToDurationText(expr); return;
+                case 3: def.Ports = ExpressionToPortMapList(expr); return;
+                case 4: def.Multiplier = ExpressionToInt(expr); return;
+                case 5: def.MinPartialUtilizationPercent = ExpressionToPowerPercent(expr); return;
+                case 6: def.ResearchId = ExpressionToIdOrNull(expr); return;
+                case 7: def.UnlockMachine = ExpressionToUnlockMachine(expr); return;
+            }
+        }
+
+        private static void bindBindRecipeNamed(BindRecipeDef def, string name, IExpression expr) {
+            switch (name) {
+                case "recipe":     def.RecipeId  = ExpressionToId(expr); break;
+                case "machine":    def.MachineId = ExpressionToId(expr); break;
+                case "duration":   def.DurationSeconds = ExpressionToDurationSeconds(expr);
+                                   def.DurationExpression = ExpressionToDurationText(expr); break;
+                case "ports":      def.Ports = ExpressionToPortMapList(expr); break;
+                case "multiplier": def.Multiplier = ExpressionToInt(expr); break;
+                case "minPartialUtilization": def.MinPartialUtilizationPercent = ExpressionToPowerPercent(expr); break;
+                case "research":   def.ResearchId = ExpressionToIdOrNull(expr); break;
+                case "unlock_machine": def.UnlockMachine = ExpressionToUnlockMachine(expr); break;
+            }
         }
 
         // define_box_type(boxTypeId, token, heightFrom, heightTo, constraint,
@@ -839,6 +1285,241 @@ namespace CustomAssets.Editor.Io {
                 case 4: def.ResearchId   = ExpressionToIdOrNull(expr); break;
                 case 5: def.LockedOnInit = ExpressionToBool(expr); break;
             }
+        }
+
+        // build_farm(farmId, source, name, description,
+        //     yieldMultiplierPercent, demandsMultiplierPercent,
+        //     fertilityReplenishPercent, waterCollected,
+        //     waterEvaporationPerDay, hasIrrigationAndFertilizerSupport,
+        //     isGreenhouse, research, lockedOnInit)
+        private static FarmDef parseFarm(CallExpression call) {
+            var def = new FarmDef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument na) bindFarmNamed(def, na.Name, na.Expression);
+                else bindFarmPositional(def, positional++, arg.Expression);
+            }
+            return def;
+        }
+        private static void bindFarmNamed(FarmDef def, string name, IExpression expr) {
+            switch (name) {
+                case "farmId":                  def.FarmId                  = ExpressionToId(expr); break;
+                case "source":                  def.SourceId                = ExpressionToId(expr); break;
+                case "name":                    def.Name                    = ExpressionToString(expr); break;
+                case "description":             def.Description             = ExpressionToString(expr); break;
+                case "yieldMultiplierPercent":  def.YieldMultiplierPercent  = ExpressionToInt(expr); break;
+                case "demandsMultiplierPercent":def.DemandsMultiplierPercent= ExpressionToInt(expr); break;
+                case "fertilityReplenishPercent":def.FertilityReplenishPercent = ExpressionToInt(expr); break;
+                case "waterCollected":          bindFarmWaterCollected(def, expr); break;
+                case "waterEvaporationPerDay":  def.WaterEvaporationPerDay  = ExpressionToInt(expr); break;
+                case "hasIrrigationAndFertilizerSupport":
+                    def.HasIrrigationAndFertilizerSupport = ExpressionToBool(expr); break;
+                case "isGreenhouse":            def.IsGreenhouse            = ExpressionToBool(expr); break;
+                case "layout_str":              def.LayoutSourceStr         = ExpressionToString(expr); break;
+                case "research":                def.ResearchId              = ExpressionToIdOrNull(expr); break;
+                case "lockedOnInit":            def.LockedOnInit            = ExpressionToBool(expr); break;
+            }
+        }
+        private static void bindFarmPositional(FarmDef def, int idx, IExpression expr) {
+            switch (idx) {
+                case 0:  def.FarmId                    = ExpressionToId(expr); break;
+                case 1:  def.SourceId                  = ExpressionToId(expr); break;
+                case 2:  def.Name                      = ExpressionToString(expr); break;
+                case 3:  def.Description               = ExpressionToString(expr); break;
+                case 4:  def.YieldMultiplierPercent    = ExpressionToInt(expr); break;
+                case 5:  def.DemandsMultiplierPercent  = ExpressionToInt(expr); break;
+                case 6:  def.FertilityReplenishPercent = ExpressionToInt(expr); break;
+                case 7:  bindFarmWaterCollected(def, expr); break;
+                case 8:  def.WaterEvaporationPerDay    = ExpressionToInt(expr); break;
+                case 9:  def.HasIrrigationAndFertilizerSupport = ExpressionToBool(expr); break;
+                case 10: def.IsGreenhouse              = ExpressionToBool(expr); break;
+                case 11: def.ResearchId                = ExpressionToIdOrNull(expr); break;
+                case 12: def.LockedOnInit              = ExpressionToBool(expr); break;
+            }
+        }
+        // waterCollected accepts a Product(...) call — reuses the recipe
+        // Product wrapper so modders don't learn a second literal shape.
+        // Both halves land on the FarmDef; the runtime converts to
+        // PartialProductQuantity at registration time.
+        private static void bindFarmWaterCollected(FarmDef def, IExpression expr) {
+            if (expr is CallExpression productCall && isCallTo(productCall, ProductFnName)) {
+                ProductRef p = parseProductCall(productCall);
+                def.WaterCollectedProductId = p.ProductId;
+                def.WaterCollectedQuantity  = p.Quantity;
+            }
+        }
+
+        // edit_crop(crop, productProduced, multiplyYieldPercent,
+        //     growthDurationDays, consumedWaterPerDay,
+        //     consumedFertilityPercentPerDay, minFertilityToStartGrowthPercent,
+        //     surviveWithNoWaterDays, requiresGreenhouse, plantByDefault).
+        // Argument names match add_crop / clone_crop exactly so a modder who
+        // knows those already knows this one; only `crop` is required.
+        private static EditCropDef parseEditCrop(CallExpression call) {
+            EditCropDef def = new EditCropDef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments)
+            {
+                if (arg is NamedArgument named)
+                {
+                    bindEditCropArg(def, named.Name, named.Expression);
+                }
+                else
+                {
+                    bindEditCropPositional(def, positional, arg.Expression);
+                    positional++;
+                }
+            }
+            return def;
+        }
+
+        private static void bindEditCropPositional(EditCropDef def, int idx, IExpression expr) {
+            switch (idx) {
+                case 0: bindEditCropArg(def, "crop",                             expr); return;
+                case 1: bindEditCropArg(def, "productProduced",                  expr); return;
+                case 2: bindEditCropArg(def, "multiplyYieldPercent",             expr); return;
+                case 3: bindEditCropArg(def, "growthDurationDays",               expr); return;
+                case 4: bindEditCropArg(def, "consumedWaterPerDay",              expr); return;
+                case 5: bindEditCropArg(def, "consumedFertilityPercentPerDay",   expr); return;
+                case 6: bindEditCropArg(def, "minFertilityToStartGrowthPercent", expr); return;
+                case 7: bindEditCropArg(def, "surviveWithNoWaterDays",           expr); return;
+                case 8: bindEditCropArg(def, "requiresGreenhouse",               expr); return;
+                case 9: bindEditCropArg(def, "plantByDefault",                   expr); return;
+            }
+        }
+
+        private static void bindEditCropArg(EditCropDef def, string name, IExpression expr) {
+            switch (name) {
+                case "crop":            def.CropId = ExpressionToId(expr); break;
+                case "productProduced": bindEditCropProduct(def, expr); break;
+                case "multiplyYieldPercent":             def.MultiplyYieldPercent             = ExpressionToInt(expr); break;
+                case "growthDurationDays":               def.GrowthDurationDays               = ExpressionToInt(expr); break;
+                case "consumedWaterPerDay":              def.ConsumedWaterPerDay              = ExpressionToInt(expr); break;
+                case "consumedFertilityPercentPerDay":   def.ConsumedFertilityPercentPerDay   = ExpressionToInt(expr); break;
+                case "minFertilityToStartGrowthPercent": def.MinFertilityToStartGrowthPercent = ExpressionToInt(expr); break;
+                case "surviveWithNoWaterDays":           def.SurviveWithNoWaterDays           = ExpressionToInt(expr); break;
+                case "requiresGreenhouse":               def.RequiresGreenhouse               = ExpressionToBoolOrNull(expr); break;
+                case "plantByDefault":                   def.PlantByDefault                   = ExpressionToBoolOrNull(expr); break;
+            }
+        }
+
+        // Same Product(...) wrapper add_crop uses for productProduced, split
+        // across the two flat model fields.
+        private static void bindEditCropProduct(EditCropDef def, IExpression expr) {
+            if (expr is CallExpression productCall && isCallTo(productCall, ProductFnName))
+            {
+                ProductRef p = parseProductCall(productCall);
+                def.ProductProducedId       = p.ProductId;
+                def.ProductProducedQuantity = p.Quantity;
+            }
+        }
+
+        // add_crop(cropId, name, productProduced, consumedWaterPerDay,
+        //     consumedFertilityPercentPerDay, minFertilityToStartGrowthPercent,
+        //     growthDurationDays, surviveWithNoWaterDays, icon, prefab,
+        //     requiresGreenhouse, plantByDefault, description, research,
+        //     farms)
+        private static CropDef parseAddCrop(CallExpression call) {
+            var def = new CropDef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument na) bindCropNamed(def, na.Name, na.Expression);
+                else bindCropPositional(def, positional++, arg.Expression);
+            }
+            return def;
+        }
+        // clone_crop(cropId, source, …other tunables inherited from add_crop…) —
+        // shares CropDef with add_crop; the only difference is SourceId
+        // being set. Emitter picks the write function accordingly.
+        private static CropDef parseCloneCrop(CallExpression call) {
+            var def = new CropDef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument na) {
+                    if (na.Name == "source") def.SourceId = ExpressionToId(na.Expression);
+                    else bindCropNamed(def, na.Name, na.Expression);
+                } else {
+                    // clone_crop's positional order is (cropId, source, …),
+                    // shifting every non-source add_crop position by +1
+                    // starting at index 2. Handle explicitly for the first
+                    // two, then pass through to the shared add_crop binder
+                    // (positional-1) for the rest.
+                    switch (positional) {
+                        case 0: def.CropId  = ExpressionToId(arg.Expression); break;
+                        case 1: def.SourceId = ExpressionToId(arg.Expression); break;
+                        default:
+                            // Positional index 2 in clone_crop = index 1 in add_crop
+                            // (`name`), etc. Reuse the shared binder.
+                            bindCropPositional(def, positional - 1, arg.Expression);
+                            break;
+                    }
+                    positional++;
+                }
+            }
+            return def;
+        }
+        private static void bindCropNamed(CropDef def, string name, IExpression expr) {
+            switch (name) {
+                case "cropId":                          def.CropId                          = ExpressionToId(expr); break;
+                case "source":                          def.SourceId                        = ExpressionToId(expr); break;
+                case "name":                            def.Name                            = ExpressionToString(expr); break;
+                case "description":                     def.Description                     = ExpressionToString(expr); break;
+                case "productProduced":                 def.ProductProduced                 = expressionToSingleProduct(expr); break;
+                case "consumedWaterPerDay":             def.ConsumedWaterPerDay             = ExpressionToInt(expr); break;
+                case "consumedFertilityPercentPerDay":  def.ConsumedFertilityPercentPerDay  = ExpressionToInt(expr); break;
+                case "minFertilityToStartGrowthPercent":def.MinFertilityToStartGrowthPercent= ExpressionToInt(expr); break;
+                case "growthDurationDays":              def.GrowthDurationDays              = ExpressionToInt(expr); break;
+                case "surviveWithNoWaterDays":          def.SurviveWithNoWaterDays          = ExpressionToInt(expr); break;
+                case "icon":                            def.IconPath                        = ExpressionToIconPath(expr); break;
+                case "prefab":                          def.PrefabPath                      = ExpressionToString(expr); break;
+                case "requiresGreenhouse":              def.RequiresGreenhouse              = ExpressionToBool(expr); break;
+                case "plantByDefault":                  def.PlantByDefault                  = ExpressionToBool(expr); break;
+                case "research":                        def.ResearchId                      = ExpressionToIdOrNull(expr); break;
+                case "farms":                           def.Farms                           = expressionToIdList(expr); break;
+            }
+        }
+        private static void bindCropPositional(CropDef def, int idx, IExpression expr) {
+            switch (idx) {
+                case 0:  def.CropId                          = ExpressionToId(expr); break;
+                case 1:  def.Name                            = ExpressionToString(expr); break;
+                case 2:  def.ProductProduced                 = expressionToSingleProduct(expr); break;
+                case 3:  def.ConsumedWaterPerDay             = ExpressionToInt(expr); break;
+                case 4:  def.ConsumedFertilityPercentPerDay  = ExpressionToInt(expr); break;
+                case 5:  def.MinFertilityToStartGrowthPercent= ExpressionToInt(expr); break;
+                case 6:  def.GrowthDurationDays              = ExpressionToInt(expr); break;
+                case 7:  def.SurviveWithNoWaterDays          = ExpressionToInt(expr); break;
+                case 8:  def.IconPath                        = ExpressionToIconPath(expr); break;
+                case 9:  def.PrefabPath                      = ExpressionToString(expr); break;
+                case 10: def.RequiresGreenhouse              = ExpressionToBool(expr); break;
+                case 11: def.PlantByDefault                  = ExpressionToBool(expr); break;
+                case 12: def.Description                     = ExpressionToString(expr); break;
+                case 13: def.ResearchId                      = ExpressionToIdOrNull(expr); break;
+                case 14: def.Farms                           = expressionToIdList(expr); break;
+            }
+        }
+        // Product(...) call → single ProductRef. Reuses parseProductCall
+        // so a hand-typed named-arg form still round-trips. Non-Product
+        // expressions (None, bare id) return null — the runtime treats
+        // that as "no product produced" (cover crop).
+        private static ProductRef expressionToSingleProduct(IExpression expr) {
+            if (expr is CallExpression productCall && isCallTo(productCall, ProductFnName)) {
+                return parseProductCall(productCall);
+            }
+            return null;
+        }
+        // `[Ids.X, "Y", z]` → list of string ids/variable-names. Reused
+        // by CropDef.Farms (which lists farm ids the crop is restricted
+        // to). Empty / None / non-list → empty list. Each entry stored
+        // verbatim so typed-refs and bare identifiers round-trip.
+        private static List<string> expressionToIdList(IExpression expr) {
+            List<string> result = new List<string>();
+            if (expr is NoneConst) return result;
+            if (!(expr is ListExpression list)) return result;
+            foreach (IExpression item in list.Items) {
+                string id = ExpressionToIdOrNull(item);
+                if (!string.IsNullOrEmpty(id)) result.Add(id);
+            }
+            return result;
         }
 
         private static ResearchLabDef parseResearchLab(CallExpression call) {
@@ -1270,6 +1951,7 @@ namespace CustomAssets.Editor.Io {
                 case 6: def.ResearchId            = ExpressionToIdOrNull(expr); return;
                 case 7: def.CopyRecipes           = ExpressionToBool(expr); return;
                 case 8: def.LockedOnInit          = ExpressionToBool(expr); return;
+                case 9: def.AutoSelectRecipes     = ExpressionToBoolOrNull(expr); return;
             }
         }
 
@@ -1287,6 +1969,7 @@ namespace CustomAssets.Editor.Io {
                 case "copy_layout":          def.CopyLayout             = ExpressionToBool(expr); break;
                 case "copy_ports":           def.CopyPorts              = ExpressionToBool(expr); break;
                 case "copy_graphics":        def.CopyGraphics           = ExpressionToBool(expr); break;
+                case "auto_select_recipes":  def.AutoSelectRecipes      = ExpressionToBoolOrNull(expr); break;
                 case "layout_str":           def.LayoutSourceStr        = ExpressionToString(expr); break;
                 case "lockedOnInit":         def.LockedOnInit           = ExpressionToBool(expr); break;
             }
@@ -1299,18 +1982,75 @@ namespace CustomAssets.Editor.Io {
             foreach (IArgument arg in call.Arguments) {
                 if (arg is NamedArgument named) {
                     switch (named.Name) {
-                        case "machine":   def.MachineId = ExpressionToId(named.Expression); break;
-                        case "add_ports": def.AddPorts  = ExpressionToPortList(named.Expression); break;
+                        case "machine":             def.MachineId         = ExpressionToId(named.Expression); break;
+                        case "add_ports":           def.AddPorts          = ExpressionToPortList(named.Expression); break;
+                        case "auto_select_recipes": def.AutoSelectRecipes = ExpressionToBoolOrNull(named.Expression); break;
                     }
                 } else {
                     switch (positional) {
-                        case 0: def.MachineId = ExpressionToId(arg.Expression); break;
-                        case 1: def.AddPorts  = ExpressionToPortList(arg.Expression); break;
+                        case 0: def.MachineId         = ExpressionToId(arg.Expression); break;
+                        case 1: def.AddPorts          = ExpressionToPortList(arg.Expression); break;
+                        case 2: def.AutoSelectRecipes = ExpressionToBoolOrNull(arg.Expression); break;
                     }
                     positional++;
                 }
             }
             return def;
+        }
+
+        // edit_entity_costs(entity, workers, maintenance, maintenanceProduct,
+        // maintenanceBufferMonths, initialMaintenancePercent, priority,
+        // products, multiplyPercent). Only `entity` is required; every other
+        // argument is a per-facet override that stays null when absent.
+        //
+        // Argument order is deliberate: the staffing/upkeep facets come
+        // first because they read as properties OF the entity, and the
+        // build-material list — the longest, most-edited argument — comes
+        // last so it never buries the short scalars above it.
+        private static EditEntityCostsDef parseEditEntityCosts(CallExpression call) {
+            EditEntityCostsDef def = new EditEntityCostsDef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments)
+            {
+                if (arg is NamedArgument named)
+                {
+                    bindEntityCostsArg(def, named.Name, named.Expression);
+                }
+                else
+                {
+                    bindEntityCostsPositional(def, positional, arg.Expression);
+                    positional++;
+                }
+            }
+            return def;
+        }
+
+        private static void bindEntityCostsPositional(EditEntityCostsDef def, int idx, IExpression expr) {
+            switch (idx) {
+                case 0: bindEntityCostsArg(def, "entity",                    expr); return;
+                case 1: bindEntityCostsArg(def, "workers",                   expr); return;
+                case 2: bindEntityCostsArg(def, "maintenance",               expr); return;
+                case 3: bindEntityCostsArg(def, "maintenanceProduct",        expr); return;
+                case 4: bindEntityCostsArg(def, "maintenanceBufferMonths",   expr); return;
+                case 5: bindEntityCostsArg(def, "initialMaintenancePercent", expr); return;
+                case 6: bindEntityCostsArg(def, "priority",                  expr); return;
+                case 7: bindEntityCostsArg(def, "products",                  expr); return;
+                case 8: bindEntityCostsArg(def, "multiplyPercent",           expr); return;
+            }
+        }
+
+        private static void bindEntityCostsArg(EditEntityCostsDef def, string name, IExpression expr) {
+            switch (name) {
+                case "entity":                    def.EntityId                 = ExpressionToId(expr); break;
+                case "products":                  def.Products                 = ExpressionToProductList(expr); break;
+                case "multiplyPercent":           def.MultiplyPercent          = ExpressionToInt(expr); break;
+                case "workers":                   def.Workers                  = ExpressionToInt(expr); break;
+                case "priority":                  def.Priority                 = ExpressionToInt(expr); break;
+                case "maintenance":               def.Maintenance              = ExpressionToDouble(expr); break;
+                case "maintenanceProduct":        def.MaintenanceProductId     = ExpressionToId(expr); break;
+                case "maintenanceBufferMonths":   def.MaintenanceBufferMonths  = ExpressionToInt(expr); break;
+                case "initialMaintenancePercent": def.InitialMaintenancePercent = ExpressionToInt(expr); break;
+            }
         }
 
         /// `[Port(...), Port(...), ...]` → List<PortRef>. None / [] → empty list.
@@ -1579,18 +2319,21 @@ namespace CustomAssets.Editor.Io {
                 case 4: def.MachineId       = ExpressionToIdOrNull(expr); return;
                 case 5: def.ResearchId      = ExpressionToIdOrNull(expr); return;
                 case 6: def.PowerPercent    = ExpressionToPowerPercent(expr); return;
+                case 7: def.UnlockMachine   = ExpressionToUnlockMachine(expr); return;
             }
         }
 
         private static void bindEditRecipeNamed(EditRecipeDef def, string name, IExpression expr) {
             switch (name) {
                 case "recipe":      def.RecipeId        = ExpressionToId(expr); break;
-                case "duration":    def.DurationSeconds = ExpressionToDurationSeconds(expr); break;
+                case "duration":    def.DurationSeconds = ExpressionToDurationSeconds(expr);
+                                    def.DurationExpression = ExpressionToDurationText(expr); break;
                 case "ingredients": def.Ingredients     = ExpressionToProductList(expr); break;
                 case "products":    def.Products        = ExpressionToProductList(expr); break;
                 case "machine":     def.MachineId       = ExpressionToIdOrNull(expr); break;
                 case "research":    def.ResearchId      = ExpressionToIdOrNull(expr); break;
                 case "power":       def.PowerPercent    = ExpressionToPowerPercent(expr); break;
+                case "unlock_machine": def.UnlockMachine = ExpressionToUnlockMachine(expr); break;
             }
         }
 
@@ -1721,6 +2464,7 @@ namespace CustomAssets.Editor.Io {
                 case "isStorable":      def.IsStorable         = ExpressionToBool(expr); break;
                 case "isRecyclable":    def.IsRecyclable       = ExpressionToBool(expr); break;
                 case "isWaste":         def.IsWaste            = ExpressionToBool(expr); break;
+                case "isLocked":        def.IsLocked           = ExpressionToBoolOrNull(expr); break;
                 case "isRough":         def.IsRough            = ExpressionToBool(expr); break;
                 case "pinToHomeScreen": def.PinToHomeScreen    = ExpressionToBool(expr); break;
                 case "maxTransport":    def.MaxTransport       = ExpressionToInt(expr); break;
@@ -1767,6 +2511,7 @@ namespace CustomAssets.Editor.Io {
                 case "description":          def.Description                    = ExpressionToString(expr); break;
                 case "isStorable":           def.IsStorable                     = ExpressionToBool(expr); break;
                 case "isWaste":              def.IsWaste                        = ExpressionToBool(expr); break;
+                case "isLocked":             def.IsLocked                       = ExpressionToBoolOrNull(expr); break;
             }
         }
 
@@ -1807,6 +2552,7 @@ namespace CustomAssets.Editor.Io {
                 case "description":                  def.Description                  = ExpressionToString(expr); break;
                 case "isStorable":                   def.IsStorable                   = ExpressionToBool(expr); break;
                 case "isWaste":                      def.IsWaste                      = ExpressionToBool(expr); break;
+                case "isLocked":                     def.IsLocked                     = ExpressionToBoolOrNull(expr); break;
                 case "packingMode":                  def.PackingMode                  = ExpressionToString(expr); break;
                 case "allowPackingNoise":            def.AllowPackingNoise            = ExpressionToBool(expr); break;
                 case "rotateSecondPackedItem90Degs": def.RotateSecondPackedItem90Degs = ExpressionToBool(expr); break;
@@ -1820,6 +2566,25 @@ namespace CustomAssets.Editor.Io {
         private static bool ExpressionToBool(IExpression expr) {
             if (expr is BooleanConst b) return b.BooleanValue;
             return false;
+        }
+
+        // Tri-state bool parse: True/False → the value, None / anything else
+        // → null. Used by optional flags whose "absent" state is meaningful
+        // (e.g. auto_select_recipes, where blank means "inherit").
+        private static bool? ExpressionToBoolOrNull(IExpression expr) {
+            if (expr is BooleanConst b) return b.BooleanValue;
+            return null;
+        }
+
+        /// `unlock_machine` reads TRUE for anything that is not a literal
+        /// `False`. The argument defaults to true at runtime, and the emitter
+        /// writes it out only when false — so misreading an expression the
+        /// editor cannot evaluate (`unlock_machine = config.grant_machine`) as
+        /// false would spell `unlock_machine = False` into the file on the next
+        /// save and quietly change what the node unlocks. Defaulting the
+        /// un-evaluable case to true keeps the emit a no-op instead.
+        private static bool ExpressionToUnlockMachine(IExpression expr) {
+            return ExpressionToBoolOrNull(expr) ?? true;
         }
 
         // build_research(researchId, name, description, costs, position, icon)
@@ -1839,6 +2604,13 @@ namespace CustomAssets.Editor.Io {
             return def;
         }
 
+        // Positional order MUST match the `build_research` Constructor's
+        // Arguments array in CustomAssetRegistrator — that array is what the
+        // runtime binds positional arguments against. When the two disagree the
+        // editor reads an argument as one thing and the game reads it as
+        // another, and saving rewrites the call into whatever the editor
+        // believed. (They did disagree at slots 3 and 5: the editor called them
+        // costs/icon, the runtime difficulty/parents.)
         private static void bindResearchPositional(ResearchDef def, int idx, IExpression expr) {
             switch (idx) {
                 case 0: def.ResearchId  = ExpressionToId(expr);    return;
@@ -1846,7 +2618,8 @@ namespace CustomAssets.Editor.Io {
                 case 2: def.Description = ExpressionToString(expr); return;
                 case 3: bindResearchCosts(def, expr); return;
                 case 4: bindResearchPosition(def, expr); return;
-                case 5: def.IconPath = ExpressionToIconPath(expr); return;
+                case 5: def.Parents = ExpressionToIdList(expr); return;
+                case 6: def.IconPath = ExpressionToIconPath(expr); return;
             }
         }
 
@@ -1856,7 +2629,12 @@ namespace CustomAssets.Editor.Io {
                 case "name":        def.Name        = ExpressionToString(expr); break;
                 case "description": def.Description = ExpressionToString(expr); break;
                 case "costs":       bindResearchCosts(def, expr); break;
+                // `difficulty` is the name the API docs used for the same
+                // value; the runtime reads `costs`. Accept both so a pack
+                // written against either spelling survives a round-trip.
+                case "difficulty":  bindResearchCosts(def, expr); break;
                 case "position":    bindResearchPosition(def, expr); break;
+                case "parents":     def.Parents = ExpressionToIdList(expr); break;
                 case "icon":        def.IconPath = ExpressionToIconPath(expr); break;
                 // Editor-side hint pointing at the research-pack product this
                 // node expects to consume (LabEquipment / LabEquipment2 /
@@ -1998,7 +2776,10 @@ namespace CustomAssets.Editor.Io {
             return sb.ToString();
         }
 
-        // add_unlock_recipe(research, machine, proto) â€” three id args.
+        // add_unlock_recipe(research, machine, recipe, unlock_machine=False).
+        // `proto` is accepted as an alias for `recipe` because older stubs
+        // spelled it that way; the runtime Constructor only knows `recipe`, so
+        // reading both here keeps the editor from dropping a name it can see.
         private static UnlockRecipeDef parseUnlockRecipe(CallExpression call) {
             UnlockRecipeDef def = new UnlockRecipeDef();
             int positional = 0;
@@ -2007,19 +2788,47 @@ namespace CustomAssets.Editor.Io {
                     switch (named.Name) {
                         case "research": def.ResearchId = ExpressionToId(named.Expression); break;
                         case "machine":  def.MachineId  = ExpressionToId(named.Expression); break;
+                        case "recipe":
                         case "proto":    def.RecipeId   = ExpressionToId(named.Expression); break;
+                        case "unlock_machine": def.UnlockMachine = ExpressionToUnlockMachine(named.Expression); break;
                     }
                 } else {
                     switch (positional) {
                         case 0: def.ResearchId = ExpressionToId(arg.Expression); break;
                         case 1: def.MachineId  = ExpressionToId(arg.Expression); break;
                         case 2: def.RecipeId   = ExpressionToId(arg.Expression); break;
+                        case 3: def.UnlockMachine = ExpressionToUnlockMachine(arg.Expression); break;
                     }
                     positional++;
                 }
             }
             // Unlock kinds expose DisplayId via override (composite key
             // RecipeId @ MachineId) so no separate Id assignment is needed.
+            return def;
+        }
+
+        // migrate_recipe(old, new, since) â€” two ids plus an optional version string.
+        // `old` is deliberately read as a raw id: it names a recipe that no longer
+        // exists, so it never resolves to a variable or a live proto.
+        private static MigrateRecipeDef parseMigrateRecipe(CallExpression call) {
+            MigrateRecipeDef def = new MigrateRecipeDef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument named) {
+                    switch (named.Name) {
+                        case "old":   def.OldRecipeId = ExpressionToId(named.Expression); break;
+                        case "new":   def.NewRecipeId = ExpressionToId(named.Expression); break;
+                        case "since": def.Since       = ExpressionToString(named.Expression); break;
+                    }
+                } else {
+                    switch (positional) {
+                        case 0: def.OldRecipeId = ExpressionToId(arg.Expression); break;
+                        case 1: def.NewRecipeId = ExpressionToId(arg.Expression); break;
+                        case 2: def.Since       = ExpressionToString(arg.Expression); break;
+                    }
+                    positional++;
+                }
+            }
             return def;
         }
 
@@ -2065,6 +2874,59 @@ namespace CustomAssets.Editor.Io {
             return def;
         }
 
+        // add_unlock_entity(research, entity) — two id args. Same shape as
+        // parseUnlockMachine; kept separate because the second argument has a
+        // different name and the two calls stay distinct kinds in the model.
+        private static UnlockEntityDef parseUnlockEntity(CallExpression call) {
+            UnlockEntityDef def = new UnlockEntityDef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments)
+            {
+                if (arg is NamedArgument named)
+                {
+                    switch (named.Name) {
+                        case "research": def.ResearchId = ExpressionToId(named.Expression); break;
+                        case "entity":   def.EntityId   = ExpressionToId(named.Expression); break;
+                    }
+                }
+                else
+                {
+                    switch (positional) {
+                        case 0: def.ResearchId = ExpressionToId(arg.Expression); break;
+                        case 1: def.EntityId   = ExpressionToId(arg.Expression); break;
+                    }
+                    positional++;
+                }
+            }
+            return def;
+        }
+
+        // remove_unlock(research, target, machine) — two required ids plus the
+        // optional machine scope. One parser for what the add_unlock_* family
+        // needs four of, since removal matches by id and never cares which kind
+        // of proto the target is.
+        private static RemoveUnlockDef parseRemoveUnlock(CallExpression call) {
+            RemoveUnlockDef def = new RemoveUnlockDef();
+            int positional = 0;
+            foreach (IArgument arg in call.Arguments) {
+                if (arg is NamedArgument named) {
+                    switch (named.Name) {
+                        case "research": def.ResearchId = ExpressionToId(named.Expression); break;
+                        case "target":   def.TargetId   = ExpressionToId(named.Expression); break;
+                        case "machine":  def.MachineId  = ExpressionToId(named.Expression); break;
+                    }
+                } else {
+                    switch (positional) {
+                        case 0: def.ResearchId = ExpressionToId(arg.Expression); break;
+                        case 1: def.TargetId   = ExpressionToId(arg.Expression); break;
+                        case 2: def.MachineId  = ExpressionToId(arg.Expression); break;
+                    }
+                    positional++;
+                }
+            }
+            return def;
+        }
+
         // Common bookkeeping that the loader stamps on every definition it
         // captures â€” source file, line range, and any wrapping condition.
         // Pulled out so RecipeDef and UnknownDef paths share one assignment
@@ -2095,6 +2957,12 @@ namespace CustomAssets.Editor.Io {
         private static bool isCustomAssetsApiCall(string callName) {
             if (string.IsNullOrEmpty(callName)) return false;
             if (callName.StartsWith("build_") || callName.StartsWith("add_")) return true;
+            // `bind_recipe` attaches a recipe to a machine — a top-level
+            // definition statement in its own right.
+            if (callName.StartsWith("bind_")) return true;
+            // `migrate_recipe` is a tombstone for a removed recipe — a definition
+            // statement too, and one that must never be dropped on a rewrite.
+            if (callName.StartsWith("migrate_")) return true;
             // `edit_*` calls mutate existing protos; they belong to the same
             // surface as build/add and should show up in the tree.
             return callName.StartsWith("edit_");

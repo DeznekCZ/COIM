@@ -133,11 +133,52 @@ namespace CustomAssets.Data.Mod {
                 .Arg("winding", new VersionSlim(0, 2, 0), types: new[] { "string" }, defaultLiteral: "ccw");
 
             // ---------- Recipes / unlocks ---------------------------
-            b.Call("build_recipe");
-            b.Call("edit_recipe");
-            b.Call("add_unlock_recipe");
+            // 0.3.0 recipe split: build_recipe no longer requires `machine`
+            // (a recipe is machine-less; machines attach via bind_recipe).
+            // The legacy build_recipe(machine=...) one-shot still works, so
+            // build_recipe itself stays available at every version — only the
+            // new bind_recipe call is version-gated.
+            // 0.4.2: `unlock_machine` on every call that can wire a recipe
+            // unlock. Wiring an unlock ALWAYS also granted the machine
+            // (RecipeUnlock.EnsureMachineIsUnlocked + an extra
+            // ProtoWithIconUnlock) and still does by default, so nothing a
+            // pre-0.4.2 pack does changes meaning. The argument is the opt-OUT:
+            // `unlock_machine = False` leaves the machine alone, which is what a
+            // recipe added to a machine the player already has wants. Arg-level
+            // gate so a pack pinning <= 0.4.1 that writes it gets the
+            // "requires >= 0.4.2" warning instead of silently keeping the
+            // machine unlock.
+            b.Call("build_recipe")
+                // Inline recipe tombstones — same machinery as migrate_recipe.
+                .Arg("replaces", new VersionSlim(0, 4, 0))
+                .Arg("unlock_machine", new VersionSlim(0, 4, 2), types: new[] { "bool" }, defaultLiteral: "True");
+            b.Call("bind_recipe", new VersionSlim(0, 3, 0))
+                .Arg("unlock_machine", new VersionSlim(0, 4, 2), types: new[] { "bool" }, defaultLiteral: "True");
+            b.Call("edit_recipe")
+                .Arg("unlock_machine", new VersionSlim(0, 4, 2), types: new[] { "bool" }, defaultLiteral: "True");
+            // 0.4.0: edit_recipe gained a `with` block form whose body is these
+            // sub-actions. The plain edit_recipe(...) call is unchanged and stays
+            // available at baseline; only the sub-action verbs are new, so a pack
+            // pinning <= 0.3.x that writes them gets a real warning.
+            b.Call("set_ingredient", new VersionSlim(0, 4, 0));
+            b.Call("set_product", new VersionSlim(0, 4, 0));
+            b.Call("remove_ingredient", new VersionSlim(0, 4, 0));
+            b.Call("remove_product", new VersionSlim(0, 4, 0));
+            b.Call("unbind_recipe", new VersionSlim(0, 4, 0));
+            // Recipe tombstone: remaps a renamed/merged-away recipe id in existing
+            // saves. New whole call, so packs pinning <= 0.3.x get the right warning.
+            b.Call("migrate_recipe", new VersionSlim(0, 4, 0));
+            b.Call("add_unlock_recipe")
+                .Arg("unlock_machine", new VersionSlim(0, 4, 2), types: new[] { "bool" }, defaultLiteral: "True");
             b.Call("add_unlock_product");
             b.Call("add_unlock_machine");
+            // 0.4.1: general form of add_unlock_machine that also takes
+            // vehicles, train cars and other non-machine entities.
+            b.Call("add_unlock_entity", new VersionSlim(0, 4, 1));
+            // 0.4.2: the counterpart to the whole add_unlock_* family. One verb,
+            // because removal matches by proto id and so needs none of the
+            // product/machine/entity/recipe split that adding does.
+            b.Call("remove_unlock", new VersionSlim(0, 4, 2));
 
             // ---------- Research / edicts / categories --------------
             b.Call("build_research");
@@ -146,9 +187,22 @@ namespace CustomAssets.Data.Mod {
 
             // ---------- Machines / generators -----------------------
             b.Call("add_machine");
-            b.Call("build_machine");
+            // 0.4.0: auto_select_recipes overrides the source's
+            // UseAllRecipesAtStartOrAfterUnlock so a placed machine can start
+            // with no recipe pre-selected. Arg-level gate so packs pinning
+            // <= 0.3.x that use it get the "requires >= 0.4.0" warning.
+            b.Call("build_machine")
+                .Arg("auto_select_recipes", new VersionSlim(0, 4, 0), types: new[] { "bool" }, defaultLiteral: "None");
             b.Call("build_generator");
-            b.Call("edit_machine_ports");
+            b.Call("edit_machine_ports")
+                .Arg("auto_select_recipes", new VersionSlim(0, 4, 0), types: new[] { "bool" }, defaultLiteral: "None");
+
+            // ---------- Balancing -----------------------------------
+            // Whole call new in 0.4.1 — packs pinning <= 0.4.0 that use it
+            // see the "requires >= 0.4.1" warning. Not machine-scoped: it
+            // rewrites EntityProto.Costs, so vehicles and train cars are
+            // valid targets too.
+            b.Call("edit_entity_costs", new VersionSlim(0, 4, 1));
 
             // ---------- Settlement entities -------------------------
             b.Call("build_housing");
@@ -160,6 +214,16 @@ namespace CustomAssets.Data.Mod {
             // ---------- Mines / labs --------------------------------
             b.Call("build_mine_tower");
             b.Call("build_research_lab");
+
+            // ---------- Farms / crops (shipped in 0.3.0) ------------
+            // Whole calls new in 0.3.0 — packs pinning ≤ 0.2.x see the
+            // "requires >= 0.3.0" warning if they use any of these.
+            b.Call("build_farm",  new VersionSlim(0, 3, 0));
+            b.Call("add_crop",    new VersionSlim(0, 3, 0));
+            b.Call("clone_crop",  new VersionSlim(0, 3, 0));
+            // 0.4.1: retunes an EXISTING crop's rates in place — the edit_*
+            // sibling of add_crop / clone_crop.
+            b.Call("edit_crop",   new VersionSlim(0, 4, 1));
 
             // ---------- Nuclear reactors ----------------------------
             // Both fuel-pair and the full Enrichment/fluid blocks

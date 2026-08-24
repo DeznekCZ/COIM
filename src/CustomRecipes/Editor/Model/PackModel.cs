@@ -12,11 +12,32 @@ namespace CustomAssets.Editor.Model {
         public int Quantity;
         public string Port;       // null or "" means default ("*")
 
+        /// Source text when the quantity is NOT a plain number — `config.batch_size`,
+        /// `base_amount * 2`. Wins over <see cref="Quantity"/> on emit, which keeps the
+        /// last known number as the fallback shown in the editor. Null for the ordinary
+        /// literal case. Captured by PackLoader via ExpressionPrinter.
+        public string QuantityExpression;
+
         public ProductRef() { }
 
         public ProductRef(string productId, int quantity, string port = null) {
             ProductId = productId;
             Quantity = quantity;
+            Port = port;
+        }
+    }
+
+    /// One (product → machine port) assignment inside a `bind_recipe(...)` call's
+    /// `ports=[PortMap(...)]` list. Quantity-free (unlike <see cref="ProductRef"/>) —
+    /// a binding only routes products to ports; quantities live on the recipe.
+    public sealed class PortMapRef {
+        public string ProductId;
+        public string Port;       // machine port letter; null/"" = auto ("*")
+
+        public PortMapRef() { }
+
+        public PortMapRef(string productId, string port) {
+            ProductId = productId;
             Port = port;
         }
     }
@@ -239,11 +260,17 @@ namespace CustomAssets.Editor.Model {
 
         /// Identifies the statement-list scope this def belongs to within
         /// its source file. Top-level statements share <c>"top"</c>; every
-        /// <c>if</c>/<c>elif</c>/<c>else</c> clause body becomes its own
-        /// scope keyed as <c>"clause:&lt;headerLine&gt;"</c>. The tree renders
-        /// each scope independently and drag-reorder only shuffles defs
-        /// within their own scope, so a recipe can be moved up/down within
-        /// its clause but not lifted out of it.
+        /// BLOCK body — <c>if</c>, <c>elif</c>, <c>else</c> and <c>with</c>
+        /// alike — becomes its own scope keyed as
+        /// <c>"block:&lt;headerLine&gt;"</c>, and a block's own header row is
+        /// keyed <c>"blockheader:&lt;headerLine&gt;"</c>. The tree renders each
+        /// scope independently and drag-reorder only shuffles defs within
+        /// their own scope, so a recipe can be moved up/down within its block
+        /// but not lifted out of it.
+        ///
+        /// Null means "not placed in any scope" — currently only a pending
+        /// binding awaiting its owner's block; see
+        /// <see cref="BindRecipeDef.IsPendingInOwner"/>.
         public string ScopeKey;
 
         /// 0-based index of the contiguous "run" this def belongs to within
@@ -361,20 +388,195 @@ namespace CustomAssets.Editor.Model {
         public override string Kind => CallName ?? "definition";
         public override string DisplayId =>
             !string.IsNullOrEmpty(CapturedId) ? CapturedId : (CallName ?? "");
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            // An UnknownDef round-trips purely through its captured text —
+            // blanking it out would splice an empty region over the original
+            // call, silently deleting the definition on save.
+            if (string.IsNullOrWhiteSpace(RawSource)) missing.Add("source");
+            return missing;
+        }
     }
 
-    /// `add_unlock_recipe(research, machine, proto)` — adds a recipe to an
-    /// existing research node. Three id arguments, all required.
+    /// `add_unlock_recipe(research, machine, recipe, unlock_machine=False)` —
+    /// adds a recipe to an existing research node. Three id arguments, all
+    /// required, plus the opt-in machine unlock.
     public sealed class UnlockRecipeDef : DefBase {
         public override string Kind => "unlock-recipe";
         public string ResearchId;
         public string MachineId;
         public string RecipeId;
+
+        /// When true the node also GRANTS the machine, not just the recipe.
+        /// DEFAULT TRUE — an omitted `unlock_machine` argument means "grant it",
+        /// which is what every pack written before 0.4.2 relied on. Setting it
+        /// false (`unlock_machine = False`) is the opt-out.
+        ///
+        /// Two reasons to opt out on a recipe added to a machine the player
+        /// already has: the node hands over the whole machine, and the machine
+        /// starts the game LOCKED until the node is researched — the game
+        /// derives its initial locked set from exactly these units, in
+        /// ResearchManager.LockProtosFromResearchTree.
+        ///
+        /// Because true is the default, the emitter writes the argument only
+        /// when this is FALSE; see PackEmitter.renderUnlockRecipe.
+        public bool UnlockMachine = true;
         // Composite display key — the tree label uses this so unlock rows
         // distinguish themselves at a glance even though there's no single
         // "id" field.
         public override string DisplayId =>
             (RecipeId ?? "?") + " @ " + (MachineId ?? "?");
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ResearchId)) missing.Add("research");
+            if (string.IsNullOrEmpty(MachineId))  missing.Add("machine");
+            if (string.IsNullOrEmpty(RecipeId))   missing.Add("recipe");
+            return missing;
+        }
+    }
+
+    /// `migrate_recipe(old, new, since)` — a TOMBSTONE for a recipe this pack
+    /// used to ship. Machines and blueprints in existing saves that still point
+    /// at the old id are remapped to the new one on load; without it the player
+    /// silently loses the recipe.
+    ///
+    /// Unlike every other kind here, this def describes something that no longer
+    /// exists. `OldRecipeId` intentionally refers to an id that must NOT be
+    /// registered any more, so it is never validated as a live reference and
+    /// never offered by a picker. Deleting one of these is destructive in a way
+    /// deleting an ordinary def is not — it strands every save still holding the
+    /// old id — so the editor gates removal behind an explicit confirmation.
+    public sealed class MigrateRecipeDef : DefBase {
+        public override string Kind => "migrate-recipe";
+
+        /// The removed recipe id. Free text: by definition it resolves to nothing.
+        public string OldRecipeId;
+
+        /// Replacement recipe. Must exist, so this one IS picker-backed and validated.
+        public string NewRecipeId;
+
+        /// Pack version the rename shipped in ("0.4.0"), or null for "this pack's
+        /// manifest version". Documentation only — migrations always apply.
+        public string Since;
+
+        public override string DisplayId =>
+            (OldRecipeId ?? "?") + " → " + (NewRecipeId ?? "?");
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(OldRecipeId)) missing.Add("old");
+            if (string.IsNullOrEmpty(NewRecipeId)) missing.Add("new");
+            return missing;
+        }
+    }
+
+    /// `bind_recipe(recipe, machine, duration, ports, multiplier,
+    /// minPartialUtilization, research)` — assigns an existing recipe to a
+    /// machine with that machine's own duration and port mapping (0.3.0 game
+    /// API, where a RecipeProto is machine-less and binding is a separate
+    /// step). A recipe may have several of these, one per machine — the editor
+    /// surfaces them as the recipe's add-able "machines" list. Modelled as a
+    /// standalone top-level def (like <see cref="UnlockRecipeDef"/>) so it
+    /// round-trips as its own statement.
+    public sealed class BindRecipeDef : DefBase {
+        public override string Kind => "bind-recipe";
+
+        /// Target recipe id (variable name / typed-ref / literal).
+        public string RecipeId;
+
+        /// In-memory back-link to the recipe that owns this binding. NOT part of
+        /// the emitted call — it exists so the binding editor can reach the
+        /// recipe's ingredient/product lists (to offer them per port) without
+        /// searching a PackModel, which may be a stale instance: editors are
+        /// cached per def-type and capture the model they were built with, while
+        /// a save+reload swaps in a fresh one. Set by PackLoader when a binding is
+        /// parsed or migrated, and by the editor when one is added.
+        public RecipeDef OwnerRecipe;
+
+        /// True when this binding sits inside a `with` block (a build_recipe recipe
+        /// OR an edit_recipe block), so the recipe is implicit and the call emits
+        /// machine-first with no recipe positional. A standalone `bind_recipe(recipe,
+        /// machine, …)` has this false.
+        ///
+        /// Distinct from <see cref="OwnerRecipe"/>: a build-recipe block links its
+        /// bindings back to the recipe def (for the editor's product-list access),
+        /// but an edit_recipe block has no RecipeDef to link to — its context is an
+        /// EditRecipeDef. This flag is the single reliable "emit in context form"
+        /// signal across both. Set by PackLoader on parse and by the editor when a
+        /// context binding is added.
+        public bool IsContextForm;
+
+        /// Machine the recipe is bound to.
+        public string MachineId;
+
+        /// Per-machine cycle time in seconds. Null = emit the API default
+        /// (Duration(60)) — i.e. omit the argument.
+        public int? DurationSeconds;
+
+        /// Source text when the duration is not a plain number, in seconds — e.g.
+        /// `config.smelt_seconds`. Wins over <see cref="DurationSeconds"/> on emit;
+        /// see RecipeDef.DurationExpression.
+        public string DurationExpression;
+
+        /// Port mapping for this binding — one <see cref="PortMapRef"/> per
+        /// (non-virtual) recipe product. Editor-managed bindings always carry a
+        /// COMPLETE map (materialized/seeded from the recipe's products + the
+        /// machine's ports), so a binding is self-describing and the emit is
+        /// deterministic. Emitted as `ports=[PortMap(product, "X"), …]`.
+        public List<PortMapRef> Ports = new List<PortMapRef>();
+
+        /// Throughput multiplier applied to all quantities on this machine.
+        /// Null / 1 = omit the argument.
+        public int? Multiplier;
+
+        /// Partial-execution floor as an integer percent. Null = omit.
+        public int? MinPartialUtilizationPercent;
+
+        /// Optional research node to wire a recipe unlock for this
+        /// (recipe, machine) pair. Null = omit.
+        public string ResearchId;
+
+        /// The wired unlock also grants the machine, not only the recipe.
+        /// Default TRUE; `unlock_machine = False` is the opt-out. Only
+        /// meaningful alongside <see cref="ResearchId"/>.
+        /// See UnlockRecipeDef.UnlockMachine.
+        public bool UnlockMachine = true;
+
+        // Composite display key — mirrors UnlockRecipeDef so the tree row reads
+        // "recipe @ machine" at a glance.
+        public override string DisplayId =>
+            (RecipeId ?? "?") + " @ " + (MachineId ?? "?");
+
+        /// True while this binding belongs to a recipe whose `with` block does
+        /// not exist in the file YET — a legacy recipe's migrated machine, or one
+        /// added with "+ add machine" to a recipe still written as a plain
+        /// `build_recipe(...)` call.
+        ///
+        /// There is no block to splice such a binding into, so it has no scope
+        /// key and is not a member of any run. The tree draws it inside its
+        /// owner's group, and <see cref="PackEmitter.RenderRecipe"/> writes it as
+        /// the body of the block it opens — never as an end-of-file append, which
+        /// would place it outside the block.
+        ///
+        /// Contrast a binding added to a recipe that IS already a block: that one
+        /// gets a real <c>"block:&lt;headerLine&gt;"</c> scope even while pending, so
+        /// it renders inside the block like any other statement there and saves by
+        /// splicing into it. The distinguishing test is therefore the missing
+        /// scope key, not merely the missing source range.
+        ///
+        /// Either way, once saved and reloaded the binding has its own range and
+        /// block scope, and from then on saves, moves and deletes independently.
+        public bool IsPendingInOwner =>
+            OwnerRecipe != null && SourceStartLine <= 0 && string.IsNullOrEmpty(ScopeKey);
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(RecipeId))  missing.Add("recipe");
+            if (string.IsNullOrEmpty(MachineId)) missing.Add("machine");
+            return missing;
+        }
     }
 
     /// `add_unlock_product(research, product)` — adds a product to an existing
@@ -384,6 +586,13 @@ namespace CustomAssets.Editor.Model {
         public string ResearchId;
         public string ProductId;
         public override string DisplayId => ProductId ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ResearchId)) missing.Add("research");
+            if (string.IsNullOrEmpty(ProductId))  missing.Add("product");
+            return missing;
+        }
     }
 
     /// `add_unlock_machine(research, machine)` — adds a machine to an existing
@@ -393,6 +602,80 @@ namespace CustomAssets.Editor.Model {
         public string ResearchId;
         public string MachineId;
         public override string DisplayId => MachineId ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ResearchId)) missing.Add("research");
+            if (string.IsNullOrEmpty(MachineId))  missing.Add("machine");
+            return missing;
+        }
+    }
+
+    /// `add_unlock_entity(research, entity)` — adds any entity to an existing
+    /// research node: machines, buildings, trucks, excavators, tree harvesters,
+    /// locomotives, cargo wagons and ships alike.
+    ///
+    /// This is the general form and the one to reach for in new packs.
+    /// <see cref="UnlockMachineDef"/> (`add_unlock_machine`) is kept
+    /// machine-typed purely so existing packs keep parsing unchanged — it is
+    /// not widened, so its picker and validation stay precise.
+    public sealed class UnlockEntityDef : DefBase {
+        public override string Kind => "unlock-entity";
+        public string ResearchId;
+        public string EntityId;
+        public override string DisplayId => EntityId ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            Lyst<string> missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ResearchId))
+            {
+                missing.Add("research");
+            }
+            if (string.IsNullOrEmpty(EntityId))
+            {
+                missing.Add("entity");
+            }
+            return missing;
+        }
+    }
+
+    /// `remove_unlock(research, target, machine)` — takes something back OUT of
+    /// an existing research node. The counterpart to the whole `add_unlock_*`
+    /// family, and deliberately ONE kind rather than four: removal matches by
+    /// proto id, so it needs none of the product/machine/entity/recipe split
+    /// that adding does.
+    ///
+    /// <see cref="MachineId"/> is optional and only scopes recipe unlocks — the
+    /// same node routinely unlocks one recipe on several machines, and naming
+    /// the machine drops just that pair.
+    public sealed class RemoveUnlockDef : DefBase {
+        public override string Kind => "remove-unlock";
+        public string ResearchId;
+        public string TargetId;
+
+        /// Optional recipe-unlock scope. Null = drop every unlock of
+        /// <see cref="TargetId"/> on the node.
+        public string MachineId;
+
+        // Composite display key — mirrors UnlockRecipeDef so the tree row reads
+        // "target @ machine" when the removal is machine-scoped.
+        public override string DisplayId =>
+            string.IsNullOrEmpty(MachineId)
+                ? (TargetId ?? "")
+                : (TargetId ?? "?") + " @ " + MachineId;
+
+        public override Lyst<string> MissingMandatoryFields() {
+            Lyst<string> missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ResearchId))
+            {
+                missing.Add("research");
+            }
+            if (string.IsNullOrEmpty(TargetId))
+            {
+                missing.Add("target");
+            }
+            return missing;
+        }
     }
 
     /// `build_research(researchId, name, description, costs, position, icon)`
@@ -419,6 +702,16 @@ namespace CustomAssets.Editor.Model {
         public int? PositionY;
         public string IconPath;
 
+        /// Prerequisite research nodes — the `parents` argument, which is what
+        /// wires this node into the tech tree. Ids or in-file variable names;
+        /// empty means a root node.
+        ///
+        /// This MUST round-trip. The editor re-renders a whole `build_research`
+        /// call on save, so a field the model doesn't carry is a field the save
+        /// silently deletes — and dropping `parents` orphans the node, which is
+        /// far from obvious when reading the diff.
+        public List<string> Parents = new List<string>();
+
         /// Minimum-tier research lab requirement, expressed as the id of the
         /// research-pack product the lab consumes (LabEquipment / LabEquipment2
         /// / LabEquipment3 / LabEquipment4 in the vanilla set, plus any modded
@@ -427,6 +720,61 @@ namespace CustomAssets.Editor.Model {
         /// id; the emitter writes it as a typed-ref when one is registered
         /// (Ids.Products.X) or a plain string otherwise.
         public string TierProductId;
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ResearchId)) missing.Add("researchId");
+            if (string.IsNullOrEmpty(Name))       missing.Add("name");
+            return missing;
+        }
+    }
+
+    /// `rename_research(research, name, description)` — retitles an EXISTING
+    /// research node: a vanilla one, or one another pack registered.
+    ///
+    /// Stands to <see cref="ResearchDef"/> exactly as <see cref="EditCropDef"/>
+    /// stands to <see cref="CropDef"/> — same argument names, but it edits a
+    /// node the game already registered instead of creating one. Both text
+    /// fields are independent overrides: leaving one blank keeps that half of
+    /// the node's title as whoever registered it wrote it.
+    ///
+    /// The replacement strings are registered as NEW localization entries under
+    /// ids owned by this pack, so they appear as their own rows in the
+    /// Translations panel (key <c>rename-research.&lt;researchId&gt;.name</c>)
+    /// and can be translated per language without colliding with the vanilla
+    /// entry they stand in for.
+    public sealed class RenameResearchDef : DefBase {
+        public override string Kind => "rename-research";
+
+        /// Target node's id — a vanilla node or one registered earlier.
+        public string ResearchId;
+
+        /// Replacement display name; null/empty keeps the node's own.
+        public string Name;
+
+        /// Replacement short description; null/empty keeps the node's own.
+        public string Description;
+
+        public override string DisplayId => ResearchId ?? "";
+
+        /// The NEW name, which is the point of the call — so the tree label and
+        /// the Translations panel both read what the player will see.
+        public override string DisplayName => Name;
+
+        public override Lyst<string> MissingMandatoryFields() {
+            Lyst<string> missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ResearchId))
+            {
+                missing.Add("research");
+            }
+            // A call that overrides neither half is a no-op the runtime
+            // refuses, so flag it here rather than at pack-load time.
+            if (string.IsNullOrEmpty(Name) && string.IsNullOrEmpty(Description))
+            {
+                missing.Add("name or description");
+            }
+            return missing;
+        }
     }
 
     /// Common base for the three `build_product_*` variants. Holds the
@@ -445,10 +793,29 @@ namespace CustomAssets.Editor.Model {
         public bool IsStorable;
         public bool IsWaste;
 
+        /// Whether the product starts LOCKED (hidden until researched). The
+        /// runtime defaults it to `research != null`, so it only needs writing
+        /// when the pack overrides that — but it must still round-trip, or
+        /// saving would quietly unlock a product the modder locked on purpose.
+        public bool? IsLocked;
+
         /// Research that unlocks this product. Optional; null = unlocked by
         /// default (no research gate). Stored as an id string so it round-
         /// trips through the typed-ref / string-literal heuristic.
         public string ResearchId;
+
+        /// productId / name / icon are the required POSITIONAL arguments on
+        /// every build_product_* overload, so a draft missing any of them
+        /// can't even be emitted as a syntactically-callable statement.
+        /// Subclasses extend this with their own required positional
+        /// (material for loose, prefab for unit).
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ProductId)) missing.Add("productId");
+            if (string.IsNullOrEmpty(Name))      missing.Add("name");
+            if (string.IsNullOrEmpty(IconPath))  missing.Add("icon");
+            return missing;
+        }
     }
 
     /// `build_product_loose(...)` — pile-style product (sand, ores, etc.).
@@ -476,6 +843,15 @@ namespace CustomAssets.Editor.Model {
 
         /// Terrain-material id this product dumps as (e.g. Ids.TerrainMaterials.Gravel).
         public string DumpsAsId;
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = base.MissingMandatoryFields();
+            // A loose product renders as a pile, and the pile shader needs a
+            // real Material — emitting `material = None` yields an invisible
+            // product rather than a load error, which is far harder to debug.
+            if (string.IsNullOrEmpty(MaterialExpression)) missing.Add("material");
+            return missing;
+        }
     }
 
     /// `build_product_fluid(...)` — pipe-routed product (water, oil, gas).
@@ -506,6 +882,14 @@ namespace CustomAssets.Editor.Model {
 
         public bool AllowPackingNoise;
         public bool RotateSecondPackedItem90Degs;
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = base.MissingMandatoryFields();
+            // Unit products are drawn from a prefab; without one the item is
+            // invisible on conveyors.
+            if (string.IsNullOrEmpty(PrefabExpression)) missing.Add("prefab");
+            return missing;
+        }
     }
 
     /// `add_texture(path, replace=None)` — registers a texture asset.
@@ -519,6 +903,12 @@ namespace CustomAssets.Editor.Model {
         public string ReplacePath;
 
         public override string DisplayId => Path ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(Path)) missing.Add("path");
+            return missing;
+        }
     }
 
     /// `add_loose_product_material(path, albedo, normals=None, metallic=None,
@@ -537,6 +927,19 @@ namespace CustomAssets.Editor.Model {
         public string TilingExpression;
 
         public override string DisplayId => Path ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(Path)) missing.Add("path");
+            // A loose material must either clone a vanilla pile material via
+            // `reference` or supply its own albedo — with neither, the runtime
+            // hands back a null Material and the product renders invisible.
+            if (string.IsNullOrEmpty(AlbedoExpression)
+                    && string.IsNullOrEmpty(ReferenceExpression)) {
+                missing.Add("albedo or reference");
+            }
+            return missing;
+        }
     }
 
     /// `add_prefab_box(path, texture=None)` — simple cuboid prefab. Used as
@@ -548,6 +951,12 @@ namespace CustomAssets.Editor.Model {
         public string TextureExpression;
 
         public override string DisplayId => Path ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(Path)) missing.Add("path");
+            return missing;
+        }
     }
 
     /// `add_unit_prefab(path, albedo, normals=None, metallic=None,
@@ -576,6 +985,18 @@ namespace CustomAssets.Editor.Model {
         public string Winding;
 
         public override string DisplayId => Path ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(Path)) missing.Add("path");
+            // Same albedo-or-reference rule as the loose material — a unit
+            // prefab with neither has no surface to draw.
+            if (string.IsNullOrEmpty(AlbedoExpression)
+                    && string.IsNullOrEmpty(ReferenceExpression)) {
+                missing.Add("albedo or reference");
+            }
+            return missing;
+        }
     }
 
     /// `add_texture_material(path, texture=None, reference=None, shader=None)` —
@@ -591,6 +1012,12 @@ namespace CustomAssets.Editor.Model {
         public string Shader;
 
         public override string DisplayId => Path ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(Path)) missing.Add("path");
+            return missing;
+        }
     }
 
     /// `edit_recipe(recipe, duration, ingredients, products, machine,
@@ -605,13 +1032,114 @@ namespace CustomAssets.Editor.Model {
         public string RecipeId;
 
         public int? DurationSeconds;
+
+        /// Source text when the duration is not a plain number, in seconds. Wins over
+        /// <see cref="DurationSeconds"/> on emit — see RecipeDef.DurationExpression.
+        public string DurationExpression;
+
         public List<ProductRef> Ingredients;
         public List<ProductRef> Products;
         public string MachineId;
         public string ResearchId;
+
+        /// The unlock this edit wires also grants the machine. Default TRUE;
+        /// `unlock_machine = False` is the opt-out. Only meaningful alongside
+        /// <see cref="MachineId"/> + <see cref="ResearchId"/>.
+        /// See UnlockRecipeDef.UnlockMachine.
+        public bool UnlockMachine = true;
+
         public int? PowerPercent;
 
+        /// True when this edit is written as a `with edit_recipe(recipe):` BLOCK
+        /// rather than a plain `edit_recipe(...)` call. The block header carries
+        /// only the recipe; every change is a sub-action statement in the body —
+        /// set_/remove_ingredient, set_/remove_product, bind_recipe, unbind_recipe
+        /// — each an ordinary scoped def with its own source range, exactly like a
+        /// statement inside an if-clause. The legacy plain-call fields above are
+        /// then unused (they migrate into sub-actions the first time the modder
+        /// touches the block in the editor).
+        ///
+        /// Mirrors <see cref="RecipeDef.EmitAsWithBlock"/>. Also true for an edit
+        /// that is merely GOING to become a block on the next save; the
+        /// authoritative "already a block on disk" test is
+        /// <see cref="TryGetBlockHeaderLine"/>.
+        public bool EmitAsWithBlock;
+
         public override string DisplayId => RecipeId ?? "";
+
+        /// Header line of this edit's `with` block when one already exists on
+        /// disk — the same "blockheader:&lt;line&gt;" contract RecipeDef uses. The
+        /// authoritative "this is a block" signal; more so than
+        /// <see cref="EmitAsWithBlock"/>, which is also set pre-save.
+        public bool TryGetBlockHeaderLine(out int headerLine) {
+            headerLine = 0;
+            const string prefix = "blockheader:";
+            if (string.IsNullOrEmpty(ScopeKey) || !ScopeKey.StartsWith(prefix)) return false;
+            return int.TryParse(ScopeKey.Substring(prefix.Length), out headerLine) && headerLine > 0;
+        }
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(RecipeId)) missing.Add("recipe");
+            return missing;
+        }
+    }
+
+    /// One `set_ingredient` / `set_product` / `remove_ingredient` /
+    /// `remove_product` sub-action inside a `with edit_recipe(recipe):` block.
+    /// A single type covers all four: <see cref="IsInput"/> picks
+    /// ingredient-vs-product, <see cref="IsRemoval"/> picks set-vs-remove. A set
+    /// carries a <see cref="Quantity"/>; a remove leaves it null.
+    ///
+    /// It is an ordinary scoped statement — its own source range, its own
+    /// "block:&lt;headerLine&gt;" scope key — so it saves, deletes and reorders on
+    /// its own inside the block, with no back-link to the owning edit needed
+    /// (the block body renders by walking the AST + scope, not by ownership).
+    public sealed class RecipeProductActionDef : DefBase {
+        public override string Kind =>
+            (IsRemoval ? "remove-" : "set-") + (IsInput ? "ingredient" : "product");
+
+        /// The recipe being edited — carried for display and validation only;
+        /// not emitted (the enclosing `with edit_recipe(recipe):` supplies it).
+        public string RecipeId;
+
+        public bool IsInput;
+        public bool IsRemoval;
+
+        public string ProductId;
+        /// Set actions only. Null on a removal.
+        public int? Quantity;
+
+        public override string DisplayId => ProductId ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(ProductId)) missing.Add("product");
+            if (!IsRemoval && !Quantity.HasValue) missing.Add("quantity");
+            return missing;
+        }
+    }
+
+    /// One `unbind_recipe(machine)` sub-action inside a `with edit_recipe(...)`
+    /// block — detaches the recipe from a machine and drops the research
+    /// unlock(s) for that pair. <see cref="ResearchId"/> is an optional scoping
+    /// hint; when null every unlocking node is cleaned up at runtime.
+    public sealed class UnbindRecipeDef : DefBase {
+        public override string Kind => "unbind-recipe";
+
+        /// Recipe being edited — display/validation only; not emitted.
+        public string RecipeId;
+
+        public string MachineId;
+        public string ResearchId;
+
+        public override string DisplayId => MachineId ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(MachineId)) missing.Add("machine");
+            return missing;
+        }
     }
 
     /// `edit_machine_ports(machine, add_ports=[Port(...), ...])` — appends
@@ -627,11 +1155,94 @@ namespace CustomAssets.Editor.Model {
 
         public List<PortRef> AddPorts = new List<PortRef>();
 
+        /// Override for the target machine's
+        /// <c>UseAllRecipesAtStartOrAfterUnlock</c> flag (Python
+        /// <c>auto_select_recipes</c>). null = leave the existing machine's
+        /// value unchanged; true = it auto-selects every unlocked recipe;
+        /// false = it starts with NO recipe selected (the game still
+        /// force-selects when only one recipe is unlocked). Applied via
+        /// reflection since the runtime proto is otherwise immutable.
+        public bool? AutoSelectRecipes;
+
         public override string DisplayId => MachineId ?? "";
 
         public override Lyst<string> MissingMandatoryFields() {
             var missing = new Lyst<string>();
             if (string.IsNullOrEmpty(MachineId)) missing.Add("machine");
+            return missing;
+        }
+    }
+
+    /// `edit_entity_costs(entity, products, multiplyPercent, workers,
+    /// priority, maintenance, maintenanceProduct, maintenanceBufferMonths,
+    /// initialMaintenancePercent)` — retunes what an already-registered
+    /// entity costs to build.
+    ///
+    /// Applies to ANY entity, not just machines: `Costs` lives on the
+    /// shared <c>EntityProto</c> base, so trucks, excavators, locomotives,
+    /// cargo wagons, ships, buildings and machines are all valid targets
+    /// through one call.
+    ///
+    /// Every field except <see cref="EntityId"/> is optional, and an
+    /// absent field leaves that facet of the vanilla cost untouched — so
+    /// a pack can retune only the worker count, or only the price, without
+    /// having to restate the rest.
+    public sealed class EditEntityCostsDef : DefBase {
+        public override string Kind => "edit-entity-costs";
+
+        /// Target entity's id. Vanilla ids (string) and typed refs
+        /// (<c>Ids.Vehicles.TruckT2</c>) both round-trip through the
+        /// appendIdRef heuristic, same as every other id argument.
+        public string EntityId;
+
+        /// Replacement construction cost. Empty = keep whatever the entity
+        /// already charges. Deliberately reuses <see cref="ProductRef"/>
+        /// (the recipe-ingredient shape) so the loader, emitter and list
+        /// editor are all shared; <see cref="ProductRef.Port"/> is
+        /// meaningless for a cost and is never emitted.
+        public List<ProductRef> Products = new List<ProductRef>();
+
+        /// Integer-percent scale applied to the construction cost AFTER
+        /// <see cref="Products"/> — 150 means 1.5×, 50 means half price.
+        /// Null = no scaling. Maintenance is deliberately NOT scaled by
+        /// this; it has its own explicit fields below.
+        public int? MultiplyPercent;
+
+        /// Workers the finished entity occupies. Null = unchanged.
+        public int? Workers;
+
+        /// Default construction priority, 0 (highest) … 9 (lowest).
+        /// Null = unchanged.
+        public int? Priority;
+
+        /// Monthly maintenance quantity. Fractional by design — vanilla
+        /// vehicles pay values like 2.0 or 4.0 per month — so this is a
+        /// double rather than the int used for whole-unit fields.
+        public double? Maintenance;
+
+        /// Virtual maintenance product backing <see cref="Maintenance"/>
+        /// (<c>Ids.Products.MaintenanceT1</c> / T2 / T3). Required
+        /// whenever <see cref="Maintenance"/> is set — the runtime has no
+        /// safe default to fall back on.
+        public string MaintenanceProductId;
+
+        /// Extra months of maintenance buffer the entity carries.
+        /// Null = unchanged.
+        public int? MaintenanceBufferMonths;
+
+        /// Integer-percent maintenance boost applied while the entity is
+        /// new (vanilla early-game vehicles use 180 or 260).
+        /// Null = unchanged.
+        public int? InitialMaintenancePercent;
+
+        public override string DisplayId => EntityId ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            Lyst<string> missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(EntityId))
+            {
+                missing.Add("entity");
+            }
             return missing;
         }
     }
@@ -666,6 +1277,15 @@ namespace CustomAssets.Editor.Model {
         public string ResearchId;
         public bool CopyRecipes = true;
         public bool? LockedOnInit;
+
+        /// Override for the source machine's
+        /// <c>UseAllRecipesAtStartOrAfterUnlock</c> flag (Python
+        /// <c>auto_select_recipes</c>). null = inherit the source's value;
+        /// true = the placed machine auto-selects every unlocked recipe;
+        /// false = the placed machine starts with NO recipe selected so the
+        /// player picks one (the game still force-selects when the machine
+        /// has exactly one unlocked recipe — nothing the proto can change).
+        public bool? AutoSelectRecipes;
 
         /// Mirror of the runtime's `copy_layout` arg. When false the new
         /// machine starts from a 1×1 empty layout instead of cloning the
@@ -847,6 +1467,155 @@ namespace CustomAssets.Editor.Model {
             var missing = new Lyst<string>();
             if (string.IsNullOrEmpty(MineTowerId)) missing.Add("mineTowerId");
             if (string.IsNullOrEmpty(SourceId))    missing.Add("source");
+            return missing;
+        }
+    }
+
+    /// `build_farm(farmId, source, name, description, yieldMultiplierPercent,
+    /// demandsMultiplierPercent, fertilityReplenishPercent, waterCollected,
+    /// waterEvaporationPerDay, hasIrrigationAndFertilizerSupport, isGreenhouse,
+    /// research, lockedOnInit)`. Clones a source FarmProto (FarmT1..FarmT4)
+    /// with per-field overrides. Yield / demands / fertility replenish are
+    /// integer percents; waterCollected is a Product(...) wrapper carrying
+    /// the collected fluid + per-rainy-day quantity.
+    public sealed class FarmDef : NamedDef, ILayoutHostDef {
+        public override string Kind => "farm";
+        public override bool SupportsLayout => true;
+        public List<PortRef> Ports => null;
+        public string FarmId { get => Id; set => Id = value; }
+        public string SourceId;
+        public string Description;
+        public int? YieldMultiplierPercent;
+        public int? DemandsMultiplierPercent;
+        public int? FertilityReplenishPercent;
+        /// Water product id — paired with <see cref="WaterCollectedQuantity"/>
+        /// via a Python Product(...) wrapper. Both null = inherit source.
+        public string WaterCollectedProductId;
+        public int? WaterCollectedQuantity;
+        public int? WaterEvaporationPerDay;
+        public bool? HasIrrigationAndFertilizerSupport;
+        public bool? IsGreenhouse;
+        public string LayoutSourceStr { get; set; }
+        public string ResearchId;
+        public bool? LockedOnInit;
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(FarmId))   missing.Add("farmId");
+            if (string.IsNullOrEmpty(SourceId)) missing.Add("source");
+            return missing;
+        }
+    }
+
+    /// `add_crop(...)` (create-from-scratch) OR `clone_crop(source, ...)` —
+    /// registers a new <c>CropProto</c>. When <see cref="SourceId"/> is set
+    /// the emitter writes <c>clone_crop</c> and the runtime seeds every
+    /// omitted field from the source proto; when null the emitter writes
+    /// <c>add_crop</c> and every required field must be supplied.
+    ///
+    /// <see cref="Farms"/> optionally restricts which farms offer this crop
+    /// (post-init reflection into each FarmProto's crop list). Empty/null
+    /// leaves the vanilla auto-link semantics — every registered crop is
+    /// offered to every compatible farm (RequiresGreenhouse gate).
+    public sealed class CropDef : NamedDef {
+        public override string Kind => "crop";
+        public string CropId { get => Id; set => Id = value; }
+        /// When set, the emitter writes <c>clone_crop(source=SourceId, …)</c>
+        /// and the runtime inherits every omitted field from the source
+        /// crop. Null → <c>add_crop(…)</c>, no inheritance.
+        public string SourceId;
+        public string Description;
+        /// Product harvested per grow cycle. Serialized via the standard
+        /// <c>Product(id, quantity)</c> wrapper. Null with no source = crop
+        /// is a cover crop that produces nothing (matches vanilla legumes).
+        public ProductRef ProductProduced;
+        public int? ConsumedWaterPerDay;
+        public int? ConsumedFertilityPercentPerDay;
+        public int? MinFertilityToStartGrowthPercent;
+        public int? GrowthDurationDays;
+        /// Null = crop never dies from thirst. Otherwise the number of
+        /// days it can survive without water before dying.
+        public int? SurviveWithNoWaterDays;
+        public string IconPath;
+        public string PrefabPath;
+        public bool? RequiresGreenhouse;
+        public bool? PlantByDefault;
+        public string ResearchId;
+        /// Optional restrict-to list of farm ids (variable names or bare
+        /// ids). Applied post-lock via reflection into each named
+        /// FarmProto's crop list. Empty / null = vanilla auto-link
+        /// (offered to every compatible farm).
+        public List<string> Farms;
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(CropId)) missing.Add("cropId");
+            // Name / product / durations required only on create-from-scratch.
+            // clone_crop can omit them (inherits from source).
+            if (string.IsNullOrEmpty(SourceId)) {
+                if (string.IsNullOrEmpty(Name))   missing.Add("name");
+                if (ProductProduced == null)      missing.Add("productProduced");
+                if (!GrowthDurationDays.HasValue) missing.Add("growthDurationDays");
+            }
+            return missing;
+        }
+    }
+
+    /// `edit_crop(crop, productProduced, multiplyYieldPercent,
+    /// growthDurationDays, consumedWaterPerDay, consumedFertilityPercentPerDay,
+    /// minFertilityToStartGrowthPercent, surviveWithNoWaterDays,
+    /// requiresGreenhouse, plantByDefault)` — retunes an EXISTING crop's rates.
+    ///
+    /// Stands to <see cref="CropDef"/> (add_crop / clone_crop) exactly as
+    /// <see cref="EditEntityCostsDef"/> stands to the build_* calls: same
+    /// argument vocabulary, but it edits a crop the game already registered
+    /// instead of creating one. Every field is optional except
+    /// <see cref="CropId"/>; an absent field leaves that rate untouched.
+    public sealed class EditCropDef : DefBase {
+        public override string Kind => "edit-crop";
+
+        /// Target crop's id — a vanilla crop or one this pack defined earlier.
+        public string CropId;
+
+        /// Replacement harvest. Both parts move together (they come from one
+        /// Python `Product(...)` wrapper); null = keep the crop's own.
+        public string ProductProducedId;
+        public int? ProductProducedQuantity;
+
+        /// Integer-percent scale applied to the harvest quantity AFTER
+        /// <see cref="ProductProducedId"/> — 150 means 1.5x. Lets a rebalance
+        /// pack change yields without restating which product each crop grows.
+        public int? MultiplyYieldPercent;
+
+        /// Days from planting to harvest.
+        public int? GrowthDurationDays;
+
+        /// Water drawn per day while growing.
+        public int? ConsumedWaterPerDay;
+
+        /// Soil fertility consumed per day, as an integer percent. Negative
+        /// values REPLENISH fertility — that's how vanilla green-manure crops
+        /// work — so this is deliberately not clamped to positives.
+        public int? ConsumedFertilityPercentPerDay;
+
+        /// Fertility the soil must have before the crop will start growing,
+        /// as an integer percent.
+        public int? MinFertilityToStartGrowthPercent;
+
+        /// Days the crop survives with no water before dying.
+        public int? SurviveWithNoWaterDays;
+
+        public bool? RequiresGreenhouse;
+        public bool? PlantByDefault;
+
+        public override string DisplayId => CropId ?? "";
+
+        public override Lyst<string> MissingMandatoryFields() {
+            Lyst<string> missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(CropId))
+            {
+                missing.Add("crop");
+            }
             return missing;
         }
     }
@@ -1109,6 +1878,18 @@ namespace CustomAssets.Editor.Model {
         /// each entry a typed-ref or string literal. Captured verbatim so
         /// list contents (especially typed refs) round-trip exactly.
         public string EntitiesExpression;
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            // Every one of these is a required positional on
+            // add_toolbar_category — there are no defaults to fall back on.
+            if (string.IsNullOrEmpty(CategoryId))          missing.Add("categoryId");
+            if (string.IsNullOrEmpty(Name))                missing.Add("name");
+            if (string.IsNullOrEmpty(IconPath))            missing.Add("icon");
+            if (string.IsNullOrEmpty(ParentId))            missing.Add("parent");
+            if (string.IsNullOrEmpty(EntitiesExpression))  missing.Add("entities");
+            return missing;
+        }
     }
 
     /// `build_generator(id, name, inputProduct, outputElectricityKw,
@@ -1175,17 +1956,101 @@ namespace CustomAssets.Editor.Model {
 
         // Recipe-specific arguments.
         public string Description;
+
+        /// `replaces = [...]` — recipe ids this one supersedes. Each entry is an
+        /// inline tombstone equivalent to a standalone
+        /// <see cref="MigrateRecipeDef"/>: saves still holding the old id are
+        /// remapped to this recipe on load.
+        ///
+        /// Holds ids that intentionally resolve to NOTHING — the listed recipes
+        /// must no longer be built — so this list is deliberately excluded from
+        /// reference validation and never picker-backed.
+        public List<string> Replaces;
+
+        /// LEGACY one-shot machine (0.2.x style build_recipe(machine=...)). In
+        /// the 0.3.0 split a recipe is machine-less and machines are attached
+        /// via <see cref="BindRecipeDef"/>; this stays non-null only for packs
+        /// that still pass `machine` inline, so the emitter reproduces the
+        /// legacy call verbatim. New recipes leave it null and carry their
+        /// machines as sibling bind_recipe defs.
         public string MachineId;
 
+        /// True when this recipe was READ from the file in the legacy one-shot
+        /// form (an inline `machine=` on build_recipe). Stays true for the
+        /// session even after the editor migrates the inline machine into
+        /// <see cref="Bindings"/>, so the form can warn that the file is still
+        /// in the old format and will be upgraded on save. Reset naturally on
+        /// the next load, once the file has been rewritten as a `with` block.
+        public bool LoadedAsLegacy;
+
         // Optional arguments. Null = not present in source.
+        /// LEGACY — only meaningful alongside <see cref="MachineId"/>.
         public string ResearchId;
+        /// LEGACY — only meaningful alongside <see cref="MachineId"/> and
+        /// <see cref="ResearchId"/>. The one-shot unlock also grants the
+        /// machine; default TRUE, `unlock_machine = False` opts out.
+        /// See UnlockRecipeDef.UnlockMachine.
+        public bool UnlockMachine = true;
+        /// LEGACY — only meaningful alongside <see cref="MachineId"/>.
         public int? DurationSeconds;
+
+        /// Source text when the duration is not a plain number — e.g.
+        /// `Duration.FromSec(config.smelt_seconds)`. Holds only the ARGUMENT text
+        /// (`config.smelt_seconds`); the emitter re-wraps it in Duration.FromSec.
+        /// Wins over <see cref="DurationSeconds"/> on emit. See ProductRef.QuantityExpression.
+        public string DurationExpression;
+
         public List<ProductRef> Ingredients = new List<ProductRef>();
         public List<ProductRef> Products    = new List<ProductRef>();
         public int? PowerPercent;
 
+        /// True when this recipe is written as a `with build_recipe(...) [as v]:`
+        /// BLOCK rather than a plain `build_recipe(...)` statement. The recipe's
+        /// source range then covers only the block HEADER — its machine bindings
+        /// are separate statements in <see cref="PackModel.Definitions"/>, each
+        /// with its own range and a `"block:&lt;headerLine&gt;"` scope key, exactly like
+        /// the statements inside an if-clause. That is what lets a single binding
+        /// be saved, deleted or reordered on its own, and lets an `if` nest inside
+        /// the block (or the block inside an `if`) at any depth.
+        ///
+        /// Find a recipe's bindings with <see cref="PackModel.BindingsOf"/>.
+        public bool EmitAsWithBlock;
+
+        /// Header line of this recipe's `with` block when one ALREADY exists in
+        /// the file; false when the recipe is still a plain `build_recipe(...)`
+        /// call. PackLoader keys a block recipe's header row as
+        /// <c>"blockheader:&lt;line&gt;"</c>, which is the authoritative signal —
+        /// more so than <see cref="EmitAsWithBlock"/>, which is also set for a
+        /// recipe that is merely going to BECOME a block on the next save.
+        ///
+        /// This decides where a new binding belongs: inside the existing block
+        /// (scope <c>"block:&lt;line&gt;"</c>, saved by splicing into it) or
+        /// scope-less, to be written as the body of the block the recipe's own
+        /// save is about to open.
+        public bool TryGetBlockHeaderLine(out int headerLine) {
+            headerLine = 0;
+            const string prefix = "blockheader:";
+            if (string.IsNullOrEmpty(ScopeKey) || !ScopeKey.StartsWith(prefix)) return false;
+            return int.TryParse(ScopeKey.Substring(prefix.Length), out headerLine) && headerLine > 0;
+        }
+
         // Note: Name, SourceFile, SourceStartLine, SourceEndLine, Comment, and
         // Condition now live on DefBase — see that class for documentation.
+
+        public override Lyst<string> MissingMandatoryFields() {
+            var missing = new Lyst<string>();
+            if (string.IsNullOrEmpty(RecipeId)) missing.Add("recipeId");
+            if (string.IsNullOrEmpty(Name))     missing.Add("name");
+            // A recipe that neither consumes nor produces anything is always
+            // a draft — the machine would run a no-op cycle forever. Note
+            // that ONE side may legitimately be empty (a pure sink recipe
+            // has no products, a pure source has no ingredients), so this
+            // only rejects the both-empty case.
+            bool hasIngredients = Ingredients != null && Ingredients.Count > 0;
+            bool hasProducts    = Products    != null && Products.Count    > 0;
+            if (!hasIngredients && !hasProducts) missing.Add("ingredients or products");
+            return missing;
+        }
     }
 
     /// `define_box_type(boxTypeId, token, heightFrom, heightTo, constraint,
@@ -1286,6 +2151,21 @@ namespace CustomAssets.Editor.Model {
         public PackModel(string modId, string rootPath) {
             ModId = modId;
             RootPath = rootPath;
+        }
+
+        /// The machine bindings belonging to <paramref name="recipe"/>, in file
+        /// order. Bindings are ordinary top-level definitions (so each one saves,
+        /// deletes and reorders independently); the association is the in-memory
+        /// <see cref="BindRecipeDef.OwnerRecipe"/> link, which survives the model
+        /// being reloaded and rebuilt underneath a cached editor.
+        ///
+        /// A binding with no owner is a STANDALONE `bind_recipe(recipe, machine…)`
+        /// naming its recipe explicitly — it is not returned here.
+        public System.Collections.Generic.IEnumerable<BindRecipeDef> BindingsOf(RecipeDef recipe) {
+            if (recipe == null) yield break;
+            foreach (DefBase d in Definitions) {
+                if (d is BindRecipeDef b && ReferenceEquals(b.OwnerRecipe, recipe)) yield return b;
+            }
         }
     }
 }

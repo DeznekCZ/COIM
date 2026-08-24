@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Machines pack: factory silhouette with a smokestack and gear. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a3524"/>
+      <stop offset="1" stop-color="#221a15"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="28" fill="url(#bg)"/>
+
+  <!-- smoke -->
+  <g fill="#cbb9a4" opacity="0.5">
+    <circle cx="182" cy="52" r="15"/>
+    <circle cx="204" cy="38" r="11"/>
+    <circle cx="162" cy="40" r="9"/>
+  </g>
+
+  <!-- building -->
+  <g fill="#8c98a6">
+    <rect x="34" y="140" width="188" height="80" rx="6"/>
+    <rect x="164" y="64" width="30" height="80" rx="4"/>
+    <rect x="160" y="56" width="38" height="12" rx="4" fill="#e8a33d"/>
+  </g>
+
+  <!-- sawtooth roof -->
+  <path d="M34 142 V110 L66 142 Z M66 142 V110 L98 142 Z M98 142 V110 L130 142 Z M130 142 V110 L162 142 Z"
+        fill="#5b6675"/>
+
+  <!-- windows -->
+  <g fill="#ffcf7a">
+    <rect x="54" y="164" width="24" height="24" rx="3"/>
+    <rect x="92" y="164" width="24" height="24" rx="3"/>
+    <rect x="130" y="164" width="24" height="24" rx="3"/>
+  </g>
+
+  <!-- gear -->
+  <g transform="translate(196 176)" fill="#e8a33d">
+    <circle r="30"/>
+    <g>
+      <rect x="-6" y="-40" width="12" height="15" rx="3"/>
+      <rect x="-6" y="25" width="12" height="15" rx="3"/>
+      <rect x="-40" y="-6" width="15" height="12" rx="3"/>
+      <rect x="25" y="-6" width="15" height="12" rx="3"/>
+      <rect x="-6" y="-40" width="12" height="15" rx="3" transform="rotate(45)"/>
+      <rect x="-6" y="25" width="12" height="15" rx="3" transform="rotate(45)"/>
+      <rect x="-40" y="-6" width="15" height="12" rx="3" transform="rotate(45)"/>
+      <rect x="25" y="-6" width="15" height="12" rx="3" transform="rotate(45)"/>
+    </g>
+    <circle r="11" fill="#221a15"/>
+  </g>
+</svg>

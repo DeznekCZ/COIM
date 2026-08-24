@@ -201,6 +201,7 @@ namespace CustomAssets.Ui.Components {
 
                 foreach (ResearchDef rd in pack) {
                     ResearchDef captured = rd;
+                    try {
                     // When the owner def lives in the same file as this
                     // research AND the file's variable map has a binding
                     // pointing at this research id, prefer the variable name
@@ -224,41 +225,65 @@ namespace CustomAssets.Ui.Components {
                     rows.Add(new KeyValuePair<UiComponent, string>(row,
                         ((captured.Name ?? "") + " " + captured.ResearchId + " "
                             + (sameFileVar ?? "")).ToLowerInvariant()));
+                    } catch (Exception ex) {
+                        Log.Warning("ResearchIdPicker: skipping pack research '"
+                            + (captured?.ResearchId ?? "<null>") + "' — "
+                            + ex.GetType().Name + ": " + ex.Message);
+                    }
                 }
             }
 
             // Game research from ProtosDb — skip ids already in the pack
             // section so the same node doesn't show twice.
+            //
+            // Every node is read inside a try/catch, and the sort key is
+            // null-safe. Previously a single node that threw while being read
+            // took the WHOLE section down: the exception escaped before
+            // `popup.Open(Btn)` at the end of this method ever ran, so the
+            // symptom was not "one row missing" but "the picker shows nothing
+            // at all". Research graphics are a live hazard here specifically —
+            // add_unlock_machine / add_unlock_entity append to
+            // Graphics.IconsProtos, which researchIconPath indexes into.
             if (m_protosDb != null) {
-                List<ResearchNodeProto> game = m_protosDb.All<ResearchNodeProto>()
-                    .Where(p => !packIds.Contains(p.Id.Value))
-                    .OrderBy(p => p.Strings.Name.TranslatedString,
-                             StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-                if (game.Count > 0) {
-                    Label header = new Label(new LocStrFormatted(
-                        "Game research — " + game.Count + " node(s)"));
-                    header.FontBold().PaddingTopBottom(2.pt());
-                    list.Add(header);
-                    rows.Add(new KeyValuePair<UiComponent, string>(header, null));
+                List<ResearchNodeProto> game = new List<ResearchNodeProto>();
+                foreach (ResearchNodeProto candidate in m_protosDb.All<ResearchNodeProto>()) {
+                    try {
+                        if (candidate == null || packIds.Contains(candidate.Id.Value)) continue;
+                        game.Add(candidate);
+                    } catch (Exception ex) {
+                        Log.Warning("ResearchIdPicker: skipping an unreadable research node — "
+                            + ex.GetType().Name + ": " + ex.Message);
+                    }
+                }
+                game.Sort((a, b) => string.Compare(
+                    researchDisplayName(a), researchDisplayName(b), StringComparison.OrdinalIgnoreCase));
 
-                    foreach (ResearchNodeProto gp in game) {
-                        ResearchNodeProto captured = gp;
+                Label header = new Label(new LocStrFormatted(
+                    "Game research — " + game.Count + " node(s)"));
+                header.FontBold().PaddingTopBottom(2.pt());
+                list.Add(header);
+                rows.Add(new KeyValuePair<UiComponent, string>(header, null));
+
+                foreach (ResearchNodeProto gp in game) {
+                    ResearchNodeProto captured = gp;
+                    try {
+                        string title = researchDisplayName(captured) ?? captured.Id.Value;
                         string modTag = readModTag(captured);
                         string icon = researchIconPath(captured);
 
                         UiComponent row = buildOptionRow(
                             thumb: !string.IsNullOrEmpty(icon)
                                 ? new Icon(icon).Size(OptionIconSize) : null,
-                            title: captured.Strings.Name.TranslatedString,
+                            title: title,
                             subtitle: captured.Id.Value,
                             chip: modTag,
                             onClick: () => selectValue(captured.Id.Value));
                         list.Add(row);
                         rows.Add(new KeyValuePair<UiComponent, string>(row,
-                            (captured.Strings.Name.TranslatedString + " "
-                                + captured.Id.Value + " "
-                                + (modTag ?? "")).ToLowerInvariant()));
+                            (title + " " + captured.Id.Value + " " + (modTag ?? "")).ToLowerInvariant()));
+                    } catch (Exception ex) {
+                        Log.Warning("ResearchIdPicker: skipping research node '"
+                            + safeId(captured) + "' — " + ex.GetType().Name + ": " + ex.Message);
                     }
                 }
             }
@@ -361,11 +386,43 @@ namespace CustomAssets.Ui.Components {
 
         // ResearchNodeProto isn't IProtoWithIcon — icons live on Graphics.
         // Same lookup as ProtoPicker's iconPathOf callback for research.
+        // Graphics.IconsProtos is APPENDED TO at registration time by
+        // add_unlock_machine / add_unlock_entity, so its contents are not fully
+        // under the game's control — guard the whole read rather than trust the
+        // first entry to be a well-formed proto with a readable icon.
         private static string researchIconPath(ResearchNodeProto node) {
             if (node == null) return null;
-            if (!node.Graphics.Icons.IsEmpty) return node.Graphics.Icons[0];
-            if (!node.Graphics.IconsProtos.IsEmpty) return node.Graphics.IconsProtos[0].IconPath;
+            try {
+                if (!node.Graphics.Icons.IsEmpty) return node.Graphics.Icons[0];
+                if (!node.Graphics.IconsProtos.IsEmpty) return node.Graphics.IconsProtos[0]?.IconPath;
+            } catch (Exception) {
+                // An unreadable icon must never cost us the row itself.
+            }
             return null;
+        }
+
+        /// Display name, or null when the node has none. Proto.Strings is
+        /// populated for everything player-facing, but the picker also sees
+        /// nodes registered by other mods — fall back instead of throwing.
+        private static string researchDisplayName(ResearchNodeProto node) {
+            if (node == null) {
+                return null;
+            }
+            try {
+                // Proto.Str is a struct, so `?.` is not available on Strings.
+                string translated = node.Strings.Name.TranslatedString;
+                return string.IsNullOrEmpty(translated) ? null : translated;
+            } catch (Exception) {
+                return null;
+            }
+        }
+
+        private static string safeId(ResearchNodeProto node) {
+            try {
+                return node?.Id.Value ?? "<null>";
+            } catch (Exception) {
+                return "<unreadable>";
+            }
         }
 
         private static string readModTag(ResearchNodeProto proto) {

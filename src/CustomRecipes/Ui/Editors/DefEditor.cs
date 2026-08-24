@@ -43,10 +43,50 @@ namespace CustomAssets.Ui.Editors {
         /// <see cref="AddField"/> via <see cref="OnRefresh"/>.
         private readonly List<Action> m_observers = new List<Action>();
 
+        /// Every label added through <see cref="AddField"/>, paired with the
+        /// mandatory-field key derived from its text. Drives the red
+        /// "still empty" highlight in <see cref="RefreshValidation"/>.
+        private readonly List<RequiredFieldRow> m_fieldRows = new List<RequiredFieldRow>();
+
+        /// True while <see cref="Value"/> replays the observer list. Any
+        /// ChangeEvent a rebind provokes while this is set is a UI echo of
+        /// the model, not a modder edit — <see cref="MarkEdited"/> ignores it
+        /// so merely SELECTING a def never marks it Dirty.
+        private bool m_rebinding;
+
+        /// Raised whenever a field edit lands on the bound def. The editor
+        /// window listens so an in-memory-only def can be flushed to disk the
+        /// moment its mandatory fields are all filled in.
+        public event Action<DefBase> DefEdited;
+
         protected DefEditor() {
             this.AlignItemsStretch();
             this.Gap(4.px()).Padding(4.px());
+
+            // Blanket refresh hook. ChangeEvent<T> bubbles from the concrete
+            // control up to this Column, so registering here re-runs the
+            // highlight for fields the typed helpers below don't own (proto
+            // pickers, hand-rolled controls) without each one opting in.
+            // TrickleDown is deliberately NOT used — we want the control to
+            // have committed its new value first.
+            //
+            // Note this does NOT set Dirty: a bubbling ChangeEvent can also
+            // come from a picker popup's own search box, which is navigation
+            // rather than an edit. Dirty stays owned by the explicit
+            // MarkEdited calls in the bound-field helpers and the per-editor
+            // setters, exactly as before.
+            RootElement.RegisterCallback<UnityEngine.UIElements.ChangeEvent<string>>(_ => onControlChanged());
+            RootElement.RegisterCallback<UnityEngine.UIElements.ChangeEvent<bool>>(_ => onControlChanged());
 		}
+
+        /// Repaint the validation state after a control the typed helpers
+        /// don't own changed. Notifies listeners so the tree row's marker
+        /// tracks the def's completeness, but leaves Dirty alone.
+        private void onControlChanged() {
+            if (m_rebinding || value == null) return;
+            RefreshValidation();
+            DefEdited?.Invoke(value);
+        }
 
         /// <summary>Swap the currently-edited model instance. Every observer
         /// registered via <see cref="OnRefresh"/> fires once so each field
@@ -56,10 +96,70 @@ namespace CustomAssets.Ui.Editors {
         public virtual DefEditor<TDefBase> Value(TDefBase newValue) {
             this.value = newValue;
             if (newValue == null) return this;
-            for (int i = 0; i < m_observers.Count; i++) {
-                m_observers[i]();
+            m_rebinding = true;
+            try {
+                for (int i = 0; i < m_observers.Count; i++) {
+                    m_observers[i]();
+                }
+            } finally {
+                m_rebinding = false;
             }
+            RefreshValidation();
             return this;
+        }
+
+        /// <summary>Record that the modder changed something on the bound
+        /// def: flags it Dirty, re-runs the mandatory-field highlight so the
+        /// warning clears as soon as the field is filled, and notifies
+        /// listeners. No-op while <see cref="Value"/> is rebinding.</summary>
+        protected void MarkEdited() {
+            if (m_rebinding || value == null) return;
+            value.Dirty = true;
+            RefreshValidation();
+            DefEdited?.Invoke(value);
+        }
+
+        /// <summary>Re-apply the "required but still empty" highlight to
+        /// every field row. Each name returned by
+        /// <see cref="DefBase.MissingMandatoryFields"/> is matched against the
+        /// keys derived from the field labels; matching rows turn red and gain
+        /// a ⚠ prefix, everything else reverts to the normal label style.
+        ///
+        /// Public so the editor window can force a refresh after mutations it
+        /// drives itself (list add/remove, layout dialog, proto pickers) that
+        /// don't surface as a bubbling ChangeEvent.</summary>
+        public void RefreshValidation() {
+            HashSet<string> missing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (value != null) {
+                Mafi.Collections.Lyst<string> reported = value.MissingMandatoryFields();
+                if (reported != null) {
+                    foreach (string entry in reported) {
+                        // "albedo or reference" names ONE requirement satisfied
+                        // by EITHER field, so both rows light up until one is
+                        // filled. Splitting here keeps the model side free to
+                        // phrase such requirements naturally.
+                        foreach (string alternative in entry.Split(new[] { " or " }, StringSplitOptions.None)) {
+                            missing.Add(alternative.Trim());
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < m_fieldRows.Count; i++) {
+                RequiredFieldRow row = m_fieldRows[i];
+                bool isMissing = missing.Contains(row.Key);
+                row.Label.Value(new LocStrFormatted(isMissing ? "⚠ " + row.Text : row.Text));
+                row.Label.Color(isMissing ? ColorRgba.Red : ColorRgba.White);
+            }
+        }
+
+        /// Reduce a field label to the bare argument name so it can be matched
+        /// against MissingMandatoryFields entries. Labels carry trailing
+        /// prose — "source (machine to clone)" — which is stripped down to
+        /// "source"; the parenthetical is purely documentation.
+        private static string fieldKeyFromLabel(string label) {
+            if (string.IsNullOrEmpty(label)) return "";
+            int cut = label.IndexOfAny(new[] { ' ', '(' });
+            return (cut < 0 ? label : label.Substring(0, cut)).Trim();
         }
 
         /// <summary>Register a callback that fires whenever
@@ -90,13 +190,20 @@ namespace CustomAssets.Ui.Editors {
         /// handles rebinding itself.</param>
         protected TComponent AddField<TComponent>(LocStrFormatted label, TComponent fieldComponent,
                 Action onRefresh = null) where TComponent : UiComponent {
+            Label labelComponent = new Label(label).Class(Cls.groupHeader);
             Column row = new Column {
-                new Label(label).Class(Cls.groupHeader),
+                labelComponent,
                 fieldComponent
             }.Class(Cls.group).Gap(4.px()).Padding(4.px());
             row.AlignItemsStretch();
             Add(row);
             if (onRefresh != null) m_observers.Add(onRefresh);
+            string labelText = label.ToString();
+            m_fieldRows.Add(new RequiredFieldRow {
+                Key   = fieldKeyFromLabel(labelText),
+                Label = labelComponent,
+                Text  = labelText
+            });
             return fieldComponent;
         }
 
@@ -130,7 +237,11 @@ namespace CustomAssets.Ui.Editors {
             TextField field = new TextField();
             if (multiline) field.Multiline(true).SetTextAreaMinHeight(48.px());
             if (monospace) field.Class(Cls.fontMonospace);
-            field.OnValueChanged(v => { if (value != null) setter(value, v); });
+            // MarkEdited is also reached via the blanket ChangeEvent hook in
+            // the constructor; calling it here too guarantees coverage for
+            // controls that set their value without dispatching one.
+            // MarkEdited is idempotent, so the double path is harmless.
+            field.OnValueChanged(v => { if (value != null) { setter(value, v); MarkEdited(); } });
             return AddField(label, field, onRefresh: () => field.Text(getter(value) ?? ""));
         }
 
@@ -147,6 +258,32 @@ namespace CustomAssets.Ui.Editors {
 
         /// <summary>Positive-integer field bound to a nullable-int property.
         /// Blank input clears the value; non-integer input is ignored.</summary>
+        /// Optional whole-number field that also accepts an EXPRESSION — a config
+        /// field, a variable from the same file, or a calculation over them. Same shape
+        /// as <see cref="AddNullableIntField"/> plus accessors for the expression text;
+        /// the expression wins on emit and the number is kept as the fallback.
+        ///
+        /// Use this for any slot a modder might want to drive from config.json (a
+        /// duration, a cost, an amount) instead of the plain int helper.
+        protected Components.ExpressionField AddExpressionIntField(string label,
+                Func<TDefBase, int?> getter, Action<TDefBase, int?> setter,
+                Func<TDefBase, string> expressionGetter,
+                Action<TDefBase, string> expressionSetter) {
+            Components.ExpressionField field = new Components.ExpressionField(
+                getNumber:     () => value == null ? (int?)null : getter(value),
+                setNumber:     v  => { if (value != null) { setter(value, v); MarkEdited(); } },
+                getExpression: () => value == null ? null : expressionGetter(value),
+                setExpression: v  => { if (value != null) { expressionSetter(value, v); MarkEdited(); } },
+                onChanged:     null,
+                minValue:      0,
+                width:         90,
+                allowEmpty:    true);
+            // The editor is cached per def KIND and rebound to a different instance via
+            // Value(...), so the control has to re-read on every refresh — otherwise it
+            // would keep showing the previously selected definition's number.
+            return AddField(label, field, onRefresh: field.Refresh);
+        }
+
         protected TextField AddNullableIntField(string label,
                 Func<TDefBase, int?> getter, Action<TDefBase, int?> setter) {
             TextField field = new TextField().PositiveIntegersOnly();
@@ -154,6 +291,7 @@ namespace CustomAssets.Ui.Editors {
                 if (value == null) return;
                 if (string.IsNullOrWhiteSpace(v)) setter(value, null);
                 else if (int.TryParse(v.Trim(), out int parsed)) setter(value, parsed);
+                MarkEdited();
             });
             return AddField(label, field, onRefresh: () => {
                 int? cur = getter(value);
@@ -169,6 +307,7 @@ namespace CustomAssets.Ui.Editors {
             field.OnValueChanged(v => {
                 if (value == null) return;
                 setter(value, EditorHelpers.ParseNullableDouble(v));
+                MarkEdited();
             });
             return AddField(label, field, onRefresh: () => {
                 double? cur = getter(value);
@@ -258,6 +397,16 @@ namespace CustomAssets.Ui.Editors {
                 dialog.OnCloseStart += _ => { if (value == owner) Value(value); };
                 dialog.Open(root);
             });
+        }
+
+        /// One <see cref="AddField"/> row's label, remembered so
+        /// <see cref="RefreshValidation"/> can restyle it in place. <see cref="Text"/>
+        /// keeps the pristine label text — the ⚠ prefix is applied on top of
+        /// it each pass rather than accumulating.
+        private sealed class RequiredFieldRow {
+            public string Key;
+            public Label Label;
+            public string Text;
         }
     }
 

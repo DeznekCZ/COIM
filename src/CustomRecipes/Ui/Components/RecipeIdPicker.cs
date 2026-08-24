@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using CustomAssets.Editor.Model;
 using Mafi;
 using Mafi.Core.Factory.Recipes;
+using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Localization;
 using Mafi.Unity.Ui.Library;
@@ -192,6 +194,7 @@ namespace CustomAssets.Ui.Components {
                 list.Add(header);
                 rows.Add(new KeyValuePair<UiComponent, string>(header, null));
 
+                Dictionary<string, string> packProductNames = buildPackProductNames();
                 foreach (RecipeDef rd in modded) {
                     RecipeDef captured = rd;
                     UiComponent row = buildOptionRow(
@@ -203,7 +206,8 @@ namespace CustomAssets.Ui.Components {
                         onClick: () => selectValue(captured.RecipeId));
                     list.Add(row);
                     rows.Add(new KeyValuePair<UiComponent, string>(row,
-                        ((captured.Name ?? "") + " " + captured.RecipeId)
+                        ((captured.Name ?? "") + " " + captured.RecipeId + " "
+                            + moddedProductsSearchText(captured, packProductNames))
                             .ToLowerInvariant()));
                 }
             }
@@ -242,10 +246,12 @@ namespace CustomAssets.Ui.Components {
                             onClick: () => selectValue(storeAs));
                         list.Add(row);
                         rows.Add(new KeyValuePair<UiComponent, string>(row,
-                            (captured.Strings.Name.TranslatedString + " "
+                            (LocSearch.Bilingual(captured.Strings.Name) + " "
                                 + captured.Id.Value + " "
                                 + (typedRef ?? "") + " "
-                                + (modTag ?? "")).ToLowerInvariant()));
+                                + (modTag ?? "") + " "
+                                + gameProductsSearchText(captured))
+                                .ToLowerInvariant()));
                     }
                 }
             }
@@ -264,6 +270,88 @@ namespace CustomAssets.Ui.Components {
             search.FocusOnShow();
 
             popup.Open(Btn);
+        }
+
+        // ---- Search text ----------------------------------------------------
+
+        // A recipe is looked up by what it MAKES at least as often as by its
+        // own name — typing "steel" should surface every recipe with steel on
+        // either side, not only the one titled "Steel". Every product on the
+        // recipe contributes its name in the current language, its English
+        // original (see LocSearch — the modder knows the wiki/Python names in
+        // English even when the game runs localized) and its raw id.
+        private static string gameProductsSearchText(RecipeProto recipe) {
+            StringBuilder sb = new StringBuilder();
+            foreach (RecipeInput inp in recipe.AllInputs) {
+                appendProduct(sb, inp.Product);
+            }
+            foreach (RecipeOutput outp in recipe.AllOutputs) {
+                appendProduct(sb, outp.Product);
+            }
+            return sb.ToString();
+        }
+
+        // Modded recipes name their products however the Python source wrote
+        // them — a bare id, a typed ref (Ids.Products.X) or a product this
+        // same pack defines. The first two resolve to a proto and search
+        // bilingually just like game recipes; the third has no proto yet, so
+        // its authored name comes from the pack model instead.
+        private string moddedProductsSearchText(RecipeDef def,
+                Dictionary<string, string> packProductNames) {
+            StringBuilder sb = new StringBuilder();
+            appendModdedRefs(sb, def.Ingredients, packProductNames);
+            appendModdedRefs(sb, def.Products, packProductNames);
+            return sb.ToString();
+        }
+
+        private void appendModdedRefs(StringBuilder sb, List<ProductRef> refs,
+                Dictionary<string, string> packProductNames) {
+            if (refs == null) {
+                return;
+            }
+            foreach (ProductRef r in refs) {
+                if (r == null || string.IsNullOrEmpty(r.ProductId)) {
+                    continue;
+                }
+                LocSearch.Append(sb, r.ProductId);
+                ProductProto proto = RecipePreviewBuilder.ResolveProduct(
+                    r.ProductId, m_protosDb);
+                if (proto != null) {
+                    appendProduct(sb, proto);
+                    continue;
+                }
+                string packName;
+                if (packProductNames.TryGetValue(r.ProductId, out packName)) {
+                    LocSearch.Append(sb, packName);
+                }
+            }
+        }
+
+        private static void appendProduct(StringBuilder sb, ProductProto product) {
+            if (product == null) {
+                return;
+            }
+            LocSearch.AppendBilingual(sb, product.Strings.Name);
+            LocSearch.Append(sb, product.Id.Value);
+        }
+
+        // id → authored name for the products THIS pack defines, so a recipe
+        // consuming one is searchable by that product's name even though no
+        // proto exists for it while the pack is being authored.
+        private Dictionary<string, string> buildPackProductNames() {
+            Dictionary<string, string> map =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+            if (m_packModel?.Definitions == null) {
+                return map;
+            }
+            foreach (DefBase d in m_packModel.Definitions) {
+                ProductDefBase p = d as ProductDefBase;
+                if (p == null || string.IsNullOrEmpty(p.ProductId)) {
+                    continue;
+                }
+                map[p.ProductId] = p.Name ?? "";
+            }
+            return map;
         }
 
         // Each option in the popup is a ButtonColumn: a vertical-flex button

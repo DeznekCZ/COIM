@@ -1,0 +1,755 @@
+@inject SceneStore Store
+@inject LightingStore Lights
+@inject ObjIo ObjIo
+@inject MtlIo MtlIo
+@inject AutoSaveService AutoSave
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="editor">
+
+    <div class="toolbar">
+        <button @onclick="OpenObj" title="Open .obj (will load sibling .mtl if referenced)">Open…</button>
+        <button @onclick="SaveObj" title="Save .obj (and .mtl if there are materials)">Save…</button>
+        <button @onclick="ForceAutosave"
+                title="@($"Write an autosave now. Files go to {AutoSaveService.Dir}")">
+            Autosave now
+        </button>
+        <span class="sep">|</span>
+        <button @onclick="() => Store.SetMode(SelectionMode.Vertex)"
+                class="@(Store.Mode == SelectionMode.Vertex && !Store.IsPlacingFace ? "active" : "")"
+                disabled="@(Store.IsPlacingFace || Store.IsCuttingFace)">Vertex mode</button>
+        <button @onclick="() => Store.SetMode(SelectionMode.Face)"
+                class="@(Store.Mode == SelectionMode.Face && !Store.IsPlacingFace ? "active" : "")"
+                disabled="@(Store.IsPlacingFace || Store.IsCuttingFace)">Face mode</button>
+        <span class="sep">|</span>
+        <button @onclick="AddVertex" disabled="@(Store.IsPlacingFace || Store.IsCuttingFace)">+ Vertex</button>
+        <button @onclick="() => Store.BeginPlaceFace()"
+                class="@(Store.IsPlacingFace ? "active" : "")"
+                disabled="@Store.IsCuttingFace"
+                title="Click vertices in order to place a face. Counter-clockwise as you look at the front.">
+            Place face
+        </button>
+        <button @onclick="() => Store.DeleteSelection()"
+                disabled="@(Store.IsPlacingFace || Store.IsCuttingFace || (Store.SelectedVertices.Count == 0 && Store.SelectedFaces.Count == 0))">Delete</button>
+        <button @onclick="StartCutFace"
+                class="@(Store.IsCuttingFace ? "active" : "")"
+                disabled="@(!CanCutSelectedFace())"
+                title="Cut the selected face by picking two non-adjacent corners. Replaces the face with two new ones.">
+            Cut face
+        </button>
+        <span class="sep">|</span>
+        <button class="@(_splitUv ? "active" : "")"
+                @onclick="() => _splitUv = !_splitUv"
+                title="Show the UV editor next to the 3D view while UV mapping">Side-by-side UV</button>
+        <button class="@(_quadView ? "active" : "")"
+                @onclick="() => _quadView = !_quadView"
+                title="Split the 3D view into perspective + top/front/side ortho">Quad view</button>
+        <span class="sep">|</span>
+        <label class="muted small" title="Sun azimuth (degrees from +X toward +Z, Unity space)">Sun azim</label>
+        <input class="tb-num" type="number" step="5" value="@Fmt(Lights.Lights[0].Azim)"
+               @onchange="e => OnSunChanged(0, e.Value)" />
+        <label class="muted small" title="Sun elevation (degrees above the ground plane)">elev</label>
+        <input class="tb-num" type="number" step="5" value="@Fmt(Lights.Lights[0].Elev)"
+               @onchange="e => OnSunChanged(1, e.Value)" />
+        <span class="sep" style="flex:1"></span>
+        @if (!string.IsNullOrEmpty(_status))
+        {
+            <span class="status muted small" title="@_status">@_status</span>
+        }
+        <span class="muted">@Store.Mesh.Name · @Store.Mesh.Vertices.Count v · @Store.Mesh.Faces.Count f · @Store.Mesh.Materials.Count m</span>
+    </div>
+
+    <div class="center-column">
+        <div class="tab-bar tab-bar-wide">
+            <button class="tab @(_mainTab == "view" ? "active" : "")"
+                    @onclick='() => _mainTab = "view"'>3D view</button>
+            <button class="tab @(_mainTab == "materials" ? "active" : "")"
+                    @onclick='() => _mainTab = "materials"'>Materials</button>
+        </div>
+        <div class="tab-content tab-content-flat">
+            @if (_mainTab == "view")
+            {
+                @if (_quadView)
+                {
+                    <div class="quad-view">
+                        <div class="quad-pane">
+                            <div class="quad-label">Perspective</div>
+                            <Viewport3DTab ViewMode="perspective" />
+                        </div>
+                        <div class="quad-pane">
+                            <div class="quad-label">Top</div>
+                            <Viewport3DTab ViewMode="top" />
+                        </div>
+                        <div class="quad-pane">
+                            <div class="quad-label">Front</div>
+                            <Viewport3DTab ViewMode="front" />
+                        </div>
+                        <div class="quad-pane">
+                            <div class="quad-label">Side</div>
+                            <Viewport3DTab ViewMode="side" />
+                        </div>
+                    </div>
+                }
+                else if (_splitUv)
+                {
+                    <div class="split-pane">
+                        <div class="split-left"><Viewport3DTab /></div>
+                        <div class="split-right"><UvTab /></div>
+                    </div>
+                }
+                else
+                {
+                    <Viewport3DTab />
+                }
+            }
+            else
+            {
+                <MaterialsTab />
+            }
+        </div>
+    </div>
+
+    <aside class="side-panel">
+        <div class="tab-bar">
+            <button class="tab @(_sideTab == "props" ? "active" : "")"
+                    @onclick='() => _sideTab = "props"'>Properties</button>
+            <button class="tab @(_sideTab == "uv" ? "active" : "")"
+                    @onclick='() => _sideTab = "uv"'>UV editor</button>
+            <button class="tab @(_sideTab == "lights" ? "active" : "")"
+                    @onclick='() => _sideTab = "lights"'>Lights</button>
+        </div>
+        <div class="tab-content">
+            @if (_sideTab == "props")
+            {
+                <PropertiesTab />
+            }
+            else if (_sideTab == "lights")
+            {
+                <LightsTab />
+            }
+            else if (_splitUv)
+            {
+                <p class="muted small">UV editor is shown alongside the 3D view. Turn off
+                    <b>Side-by-side UV</b> in the toolbar to bring it back here.</p>
+            }
+            else
+            {
+                <UvTab />
+            }
+        </div>
+    </aside>
+
+    <div class="bottom-bar">
+        @if (Store.IsCuttingFace)
+        {
+            <span class="muted">Cutting face — pick two non-adjacent corners of the highlighted face. The face will split along that chord.</span>
+            <span class="placement-count">@Store.CuttingPickedCorners.Count / 2 corner(s)</span>
+            <span style="margin-left:auto;"></span>
+            <button class="danger" @onclick="() => Store.CancelCut()">Cancel</button>
+        }
+        else if (Store.IsPlacingFace)
+        {
+            <span class="muted">Placing face — click vertices in order. Winding sets the front side (green = start, yellow = latest).</span>
+            <span class="placement-count">@Store.PlacingVertexIds.Count vertex(es)</span>
+            @if (Store.PlacingVertexIds.Count >= 5)
+            {
+                <label class="muted">Fan root</label>
+                <select value="@Store.PlacingFanRoot"
+                        @onchange="OnFanRootChanged"
+                        title="Pick which corner the fan triangulation starts from. Triangles will be (root, i, i+1) around the polygon.">
+                    @for (int i = 0; i < Store.PlacingVertexIds.Count; i++)
+                    {
+                        var idx = i;
+                        <option value="@idx">@idx · v@(Store.PlacingVertexIds[idx])</option>
+                    }
+                </select>
+                <span class="muted small">@(Store.PlacingVertexIds.Count - 2) triangle(s)</span>
+            }
+            <span style="margin-left:auto;"></span>
+            <button @onclick="() => Store.ReversePlacement()"
+                    disabled="@(Store.PlacingVertexIds.Count < 2)"
+                    title="Flip the picked order so the face faces the opposite way (arrow flips)">
+                Reverse order
+            </button>
+            <button @onclick="() => Store.RemoveLastFromPlacement()"
+                    disabled="@(Store.PlacingVertexIds.Count == 0)">Undo last</button>
+            <button class="primary" @onclick="() => Store.FinishPlacement()"
+                    disabled="@(Store.PlacingVertexIds.Count < 3)">Finish (@Store.PlacingVertexIds.Count)</button>
+            <button class="danger" @onclick="() => Store.CancelPlacement()">Cancel</button>
+        }
+        else if (Store.Mode == SelectionMode.Vertex && Store.SelectedVertices.Count >= 1)
+        {
+            var selVerts = Store.SelectedVertices
+                .Select(id => Store.Mesh.Vertices.TryGetValue(id, out var vv) ? vv : null)
+                .Where(vv => vv is not null)
+                .Cast<Vertex>()
+                .ToList();
+            var xCommon = CommonAxis(selVerts, 0);
+            var yCommon = CommonAxis(selVerts, 1);
+            var zCommon = CommonAxis(selVerts, 2);
+            var single = selVerts.Count == 1;
+            var label = single ? $"Edit vertex v{selVerts[0].Id}:" : $"Edit {selVerts.Count} vertices:";
+            <span class="muted">@label</span>
+
+            @AxisInput("X", 0, xCommon)
+            @AxisInput("Y", 1, yCommon)
+            @AxisInput("Z", 2, zCommon)
+
+            @if (!single)
+            {
+                <button class="primary" @onclick="() => Store.WeldSelectedVertices()"
+                        title="Collapse all selected vertices to one at their average position. Faces are repointed to the survivor.">
+                    Weld (@selVerts.Count)
+                </button>
+            }
+            else if (Store.FacesUsingVertex(selVerts[0].Id) > 1)
+            {
+                <button @onclick="() => Store.SplitSelectedVertex()"
+                        title="Give each face using this vertex its own copy at the same position.">
+                    Split (@Store.FacesUsingVertex(selVerts[0].Id) faces)
+                </button>
+            }
+            <span class="muted small" style="margin-left:auto;">Unity axes: +X right, +Y up, +Z forward</span>
+        }
+        else
+        {
+            <span class="muted">Select one or more vertices to edit their XYZ.</span>
+            <span class="muted small" style="margin-left:auto;">Unity axes: +X right, +Y up, +Z forward</span>
+        }
+    </div>
+
+</div>
+
+@code {
+    private string _mainTab = "view";
+    private string _sideTab = "props";
+    private bool _splitUv = false;
+    private bool _quadView = false;
+    private string? _status;
+    private string? _lastObjName;
+    private bool _lightsPushed;
+    private DotNetObjectReference<Editor>? _selfRef;
+    private bool _ctrlSInstalled;
+
+    protected override void OnInitialized()
+    {
+        Store.OnChange += OnStoreChanged;
+        Lights.OnChange += OnLightsChanged;
+        _selfRef = DotNetObjectReference.Create(this);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_lightsPushed)
+        {
+            _lightsPushed = true;
+            await PushLightsAsync();
+        }
+        if (!_ctrlSInstalled)
+        {
+            _ctrlSInstalled = true;
+            try { await JS.InvokeVoidAsync("objEditor.installCtrlS", _selfRef); }
+            catch (Exception ex) { Diag.Log("installCtrlS: " + ex); }
+            // After the first render, check whether a previous crashed
+            // session left an autosave we can recover from.
+            await TryAutosaveRecoveryAsync();
+        }
+    }
+
+    private async Task TryAutosaveRecoveryAsync()
+    {
+        var manifest = AutoSave.TryLoadManifest();
+        if (manifest is null) return;
+        if (!DateTimeOffset.TryParse(manifest.Timestamp, out var ts)) return;
+        var ageMin = (DateTimeOffset.UtcNow - ts).TotalMinutes;
+        if (ageMin > 60 * 24 * 14)
+        {
+            // Older than two weeks — almost certainly stale from a forgotten
+            // run. Drop it rather than nagging the user.
+            AutoSave.Clear();
+            return;
+        }
+        var summary = $"{manifest.VertexCount} v · {manifest.FaceCount} f · {manifest.MaterialCount} m";
+        var when = ts.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+        var msg = $"An autosave from {when} was found ({summary}).\n\n" +
+                  $"Reload it? OK = recover, Cancel = start fresh (the autosave is not deleted).";
+        try
+        {
+            var ok = await JS.InvokeAsync<bool>("confirm", msg);
+            if (!ok) return;
+            var loaded = AutoSave.TryLoad();
+            if (loaded is not { } pair) return;
+            Store.Replace(pair.Mesh, manifest.LastObjName);
+            // Restore lights too.
+            Lights.SetAmbient(pair.Manifest.Ambient);
+            // Replace the lights list in-place so single subscribers see one
+            // OnChange instead of many.
+            Lights.Lights.Clear();
+            foreach (var l in pair.Manifest.Lights)
+                Lights.Lights.Add(new Light
+                {
+                    Name = l.Name, Azim = l.Azim, Elev = l.Elev,
+                    R = l.R, G = l.G, B = l.B, Intensity = l.Intensity,
+                });
+            Lights.Notify();
+            // Push any texture bytes we recovered into the GL side.
+            foreach (var m in pair.Mesh.Materials.Values)
+            {
+                if (m.TextureBytes is { Length: > 0 } bytes)
+                    await JS.InvokeVoidAsync("objEditor.setMaterialTexture",
+                        m.Id, Convert.ToBase64String(bytes));
+            }
+            _lastObjName = manifest.LastObjName;
+            AutoSave.SetLastObjName(_lastObjName);
+            _status = $"Recovered autosave from {when}";
+            await JS.InvokeVoidAsync("objEditor.frameAll");
+        }
+        catch (Exception ex) { Diag.Log("TryAutosaveRecovery: " + ex); }
+    }
+
+    // Triggered by the page-level Ctrl+S listener in objeditor.js. Re-writes
+    // the OBJ and (if present) MTL to the same files chosen during the most
+    // recent Save…; if there's no cached handle yet, falls through to the
+    // full Save flow with picker so the first Ctrl+S still works.
+    [JSInvokable]
+    public async Task OnCtrlS()
+    {
+        try
+        {
+            var hasObjCache = await JS.InvokeAsync<bool>("objEditor.hasCachedSlot", "obj");
+            if (!hasObjCache) { await SaveObj(); return; }
+
+            var meshName = string.IsNullOrWhiteSpace(Store.Mesh.Name) ? "mesh" : Store.Mesh.Name;
+            var hasMaterials = Store.Mesh.Materials.Count > 0;
+            var mtlName = hasMaterials ? meshName + ".mtl" : null;
+            var objText = ObjIo.Write(Store.Mesh, mtlName);
+            var objBytes = System.Text.Encoding.UTF8.GetBytes(objText);
+            var objResult = await JS.InvokeAsync<string?>("objEditor.saveToCachedSlot",
+                "obj", Convert.ToBase64String(objBytes));
+            if (objResult is null)
+            {
+                _status = "Ctrl+S: cached file handle was invalidated, use Save…";
+                StateHasChanged();
+                return;
+            }
+
+            string? mtlResult = null;
+            if (hasMaterials)
+            {
+                var mtlText = MtlIo.Write(Store.Mesh);
+                var mtlBytes = System.Text.Encoding.UTF8.GetBytes(mtlText);
+                mtlResult = await JS.InvokeAsync<string?>("objEditor.saveToCachedSlot",
+                    "mtl", Convert.ToBase64String(mtlBytes));
+            }
+            // Textures are deliberately NOT re-saved on Ctrl+S — the bytes
+            // haven't changed in memory and re-prompting would defeat the
+            // point of a "save to opened files" shortcut.
+            _status = mtlResult is null
+                ? $"Saved {objResult} (Ctrl+S)"
+                : $"Saved {objResult} + {mtlResult} (Ctrl+S)";
+            StateHasChanged();
+        }
+        catch (Exception ex) { Diag.Log("OnCtrlS: " + ex); }
+    }
+
+    // Build a flat lights payload and broadcast to all viewports. The JS
+    // shader expects [{dir:[x,y,z], color:[r,g,b], intensity}] where dir is
+    // already in GL space (Z mirrored from Unity).
+    private async Task PushLightsAsync()
+    {
+        var payload = new
+        {
+            ambient = Lights.Ambient,
+            lights = Lights.Lights.Select(l =>
+            {
+                var az = l.Azim * Math.PI / 180;
+                var el = l.Elev * Math.PI / 180;
+                var ce = Math.Cos(el);
+                var unityX = ce * Math.Cos(az);
+                var unityY = Math.Sin(el);
+                var unityZ = ce * Math.Sin(az);
+                return new
+                {
+                    dir = new[] { unityX, unityY, -unityZ },  // Unity → GL Z-flip
+                    color = new[] { l.R, l.G, l.B },
+                    intensity = l.Intensity,
+                };
+            }).ToArray(),
+        };
+        try { await JS.InvokeVoidAsync("objEditor.setLights", payload); }
+        catch (Exception ex) { Diag.Log("PushLightsAsync: " + ex); }
+    }
+
+    private async void OnLightsChanged()
+    {
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+            await PushLightsAsync();
+        }
+        catch (Exception ex) { Diag.Log("OnLightsChanged: " + ex); }
+    }
+
+    // Toolbar still surfaces just the sun (index 0). Extras live in LightsTab.
+    private async Task OnSunChanged(int axis, object? value)
+    {
+        if (!TryParseNumber(value, out var x)) return;
+        Lights.Update(0, l =>
+        {
+            if (axis == 0) l.Azim = ((x % 360) + 360) % 360;
+            else l.Elev = Math.Clamp(x, -89, 89);
+        });
+        await Task.CompletedTask;
+    }
+
+    private async void OnStoreChanged()
+    {
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+            // One broadcast per Store change — the JS side iterates over all
+            // attached viewports and rebuilds each. Centralising here avoids
+            // per-viewport subscriptions multiplying setState calls.
+            await JS.InvokeVoidAsync("objEditor.setState", BuildSnapshot());
+        }
+        catch (Microsoft.JSInterop.JSException ex)
+        {
+            Diag.Log("Editor.OnStoreChanged JS error: " + ex.Message);
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException)
+        {
+            // Viewport torn down mid-call.
+        }
+        catch (Exception ex)
+        {
+            Diag.Log("Editor.OnStoreChanged failed: " + ex);
+        }
+    }
+
+    // Snapshot the current scene as the anonymous shape expected by
+    // objEditor.setState (see comment block in objeditor.js). Both Editor
+    // (per-change broadcast) and Viewport3DTab (one-shot seed on attach)
+    // build the same payload — same field names so JS doesn't branch.
+    internal object BuildSnapshot() => new
+    {
+        mode = (Store.Mode == SelectionMode.Vertex || Store.IsCuttingFace) ? "vertex" : "face",
+        selectedVertexIds = Store.SelectedVertices.ToArray(),
+        selectedFaceIds = Store.SelectedFaces.ToArray(),
+        placing = Store.IsPlacingFace,
+        placingVertexIds = Store.PlacingVertexIds.ToArray(),
+        placingFanRoot = Store.PlacingFanRoot,
+        vertices = Store.Mesh.Vertices.Values.Select(v => new
+        {
+            id = v.Id,
+            x = v.Position.X,
+            y = v.Position.Y,
+            z = v.Position.Z,
+        }).ToArray(),
+        faces = Store.Mesh.Faces.Values.Select(f => new
+        {
+            id = f.Id,
+            v = f.VertexIds.ToArray(),
+            uv = f.UvIds.Select(id => (object?)id).ToArray(),
+            m = f.MaterialId,
+            s = f.SmoothingGroup,
+        }).ToArray(),
+        uvs = Store.Mesh.Uvs.Values.Select(u => new
+        {
+            id = u.Id,
+            u = u.Uv.U,
+            v = u.Uv.V,
+        }).ToArray(),
+        materials = Store.Mesh.Materials.Values.Select(m => new
+        {
+            id = m.Id,
+            r = m.Diffuse.R,
+            g = m.Diffuse.G,
+            b = m.Diffuse.B,
+            tex = m.TextureBytes is { Length: > 0 },
+        }).ToArray(),
+    };
+
+    public void Dispose()
+    {
+        Store.OnChange -= OnStoreChanged;
+        Lights.OnChange -= OnLightsChanged;
+        _selfRef?.Dispose();
+    }
+
+    private void AddVertex() => Store.AddVertex(Vec3.Zero);
+
+    private bool CanCutSelectedFace()
+    {
+        if (Store.IsCuttingFace || Store.IsPlacingFace) return false;
+        if (Store.Mode != SelectionMode.Face || Store.SelectedFaces.Count != 1) return false;
+        var id = Store.SelectedFaces.First();
+        return Store.Mesh.Faces.TryGetValue(id, out var f) && f.VertexIds.Count >= 4;
+    }
+
+    private void StartCutFace()
+    {
+        if (!Store.BeginCutFace())
+            _status = "Cut needs exactly one selected face with 4 or more corners";
+    }
+
+    private void ForceAutosave()
+    {
+        AutoSave.SetLastObjName(_lastObjName);
+        AutoSave.SaveSnapshot();
+        _status = $"Autosave written to {AutoSaveService.Dir}";
+    }
+
+    private void OnFanRootChanged(ChangeEventArgs e)
+    {
+        if (e.Value is string s && int.TryParse(s, out var n))
+        {
+            Store.PlacingFanRoot = Math.Clamp(n, 0, Math.Max(0, Store.PlacingVertexIds.Count - 1));
+            Store.Notify();
+        }
+    }
+
+    private void SetCoord(int id, int axis, object? value)
+    {
+        if (!TryParseNumber(value, out var x)) return;
+        if (!Store.Mesh.Vertices.TryGetValue(id, out var v)) return;
+        var p = v.Position;
+        p = axis switch { 0 => p.With(x: x), 1 => p.With(y: x), _ => p.With(z: x) };
+        Store.SetVertexPosition(id, p);
+    }
+
+    // Returns the value all selected vertices share on the given axis, or null
+    // if they disagree (within a small float epsilon). Drives the bottom-bar
+    // input states: shared → editable, mixed → disabled with an Align button.
+    private static double? CommonAxis(List<Vertex> verts, int axis)
+    {
+        if (verts.Count == 0) return null;
+        double first = axis switch { 0 => verts[0].Position.X, 1 => verts[0].Position.Y, _ => verts[0].Position.Z };
+        const double eps = 1e-6;
+        for (int i = 1; i < verts.Count; i++)
+        {
+            double v = axis switch { 0 => verts[i].Position.X, 1 => verts[i].Position.Y, _ => verts[i].Position.Z };
+            if (Math.Abs(v - first) > eps) return null;
+        }
+        return first;
+    }
+
+    // Renders one labeled X/Y/Z input. Enabled when the value is shared across
+    // every selected vertex; disabled with an "≡" align button when mixed.
+    private RenderFragment AxisInput(string label, int axis, double? common) => __builder =>
+    {
+        <label>@label</label>
+        @if (common.HasValue)
+        {
+            <input type="number" step="0.01" value="@Fmt(common.Value)"
+                   @onchange="e => OnAxisChanged(axis, e.Value)" />
+        }
+        else
+        {
+            <input type="text" value="—" disabled title="Selected vertices have different @label values" class="mixed" />
+            <button class="align-btn" title="Align this axis across all selected vertices (sets every value to the average)"
+                    @onclick="() => Store.AlignSelectedVerticesOnAxis(axis)">≡</button>
+        }
+    };
+
+    private void OnAxisChanged(int axis, object? value)
+    {
+        if (!TryParseNumber(value, out var x)) return;
+        Store.SetSelectedVerticesCoord(axis, x);
+    }
+
+    // HTML <input type=number> reports its value as an invariant-culture string
+    // (decimal point, no thousand-separator), but Czech and other locales also
+    // sometimes hand back a comma form when the user types it. Accept both.
+    private static bool TryParseNumber(object? value, out double result)
+    {
+        result = 0;
+        var s = value?.ToString();
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        if (double.TryParse(s, System.Globalization.NumberStyles.Float, inv, out result)) return true;
+        return double.TryParse(s.Replace(',', '.'),
+            System.Globalization.NumberStyles.Float, inv, out result);
+    }
+
+    // Render doubles into HTML number-input value attributes. Always invariant,
+    // never locale-formatted — the HTML5 spec requires '.' decimal separators.
+    private static string Fmt(double d) =>
+        d.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+
+    // ── File I/O via the in-WebView File System Access API ─────────────
+    //
+    // Same approach as IconStudio — Photino's native dialogs don't reliably
+    // return in this WebView2 context, so all open/save flows go through JS.
+    // PickFileAsync gets the user's file (or null on cancel) as bytes;
+    // SaveBytesAsync writes them back through a save picker.
+
+    private async Task<(string Name, byte[] Bytes)?> PickFileAsync(string desc, params string[] exts)
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<System.Text.Json.JsonElement?>(
+                "objEditor.openFilePicker", desc, exts);
+            if (result is null || result.Value.ValueKind == System.Text.Json.JsonValueKind.Null)
+                return null;
+            var name = result.Value.GetProperty("name").GetString() ?? "file";
+            var b64 = result.Value.GetProperty("base64").GetString() ?? "";
+            return (name, Convert.FromBase64String(b64));
+        }
+        catch (Exception ex)
+        {
+            Diag.Log("PickFileAsync: " + ex);
+            return null;
+        }
+    }
+
+    private async Task<string?> SaveBytesAsync(string suggestedName, string desc, string ext, byte[] bytes, string? slot = null)
+    {
+        try
+        {
+            var b64 = Convert.ToBase64String(bytes);
+            return await JS.InvokeAsync<string?>("objEditor.saveFilePicker",
+                suggestedName, desc, new[] { ext }, b64, slot);
+        }
+        catch (Exception ex)
+        {
+            Diag.Log("SaveBytesAsync: " + ex);
+            return null;
+        }
+    }
+
+    private async Task OpenObj()
+    {
+        var picked = await PickFileAsync("Wavefront OBJ", "obj");
+        if (picked is null) return;
+        try
+        {
+            var text = System.Text.Encoding.UTF8.GetString(picked.Value.Bytes);
+            var load = ObjIo.Load(text);
+            // Companion .mtl: the in-WebView picker only hands us bytes, not a
+            // real path, so we cannot read sibling files off disk. Ask the user
+            // explicitly if the OBJ referenced one.
+            if (!string.IsNullOrEmpty(load.MtlLibRelative))
+            {
+                _status = $"Loaded {picked.Value.Name} — pick its .mtl next (referenced as {load.MtlLibRelative}), or skip";
+                StateHasChanged();
+                var mtl = await PickFileAsync("Material library (.mtl)", "mtl");
+                if (mtl is not null)
+                {
+                    var mtlText = System.Text.Encoding.UTF8.GetString(mtl.Value.Bytes);
+                    // In-WebView picker has no real directory; pass empty so
+                    // map_Kd paths stay relative and we just hold the bytes if
+                    // the user later attaches them via the materials tab.
+                    MtlIo.ApplyToMesh(load.Mesh, mtlText, mtlDirectory: "");
+
+                    // map_Kd files can't be auto-loaded (no sibling path), so
+                    // walk the materials and ask the user to pick each one.
+                    // Cancel skips that material (its TextureBytes stays null
+                    // and the face renders untextured with diffuse colour).
+                    foreach (var m in load.Mesh.Materials.Values)
+                    {
+                        if (m.TextureBytes is { Length: > 0 }) continue;
+                        if (string.IsNullOrEmpty(m.TexturePath)) continue;
+                        _status = $"Pick texture for material '{m.Name}' (referenced as {System.IO.Path.GetFileName(m.TexturePath)})";
+                        StateHasChanged();
+                        var tex = await PickFileAsync("Texture for " + m.Name, "png", "jpg", "jpeg");
+                        if (tex is not null)
+                        {
+                            m.TextureBytes = tex.Value.Bytes;
+                            m.TexturePath = tex.Value.Name;
+                        }
+                    }
+                }
+            }
+            Store.Replace(load.Mesh, picked.Value.Name);
+            _lastObjName = picked.Value.Name;
+            _status = $"Opened {picked.Value.Name} · {load.Mesh.Vertices.Count} v · {load.Mesh.Faces.Count} f";
+
+            // Push every loaded texture to the GL side. The renderer's batch
+            // builder partitions by material id, so each id needs a registered
+            // texture before the next frame to avoid falling back to the
+            // default white. setMaterialTexture is async (image decode); the
+            // first frames before decode show diffuse-color only and that's OK.
+            foreach (var m in load.Mesh.Materials.Values)
+            {
+                if (m.TextureBytes is { Length: > 0 } bytes)
+                {
+                    var tb64 = Convert.ToBase64String(bytes);
+                    await JS.InvokeVoidAsync("objEditor.setMaterialTexture", m.Id, tb64);
+                }
+            }
+            await JS.InvokeVoidAsync("objEditor.frameAll");
+        }
+        catch (Exception ex)
+        {
+            Diag.Log("OpenObj failed: " + ex);
+            _status = "Open failed: " + ex.Message;
+        }
+    }
+
+    private async Task SaveObj()
+    {
+        try
+        {
+            var meshName = string.IsNullOrWhiteSpace(Store.Mesh.Name) ? "mesh" : Store.Mesh.Name;
+            var hasMaterials = Store.Mesh.Materials.Count > 0;
+            var mtlName = hasMaterials ? meshName + ".mtl" : null;
+            var objText = ObjIo.Write(Store.Mesh, mtlName);
+
+            var suggested = _lastObjName is { Length: > 0 } prev && prev.EndsWith(".obj", StringComparison.OrdinalIgnoreCase)
+                ? prev : meshName + ".obj";
+            var objBytes = System.Text.Encoding.UTF8.GetBytes(objText);
+            // Slot "obj" caches the FileSystemFileHandle so Ctrl+S can re-save
+            // without prompting. Same for "mtl" below.
+            var result = await SaveBytesAsync(suggested, "Wavefront OBJ", "obj", objBytes, "obj");
+            if (result is null) { _status = "Save cancelled"; return; }
+            _lastObjName = result;
+            AutoSave.SetLastObjName(_lastObjName);
+
+            if (hasMaterials && mtlName is not null)
+            {
+                var mtlText = MtlIo.Write(Store.Mesh);
+                var mtlBytes = System.Text.Encoding.UTF8.GetBytes(mtlText);
+                var mtlResult = await SaveBytesAsync(mtlName, "Material library", "mtl", mtlBytes, "mtl");
+
+                // map_Kd in the MTL is just a filename — the bytes have to
+                // be written next to it or readers won't find the texture.
+                // Prompt once per material with a texture; cancel skips the
+                // file (MTL still references it, but the user is opting out).
+                var savedTex = new List<string>();
+                var skippedTex = new List<string>();
+                foreach (var m in Store.Mesh.Materials.Values.OrderBy(m => m.Id))
+                {
+                    var fileName = MtlIo.TextureFileName(m);
+                    if (fileName is null || m.TextureBytes is null) continue;
+                    var ext = System.IO.Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant();
+                    if (string.IsNullOrEmpty(ext)) ext = "png";
+                    _status = $"Saving texture for '{m.Name}' ({fileName})…";
+                    StateHasChanged();
+                    var texResult = await SaveBytesAsync(fileName, $"Texture for {m.Name}", ext, m.TextureBytes);
+                    if (texResult is null) skippedTex.Add(fileName);
+                    else savedTex.Add(texResult);
+                }
+
+                var summary = mtlResult is null
+                    ? $"Saved {result} (mtl skipped)"
+                    : $"Saved {result} + {mtlResult}";
+                if (savedTex.Count > 0) summary += $" + {savedTex.Count} texture(s)";
+                if (skippedTex.Count > 0) summary += $" ({skippedTex.Count} skipped)";
+                _status = summary;
+            }
+            else
+            {
+                _status = $"Saved {result}";
+            }
+            // The user committed to a real file — drop the recovery copy so
+            // the next launch doesn't prompt about a now-redundant autosave.
+            AutoSave.Clear();
+        }
+        catch (Exception ex)
+        {
+            Diag.Log("SaveObj failed: " + ex);
+            _status = "Save failed: " + ex.Message;
+        }
+    }
+}

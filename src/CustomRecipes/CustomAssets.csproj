@@ -3,10 +3,10 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net48</TargetFramework>
     <Configurations>Debug;Release;Debug_Pack;Core_Only</Configurations>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <Version>0.2.0</Version> <!-- Update the project definition to standard from Mafi project. -->
+    <!-- Version, AssemblyVersion and AssemblyFileVersion are automatically generated from 'manifest.json' by the ReadJsonVersion target below. -->
     <LangVersion>latest</LangVersion>
       
     <!--<COI_ROOT>C:\git\Game\bin</COI_ROOT>-->
@@ -27,6 +27,18 @@
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
+
+  <!-- ModBuilder's SVG rasterizer, shared into the mod DLL so the in-game
+       thumbnail picker can convert a picked .svg to Thumbnail.png without a
+       rebuild (ThumbnailWriter). Same sources the build-time svg2png command
+       uses, so both paths produce identical output. PngToSvgTracer is left
+       out — it is build-tooling only. -->
+  <ItemGroup>
+    <Compile Include="..\ModBuilder\Svg\SvgRenderer.cs"  Link="Svg\SvgRenderer.cs" />
+    <Compile Include="..\ModBuilder\Svg\SvgPath.cs"      Link="Svg\SvgPath.cs" />
+    <Compile Include="..\ModBuilder\Svg\SvgColor.cs"     Link="Svg\SvgColor.cs" />
+    <Compile Include="..\ModBuilder\Svg\SvgTransform.cs" Link="Svg\SvgTransform.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="AssetBundles\**" />
@@ -173,26 +185,142 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Debug_Pack'">
+  <!-- Version generator: reads 'version', 'authors' and 'display_name' from manifest.json
+       (the standard shared with COIM_ProgramableNetwork). The raw manifest version (e.g.
+       "0.3.0a") names the distribution zip; the normalized form ("0.3.0.1") feeds the
+       assembly version attributes. -->
+  <UsingTask TaskName="ProcessManifest" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.Core">
+
+    <ParameterGroup>
+      <Manifest ParameterType="System.String" Required="true" />
+      <DefaultTitle ParameterType="System.String" Required="true" />
+      <NormalizedVersion Output="true" ParameterType="System.String" />
+      <ManifestVersion Output="true" ParameterType="System.String" />
+      <AuthorName Output="true" ParameterType="System.String" />
+      <DisplayTitle Output="true" ParameterType="System.String" />
+    </ParameterGroup>
+
+    <Task>
+      <Reference Include="System.Text.Json" />
+      <Reference Include="System.Memory" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text.Json" />
+      <Using Namespace="System.Text.RegularExpressions" />
+
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+          JsonDocument doc = null;
+          try {
+            var json = File.ReadAllText(Manifest);
+            doc = JsonDocument.Parse(json);
+          }
+          catch (Exception ex)
+          {
+            Console.Error.WriteLine("Failed to read version from manifest.json: " + ex.Message);
+            NormalizedVersion = "0.0.0";
+            AuthorName = "Unknown";
+            return false;
+          }
+          try {
+            ManifestVersion = doc.RootElement.GetProperty("version").GetString();
+
+            // Match: major.minor.patch + optional letter
+            var match = Regex.Match(ManifestVersion, @"^(\d+)\.(\d+)(\.(\d+)([a-z]?))?$");
+            if (!match.Success)
+            {
+              throw new Exception("Invalid version format: " + ManifestVersion);
+            }
+
+            var major = match.Groups[1].Value;
+            var minor = match.Groups[2].Value;
+            var patch = match.Groups[4].Success ? match.Groups[4].Value : "0";
+            var suffix = match.Groups[5].Value;
+
+            // Convert letter to number (a=1, b=2, … z=26)
+            int revision = 0;
+            if (!string.IsNullOrEmpty(suffix))
+            {
+              revision = char.ToLower(suffix[0]) - 'a' + 1;
+            }
+
+            NormalizedVersion = string.Join(".", major, minor, patch, revision);
+          }
+          catch (Exception ex)
+          {
+            Console.Error.WriteLine("Failed to read version from manifest.json: " + ex.Message);
+            NormalizedVersion = "0.0.0";
+          }
+          try {
+            JsonElement authors;
+            if (doc.RootElement.TryGetProperty("authors", out authors)
+              && authors.ValueKind == JsonValueKind.Array) {
+              AuthorName = string.Join(", ", authors.EnumerateArray().Select(s => s.GetString()));
+            } else {
+              AuthorName = "Unknown";
+            }
+          }
+          catch (Exception ex)
+          {
+            Console.Error.WriteLine("Failed to read author from manifest.json: " + ex.Message);
+            AuthorName = "Unknown";
+          }
+          try {
+            JsonElement displayName;
+            if (doc.RootElement.TryGetProperty("display_name", out displayName)) {
+              DisplayTitle = displayName.GetString();
+            } else {
+              DisplayTitle = DefaultTitle;
+            }
+          }
+          catch (Exception ex)
+          {
+            Console.Error.WriteLine("Failed to read display_name from manifest.json: " + ex.Message);
+            // keep default product name
+          }
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="ReadJsonVersion" BeforeTargets="GetAssemblyVersion">
+    <Error Condition="'$(COI_ROOT)' == ''" Text="Environment or project variable 'COI_ROOT' is not set." />
+
+    <ProcessManifest Manifest="manifest.json" DefaultTitle="$(TargetName)">
+      <Output TaskParameter="NormalizedVersion" PropertyName="VersionNormalized" />
+      <Output TaskParameter="AuthorName" PropertyName="AuthorName" />
+      <Output TaskParameter="DisplayTitle" PropertyName="DisplayTitle" />
+      <Output TaskParameter="ManifestVersion" PropertyName="ManifestVersion" />
+    </ProcessManifest>
+
+    <PropertyGroup>
+      <Version>$(VersionNormalized)</Version>
+      <FileVersion>$(VersionNormalized)</FileVersion>
+      <AssemblyVersion>$(VersionNormalized)</AssemblyVersion>
+      <AssemblyTitle>$(DisplayTitle)</AssemblyTitle>
+      <Product>$(DisplayTitle)</Product>
+      <Company>$(AuthorName)</Company>
+      <Copyright>$(AuthorName)</Copyright>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" DependsOnTargets="ReadJsonVersion" Condition="'$(Configuration)' != 'Debug_Pack'">
     <Exec Command="mkdir &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy manifest.json &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy changelog.txt &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
+    <!-- Mod thumbnail shown by COI's mods panel and our own pack switcher.
+         thumbnail.svg is the source of truth; re-rasterize it when ModBuilder
+         has been built, then deploy the PNG. The PNG is committed too, so a
+         clean checkout that hasn't built ModBuilder yet still ships an icon. -->
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)..\ModBuilder\bin\Release\ModBuilder.exe&quot; svg2png &quot;$(MSBuildThisFileDirectory)thumbnail.svg&quot; --size 256"
+          Condition="Exists('$(MSBuildThisFileDirectory)..\ModBuilder\bin\Release\ModBuilder.exe') And Exists('$(MSBuildThisFileDirectory)thumbnail.svg')"
+          ContinueOnError="true" />
+    <Exec Command="copy thumbnail.png &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).dll &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="copy .\bin\Debug\net48\$(MSBuildProjectName).pdb &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)&quot;" ContinueOnError="true" />
     <Exec Command="robocopy .\AssetBundles &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\AssetBundles&quot; | echo" ContinueOnError="true" />
     <Exec Command="robocopy .\..\Recipes\Mafi &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\API\Mafi&quot; /S | echo" ContinueOnError="true" />
     <Exec Command="robocopy .\..\Recipes\CustomAssets &quot;$(COI_APPDATA)\Mods\$(MSBuildProjectName)\API\CustomAssets&quot; /S | echo" ContinueOnError="true" />
-    <!-- Stage the deployed mod into a temp folder so the zip wraps everything in a single
-         "$(MSBuildProjectName)/" subfolder (the convention COI's mod manager and most game-mod
-         distribution tools expect). MSBuild's ZipDirectory zips a directory's contents at the
-         zip root with no wrapping; staging in IntermediateOutputPath/zip-stage/<id>/ achieves
-         that wrapping by feeding the parent (zip-stage) into ZipDirectory. -->
-    <RemoveDir Directories="$(IntermediateOutputPath)zip-stage" Condition="Exists('$(IntermediateOutputPath)zip-stage')" />
-    <ItemGroup>
-      <_ZipStageFiles Include="$(COI_APPDATA)\Mods\$(MSBuildProjectName)\**\*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_ZipStageFiles)" DestinationFolder="$(IntermediateOutputPath)zip-stage\$(MSBuildProjectName)\%(RecursiveDir)" />
-    <ZipDirectory SourceDirectory="$(IntermediateOutputPath)zip-stage" DestinationFile="$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(Version)a.zip" Overwrite="true" />
-    <RemoveDir Directories="$(IntermediateOutputPath)zip-stage" />
+    <!-- Compress-Archive on a directory path (without \*) includes the directory name as root in the zip. -->
+    <Exec Command="pwsh -NoProfile -Command &quot;Compress-Archive -Path '$(COI_APPDATA)\Mods\$(MSBuildProjectName)' -DestinationPath '$(COI_APPDATA)\Mods\$(MSBuildProjectName)_$(ManifestVersion).zip' -Force&quot;" />
   </Target>
 </Project>

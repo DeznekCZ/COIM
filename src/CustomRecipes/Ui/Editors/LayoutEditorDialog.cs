@@ -15,7 +15,7 @@ namespace CustomAssets.Ui.Editors {
     /// editor for kinds that carry ports. A real window (not a floating popup)
     /// so the modder can drag it beside the main editor while wiring up a
     /// layout, matching <see cref="Components.NewPackDialog"/> /
-    /// <see cref="Components.TranslationsDialog"/>.
+    /// <see cref="Components.TranslationsPanel"/>.
     ///
     /// Port editing reuses the same <see cref="PortListEditor"/> the inline
     /// machine / reactor forms use — the dialog doesn't introduce a second

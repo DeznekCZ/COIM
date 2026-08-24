@@ -23,6 +23,8 @@ namespace CustomAssets.Ui.Editors {
         private readonly PackModel m_packModel;
         private readonly Column m_portsHolder;
         private readonly Column m_previewHolder;
+        private readonly TextField m_autoSelectRecipes;
+        private readonly Column m_autoSelectInfo;
         // Live PortListEditor instance for the currently-bound def. Held so
         // out-of-band mutations (layout-grid clicks) can call Refresh()
         // directly instead of routing through the observer rebuild.
@@ -69,6 +71,61 @@ namespace CustomAssets.Ui.Editors {
                 m_portList = new PortListEditor(value.AddPorts, refreshPreview);
                 m_portsHolder.Add(m_portList);
             });
+
+            // Tri-state recipe auto-select override for the existing target
+            // machine. Blank = leave the machine's current flag untouched;
+            // true = it auto-selects every unlocked recipe; false = it starts
+            // with no recipe selected so the player picks one.
+            m_autoSelectRecipes = AddField(
+                "auto_select_recipes (true / false / blank to leave the machine unchanged)",
+                new TextField().OnValueChanged(v => {
+                    if (value == null) return;
+                    string s = (v ?? "").Trim().ToLowerInvariant();
+                    if (s == "true") value.AutoSelectRecipes = true;
+                    else if (s == "false") value.AutoSelectRecipes = false;
+                    else value.AutoSelectRecipes = null;
+                    updateAutoSelectInfo();
+                }),
+                onRefresh: () => m_autoSelectRecipes.Text(value.AutoSelectRecipes.HasValue
+                    ? (value.AutoSelectRecipes.Value ? "true" : "false")
+                    : ""));
+
+            m_autoSelectInfo = new Column();
+            m_autoSelectInfo.AlignItemsStretch();
+            AddField("", m_autoSelectInfo, onRefresh: updateAutoSelectInfo);
+        }
+
+        // Render the target machine's current recipe auto-select flag and the
+        // effective result after the override, so the modder can see whether
+        // the behaviour is active before saving.
+        private void updateAutoSelectInfo() {
+            if (m_autoSelectInfo == null) return;
+            m_autoSelectInfo.Clear();
+            if (value == null) return;
+
+            MachineProto machine = RecipeFormParts.ResolveMachine(m_protosDb, value.MachineId);
+            bool? overrideVal = value.AutoSelectRecipes;
+            bool? currentVal  = machine != null ? machine.UseAllRecipesAtStartOrAfterUnlock : (bool?)null;
+            bool? effective   = overrideVal ?? currentVal;
+
+            string currentText = machine == null
+                ? "unknown (pick a machine)"
+                : (currentVal.Value ? "ON — auto-selects all recipes" : "OFF — no recipe pre-selected");
+            m_autoSelectInfo.Add(new Label(new LocStrFormatted(
+                "Machine's current auto-select: " + currentText)).Color(ColorRgba.LightGray));
+
+            string effText;
+            if (!effective.HasValue) {
+                effText = "unknown until a machine is picked";
+            } else if (effective.Value) {
+                effText = "ACTIVE — the machine auto-selects every unlocked recipe";
+            } else {
+                effText = "OFF — the machine starts with no recipe selected "
+                    + "(a machine with a single unlocked recipe still auto-selects it)";
+            }
+            string prefix = overrideVal.HasValue ? "Effective (overridden): " : "Effective (unchanged): ";
+            m_autoSelectInfo.Add(new Label(new LocStrFormatted(prefix + effText))
+                .Color(effective == true ? ColorRgba.White : ColorRgba.LightGray));
         }
 
         // Map "+X" / "-X" / "+Y" / "-Y" to the IoPortShape id we'll seed
@@ -100,6 +157,7 @@ namespace CustomAssets.Ui.Editors {
 
         private void refreshPreview() {
             m_previewHolder.Clear();
+            updateAutoSelectInfo();
             if (value == null) return;
 
             MachineProto machine = RecipeFormParts.ResolveMachine(m_protosDb, value.MachineId);

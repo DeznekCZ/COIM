@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using CustomAssets.Data.Mod;
+using CustomAssets.Editor.Io;
 using CustomAssets.Editor.Model;
 using Mafi;
 using Mafi.Localization;
@@ -15,17 +16,15 @@ using Mafi.Unity.UiToolkit.Library;
 namespace CustomAssets.Ui.Components {
 
     /// <summary>
-    /// Translations editor for a pack. A standalone <see cref="Window"/>
-    /// (movable, separately closable) rather than a floating popup so the
-    /// modder can keep it open while jumping between definitions in the
-    /// main recipe-editor window — translating many strings in one sitting
-    /// works much better when both forms are visible at once.
+    /// Translations editor for a pack, rendered into the editor's main pane by the
+    /// TT button on the pack card — the same area a definition's form uses.
     ///
     /// Workflow:
     ///   1. Modder enters a language code (e.g. "cs", "de", "fr").
-    ///   2. Clicks Scan — pulls every translatable string from the pack
-    ///      (recipe / product / research / generator names + descriptions)
-    ///      and loads any existing
+    ///   2. Clicks Scan — pulls every translatable string from the pack:
+    ///      the mod's own display name and descriptions (manifest.json), its
+    ///      config field descriptions (config.json), and every definition's
+    ///      name + description — then loads any existing
     ///      <c>&lt;pack&gt;/Translations/&lt;langCode&gt;.json</c>.
     ///   3. Edits per-row translations.
     ///   4. Clicks Save — writes the flat-dict JSON to disk. Each language
@@ -34,7 +33,7 @@ namespace CustomAssets.Ui.Components {
     /// The runtime side (loading the JSON at pack-load time) is a separate
     /// follow-up — this window is the authoring side.
     /// </summary>
-    public sealed class TranslationsDialog : Window {
+    public sealed class TranslationsPanel : Column {
 
         private readonly LoadedPack m_pack;
         private readonly PackModel m_model;
@@ -46,19 +45,15 @@ namespace CustomAssets.Ui.Components {
         private readonly List<KeyValuePair<string, string>> m_strings =
             new List<KeyValuePair<string, string>>();
 
-        /// Convenience entry point matching the earlier static Open() shape.
-        /// Opens the window on the given UiContext's root.
-        public static void Open(LoadedPack pack, PackModel model, UiContext uiContext) {
-            new TranslationsDialog(pack, model).Open(uiContext.UiRoot);
-        }
-
-        public TranslationsDialog(LoadedPack pack, PackModel model)
-            : base(new LocStrFormatted("Translations — " + (pack?.ModId ?? "?"))) {
+        public TranslationsPanel(LoadedPack pack, PackModel model) {
             m_pack = pack;
             m_model = model;
 
-            MakeMovable();
-            WindowSize(720.px(), 600.px());
+            // No window chrome of its own: the editor renders this into its main pane,
+            // beside the tree, the same way it renders a definition's form.
+            this.AlignItemsStretch().Gap(3.pt());
+            Add(new Label(new LocStrFormatted(
+                "Translations — " + (pack?.ModId ?? "?"))).FontBold());
 
             // Language code + Scan row. Scan rebuilds the list from the
             // current model and merges any saved translations for the
@@ -72,28 +67,24 @@ namespace CustomAssets.Ui.Components {
                 new ButtonText(new LocStrFormatted("Scan pack strings"), onScan)
             };
             langRow.Gap(3.pt()).AlignItemsCenter();
-            Body.Add(langRow);
+            Add(langRow);
 
             m_status = new Label(new LocStrFormatted(
                 "Enter a language code and click 'Scan pack strings' to load entries."));
             m_status.TinyFontSize();
-            Body.Add(m_status);
+            Add(m_status);
 
-            ScrollColumn scroll = new ScrollColumn();
-            scroll.FlexGrow(1f).AlignItemsStretch();
+            // No ScrollColumn of its own — the editor pane this sits in already scrolls,
+            // and a nested scroll inside one collapses to zero height.
             m_rowsColumn = new Column();
             m_rowsColumn.Gap(1.pt()).AlignItemsStretch();
-            scroll.Add(m_rowsColumn);
-            Body.Add(scroll);
+            Add(m_rowsColumn);
 
             Row footer = new Row {
-                new ButtonText(new LocStrFormatted("Save translations"), onSave),
-                new ButtonText(new LocStrFormatted("Close"), Close)
+                new ButtonText(new LocStrFormatted("Save translations"), onSave)
             };
             footer.Gap(3.pt());
-            Body.Add(footer);
-            Body.AlignItemsStretch().PaddingTop(60.px()).PaddingLeftRight(8.px())
-                .PaddingBottom(8.px()).Gap(3.pt());
+            Add(footer);
         }
 
         // ---- Scan ------------------------------------------------------
@@ -107,6 +98,9 @@ namespace CustomAssets.Ui.Components {
 
             m_strings.Clear();
             m_translations.Clear();
+
+            addManifestStrings();
+            addConfigStrings();
 
             foreach (RecipeDef r in m_model.Recipes) {
                 string baseKey = "recipe." + (r.RecipeId ?? "<no_id>");
@@ -137,7 +131,7 @@ namespace CustomAssets.Ui.Components {
                         }
                     }
                 } catch (Exception ex) {
-                    Log.Warning("TranslationsDialog: failed to load existing '"
+                    Log.Warning("TranslationsPanel: failed to load existing '"
                                 + existingPath + "' — " + ex.Message);
                 }
             }
@@ -153,6 +147,37 @@ namespace CustomAssets.Ui.Components {
         private void addString(string key, string source) {
             if (string.IsNullOrEmpty(source)) return;
             m_strings.Add(new KeyValuePair<string, string>(key, source));
+        }
+
+        // The pack's OWN presentation strings — what a player reads in the mod manager
+        // before any of its content exists. Scanned from manifest.json rather than the
+        // model, which only carries definitions.
+        private void addManifestStrings() {
+            if (m_pack == null || string.IsNullOrEmpty(m_pack.RootPath)) return;
+            string manifestPath = Path.Combine(m_pack.RootPath, "manifest.json");
+            if (!File.Exists(manifestPath)) return;
+            try {
+                object root = MiniJson.Parse(File.ReadAllText(manifestPath));
+                if (!(root is Dictionary<string, object> dict)) return;
+                addString("mod.display_name",       dict.TryGetValue("display_name", out object n) ? n as string : null);
+                addString("mod.description_short",  dict.TryGetValue("description_short", out object s) ? s as string : null);
+                addString("mod.description_long",   dict.TryGetValue("description_long", out object l) ? l as string : null);
+            } catch (Exception ex) {
+                Log.Warning("TranslationsPanel: manifest read failed — " + ex.Message);
+            }
+        }
+
+        // Config field descriptions: the labels a player reads in the Pack Settings
+        // panel. Keyed by field name so a renamed field simply gets a new key rather
+        // than silently inheriting the old field's translation.
+        private void addConfigStrings() {
+            if (m_pack == null || string.IsNullOrEmpty(m_pack.RootPath)) return;
+            ConfigSchema schema = ConfigSchema.Load(m_pack.RootPath);
+            if (!schema.Existed || schema.LoadError != null) return;
+            foreach (ConfigField field in schema.Fields) {
+                if (string.IsNullOrEmpty(field.Name)) continue;
+                addString("config." + field.Name + ".description", field.Description);
+            }
         }
 
         // ---- Row rendering --------------------------------------------

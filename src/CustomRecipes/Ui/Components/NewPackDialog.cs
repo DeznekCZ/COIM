@@ -20,7 +20,7 @@ namespace CustomAssets.Ui.Components {
     /// Assets/).
     ///
     /// A standalone movable <see cref="Window"/> rather than a floating
-    /// popup — matches <see cref="TranslationsDialog"/> so the modder can
+    /// popup — matches <see cref="TranslationsPanel"/> so the modder can
     /// keep the new-pack form open beside the main editor while picking
     /// the id / description.
     ///
@@ -39,6 +39,9 @@ namespace CustomAssets.Ui.Components {
         private readonly TextField m_descField;
         private readonly TextField m_authorField;
         private readonly TextField m_minGameVersionField;
+        // Thumbnail is optional and applied after the scaffolder has run —
+        // there's no pack folder to write into until then.
+        private readonly ThumbnailPicker m_thumbnailPicker = new ThumbnailPicker();
         // Both dependency lists are mutable backing stores the row UI
         // edits in place. The default mandatory list seeds the canonical
         // CustomAssets dep so brand-new packs still depend on the
@@ -61,7 +64,7 @@ namespace CustomAssets.Ui.Components {
         // the modder can read the warning between clicks.
         private bool m_reloadArmed;
 
-        /// Convenience entry point matching the TranslationsDialog shape.
+        /// Convenience entry point matching the TranslationsPanel shape.
         /// Opens the window on the given UiContext's root.
         public static void Open(UiContext uiContext, IMain main, Action onCreated = null) {
             new NewPackDialog(main, onCreated).Open(uiContext.UiRoot);
@@ -101,6 +104,7 @@ namespace CustomAssets.Ui.Components {
             Body.Add(labeled("short description", m_descField));
             Body.Add(labeled("author (optional)", m_authorField));
             Body.Add(labeled("min game version", m_minGameVersionField));
+            Body.Add(labeled("thumbnail (optional)", m_thumbnailPicker.Root));
 
             // Mod dependencies. Default-seeded with the CustomAssets
             // framework pin so the pack loads in the editor at all; the
@@ -231,9 +235,21 @@ namespace CustomAssets.Ui.Components {
                 return;
             }
 
+            // Thumbnail is written after the folder exists. A failure here
+            // is not fatal — the pack itself is already valid — so we keep
+            // the success status and append the reason.
+            string thumbnailNote = "";
+            ThumbnailWriter.Result thumbnail = m_thumbnailPicker.ApplyTo(result.PackRootPath);
+            if (thumbnail != null && !thumbnail.Success) {
+                thumbnailNote = " Thumbnail not set: " + thumbnail.Error;
+            } else if (thumbnail != null && thumbnail.ConvertedFromSvg) {
+                thumbnailNote = " Thumbnail converted from SVG.";
+            }
+
             m_status.Color(ColorRgba.Green);
             m_status.Value(new LocStrFormatted(
-                "Created '" + result.PackRootPath + "'. Reload the save to load the pack."));
+                "Created '" + result.PackRootPath + "'. Reload the save to load the pack."
+                + thumbnailNote));
 
             m_created = true;
             m_idField.Enabled(false);

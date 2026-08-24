@@ -16,22 +16,26 @@ Everything you ship lives in **Python definition files** that the framework pars
 4. [Pack layout](#pack-layout)
 5. [`manifest.json`](#manifestjson)
 6. [How definitions are loaded](#how-definitions-are-loaded)
-7. [PythonAPI dialect — gotchas vs. CPython](#pythonapi-dialect--gotchas-vs-cpython)
-8. [Defining items step by step](#defining-items-step-by-step)
-9. [Authoring images and meshes](#authoring-images-and-meshes)
-10. [API reference](#api-reference)
+7. [Pack configuration — `config.json`](#pack-configuration--configjson)
+8. [PythonAPI dialect — gotchas vs. CPython](#pythonapi-dialect--gotchas-vs-cpython)
+9. [Defining items step by step](#defining-items-step-by-step)
+10. [Authoring images and meshes](#authoring-images-and-meshes)
+11. [API reference](#api-reference)
     - [Products](#products) — loose, unit, fluid
     - [Visuals](#visuals) — materials, prefabs, textures
-    - [Recipes](#recipes) — `build_recipe`, `edit_recipe`, the `Product` class
+    - [Recipes](#recipes) — `build_recipe` + `bind_recipe`, `PortMap` (see [RECIPES.md](RECIPES.md))
     - [Research & toolbars](#research--toolbars)
     - [Machines](#machines)
+    - [Entity costs](#entity-costs) — re-pricing machines, buildings, vehicles, trains
+    - [Crops](#crops) — retuning growth, yield and soil demands
     - [Unlocks](#unlocks)
     - [Existence checkers](#existence-checkers)
-11. [Build & deploy](#build--deploy)
-12. [Distribution layout](#distribution-layout)
-13. [Worked example — canned corn](#worked-example--canned-corn)
-14. [Troubleshooting](#troubleshooting)
-15. [Roadmap](#roadmap)
+12. [Build & deploy](#build--deploy)
+13. [Distribution layout](#distribution-layout)
+14. [Worked example — canned corn](#worked-example--canned-corn)
+15. [When changes take effect](#when-changes-take-effect)
+16. [Troubleshooting](#troubleshooting)
+17. [Roadmap](#roadmap)
 
 ---
 
@@ -233,6 +237,187 @@ from CustomAssets import (
 
 ---
 
+## Pack configuration — `config.json`
+
+A pack can ship an optional `config.json` next to `manifest.json`. Its fields are read once when the pack loads and handed to your definitions as `config`, so you can **turn parts of a pack on and off without touching the Python**.
+
+### The file
+
+`config.json` is a *schema*: every top-level key is a field (`snake_case`), and its object carries the value plus metadata for tooling. Point `$schema` at `config.schema.json` to get validation and completion in your IDE.
+
+```json
+{
+    "$schema": "../../config.schema.json",
+    "enable_tier2_mixing": {
+        "default": true,
+        "description": "Register the Industrial Mixer T2 variant of the recipe."
+    },
+    "scrubber_media_per_batch": {
+        "default": 2,
+        "is_integer": true,
+        "min": 1,
+        "max": 8,
+        "description": "Filter media consumed by one air-scrubbing batch."
+    }
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `default` | The value your definitions see. `bool`, `str`, integer or floating-point number. |
+| `is_integer` | **Required for numbers.** `true` → the value arrives as an int, `false` → as a float. |
+| `description` | Shown in tooling and copied into the generated IntelliSense stub. |
+| `min` / `max` / `max_length` / `regex` | Validation metadata for numbers and strings. |
+| `editable` | `"always"` (default) or `"on_add"` — see [Fields a player must not change later](#fields-a-player-must-not-change-later). |
+| `expression` | Numbers only — compute the value from the pack's other fields. See [Computed fields](#computed-fields). |
+
+### Editing config.json from the game
+
+There are two in-game surfaces, aimed at two different people:
+
+- **Pack Settings** — a window on the game's main toolbar (Ctrl+Shift+O), available in an **ordinary game**, not just the sandbox. One tab per activated mod that exposes settings; values only, written back to each pack's own `config.json`. This is the player-facing panel: it never adds or re-types a field.
+- **CFG Config fields** — a button on the pack card inside the Recipe Editor (which is sandbox-gated, so it is the author's tool). Add and remove fields, set each one's kind (bool / int / float / text), default, description, range or format constraints, and editability. Writes the current pack's `config.json`, preserving `$schema` and anything the editor doesn't model. It opens in the editor's main pane — the same area a definition's form uses — and the button stays lit while that pane is showing, next to 🔗 (dependencies and mod info) and TT (translations), which work the same way.
+
+Config field descriptions are picked up by the translations editor (as `config.<field>.description`), alongside the mod's own `display_name` and descriptions from `manifest.json`.
+
+Both are safe to ignore — `config.json` remains a plain file you can edit by hand.
+
+### Fields a player must not change later
+
+A config value that gates content decides which recipes and products get **registered**. Turning one off on a game that already contains that content can leave the save referring to protos that no longer exist. Mark such fields:
+
+```json
+"enable_tier2_mixing": {
+    "default": true,
+    "editable": "on_add",
+    "description": "Register the Industrial Mixer T2 variant."
+}
+```
+
+`"on_add"` means *only meant to be set when the mod is added to a game*. The settings panel renders those fields locked with a per-field unlock, and carries a standing warning that changing a mod's settings can break a save. An absent `editable` key means `"always"`, so existing packs are unaffected.
+
+Use `"always"` (or omit it) for rates, multipliers and names — anything that changes a number without changing what exists.
+
+### Computed fields
+
+A number field can be computed from the pack's **other** config fields instead of being a fixed value:
+
+```json
+"scrubber_media_per_batch": { "default": 2, "is_integer": true },
+"mixer_t2_output": {
+    "default": 8,
+    "is_integer": true,
+    "expression": "scrubber_media_per_batch * 4"
+}
+```
+
+- The syntax is the same one you write in `Definitions/*.py`; only this pack's own config fields are in scope.
+- Expressions may build on other computed fields. A cycle, an unknown name or a non-numeric result is reported in the log, and the field falls back to its `default` — a broken expression never takes the pack down.
+- `default` stays in the file as that fallback, which is also what an older version of the framework reads.
+- Integer division applies to two ints, exactly as in a definition file: `5 / 2` is `2`. Write `5 / 2.0` for `2.5`.
+
+This key is authored by hand — the CFG dialog treats a config field as a constant and offers no expression box, because the natural place for a calculation is where the value is *used*. See the next section.
+
+### Expressions in definition fields
+
+A numeric field in a definition — a recipe amount, a duration — can hold an expression instead of a fixed number:
+
+```python
+build_recipe(
+    ...
+    ingredients = [Product(Ids.Products.IronOre, Quantity(config.batch_size))],
+    duration    = Duration.FromSec(config.smelt_seconds * 2)
+)
+```
+
+In the editor those fields carry an **fx** button. It opens a composer with a chip per config field of the pack, the operators, and a number box — click to build the expression, or just type it, including names the composer doesn't know (a variable defined earlier in the same file). A live preview evaluates it against the pack's current config values through the same evaluator the game uses at load time. Clearing the expression returns the field to the plain number it had.
+
+Supported today: **recipe ingredient / product amounts** and **recipe durations** (`build_recipe`, `bind_recipe`, `edit_recipe`).
+
+> **This also fixes a data-loss bug.** Before, the editor could only read a literal from those slots: a hand-written `Quantity(config.batch_size)` loaded as `0` and was written back as `Quantity(0)` the first time you saved that recipe. Expressions now round-trip verbatim.
+
+### Config values are constants
+
+Pack code can read `config` but not write it — `config.enable_x = False` and `config["enable_x"] = False` are refused. A definition file that rewrote settings mid-load would make the settings panel describe a game that isn't running. Copy the value into a variable if you need to derive from it:
+
+```python
+batch = config.scrubber_media_per_batch * 2
+```
+
+### Reading it from Python
+
+```python
+from CustomAssets import build_recipe, config, Product
+```
+
+Each field is an attribute: `config.enable_tier2_mixing`, `config.scrubber_media_per_batch`. Values behave exactly like literals written into the file — an integer field compares and multiplies like `2`, a bool like `True`.
+
+The subscript form reads the same value and is the one to use when the field name is computed:
+
+```python
+tier = "t2"
+if config["enable_" + tier]:
+    ...
+```
+
+Both forms raise the same error for a field `config.json` does not define.
+
+### Gating definitions
+
+`if` / `elif` / `else` are supported by the interpreter, so a definition simply lives inside a branch. **A `build_*` / `add_*` call in a branch that does not run is never registered** — the product, recipe or machine does not exist in that game at all.
+
+```python
+if config.enable_tier2_mixing:
+    build_recipe(
+        recipeId = "CustomRecipe_AirFilterIL_Mixing_T2",
+        machine  = Ids.Machines.IndustrialMixerT2,
+        ...
+    )
+```
+
+Chains work too, and so does gating a value rather than a whole definition:
+
+```python
+if config.difficulty == "hard":
+    ore_cost = 6
+elif config.difficulty == "normal":
+    ore_cost = 4
+else:
+    ore_cost = 2
+
+build_recipe(
+    ...
+    ingredients = [Product(Ids.Products.IronOre, Quantity(ore_cost))]
+)
+```
+
+Whole *files* can be skipped the same way — put the `if` at the top and indent the file's body — but prefer one guarded block per definition; it keeps the source readable in the in-game editor, which shows each definition with the condition that guards it.
+
+### Fields that may be missing
+
+Reading a field that `config.json` does not define is an error, and it aborts the whole file. That is what you want for a typo, but not for a field you added in a later version of the pack — a player carrying an old `config.json` would lose everything in that file. For those, use:
+
+```python
+media_per_batch = config.get("scrubber_media_per_batch", 2)    # value, or the fallback
+if config.has("experimental_recipes"):                          # presence test
+    ...
+```
+
+A missing field reports what it was looking for and where:
+
+```
+config has no field "enable_tier3" — add it to …\CustomAssets_AirFiltering\config.json
+or use config.get("enable_tier3", <fallback>). Defined: enable_tier2_mixing, scrubber_media_per_batch.
+```
+
+### IntelliSense
+
+`config` is typed in the `CustomAssets` stub, so `config.get(...)` / `config.has(...)` complete in your IDE. StubBuilder additionally writes a `class Config` listing this pack's fields and their defaults into the per-pack stub — that class is documentation only; read values through `from CustomAssets import config`.
+
+> **When changes take effect.** `config.json` is read once, while the pack loads. Editing it — by hand or through either dialog — applies after the save is reloaded, not immediately.
+
+---
+
 ## PythonAPI dialect — gotchas vs. CPython
 
 The interpreter is **Python-shaped, not full CPython**. Differences worth knowing:
@@ -241,7 +426,9 @@ The interpreter is **Python-shaped, not full CPython**. Differences worth knowin
 - ❌ **No trailing commas** in function calls, lists, or tuples. `f(a, b,)` and `[1, 2,]` fail. Strip the trailing comma.
 - ✅ Named arguments work the same as CPython.
 - ✅ Lists, tuples, basic arithmetic, string concatenation work.
-- ❌ Comprehensions, decorators, `with` blocks, async, classes-with-methods, etc. — assume not supported. Stick to straight-line code.
+- ✅ **Subscripting `x[key]`** — dictionaries such as `config` by name, and lists, tuples and strings by position (negative counts from the end, `items[-1]`). Assignment (`items[0] = …`, `config["k"] = …`) works too. ❌ Slices (`items[1:3]`) are rejected at parse time.
+- ✅ `if` / `elif` / `else` work, including around definitions — see [Pack configuration](#pack-configuration--configjson). `with` blocks work for recipe binding (see [RECIPES.md](RECIPES.md)).
+- ❌ Comprehensions, decorators, `try`/`except`, loops, async, classes-with-methods, etc. — assume not supported. Outside of conditionals, stick to straight-line code.
 
 If a definition fails to load you'll see a `PythonParseException` in the log pointing at the offending line:
 
@@ -611,19 +798,29 @@ Legacy prefab builder for single-textured boxes on the Standard shader. Kept for
 
 ### Recipes
 
-#### `Product(product, quantity, port="*") → Product`
-
-A single recipe input or output entry.
+As of 0.3.0 a recipe is **machine-less**: `build_recipe(...)` defines the inputs →
+outputs, and `bind_recipe(...)` attaches it to each machine with that machine's own
+duration and port routing. See **[RECIPES.md](RECIPES.md)** for the full guide
+(`with` form, `PortMap`, multi-machine binding, unlocks, and the legacy one-shot form).
 
 ```python
-Product(Ids.Products.IronOre, Quantity(3))                          # solid input
-Product(Ids.Products.Water,   Quantity(2), port="WaterPort")        # specific named port
-Product("Product_MyFluid",    Quantity(5))                          # string id is fine
+# define the recipe, then bind it to one or more machines
+r = build_recipe(
+    recipeId    = "MyMod_CannedCorn_Sealing",
+    name        = "Canned corn",
+    description = "Fill empty cans with corn and seal them.",
+    ingredients = [Product("Product_EmptyCansBox", Quantity(8)), Product(Ids.Products.Corn, Quantity(8))],
+    products    = [Product("Product_CannedCorn", Quantity(8))],
+)
+bind_recipe(r, Ids.Machines.ChemicalPlant, duration = Duration.FromSec(30))
 ```
 
-`port="*"` (default) auto-assigns the first compatible free port on the machine. Use a specific port name only when the machine has multiple ports of the same product type and the auto-assignment picks the wrong one.
+#### Legacy one-shot form
 
-#### `build_recipe(recipeId, name, machine, ingredients, products, …) → RecipeProto`
+The pre-0.3.0 form still works and is often the quickest to hand-write for a
+single-machine recipe: pass `machine=` (and optionally `duration=`, `research=`,
+`power=`) straight to `build_recipe`, which builds the recipe **and** binds it to that
+one machine in the same call. This is what the bundled sample packs use.
 
 ```python
 build_recipe(
@@ -644,11 +841,15 @@ build_recipe(
 )
 ```
 
-To register the same recipe on multiple machine tiers, copy the call and change `machine=`.
+To put the same recipe on several machine tiers with the legacy form, copy the call and
+change `machine=` — or use the split `bind_recipe(...)` form above, which avoids the
+copy-paste. See [RECIPES.md](RECIPES.md) for the full comparison.
 
 #### `edit_recipe(recipe, …)`
 
-Edit an existing recipe in place — change ingredients, products, duration, power, or attach to a research. Use sparingly; modifying vanilla recipes can interact poorly with other mods.
+Edit an existing recipe in place — change ingredients, products, duration, power, or
+attach to a research. Use sparingly; modifying vanilla recipes can interact poorly with
+other mods.
 
 ```python
 edit_recipe(
@@ -694,6 +895,70 @@ add_toolbar_category(
 
 Adds a new machine. Most modders won't need this — the existing vanilla machines + custom recipes cover ~95 % of use cases. New machines require Unity-authored AssetBundles and entity-layout strings; out of scope for this guide. See the example pack `CustomAssetPack/Packs/<existing pack>/` for a worked-out reference.
 
+### Entity costs
+
+#### `edit_entity_costs(entity, workers, maintenance, …, products, multiplyPercent) → EntityProto`
+
+Changes what an existing entity costs to build. The price lives on `EntityProto`, the shared base of everything buildable, so a single call reaches machines, buildings, **trucks, excavators, tree harvesters, locomotives, cargo wagons and ships** alike — there is no separate call per vehicle type.
+
+Every argument except `entity` is an independent override; omitting one leaves that part of the vanilla cost alone.
+
+```python
+# Restate a price outright.
+edit_entity_costs(
+    entity              = Ids.Vehicles.TruckT3,
+    workers             = 1,
+    maintenance         = 6.0,
+    maintenanceProduct  = Ids.Products.MaintenanceT2,
+    products            = [
+        Product(Ids.Products.VehicleParts3, Quantity(120)),
+        Product(Ids.Products.Rubber, Quantity(90))
+    ]
+)
+
+# Or just scale what the game already charges. Prefer this for whole-game
+# rebalances: it keeps working when a game update retunes the base price.
+edit_entity_costs(entity = Ids.Vehicles.ExcavatorT3,      multiplyPercent = 150)  # 1.5x
+edit_entity_costs(entity = Ids.Trains.LocomotiveT2Diesel, multiplyPercent = 75)   # 0.75x
+```
+
+`multiplyPercent` scales the build materials only — never maintenance, which has its own argument. When both are given, `products` is applied first and then scaled.
+
+Two facets are conditional, because the game only bills them to entities built to pay them:
+
+| Argument | Applies when | Otherwise |
+| --- | --- | --- |
+| `workers` | the entity is staffed | logged as a warning and skipped |
+| `maintenance*` | the entity is maintained | logged as a warning and skipped |
+
+The visual editor hides those rows for a target that can't use them, so you only see fields that will actually take effect.
+
+### Crops
+
+`add_crop(...)` registers a new crop and `clone_crop(...)` seeds one from an existing crop. To change a crop the game **already has** — so every farm growing it and every existing save picks up the new numbers — use:
+
+#### `edit_crop(crop, productProduced, multiplyYieldPercent, …) → CropProto`
+
+Same argument names as `add_crop` / `clone_crop`, so there's only one crop vocabulary. Everything except `crop` is optional and leaves that rate alone when omitted.
+
+```python
+# Slower, richer corn.
+edit_crop(
+    crop               = "Corn",
+    growthDurationDays = 120,
+    productProduced    = Product(Ids.Products.Corn, Quantity(60))
+)
+
+# A light global nerf that keeps working across game updates.
+edit_crop(crop = "Wheat",   multiplyYieldPercent = 80)
+edit_crop(crop = "Soybean", multiplyYieldPercent = 80)
+```
+
+Two things worth knowing:
+
+- `consumedFertilityPercentPerDay` accepts **negative** values, which *replenish* the soil rather than drain it — that's how green-manure crops work, so it is deliberately not clamped.
+- A farm's own yield and demands multipliers still apply on top of whatever you set here; they scale these rates rather than replacing them.
+
 ### Unlocks
 
 If your recipe needs to be hidden behind a research that's NOT the recipe's `research=`, attach it explicitly:
@@ -703,6 +968,63 @@ add_unlock_recipe(research = Ids.Researches.X, machine = Ids.Machines.Y, recipe 
 add_unlock_machine(research = Ids.Researches.X, machine = Ids.Machines.Y)
 add_unlock_product(research = Ids.Researches.X, product = Ids.Products.Z)
 ```
+
+#### A recipe unlock also grants the machine — `unlock_machine = False` opts out (0.4.2+)
+
+The `machine` on `add_unlock_recipe` names the machine the recipe **runs on**, and by
+default the node hands the player that machine too. Same for the `research=` shortcut on
+`build_recipe` / `bind_recipe` / `edit_recipe`. That has always been the behaviour, and
+it stays the default so nothing an existing pack does changes meaning.
+
+It is very often not what you want. The game derives its game-start **locked** set from
+exactly these unlock entries (`ResearchManager.LockProtosFromResearchTree`), so listing a
+machine on a node both grants it on research *and* takes it away until then. Adding one
+recipe to a vanilla Flare locks the Flare. And a node that binds several recipes across
+several machines hands out every one of those machines.
+
+So: pass `unlock_machine = False` whenever the recipe goes onto a machine the player
+already has, which is most of the time.
+
+```python
+# Recipe only — the Flare is left exactly as the vanilla tree had it.
+add_unlock_recipe(research, Ids.Machines.Flare, Ids.Recipes.FlareFuelGas,
+                  unlock_machine = False)
+
+# The default: one node that delivers the machine AND its first recipe.
+add_unlock_recipe(research, myMachine, myRecipe)
+
+# Same flag on the research= shortcuts.
+bind_recipe(r, Ids.Machines.Flare, research = myResearch, unlock_machine = False)
+```
+
+Passing `unlock_machine` requires `CustomAssets >= 0.4.2`; packs pinning an older version
+get the machine unlock as they always did. When the machine genuinely is the point of the
+node, `add_unlock_machine(research, machine)` next to a recipe-only unlock says the same
+thing more plainly.
+
+For anything that is **not** a machine — buildings, trucks, excavators, tree harvesters, locomotives, cargo wagons, ships — use the entity-shaped sibling instead:
+
+```python
+add_unlock_entity(research = "MyResearch", entity = Ids.Vehicles.ExcavatorAmphibious)
+add_unlock_entity(research = "MyResearch", entity = Ids.Trains.LocomotiveT2Hydrogen)
+```
+
+To take something back **off** a node there is a single call, not four — removal matches by prototype id, so it doesn't need the product/machine/entity/recipe split that adding does:
+
+```python
+# stop a vanilla node from handing out a product
+remove_unlock(research = Ids.Researches.X, target = Ids.Products.Z)
+
+# same call for a machine, a vehicle, a building…
+remove_unlock(research = Ids.Researches.X, target = Ids.Machines.Y)
+
+# a recipe is unlocked per machine, so name the machine to drop just that pair
+remove_unlock(research = Ids.Researches.X, target = Ids.Recipes.Z, machine = Ids.Machines.Y)
+```
+
+`target` and `machine` are **not** resolved against the prototype database, so removing an unlock for something a game update dropped is safe: it's a no-op with a note in the log, not a load error. Same when the node never unlocked the target in the first place. The node's icon for the removed target is cleaned up too, but only once nothing that stayed still needs it — dropping one recipe doesn't strip the machine icon from the node's other recipes on that machine.
+
+Removing a recipe unlock leaves the recipe **bound** to the machine; it only stops the node from unlocking it. To detach the recipe from the machine as well, use `unbind_recipe(machine)` inside `with edit_recipe(recipe):` — that does both.
 
 ### Existence checkers
 
@@ -878,6 +1200,26 @@ The full source is in `src/CustomAssetPack/Packs/CannedCorn/`.
 
 ---
 
+## When changes take effect
+
+Not everything you author shows up in the running game right away. The dividing line is **when the game reads the thing you changed**.
+
+Protos — products, machines, entity clones, ports, research nodes, toolbar categories — are registered **once, during load**. The game then builds its build-menu lists, unlock trees, and port layouts from that snapshot and never re-reads them. So a def you add mid-session is written to your pack source correctly, but the current session has no way to notice it.
+
+| What you changed | Visible when |
+|---|---|
+| Added a port (`ports=` / `add_ports=`) | **After a game restart.** The building's port layout is baked into the proto at registration. |
+| Cloned an entity (`clone_*` defs) | **After a game restart.** Build-menu and toolbar lists are assembled at load. |
+| Added a product, machine, research node, or toolbar category | **After a game restart.** Same reason — new protos need a registration pass. |
+| Edited an existing recipe's numbers (`edit_recipe`) | **After a game restart**, but existing machines keep running; they pick up the new values on the next load. |
+| Translations (`Translations/<lang>.json`) | **After a game restart.** |
+
+The in-game editor shows an inline "takes effect after a game restart" note next to the controls this applies to — that note is not an error. Your edit was saved; it just can't appear in a list that was built before you made it.
+
+**Practical loop:** batch your structural edits, save the pack, then restart once — rather than restarting after each individual def.
+
+---
+
 ## Troubleshooting
 
 Game logs are at `%APPDATA%\Captain of Industry\Logs\<timestamp>_<id>.log`. Check the latest file when something doesn't work.
@@ -890,6 +1232,7 @@ Game logs are at `%APPDATA%\Captain of Industry\Logs\<timestamp>_<id>.log`. Chec
 | Pile renders as flat grey instead of your texture | The carrier reference fell through to the Standard shader. Either (a) `reference=` is wrong, or (b) the texture didn't load (check `LoadModTexture` warnings in the log). |
 | Unit product renders as a 0.5×0.5×0.5 grey box | `ProductsRenderer` cached the missing-prefab fallback because something failed during prefab build. Check the log for `[CustomUnitPrefabHook]` lines — they'll either confirm the rebuild (`product 'X' slot N rebuilt`) or warn about a reflection mismatch. |
 | Cans visually overlap on the conveyor in Triangle packing | `Triangle` is geometrically tight by design. Reduce mesh dimensions, or switch to `Row` / `TriangleHorizontal` for more spacing. |
+| Added a port / cloned a machine but it isn't in the in-game list | Expected — protos are registered at load time. See [When changes take effect](#when-changes-take-effect). Save the pack and restart the game. |
 | Empty `Mods\` folder after build | The build script logs `Adresář … se zipuje do …` near the end. If you don't see this, the `BuildPack` target didn't run — confirm you built the `CustomAssetPack` project, not just `CustomAssets`. |
 
 If you hit something not in the table, post the log block in the Discord modding channel.

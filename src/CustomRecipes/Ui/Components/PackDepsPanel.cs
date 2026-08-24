@@ -18,7 +18,7 @@ using PythonAPI.Statements;
 namespace CustomAssets.Ui.Components {
 
     /// <summary>
-    /// Editable pack-dependencies dialog. Surfaces both:
+    /// Editable pack-dependencies panel — rendered into the editor main pane. Surfaces both:
     ///   * manifest.json's <c>mod_dependencies</c> + <c>optional_mod_dependencies</c>
     ///   * the Python load order declared in <c>Definitions/__init__.py</c>
     ///     via either <c>import &lt;name&gt;</c> lines (the current convention)
@@ -38,11 +38,9 @@ namespace CustomAssets.Ui.Components {
     /// entry from before) so edits persist between rebuilds while the dialog
     /// is open. Cancel = close without saving.
     /// </summary>
-    public sealed class PackDepsDialog {
+    public sealed class PackDepsPanel : Column {
 
         private readonly LoadedPack m_pack;
-		private readonly FloatingColumn m_holder;
-        private readonly Panel m_dialog;
         private readonly List<string> m_mandatory = new List<string>();
         private readonly List<string> m_optional = new List<string>();
         private readonly List<string> m_loadOrder = new List<string>();
@@ -53,73 +51,58 @@ namespace CustomAssets.Ui.Components {
         private readonly Column m_mandatoryCol = new Column();
         private readonly Column m_optionalCol = new Column();
         private readonly Column m_loadOrderCol = new Column();
+        // Seeded with the pack's current Thumbnail.png (when it has one) so
+        // the dialog shows what's in effect and "replace" is just picking a
+        // different file over the top of it.
+        private readonly ThumbnailPicker m_thumbnailPicker;
         private readonly Label m_status;
 
-		/// <summary>Convenience entry point matching the earlier static Open()
-        /// signature so callers don't have to track instances themselves.</summary>
-        public static void Open(LoadedPack pack, UiComponent anchor) {
-            new PackDepsDialog(pack).OpenAt(anchor);
-        }
-
-        public PackDepsDialog(LoadedPack pack) {
+        public PackDepsPanel(LoadedPack pack) {
             m_pack = pack;
-            m_holder = new FloatingColumn(
-                FloaterPositionPolicy.ABOVE,
-                keepOpenOnHover: false,
-                openAfterDelay: false,
-                closeOnClickOutside: false);   // false: Save/Cancel buttons own dismissal
-            // FloatingColumn doesn't carry a visible background or border by
-            // default — editable content rendered transparently sits visually
-            // on top of the tree behind it and reads as a UI bug. Cls.panel
-            // ties bg + border + bolts into one chrome match for all our
-            // popups (proto picker, pack picker, this dialog).
-            // AlignItemsStretch makes each section (label, editable lists,
-            // action row) span the full popup width instead of hugging its
-            // content.
-			m_dialog = m_holder.AddAndReturn(new Panel())
-                    .AlignItemsStretch()
-                    .Padding(4.pt()).Gap(3.pt()).MinWidth(440.px()).MaxHeight(640.px());
+            // Rendered into the editor's main pane, so the panel is just a stretched
+            // column — the pane itself supplies the chrome, exactly as it does for a
+            // definition's form.
+            this.AlignItemsStretch().Gap(3.pt());
 
             loadCurrentState();
+            m_thumbnailPicker = new ThumbnailPicker(currentThumbnailPath());
             m_status = new Label(new LocStrFormatted("")).TinyFontSize();
 
-            m_dialog.Add(new Label(new LocStrFormatted(
+            Add(new Label(new LocStrFormatted(
                 "Pack dependencies — " + (pack?.ModId ?? "?"))).FontBold());
 
-            m_dialog.Add(new Label(new LocStrFormatted("Mod dependencies (manifest.json)")));
-            m_dialog.Add(m_mandatoryCol);
-            m_dialog.Add(new ButtonText(new LocStrFormatted("+ add mod dependency"),
+            Add(new Label(new LocStrFormatted("Mod dependencies (manifest.json)")));
+            Add(m_mandatoryCol);
+            Add(new ButtonText(new LocStrFormatted("+ add mod dependency"),
                 () => { m_mandatory.Add(""); refreshList(m_mandatoryCol, m_mandatory, showModPicker: true); }));
 
-            m_dialog.Add(new Label(new LocStrFormatted("Optional mod dependencies")));
-            m_dialog.Add(m_optionalCol);
-            m_dialog.Add(new ButtonText(new LocStrFormatted("+ add optional dependency"),
+            Add(new Label(new LocStrFormatted("Optional mod dependencies")));
+            Add(m_optionalCol);
+            Add(new ButtonText(new LocStrFormatted("+ add optional dependency"),
                 () => { m_optional.Add(""); refreshList(m_optionalCol, m_optional, showModPicker: true); }));
 
-            m_dialog.Add(new Label(new LocStrFormatted(
+            Add(new Label(new LocStrFormatted(
                 "Python load order (Definitions/__init__.py)")));
-            m_dialog.Add(m_loadOrderCol);
-            m_dialog.Add(new ButtonText(new LocStrFormatted("+ add load entry"),
+            Add(m_loadOrderCol);
+            Add(new ButtonText(new LocStrFormatted("+ add load entry"),
                 () => { m_loadOrder.Add(""); refreshList(m_loadOrderCol, m_loadOrder, showModPicker: false); }));
 
-            // Footer: status + Save/Cancel. We use closeOnClickOutside=false on
-            // the FloatingColumn so a stray click can't drop unsaved changes
-            // unexpectedly — the modder must explicitly Cancel or Save.
-            m_dialog.Add(m_status);
+            Add(new Label(new LocStrFormatted("Thumbnail (Thumbnail.png)")));
+            Add(m_thumbnailPicker.Root);
+
+            // Footer: status + Save. Nothing is written until Save is pressed, and
+            // leaving the pane (selecting a definition, or clicking the button again)
+            // rebuilds it from disk — that is the discard path.
+            Add(m_status);
             Row footer = new Row {
-                new ButtonText(new LocStrFormatted("Save"), onSave),
-                new ButtonText(new LocStrFormatted("Cancel"), m_holder.Close)
+                new ButtonText(new LocStrFormatted("Save"), onSave)
             };
             footer.Gap(3.pt());
-            m_dialog.Add(footer);
+            Add(footer);
 
             refreshList(m_mandatoryCol, m_mandatory, showModPicker: true);
             refreshList(m_optionalCol, m_optional, showModPicker: true);
             refreshList(m_loadOrderCol, m_loadOrder, showModPicker: false);
-        }
-
-        public void OpenAt(UiComponent anchor) {
-			m_holder.Open(anchor);
         }
 
         // ---- Initial state ---------------------------------------------------
@@ -136,7 +119,7 @@ namespace CustomAssets.Ui.Components {
                         appendStringsFromArray(dict, "optional_mod_dependencies", m_optional);
                     }
                 } catch (Exception ex) {
-                    Log.Warning("PackDepsDialog: manifest read failed — " + ex.Message);
+                    Log.Warning("PackDepsPanel: manifest read failed — " + ex.Message);
                 }
             }
 
@@ -199,7 +182,7 @@ namespace CustomAssets.Ui.Components {
                     extras.Sort(StringComparer.OrdinalIgnoreCase);
                     m_loadOrder.AddRange(extras);
                 } catch (Exception ex) {
-                    Log.Warning("PackDepsDialog: failed to enumerate '"
+                    Log.Warning("PackDepsPanel: failed to enumerate '"
                                 + defsDir + "' — " + ex.Message);
                 }
             }
@@ -272,7 +255,7 @@ namespace CustomAssets.Ui.Components {
             }
         }
 
-        // Delegate to the shared LoadedModPicker so PackDepsDialog and
+        // Delegate to the shared LoadedModPicker so PackDepsPanel and
         // NewPackDialog share one picker implementation. The picker is
         // searchable + scrollable; selection writes the canonical
         // `<id>>=<version>` spec into the row's TextField.
@@ -289,7 +272,7 @@ namespace CustomAssets.Ui.Components {
                 trimEmpties(m_loadOrder);
                 saveManifest();
                 saveLoadOrder();
-                m_status.Value(new LocStrFormatted("Saved."));
+                m_status.Value(new LocStrFormatted("Saved." + saveThumbnail()));
             } catch (Exception ex) {
                 Log.Exception(ex);
                 m_status.Value(new LocStrFormatted("Save failed: " + ex.Message));
@@ -327,6 +310,37 @@ namespace CustomAssets.Ui.Components {
             dict["optional_mod_dependencies"] = toStringList(m_optional);
             File.WriteAllText(manifestPath, MiniJsonWriter.Write(dict),
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        }
+
+        // Absolute path of the pack's existing thumbnail, or "" when it has
+        // none. Used to pre-fill the picker so the dialog opens showing the
+        // thumbnail currently in effect.
+        private string currentThumbnailPath() {
+            if (m_pack == null || string.IsNullOrEmpty(m_pack.RootPath)) {
+                return "";
+            }
+            string path = Path.Combine(m_pack.RootPath, ThumbnailWriter.ThumbnailFileName);
+            return File.Exists(path) ? path : "";
+        }
+
+        // Commit the picker's selection. Returns a fragment appended to the
+        // save status; thumbnail problems must not read as "the manifest
+        // failed to save", because by this point it already saved fine.
+        private string saveThumbnail() {
+            if (m_pack == null || string.IsNullOrEmpty(m_pack.RootPath)) {
+                return "";
+            }
+            ThumbnailWriter.Result result = m_thumbnailPicker.ApplyTo(m_pack.RootPath);
+            if (result == null) {
+                return "";
+            }
+            if (!result.Success) {
+                return " Thumbnail not updated: " + result.Error;
+            }
+            if (result.ConvertedFromSvg) {
+                return " Thumbnail converted from SVG.";
+            }
+            return " Thumbnail updated.";
         }
 
         private static List<object> toStringList(List<string> src) {

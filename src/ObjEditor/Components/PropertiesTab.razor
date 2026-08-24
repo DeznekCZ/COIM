@@ -1,0 +1,126 @@
+@inject SceneStore Store
+
+<section class="panel">
+    @if (Store.Mode == SelectionMode.Vertex)
+    {
+        <h3>Vertex selection</h3>
+        <div class="muted small">@Store.SelectedVertices.Count vertex(es) selected · Shift-click to multi-select</div>
+        <div class="list-scroll tall">
+            @foreach (var v in Store.Mesh.Vertices.Values.OrderBy(v => v.Id))
+            {
+                var sel = Store.SelectedVertices.Contains(v.Id);
+                <div class="row clickable @(sel ? "selected" : "")"
+                     @onclick="e => Store.SelectVertex(v.Id, e.ShiftKey)">
+                    <span class="dim">v@(v.Id)</span>
+                    <span class="mono">@v.Position</span>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <h3>Face selection</h3>
+        <div class="muted small">@Store.SelectedFaces.Count face(s) selected · Shift-click to multi-select</div>
+        <div class="list-scroll tall">
+            @foreach (var f in Store.Mesh.Faces.Values.OrderBy(f => f.Id))
+            {
+                var sel = Store.SelectedFaces.Contains(f.Id);
+                var matName = f.MaterialId is int mid && Store.Mesh.Materials.TryGetValue(mid, out var m) ? m.Name : "(none)";
+                <div class="row clickable @(sel ? "selected" : "")"
+                     @onclick="e => Store.SelectFace(f.Id, e.ShiftKey)">
+                    <span class="dim">f@(f.Id)</span>
+                    <span class="mono">@f.VertexIds.Count verts</span>
+                    <span class="tag">@matName</span>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@if (Store.Mode == SelectionMode.Face && Store.SelectedFaces.Count >= 1)
+{
+    <section class="panel">
+        @if (Store.SelectedFaces.Count == 1
+             && Store.Mesh.Faces.TryGetValue(Store.SelectedFaces.First(), out var face))
+        {
+            <h3>Face f@(face.Id)</h3>
+            <div class="row">
+                <label class="lbl-wide">Material</label>
+                <select value="@(face.MaterialId?.ToString() ?? "")"
+                        @onchange="e => AssignMaterial(e.Value)">
+                    <option value="">(none)</option>
+                    @foreach (var m in Store.Mesh.Materials.Values.OrderBy(m => m.Id))
+                    {
+                        <option value="@m.Id">@m.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="row">
+                <label class="lbl-wide">Corners</label>
+                <span class="mono">@string.Join(", ", face.VertexIds.Select(id => "v" + id))</span>
+            </div>
+            <div class="row">
+                <label class="lbl-wide">Smooth grp</label>
+                <button class="sg-step" @onclick="() => Store.SetFaceSmoothingGroup(face.Id, face.SmoothingGroup - 1)"
+                        disabled="@(face.SmoothingGroup <= 0)" title="Decrease group (0 = flat)">−</button>
+                <span class="mono sg-value">@face.SmoothingGroup</span>
+                <button class="sg-step" @onclick="() => Store.SetFaceSmoothingGroup(face.Id, face.SmoothingGroup + 1)"
+                        title="Increase group">+</button>
+                <span class="muted small">@(face.SmoothingGroup == 0 ? "flat" : "smooth")</span>
+            </div>
+        }
+        else
+        {
+            <h3>@Store.SelectedFaces.Count faces</h3>
+            <div class="row">
+                <label class="lbl-wide">Smooth grp</label>
+                <button class="sg-step" @onclick="() => Store.AdjustSelectedFacesSmoothingGroup(-1)"
+                        title="Decrease group on all selected faces">−</button>
+                <span class="mono sg-value">@CommonGroupLabel()</span>
+                <button class="sg-step" @onclick="() => Store.AdjustSelectedFacesSmoothingGroup(+1)"
+                        title="Increase group on all selected faces">+</button>
+            </div>
+        }
+        <div class="row">
+            <button @onclick="() => Store.ReverseSelectedFaces()"
+                    title="Reverse vertex order — the face now points the other way (normal flips)">
+                Flip winding
+            </button>
+            <button @onclick="() => Store.SetSelectedFacesSmoothingGroup(0)"
+                    title="Force all selected faces back to flat (group 0)">
+                Flat
+            </button>
+            <button @onclick="() => Store.SetSelectedFacesSmoothingGroup(1)"
+                    title="Put all selected faces in smoothing group 1">
+                Smooth (grp 1)
+            </button>
+        </div>
+    </section>
+}
+
+@code {
+    protected override void OnInitialized() { Store.OnChange += Rerender; }
+    private async void Rerender() { await InvokeAsync(StateHasChanged); }
+    public void Dispose() { Store.OnChange -= Rerender; }
+
+    private void AssignMaterial(object? value)
+    {
+        int? id = null;
+        if (value is string s && int.TryParse(s, out var n)) id = n;
+        Store.AssignMaterialToSelectedFaces(id);
+    }
+
+    // Label for the multi-face smoothing-group display. If every selected face
+    // shares the same group we show the number; mixed selection shows "—".
+    private string CommonGroupLabel()
+    {
+        int? common = null;
+        foreach (var id in Store.SelectedFaces)
+        {
+            if (!Store.Mesh.Faces.TryGetValue(id, out var f)) continue;
+            if (common is null) common = f.SmoothingGroup;
+            else if (common != f.SmoothingGroup) return "—";
+        }
+        return common?.ToString() ?? "—";
+    }
+}

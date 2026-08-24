@@ -12,7 +12,7 @@ namespace CustomAssets.Data.Translate {
 
     /// Per-pack translation loader.
     ///
-    /// The TranslationsDialog writes each pack's translation file to
+    /// The TranslationsPanel writes each pack's translation file to
     ///   &lt;pack&gt;/Translations/&lt;lang&gt;.json
     /// as a flat dict of dialog-shape keys:
     ///   recipe.&lt;RecipeId&gt;.name             -&gt; localized recipe display name
@@ -38,6 +38,20 @@ namespace CustomAssets.Data.Translate {
     /// null; the loader is a no-op and English literals in the .py files
     /// are used as-is, which is the desired behavior.
     public static class ModTranslations {
+
+        /// <see cref="Editor.Model.RenameResearchDef.Kind"/> — the dialog-key
+        /// prefix a `rename_research` row carries in the Translations panel.
+        /// Named here because this file owns the key → loc-id mapping.
+        public const string RenameResearchKind = "rename-research";
+
+        // Loc-id namespace for every string a pack SUBSTITUTES for one the
+        // game already registered. Renames cannot reuse the target's own
+        // "<protoId>__name" id: that id is already in LocalizationManager's
+        // en-US dict (the game registered it when it built the proto), so
+        // re-registering it logs a duplicate-ID error, and splicing a
+        // translation into it would arrive far too late — the vanilla proto
+        // froze its LocStr at ITS registration time, long before any mod ran.
+        private const string RenamePrefix = "CustomAssetsRename_";
 
         // Reflection handle to LocalizationManager.s_data. It's a private
         // static Dict<string, LocData>; the indexer is settable, so we just
@@ -91,7 +105,7 @@ namespace CustomAssets.Data.Translate {
                 if (!(kvp.Value is string translated)) { skipped++; continue; }
                 if (string.IsNullOrEmpty(translated))  { skipped++; continue; }
 
-                string locId = MapPackKeyToLocId(kvp.Key);
+                string locId = MapPackKeyToLocId(kvp.Key, packId);
                 if (locId == null) { skipped++; continue; }
 
                 sData[locId] = new LocalizationManager.LocData(ImmutableArray.Create(translated));
@@ -117,23 +131,67 @@ namespace CustomAssets.Data.Translate {
         /// IDs containing underscores or other characters survive intact.
         /// IDs containing literal dots are unsupported (none in COI's proto
         /// naming convention).
-        public static string MapPackKeyToLocId(string packKey) {
+        ///
+        /// One prefix is special: <c>rename-research</c> keys do NOT map to the
+        /// target's own loc id — see <see cref="RenameLocId"/> for why — so
+        /// <paramref name="packId"/> is needed to build the substitute id. Pass
+        /// null when no pack context is available; rename keys then map to null
+        /// (i.e. are skipped) rather than silently overwriting a vanilla entry.
+        public static string MapPackKeyToLocId(string packKey, string packId = null) {
             if (string.IsNullOrEmpty(packKey)) return null;
             int firstDot = packKey.IndexOf('.');
             int lastDot  = packKey.LastIndexOf('.');
             if (firstDot < 0 || lastDot <= firstDot) return null;
 
-            string id    = packKey.Substring(firstDot + 1, lastDot - firstDot - 1);
-            string field = packKey.Substring(lastDot + 1);
+            string prefix = packKey.Substring(0, firstDot);
+            string id     = packKey.Substring(firstDot + 1, lastDot - firstDot - 1);
+            string field  = packKey.Substring(lastDot + 1);
             if (string.IsNullOrEmpty(id)) return null;
 
-            string suffix;
+            bool isDescription;
             switch (field) {
-                case "name":        suffix = Loc.NAME_SUFFIX; break;  // "__name"
-                case "description": suffix = Loc.DESC_SUFFIX; break;  // "__desc"
+                case "name":        isDescription = false; break;
+                case "description": isDescription = true;  break;
                 default: return null;
             }
-            return id + suffix;
+
+            if (prefix == RenameResearchKind) {
+                if (string.IsNullOrEmpty(packId)) return null;
+                return RenameLocId(packId, id, isDescription);
+            }
+            return id + (isDescription ? Loc.DESC_SUFFIX : Loc.NAME_SUFFIX);
+        }
+
+        /// Loc id under which a `rename_research` call registers its
+        /// replacement text. Both ends of the pipeline call this — the runtime
+        /// when it builds the LocStr, this loader when it splices the
+        /// translated value in — so the two can never drift apart.
+        ///
+        /// The pack id is part of the id so two packs renaming the SAME node
+        /// each keep their own translation (and neither trips
+        /// LocalizationManager's duplicate-ID check). Whichever pack loads last
+        /// wins the node's title, and it wins with its own translated string.
+        public static string RenameLocId(string packId, string protoId, bool isDescription) {
+            return RenamePrefix + sanitizeIdPart(packId) + "_" + sanitizeIdPart(protoId)
+                   + (isDescription ? Loc.DESC_SUFFIX : Loc.NAME_SUFFIX);
+        }
+
+        // Loc ids are plain dictionary keys, but mod ids may carry spaces,
+        // dots or dashes that would make the resulting id impossible to read
+        // in a translation file. Fold anything outside [A-Za-z0-9_] to '_'.
+        private static string sanitizeIdPart(string raw) {
+            if (string.IsNullOrEmpty(raw)) return "";
+            char[] chars = raw.ToCharArray();
+            for (int i = 0; i < chars.Length; i++) {
+                char c = chars[i];
+                bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+                          || (c >= '0' && c <= '9') || c == '_';
+                if (!ok)
+                {
+                    chars[i] = '_';
+                }
+            }
+            return new string(chars);
         }
     }
 }

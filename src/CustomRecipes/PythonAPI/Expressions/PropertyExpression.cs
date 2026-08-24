@@ -47,7 +47,41 @@ namespace PythonAPI.Expressions
 
             if (value is IDictionary<string, object> dict)
             {
-                return new Reference<object>((v) => dict[name] = v, () => dict[name]);
+                // A read-only map (`config`) exposes constants: reads resolve normally,
+                // writes are refused instead of silently rewriting the player's settings.
+                Action<object> write = dict.IsReadOnly
+                    ? (Action<object>)((v) => throw new InvalidOperationException(
+                        $"\"{safePath()}\" is read-only — its values are constants. "
+                        + "Assign to a local variable instead."))
+                    : ((v) => dict[name] = v);
+
+                if (dict.ContainsKey(name))
+                {
+                    return new Reference<object>(write, () => dict[name]);
+                }
+
+                // Key absent. Fall back to a public instance method of the dictionary's
+                // own runtime type so dictionary-backed context objects can expose
+                // helpers — `config.get("field", fallback)` on ConfigValues — without
+                // those helper names shadowing real entries of the same name.
+                MethodInfo[] helpers = value.GetType()
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(m => m.Name == this.name)
+                    .ToArray();
+
+                if (helpers.Length > 0)
+                {
+                    object helper = MemberCall.Create(value, helpers);
+                    return new Reference<object>(write, () => helper);
+                }
+
+                // READING an unknown key is a modder error worth naming (the bare
+                // Dictionary KeyNotFoundException mentions neither the key nor the
+                // object). WRITING one still creates it on a writable map, so
+                // `some_map.new_key = v` keeps working.
+                return new Reference<object>(
+                    write,
+                    () => throw new KeyNotFoundException(describeMissingKey(value, dict)));
             }
             else if (value is Type type)
             {
@@ -109,6 +143,28 @@ namespace PythonAPI.Expressions
                 return new Reference<object>(
                     (v) => throw new InvalidOperationException($"{value.GetType()} is sealed, can not set method \"{this.name}\""),
                     () => member);
+            }
+        }
+
+        // Error text for a `.member` read that misses on a dictionary-backed value.
+        // Shared with the subscript form (`config["nope"]`) so both report the same
+        // thing — see MissingMember.
+        private string describeMissingKey(object owner, IDictionary<string, object> dict)
+        {
+            return MissingMember.Describe(owner, dict, this.name, safePath());
+        }
+
+        // Path throws NotImplementedException for expression kinds that have no
+        // source path (a call result, an index, …); the error message must not.
+        private string safePath()
+        {
+            try
+            {
+                return Path;
+            }
+            catch (NotImplementedException)
+            {
+                return this.name;
             }
         }
 

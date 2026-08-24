@@ -54,7 +54,28 @@ namespace CustomAssets
 
 		public void RegisterPrototypes(ProtoRegistrator registrator) {
 			Log.Info($"{Manifest.Id}: pack registering prototypes");
-			new CustomAssetRegistrator().RegisterData(registrator);
+
+			// migrate_recipe() tombstones buffer up while the pack's .py files run and
+			// are handed to the game only once the whole pack has loaded — the "is the
+			// old recipe still registered?" test has to see the pack's FINAL proto set.
+			// Bracketed here rather than inside RegisterData so the buffer's lifetime is
+			// owned by the pack entry point, and so a pack that fails to load can be
+			// reported instead of silently dropping its migrations. This method lives in
+			// the core CustomAssets.dll, so packs pick the behaviour up without shipping
+			// a new CustomAssetPack.dll.
+			RecipeMigrationBuffer.Reset(Manifest.Id);
+			try {
+				new CustomAssetRegistrator().RegisterData(registrator);
+			} catch {
+				// A failed pack does NOT abort the game — it just doesn't apply. Its
+				// recipes are therefore absent, so registering migrations now would
+				// only produce "target not registered" noise. Warn loudly instead: the
+				// player is about to play, and possibly SAVE, with the pack's recipes
+				// resolving to phantoms that Machine.initSelf strips on the next load.
+				RecipeMigrationBuffer.Abandon(Manifest.Id);
+				throw;
+			}
+			RecipeMigrationBuffer.Flush(Manifest.Id, registrator);
 		}
 
 		public void RegisterDependencies(DependencyResolverBuilder depBuilder, ProtosDb protosDb, bool gameWasLoaded) {

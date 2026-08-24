@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Custom Assets Loader — the framework mod itself.
+       Identity: Python definition files driving machinery. A script page
+       (folded corner, code lines) sits in front of a gear, so the icon reads
+       as "definitions in, assets out" rather than as any one content pack.
+       Kept to two shapes with a hard silhouette so it survives the 36px
+       row size the mods list and pack switcher render at. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2c3a4a"/>
+      <stop offset="1" stop-color="#161c24"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2f5f8"/>
+      <stop offset="1" stop-color="#c8d2dc"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="28" fill="url(#bg)"/>
+
+  <!-- gear behind the page: the "assets" half of the story -->
+  <g transform="translate(168 96)" fill="#e8a33d">
+    <circle r="52"/>
+    <g>
+      <rect x="-10" y="-70" width="20" height="24" rx="4"/>
+      <rect x="-10" y="46" width="20" height="24" rx="4"/>
+      <rect x="-70" y="-10" width="24" height="20" rx="4"/>
+      <rect x="46" y="-10" width="24" height="20" rx="4"/>
+      <rect x="-10" y="-70" width="20" height="24" rx="4" transform="rotate(45)"/>
+      <rect x="-10" y="46" width="20" height="24" rx="4" transform="rotate(45)"/>
+      <rect x="-70" y="-10" width="24" height="20" rx="4" transform="rotate(45)"/>
+      <rect x="46" y="-10" width="24" height="20" rx="4" transform="rotate(45)"/>
+    </g>
+    <circle r="19" fill="#161c24"/>
+  </g>
+
+  <!-- script page with a folded corner: the "definitions" half -->
+  <g>
+    <path d="M44 78 h84 l34 34 v112 a10 10 0 0 1 -10 10 H44 a10 10 0 0 1 -10 -10 V88 a10 10 0 0 1 10 -10 Z"
+          fill="url(#page)"/>
+    <path d="M128 78 l34 34 h-34 Z" fill="#8b97a5"/>
+  </g>
+
+  <!-- code lines. The lower two are kept short so the .py badge below has
+       clear space instead of colliding with them. -->
+  <g fill="#46586b">
+    <rect x="52" y="128" width="76" height="11" rx="5"/>
+    <rect x="52" y="150" width="96" height="11" rx="5"/>
+    <rect x="66" y="172" width="44" height="11" rx="5"/>
+  </g>
+  <!-- one amber line ties the page to the gear's palette -->
+  <rect x="52" y="106" width="46" height="11" rx="5" fill="#e8a33d"/>
+
+  <!-- ".py" badge: says Python without reproducing the PSF's two-snake
+       logo, which is trademarked and illegible at row size anyway. Drawn as
+       shapes rather than <text> because the renderer has no text support —
+       the "p" bowl is a stroked circle overlapping the stem, avoiding arc
+       path commands entirely. -->
+  <g>
+    <rect x="108" y="174" width="120" height="60" rx="16" fill="#161c24"/>
+    <rect x="108" y="174" width="120" height="60" rx="16" fill="none"
+          stroke="#e8a33d" stroke-width="5"/>
+    <circle cx="128" cy="214" r="6" fill="#e8a33d"/>
+    <g fill="none" stroke="#e8a33d" stroke-width="7"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M148 192 V228"/>
+      <circle cx="159" cy="207" r="11"/>
+      <path d="M182 192 L192 214"/>
+      <path d="M206 192 L188 230"/>
+    </g>
+  </g>
+</svg>

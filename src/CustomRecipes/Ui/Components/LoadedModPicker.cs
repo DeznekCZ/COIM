@@ -20,7 +20,7 @@ namespace CustomAssets.Ui.Components {
     /// calls back with the canonical <c>&lt;id&gt;&gt;=&lt;version&gt;</c>
     /// spec the manifest expects.
     ///
-    /// Centralizes what PackDepsDialog used to inline so the new-pack
+    /// Centralizes what PackDepsPanel used to inline so the new-pack
     /// dialog (and any future dialog needing a mod picker) can drop the
     /// affordance in with a single call.
     /// </summary>
@@ -50,7 +50,7 @@ namespace CustomAssets.Ui.Components {
             panel.BodyAdd(list);
 
             // Each row paired with a pre-lowercased haystack for filtering.
-            // Mirrors MachineIdPicker / PackDepsDialog so search semantics
+            // Mirrors MachineIdPicker / PackDepsPanel so search semantics
             // stay consistent across the editor.
             List<KeyValuePair<UiComponent, string>> rows =
                 new List<KeyValuePair<UiComponent, string>>();

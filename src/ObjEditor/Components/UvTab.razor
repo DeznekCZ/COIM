@@ -1,0 +1,356 @@
+@inject SceneStore Store
+@inject IJSRuntime JS
+@implements IDisposable
+
+<section class="panel">
+    <h3>UV editor</h3>
+
+    @if (TargetFaces.Count == 0)
+    {
+        <p class="muted small">Switch to Face mode and select one or more faces to edit their UVs.</p>
+    }
+    else
+    {
+        var faceData = TargetFaces.Select(face =>
+        {
+            var corners = Enumerable.Range(0, face.VertexIds.Count)
+                .Select(i =>
+                {
+                    var uvId = i < face.UvIds.Count ? face.UvIds[i] : null;
+                    double u = 0, v = 0;
+                    if (uvId is int id && Store.Mesh.Uvs.TryGetValue(id, out var c))
+                    { u = c.Uv.U; v = c.Uv.V; }
+                    return (Index: i, U: u, V: v, UvId: uvId);
+                }).ToArray();
+            return (Face: face, Corners: corners);
+        }).ToArray();
+
+        var firstMat = faceData[0].Face.MaterialId is int mid
+            && Store.Mesh.Materials.TryGetValue(mid, out var mat) ? mat : null;
+        var textureDataUrl = firstMat?.TextureBytes != null
+            ? "data:image/png;base64," + Convert.ToBase64String(firstMat.TextureBytes)
+            : null;
+
+        var span = 1.0 / _zoom;
+        var x0 = _viewCx - span / 2;
+        var y0 = _viewCy - span / 2;
+        var handleR = HandleRadiusBase / _zoom;
+        var viewBox = $"{x0.ToString(Inv)} {y0.ToString(Inv)} {span.ToString(Inv)} {span.ToString(Inv)}";
+
+        <div class="uv-toolbar muted small">
+            <span>@faceData.Length face(s) · @faceData.Sum(fd => fd.Corners.Length) corner(s)</span>
+            <span class="sep">·</span>
+            <span>@_selectedPoints.Count selected</span>
+            <span class="sep">·</span>
+            <span>Zoom @_zoom.ToString("0.##", Inv)×</span>
+            <button class="uv-toolbtn" @onclick="ResetView" title="Reset zoom and pan">Reset view</button>
+        </div>
+        <div class="uv-toolbar muted small">
+            <button class="uv-toolbtn" @onclick="ConnectSelection"
+                    disabled="@(_selectedPoints.Count < 2)"
+                    title="Merge selected corners into one shared UV at the average position">
+                Connect
+            </button>
+            <button class="uv-toolbtn" @onclick="DetachSelection"
+                    disabled="@(_selectedPoints.Count == 0)"
+                    title="Give each selected corner its own UV id (breaks any sharing with other corners)">
+                Detach
+            </button>
+            <button class="uv-toolbtn" @onclick="ClearSelection"
+                    disabled="@(_selectedPoints.Count == 0)">
+                Clear sel
+            </button>
+        </div>
+        <div class="muted small uv-hint">
+            Click dot to select (Shift = add) · Drag dot to move · Wheel = zoom · Middle/Shift-drag = pan
+        </div>
+
+        <svg @ref="_svgRef" class="uv-canvas"
+             viewBox="@viewBox"
+             preserveAspectRatio="xMidYMid meet"
+             @onmousedown="OnDown"
+             @onmousemove="OnMove"
+             @onmouseup="StopDrag"
+             @onmouseleave="StopDrag"
+             @onwheel="OnWheel"
+             @onwheel:preventDefault="true">
+            <defs>
+                <pattern id="uv-checker" x="0" y="0" width="0.0625" height="0.0625" patternUnits="userSpaceOnUse">
+                    <rect width="0.0625" height="0.0625" fill="#22222c" />
+                    <rect width="0.03125" height="0.03125" fill="#1a1a22" />
+                    <rect x="0.03125" y="0.03125" width="0.03125" height="0.03125" fill="#1a1a22" />
+                </pattern>
+            </defs>
+            <rect x="@(x0 - span).ToString(Inv)" y="@(y0 - span).ToString(Inv)"
+                  width="@(span * 3).ToString(Inv)" height="@(span * 3).ToString(Inv)"
+                  fill="url(#uv-checker)" />
+            @if (textureDataUrl != null)
+            {
+                <image href="@textureDataUrl" x="0" y="0" width="1" height="1"
+                       preserveAspectRatio="none" opacity="0.95" />
+            }
+            <rect x="0" y="0" width="1" height="1"
+                  fill="none" stroke="#3a3a40" stroke-width="1"
+                  vector-effect="non-scaling-stroke" />
+
+            @foreach (var fd in faceData)
+            {
+                var pts = string.Join(" ", fd.Corners.Select(c =>
+                    $"{c.U.ToString(Inv)},{(1 - c.V).ToString(Inv)}"));
+                <polygon points="@pts" fill="rgba(96,165,250,0.10)"
+                         stroke="#60a5fa" stroke-width="1.4"
+                         vector-effect="non-scaling-stroke" />
+            }
+
+            @foreach (var fd in faceData)
+            {
+                var faceId = fd.Face.Id;
+                foreach (var c in fd.Corners)
+                {
+                    var cx = c.U;
+                    var cy = 1 - c.V;
+                    var cornerIdx = c.Index;
+                    var dragging = _dragFaceId == faceId && _dragCorner == cornerIdx;
+                    var selected = _selectedPoints.Contains((faceId, cornerIdx));
+                    var fill = dragging ? "#ff8844" : selected ? "#22d3ee" : "#ffffff";
+                    <circle cx="@cx.ToString(Inv)" cy="@cy.ToString(Inv)" r="@handleR.ToString(Inv)"
+                            fill="@fill"
+                            stroke="#000" stroke-width="1"
+                            vector-effect="non-scaling-stroke"
+                            style="cursor:move; pointer-events: all;"
+                            @onmousedown="(e) => OnHandleDown(e, faceId, cornerIdx)"
+                            @onmousedown:stopPropagation="true">
+                        <title>f@(faceId) · corner @cornerIdx · uv @(c.UvId?.ToString() ?? "—")</title>
+                    </circle>
+                }
+            }
+        </svg>
+
+        <div class="uv-inputs">
+            @foreach (var fd in faceData)
+            {
+                var faceId = fd.Face.Id;
+                @if (faceData.Length > 1)
+                {
+                    <div class="uv-face-label muted small">f@(faceId)</div>
+                }
+                @foreach (var c in fd.Corners)
+                {
+                    var cornerIdx = c.Index;
+                    <div class="row">
+                        <span class="dim">@cornerIdx</span>
+                        <label class="lbl">U</label>
+                        <input type="number" step="0.01" min="0" max="1" value="@Fmt(c.U)"
+                               @onchange="e => SetUv(faceId, cornerIdx, 0, e.Value)" />
+                        <label class="lbl">V</label>
+                        <input type="number" step="0.01" min="0" max="1" value="@Fmt(c.V)"
+                               @onchange="e => SetUv(faceId, cornerIdx, 1, e.Value)" />
+                    </div>
+                }
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    private const double HandleRadiusBase = 0.010;
+
+    private ElementReference _svgRef;
+    private int _dragCorner = -1;
+    private int? _dragFaceId;
+
+    // SVG client rect snapshotted on each drag/zoom interaction. The Blazor
+    // MouseEventArgs.OffsetX is relative to whatever child happens to be the
+    // event target (often a handle dot once the cursor lands on it), so we
+    // measure the SVG's actual client rect via JS and use ClientX/Y instead.
+    private double _rectLeft, _rectTop, _rectWidth = 360, _rectHeight = 360;
+
+    private double _viewCx = 0.5;
+    private double _viewCy = 0.5;
+    private double _zoom = 1.0;
+
+    private bool _panning;
+    private double _panLastX, _panLastY;
+
+    // Multi-selection of UV corner points (face id, corner index).
+    // Persists across renders; cleared when the selected-face set changes.
+    private HashSet<(int faceId, int corner)> _selectedPoints = new();
+    private int _lastFaceSetHash;
+
+    private List<Face> TargetFaces =>
+        Store.Mode == SelectionMode.Face
+            ? Store.SelectedFaces
+                .Select(id => Store.Mesh.Faces.TryGetValue(id, out var f) ? f : null)
+                .Where(f => f is not null)
+                .Cast<Face>()
+                .OrderBy(f => f.Id)
+                .ToList()
+            : new List<Face>();
+
+    protected override void OnInitialized() { Store.OnChange += OnStoreChanged; }
+
+    private async void OnStoreChanged()
+    {
+        // Drop UV selection when the user switches to a different set of
+        // faces in the viewport. Otherwise stale entries hang around and
+        // Connect/Detach operate on faces that aren't even visible.
+        var hash = string.Join(",", Store.SelectedFaces.OrderBy(x => x));
+        var newHash = hash.GetHashCode();
+        if (newHash != _lastFaceSetHash)
+        {
+            _lastFaceSetHash = newHash;
+            _selectedPoints.Clear();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() { Store.OnChange -= OnStoreChanged; }
+
+    private async Task MeasureRectAsync()
+    {
+        try
+        {
+            var r = await JS.InvokeAsync<double[]>("objEditor.measureRect", _svgRef);
+            if (r is { Length: 4 } && r[2] > 0 && r[3] > 0)
+            {
+                _rectLeft = r[0]; _rectTop = r[1]; _rectWidth = r[2]; _rectHeight = r[3];
+            }
+        }
+        catch (Exception ex) { Diag.Log("UV measureRect: " + ex); }
+    }
+
+    // Handle mousedown on a UV dot. Plain click → select-only + start drag;
+    // Shift+click → toggle selection (no drag). The drag itself plays out
+    // through OnMove on the SVG element so it works even when the cursor
+    // leaves the handle.
+    private async Task OnHandleDown(Microsoft.AspNetCore.Components.Web.MouseEventArgs e, int faceId, int cornerIdx)
+    {
+        if (e.ShiftKey)
+        {
+            var key = (faceId, cornerIdx);
+            if (!_selectedPoints.Add(key)) _selectedPoints.Remove(key);
+            return;
+        }
+        // Plain click: replace selection, start dragging.
+        _selectedPoints.Clear();
+        _selectedPoints.Add((faceId, cornerIdx));
+        _dragCorner = cornerIdx;
+        _dragFaceId = faceId;
+        await MeasureRectAsync();
+    }
+
+    private async Task OnDown(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (e.Button == 1 || (e.Button == 0 && e.ShiftKey))
+        {
+            _panning = true;
+            _panLastX = e.ClientX;
+            _panLastY = e.ClientY;
+            await MeasureRectAsync();
+        }
+    }
+
+    private void StopDrag()
+    {
+        _dragCorner = -1;
+        _dragFaceId = null;
+        _panning = false;
+    }
+
+    private void OnMove(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (_panning)
+        {
+            var dx = e.ClientX - _panLastX;
+            var dy = e.ClientY - _panLastY;
+            var span = 1.0 / _zoom;
+            _panLastX = e.ClientX;
+            _panLastY = e.ClientY;
+            _viewCx -= dx / Math.Max(1, _rectWidth) * span;
+            _viewCy -= dy / Math.Max(1, _rectHeight) * span;
+            StateHasChanged();
+            return;
+        }
+        if (_dragCorner < 0 || _dragFaceId is not int fid) return;
+        var cssX = e.ClientX - _rectLeft;
+        var cssY = e.ClientY - _rectTop;
+        var (sx, sy) = OffsetToSvg(cssX, cssY);
+        var u = Math.Clamp(sx, 0, 1);
+        var v = Math.Clamp(1 - sy, 0, 1);
+        Store.SetUvForFaceCorner(fid, _dragCorner, new Vec2(u, v));
+    }
+
+    private async Task OnWheel(Microsoft.AspNetCore.Components.Web.WheelEventArgs e)
+    {
+        await MeasureRectAsync();
+        var cssX = e.ClientX - _rectLeft;
+        var cssY = e.ClientY - _rectTop;
+        var (sxBefore, syBefore) = OffsetToSvg(cssX, cssY);
+        var factor = Math.Pow(1.0015, -e.DeltaY);
+        var newZoom = Math.Clamp(_zoom * factor, 0.25, 50.0);
+        _zoom = newZoom;
+        var (sxAfter, syAfter) = OffsetToSvg(cssX, cssY);
+        _viewCx += sxBefore - sxAfter;
+        _viewCy += syBefore - syAfter;
+        StateHasChanged();
+    }
+
+    private (double X, double Y) OffsetToSvg(double cssX, double cssY)
+    {
+        var span = 1.0 / _zoom;
+        var x0 = _viewCx - span / 2;
+        var y0 = _viewCy - span / 2;
+        return (x0 + cssX / Math.Max(1, _rectWidth) * span,
+                y0 + cssY / Math.Max(1, _rectHeight) * span);
+    }
+
+    private void ResetView()
+    {
+        _viewCx = 0.5;
+        _viewCy = 0.5;
+        _zoom = 1.0;
+        StateHasChanged();
+    }
+
+    private void ClearSelection()
+    {
+        _selectedPoints.Clear();
+        StateHasChanged();
+    }
+
+    private void ConnectSelection()
+    {
+        if (_selectedPoints.Count < 2) return;
+        Store.ConnectUvs(_selectedPoints);
+    }
+
+    private void DetachSelection()
+    {
+        if (_selectedPoints.Count == 0) return;
+        Store.DetachUvs(_selectedPoints);
+    }
+
+    private void SetUv(int faceId, int corner, int axis, object? value)
+    {
+        if (!TryParseNumber(value, out var x)) return;
+        if (!Store.Mesh.Faces.TryGetValue(faceId, out var f)) return;
+        var uvId = corner < f.UvIds.Count ? f.UvIds[corner] : null;
+        Vec2 existing = (uvId is int id && Store.Mesh.Uvs.TryGetValue(id, out var c)) ? c.Uv : Vec2.Zero;
+        var next = axis == 0 ? new Vec2(x, existing.V) : new Vec2(existing.U, x);
+        Store.SetUvForFaceCorner(faceId, corner, next);
+    }
+
+    private static bool TryParseNumber(object? value, out double result)
+    {
+        result = 0;
+        var s = value?.ToString();
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        if (double.TryParse(s, System.Globalization.NumberStyles.Float, Inv, out result)) return true;
+        return double.TryParse(s.Replace(',', '.'),
+            System.Globalization.NumberStyles.Float, Inv, out result);
+    }
+
+    private static string Fmt(double d) => d.ToString("0.######", Inv);
+}

@@ -6,6 +6,12 @@ using PythonAPI.Runtime;
 namespace PythonAPI.Expressions {
 	public abstract class AUnaryOperatorExpression : IExpression {
 		protected readonly IExpression expression;
+
+		/// The operand this operator applies to. Exposed so the editor can render a
+		/// parsed expression back to source text (see Editor/Io/ExpressionPrinter) —
+		/// without it, a negated value like `-1` is unprintable and would be dropped
+		/// on save.
+		public IExpression Operand => expression;
 		private object expressionValue;
 
 		public virtual string Path => throw new NotImplementedException($"Cannot get path from operator {GetType()}");

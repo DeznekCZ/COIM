@@ -223,6 +223,33 @@ namespace CustomAssets.Editor.Io {
             File.WriteAllText(filePath, sb.ToString());
         }
 
+        /// Append a fresh `with edit_recipe(recipe):\n    pass` block to a file.
+        /// Mirrors AppendIfBlockToFile — the block is written with a `pass` body so
+        /// it is valid Python immediately; the editor then swaps the recipe id via
+        /// the header editor and adds sub-actions with AppendDefIntoClause (which
+        /// replaces the `pass`). <paramref name="recipeId"/> is a placeholder the
+        /// modder replaces; it is emitted as a quoted string, matching how an
+        /// unresolved recipe id renders elsewhere.
+        public static void AppendEditBlockToFile(string filePath, string recipeId) {
+            if (string.IsNullOrEmpty(filePath)) {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+            string id = string.IsNullOrWhiteSpace(recipeId) ? "RecipeToEdit" : recipeId.Trim();
+            if (!File.Exists(filePath)) {
+                File.WriteAllText(filePath, "");
+            }
+            string existing = File.ReadAllText(filePath);
+            StringBuilder sb = new StringBuilder(existing.Length + 64);
+            sb.Append(existing);
+            if (existing.Length > 0 && !existing.EndsWith("\n", StringComparison.Ordinal)) {
+                sb.Append('\n');
+            }
+            if (existing.Length > 0) sb.Append('\n');
+            EditRecipeDef seed = new EditRecipeDef { RecipeId = id, EmitAsWithBlock = true };
+            sb.Append(RenderEditRecipeBlockHeader(seed)).Append('\n');
+            File.WriteAllText(filePath, sb.ToString());
+        }
+
         /// Append `else:\n    pass\n` to an if/elif-chain at
         /// <paramref name="afterLine"/> (the chain's last clause's
         /// last line). <paramref name="leadingIndent"/> is the
@@ -306,49 +333,8 @@ namespace CustomAssets.Editor.Io {
                     + " is past end of " + filePath);
             }
 
-            // Header indent (whitespace before `if`/`elif`/`else`).
-            string headerLine = lines[clauseHeaderLine - 1];
-            string headerIndent = leadingWhitespace(headerLine);
-            string bodyIndent = headerIndent + "    ";
-
-            // Walk forward from the header looking for the body's actual
-            // indentation (the first non-blank line after the header that
-            // sits deeper than headerIndent). Then walk past the body to
-            // find its END — the last line whose indent ≥ bodyIndent.
-            // Anything below that belongs to a sibling clause or
-            // outer-scope code.
-            int firstBodyLine = -1;
-            for (int i = clauseHeaderLine; i < lines.Length; i++) {
-                string line = lines[i];
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                string indent = leadingWhitespace(line);
-                if (indent.Length <= headerIndent.Length) break;
-                firstBodyLine = i; // 0-based
-                bodyIndent = indent;
-                break;
-            }
-
-            int insertAfterIdx; // 0-based index AFTER which to insert
-            if (firstBodyLine < 0) {
-                // Empty body (e.g. fresh `if X:` followed by `pass` only,
-                // and we missed pass). Insert right after header.
-                insertAfterIdx = clauseHeaderLine - 1;
-            } else {
-                insertAfterIdx = firstBodyLine;
-                for (int i = firstBodyLine + 1; i < lines.Length; i++) {
-                    string line = lines[i];
-                    if (string.IsNullOrWhiteSpace(line)) {
-                        insertAfterIdx = i;
-                        continue;
-                    }
-                    string indent = leadingWhitespace(line);
-                    if (indent.Length >= bodyIndent.Length) {
-                        insertAfterIdx = i;
-                    } else {
-                        break;
-                    }
-                }
-            }
+            findClauseBody(lines, clauseHeaderLine, out string bodyIndent,
+                out int insertAfterIdx);
 
             // Render the def with the existing per-kind dispatcher. Park
             // the model so renderers can resolve cross-def references via
@@ -392,35 +378,8 @@ namespace CustomAssets.Editor.Io {
                     "AppendIfBlockIntoClause: clauseHeaderLine " + clauseHeaderLine
                     + " is past end of " + filePath);
             }
-            string headerLine = lines[clauseHeaderLine - 1];
-            string headerIndent = leadingWhitespace(headerLine);
-            string bodyIndent = headerIndent + "    ";
-            int firstBodyLine = -1;
-            for (int i = clauseHeaderLine; i < lines.Length; i++) {
-                string line = lines[i];
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                string indent = leadingWhitespace(line);
-                if (indent.Length <= headerIndent.Length) break;
-                firstBodyLine = i;
-                bodyIndent = indent;
-                break;
-            }
-            int insertAfterIdx;
-            if (firstBodyLine < 0) {
-                insertAfterIdx = clauseHeaderLine - 1;
-            } else {
-                insertAfterIdx = firstBodyLine;
-                for (int i = firstBodyLine + 1; i < lines.Length; i++) {
-                    string line = lines[i];
-                    if (string.IsNullOrWhiteSpace(line)) { insertAfterIdx = i; continue; }
-                    string indent = leadingWhitespace(line);
-                    if (indent.Length >= bodyIndent.Length) {
-                        insertAfterIdx = i;
-                    } else {
-                        break;
-                    }
-                }
-            }
+            findClauseBody(lines, clauseHeaderLine, out string bodyIndent,
+                out int insertAfterIdx);
 
             // Render `if <cond>:\n    pass` — body indent (4 spaces) is
             // applied on top of the clause-body indent via the splice
@@ -428,6 +387,167 @@ namespace CustomAssets.Editor.Io {
             string rendered = "if " + cond + ":\n    pass";
             spliceRenderedIntoClauseBody(filePath, lines, clauseHeaderLine - 1,
                 insertAfterIdx, bodyIndent, rendered);
+        }
+
+        /// Splice a fresh `with edit_recipe(recipe):\n    pass` block into an
+        /// existing clause body. Same contract as AppendIfBlockIntoClause — the
+        /// header+pass renders at column 0 and the splice helper shifts it to the
+        /// clause's body indent, so the nested `pass` sits at bodyIndent + 4.
+        public static void AppendEditBlockIntoClause(string filePath,
+                int clauseHeaderLine, string recipeId) {
+            if (string.IsNullOrEmpty(filePath)) {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+            if (clauseHeaderLine < 1) {
+                throw new InvalidOperationException(
+                    "AppendEditBlockIntoClause requires clauseHeaderLine > 0.");
+            }
+            string[] lines = File.ReadAllLines(filePath);
+            if (clauseHeaderLine > lines.Length) {
+                throw new InvalidOperationException(
+                    "AppendEditBlockIntoClause: clauseHeaderLine " + clauseHeaderLine
+                    + " is past end of " + filePath);
+            }
+            findClauseBody(lines, clauseHeaderLine, out string bodyIndent,
+                out int insertAfterIdx);
+
+            EditRecipeDef seed = new EditRecipeDef {
+                RecipeId = string.IsNullOrWhiteSpace(recipeId) ? "RecipeToEdit" : recipeId.Trim(),
+                EmitAsWithBlock = true,
+            };
+            spliceRenderedIntoClauseBody(filePath, lines, clauseHeaderLine - 1,
+                insertAfterIdx, bodyIndent, RenderEditRecipeBlockHeader(seed));
+        }
+
+        /// Locate where a new statement goes inside a block clause's body:
+        /// the body's actual indent, and the 0-based index AFTER which to
+        /// insert (i.e. the end of the existing body).
+        ///
+        /// Three walks. First over the HEADER itself, which is one statement but
+        /// may occupy many physical lines when its call arguments wrap (see
+        /// <see cref="blockHeaderEndIdx"/>) — the body starts after its last
+        /// line, never after its first. Then forward from there for the first
+        /// non-blank line deeper than the header — that line's indent IS the
+        /// body indent, however the file happens to be indented. Then on past
+        /// the body for its last line: anything at or deeper than the body
+        /// indent still belongs to it (blank lines included, so a trailing
+        /// blank stays inside rather than pushing the insert above it); the
+        /// first shallower line belongs to a sibling clause or outer scope and
+        /// ends the walk.
+        ///
+        /// With no body at all (a bare `if X:` whose `pass` we didn't see) the
+        /// insert point is the header's last line and the indent falls back to
+        /// header + 4.
+        private static void findClauseBody(string[] lines, int clauseHeaderLine,
+                out string bodyIndent, out int insertAfterIdx) {
+            string headerIndent = leadingWhitespace(lines[clauseHeaderLine - 1]);
+            bodyIndent = headerIndent + "    ";
+            int headerEndIdx = blockHeaderEndIdx(lines, clauseHeaderLine - 1);
+
+            int firstBodyLine = -1;
+            for (int i = headerEndIdx + 1; i < lines.Length; i++) {
+                string line = lines[i];
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                string indent = leadingWhitespace(line);
+                if (indent.Length <= headerIndent.Length) break;
+                firstBodyLine = i; // 0-based
+                bodyIndent = indent;
+                break;
+            }
+
+            if (firstBodyLine < 0) {
+                insertAfterIdx = headerEndIdx;
+                return;
+            }
+
+            insertAfterIdx = firstBodyLine;
+            for (int i = firstBodyLine + 1; i < lines.Length; i++) {
+                string line = lines[i];
+                if (string.IsNullOrWhiteSpace(line)) {
+                    insertAfterIdx = i;
+                    continue;
+                }
+                if (leadingWhitespace(line).Length >= bodyIndent.Length) {
+                    insertAfterIdx = i;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        /// 0-based index of the LAST line of the block header that STARTS at
+        /// <paramref name="headerIdx"/>. A header is one statement, but it can
+        /// occupy many physical lines whenever its call arguments wrap:
+        ///
+        /// <code>
+        /// with build_recipe(
+        ///     "Recipe_X",
+        ///     …
+        /// ) as recipe_x:
+        /// </code>
+        ///
+        /// Every one of those continuation lines is indented deeper than the
+        /// header, so a scan that assumed a one-line header claimed them as the
+        /// block's body and spliced new statements INTO the argument list,
+        /// producing `bind_recipe(…)` calls between `products = […]` and the
+        /// closing `)`. Since the resulting file no longer parses as the block
+        /// it was, the next reload didn't recognise the binding as written and
+        /// appended it again — one more copy per save.
+        ///
+        /// The header ends at the first line where every bracket it opened has
+        /// closed AND the code ends with the block-opening `:`. Comments and
+        /// string literals are skipped so a `#` or a bracket inside a quoted id
+        /// can't move the boundary. A header we can't terminate (unbalanced
+        /// brackets, an unclosed triple-quote) falls back to its first line,
+        /// which is the pre-existing behaviour.
+        private static int blockHeaderEndIdx(string[] lines, int headerIdx) {
+            if (headerIdx < 0 || headerIdx >= lines.Length) return headerIdx;
+            int depth = 0;
+            for (int i = headerIdx; i < lines.Length; i++) {
+                string code = stripCommentsAndCountBrackets(lines[i], ref depth);
+                if (depth > 0) continue;
+                if (code.TrimEnd().EndsWith(":", StringComparison.Ordinal)) {
+                    return i;
+                }
+            }
+            return headerIdx;
+        }
+
+        // One line of Python with its trailing `#` comment removed, updating
+        // <paramref name="depth"/> by the brackets the line opens and closes.
+        // Quoted spans are copied through verbatim and contribute neither
+        // brackets nor a comment start, which is what lets an id like
+        // "Recipe_(X)" or a comment marker inside a string sit in a header
+        // without confusing the span scan.
+        private static string stripCommentsAndCountBrackets(string line, ref int depth) {
+            if (string.IsNullOrEmpty(line)) return "";
+            StringBuilder code = new StringBuilder(line.Length);
+            char quote = '\0';
+            for (int i = 0; i < line.Length; i++) {
+                char c = line[i];
+                if (quote != '\0') {
+                    code.Append(c);
+                    if (c == '\\' && i + 1 < line.Length) {
+                        code.Append(line[++i]);
+                        continue;
+                    }
+                    if (c == quote) quote = '\0';
+                    continue;
+                }
+                if (c == '"' || c == '\'') {
+                    quote = c;
+                    code.Append(c);
+                    continue;
+                }
+                if (c == '#') break;
+                if (c == '(' || c == '[' || c == '{') {
+                    depth++;
+                } else if (c == ')' || c == ']' || c == '}') {
+                    if (depth > 0) depth--;
+                }
+                code.Append(c);
+            }
+            return code.ToString();
         }
 
         // Shared insertion logic — re-indent the rendered text to bodyIndent,
@@ -449,19 +569,7 @@ namespace CustomAssets.Editor.Io {
                 break;
             }
 
-            string[] renderedLines = rendered.Split('\n');
-            List<string> indented = new List<string>(renderedLines.Length);
-            for (int i = 0; i < renderedLines.Length; i++) {
-                string r = renderedLines[i];
-                if (r.EndsWith("\r", StringComparison.Ordinal)) {
-                    r = r.Substring(0, r.Length - 1);
-                }
-                if (string.IsNullOrEmpty(r)) {
-                    indented.Add("");
-                } else {
-                    indented.Add(bodyIndent + r);
-                }
-            }
+            List<string> indented = indentBlock(rendered, bodyIndent);
 
             List<string> output = new List<string>(lines.Length + indented.Count + 2);
             for (int i = 0; i < lines.Length; i++) {
@@ -478,10 +586,38 @@ namespace CustomAssets.Editor.Io {
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 
+        /// The spaces/tabs a line starts with — the unit every splice works in,
+        /// since a statement is rendered at column 0 and then shifted to match
+        /// its surroundings. Null/empty → "".
         private static string leadingWhitespace(string line) {
+            if (string.IsNullOrEmpty(line)) return "";
             int n = 0;
             while (n < line.Length && (line[n] == ' ' || line[n] == '\t')) n++;
-            return line.Substring(0, n);
+            return n == 0 ? "" : line.Substring(0, n);
+        }
+
+        /// Shift a rendered statement (always produced at column 0) to sit at
+        /// <paramref name="indent"/>. The single place that knows the two rules
+        /// every splice path shares:
+        ///
+        ///   - blank lines stay blank — prefixing them would write trailing
+        ///     whitespace on the separators between defs;
+        ///   - a stray '\r' is dropped, so a CRLF-captured RawSource can't leave
+        ///     a bare CR in the middle of a rewritten line.
+        ///
+        /// An empty indent still round-trips through here, so callers no longer
+        /// need the `if (indent.Length > 0)` branch they each used to carry.
+        private static List<string> indentBlock(string rendered, string indent) {
+            string[] renderedLines = rendered.Split('\n');
+            List<string> result = new List<string>(renderedLines.Length);
+            foreach (string line in renderedLines) {
+                string r = line;
+                if (r.EndsWith("\r", StringComparison.Ordinal)) {
+                    r = r.Substring(0, r.Length - 1);
+                }
+                result.Add(r.Length == 0 ? "" : indent + r);
+            }
+            return result;
         }
 
         public static void SaveDef(DefBase def, PackModel model) {
@@ -569,20 +705,15 @@ namespace CustomAssets.Editor.Io {
             string[] lines = File.ReadAllLines(file);
             if (startLine < 1 || endLine > lines.Length || startLine > endLine) return;
 
-            string indent = readLeadingWhitespace(lines[startLine - 1]);
+            string indent = leadingWhitespace(lines[startLine - 1]);
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < modelOrder.Count; i++) {
                 if (i > 0) sb.Append('\n'); // blank separator between defs
                 string rendered = renderDefinition(modelOrder[i]);
                 if (rendered == null) continue;
-                if (indent.Length > 0) {
-                    foreach (string ln in rendered.Split('\n')) {
-                        if (ln.Length > 0) sb.Append(indent);
-                        sb.Append(ln).Append('\n');
-                    }
-                } else {
-                    sb.Append(rendered).Append('\n');
+                foreach (string ln in indentBlock(rendered, indent)) {
+                    sb.Append(ln).Append('\n');
                 }
             }
 
@@ -613,50 +744,128 @@ namespace CustomAssets.Editor.Io {
         ///     convention and is what the loader expects to round-trip.
         ///   - Power emits as a bare int (no `Percent(...)` wrapper) so packs
         ///     that don't import `Percent` from Mafi keep working.
+        /// Renders a recipe. A recipe WITH machine bindings emits as one
+        /// `with build_recipe(...) [as var]:` block whose body is the
+        /// `bind_recipe(...)` calls — a single source range, which is what the
+        /// line-range splice pipeline expects. A recipe with no bindings emits
+        /// as a plain `build_recipe(...)` statement.
+        ///
+        /// A LEGACY recipe (inline `machine=`/`duration=`) is migrated here: its
+        /// machine becomes a binding and the call loses the inline machine, so
+        /// opening an old pack and saving upgrades it to the split format.
         public static string RenderRecipe(RecipeDef def) {
+            // Bindings this recipe owns. Split into those already written to the
+            // file (they own their own line ranges and splice themselves — that is
+            // what makes them independently saveable, deletable and reorderable)
+            // and those still PENDING, which have no range yet and are written
+            // here, as the body of the block being opened.
+            //
+            // Writing the pending ones is not optional: a legacy recipe's machine
+            // and duration live on exactly such a binding, so a header-only render
+            // would drop them on the very save that migrates the recipe.
+            List<BindRecipeDef> owned = s_currentSaveModel != null
+                ? s_currentSaveModel.BindingsOf(def).ToList()
+                : new List<BindRecipeDef>();
+            List<BindRecipeDef> pending = owned.Where(b => b.IsPendingInOwner).ToList();
+
+            // A `with` block must have a body. If the last binding was removed,
+            // fall back to the plain statement instead of writing a header with
+            // nothing under it. Outside a save pass there is no model to consult,
+            // so trust EmitAsWithBlock and keep the header-only preview.
+            bool hasBody = owned.Count > 0 || s_currentSaveModel == null;
+            if (!def.EmitAsWithBlock || !hasBody) {
+                // No machines attached — plain statement (keeps the `<var> = `
+                // assignment prefix so downstream references still resolve).
+                StringBuilder plain = new StringBuilder();
+                appendStmtPrefix(plain, def);
+                appendBuildRecipeCall(plain, def, suppressLegacyMachine: false);
+                return plain.ToString();
+            }
+
             StringBuilder sb = new StringBuilder();
+            PyWriter w = new PyWriter(sb);
+            // In the `with` form the variable moves from a `<var> = ` prefix to
+            // the `as <var>` clause, so only the comment block is prefixed here.
+            appendCommentLines(sb, def.Comment);
+            sb.Append("with ");
+            appendBuildRecipeCall(sb, def, suppressLegacyMachine: true);
+            if (!string.IsNullOrEmpty(def.VariableName)) {
+                sb.Append(" as ").Append(def.VariableName);
+            }
+            sb.Append(":");
 
-            // Leading `#` comment block + optional `<var> = ` assignment
-            // prefix. Mirrors PackLoader's extractAndAttachComment (which
-            // captures consecutive comment lines immediately above the
-            // recipe) and the assignment shape (recipe captured via
-            // `<var> = build_recipe(...)` round-trips with the var prefix
-            // preserved).
-            appendStmtPrefix(sb, def);
+            // Body: the pending bindings, in context form (the recipe is implicit
+            // inside the block, so only the machine is emitted). The writer supplies
+            // the one level of indentation — each binding is rendered at column 0
+            // and every newline inside it picks up the body indent.
+            PyWriter body = w.Indent();
+            foreach (BindRecipeDef bind in pending) {
+                body.Append("\n").Append(renderBindRecipe(bind, contextForm: true));
+            }
+            return w.ToString();
+        }
 
-            sb.Append("build_recipe(\n");
+        /// The `build_recipe(...)` call itself (no statement prefix, no `with`).
+        /// `suppressLegacyMachine` drops the inline machine/duration/research —
+        /// used by the `with` form where those live on the bindings instead.
+        private static void appendBuildRecipeCall(StringBuilder sb, RecipeDef def,
+                bool suppressLegacyMachine) {
+            // `w` sits at the statement's own column; `arg` one level in, so every
+            // "\n" it emits is followed by the argument indent. The four spaces
+            // that used to be typed after each newline come from `arg` now.
+            PyWriter w = new PyWriter(sb);
+            PyWriter arg = w.Indent();
 
             // Capture once so every appendIdRef in this render reads the
             // same per-file variable map. Null when the def has no source
             // file context (newly-added recipes) — appendIdRef handles that.
             var vars = def.SourceFileVariables;
 
-            sb.Append("    "); appendString(sb, def.RecipeId);   sb.Append(",\n");
-            sb.Append("    "); appendString(sb, def.Name);       sb.Append(",\n");
-            sb.Append("    "); appendString(sb, def.Description); sb.Append(",\n");
-            sb.Append("    "); appendIdRef(sb, def.MachineId, vars);
+            arg.Append("build_recipe(\n"); appendString(sb, def.RecipeId);
+            arg.Append(",\n");             appendString(sb, def.Name);
+            arg.Append(",\n");             appendString(sb, def.Description);
 
-            // Optional args, only emit when present.
-            if (def.ResearchId != null) {
-                sb.Append(",\n    research = "); appendIdRef(sb, def.ResearchId, vars);
-            }
-            if (def.DurationSeconds.HasValue) {
-                sb.Append(",\n    duration = Duration.FromSec(").Append(def.DurationSeconds.Value).Append(")");
+            // LEGACY one-shot form: machine / research / duration are emitted
+            // only for a machine-bearing recipe that is NOT being wrapped in a
+            // `with` block (where they migrate onto the bindings instead).
+            if (!suppressLegacyMachine && !string.IsNullOrEmpty(def.MachineId)) {
+                arg.Append(",\nmachine = "); appendIdRef(sb, def.MachineId, vars);
+                if (def.ResearchId != null) {
+                    arg.Append(",\nresearch = "); appendIdRef(sb, def.ResearchId, vars);
+                    if (!def.UnlockMachine) {
+                        arg.Append(",\nunlock_machine = False");
+                    }
+                }
+                if (def.DurationSeconds.HasValue || !string.IsNullOrWhiteSpace(def.DurationExpression)) {
+                    arg.Append(",\nduration = Duration.FromSec(");
+                    sb.Append(durationArg(def.DurationSeconds, def.DurationExpression)).Append(")");
+                }
             }
             if (def.Ingredients != null && def.Ingredients.Count > 0) {
-                sb.Append(",\n    ingredients = ");
-                appendProductList(sb, def.Ingredients, vars);
+                arg.Append(",\ningredients = ");
+                appendProductList(arg, def.Ingredients, vars);
             }
             if (def.Products != null && def.Products.Count > 0) {
-                sb.Append(",\n    products = ");
-                appendProductList(sb, def.Products, vars);
+                arg.Append(",\nproducts = ");
+                appendProductList(arg, def.Products, vars);
             }
             if (def.PowerPercent.HasValue) {
-                sb.Append(",\n    power = ").Append(def.PowerPercent.Value);
+                arg.Append(",\npower = ");
+                sb.Append(def.PowerPercent.Value);
+            }
+            // Always a list, even for a single entry: the emitted form should not
+            // change shape when a second superseded id is added later.
+            if (def.Replaces != null && def.Replaces.Count > 0) {
+                StringBuilder replaced = new StringBuilder("[");
+                for (int i = 0; i < def.Replaces.Count; i++) {
+                    if (i > 0) replaced.Append(", ");
+                    appendString(replaced, def.Replaces[i]);
+                }
+                replaced.Append("]");
+                arg.Append(",\nreplaces = ").Append(replaced.ToString());
             }
 
-            sb.Append("\n)");
-            return sb.ToString();
+            w.Append("\n)");
         }
 
         // IDs with a dot in them are emitted verbatim (typed references like
@@ -676,6 +885,18 @@ namespace CustomAssets.Editor.Io {
             if (variables != null && variables.ContainsKey(id)) { sb.Append(id); return; }
             if (id.IndexOf('.') >= 0) { sb.Append(id); return; }
             appendString(sb, id);
+        }
+
+        // Primary-id emit for calls that CREATE a new proto (build_housing,
+        // build_machine, build_product_*, add_crop, …). The call's own id
+        // must never resolve through the per-file variable map: when a
+        // variable shares the id's spelling — most commonly the def's own
+        // `<var> = build_*(...)` binding — appendIdRef would emit the bare
+        // identifier and the call would read its own not-yet-assigned
+        // variable, a NameError at pack load. Dotted typed-refs still pass
+        // through verbatim.
+        private static void appendNewId(StringBuilder sb, string id) {
+            appendIdRef(sb, id, null);
         }
 
         // Asset-path emit. Two value shapes round-trip through the editor's
@@ -776,11 +997,93 @@ namespace CustomAssets.Editor.Io {
         // empty when the line starts at column 0 or is null. Treats both ' '
         // and '\t' as whitespace so packs authored with tabs round-trip with
         // their original indent style preserved.
-        private static string readLeadingWhitespace(string line) {
-            if (string.IsNullOrEmpty(line)) return "";
-            int i = 0;
-            while (i < line.Length && (line[i] == ' ' || line[i] == '\t')) i++;
-            return i == 0 ? "" : line.Substring(0, i);
+        /// Delete a whole block statement — its header line(s) AND everything
+        /// indented under it. Used for `if`/`else` chains and `with` blocks, which
+        /// have no single def whose line range covers them.
+        ///
+        /// <paramref name="endLine"/> is the caller's idea of the last line (for an
+        /// if-CHAIN that's the final clause's end, so deleting the `if` takes its
+        /// `elif`/`else` with it — leaving them behind would be a syntax error).
+        /// The span is then extended past any further deeper-indented or blank
+        /// lines, so a trailing body line can't be orphaned.
+        public static void DeleteBlock(string filePath, int headerLine, int endLine) {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
+            string[] lines = File.ReadAllLines(filePath);
+            int startIdx = headerLine - 1;
+            if (startIdx < 0 || startIdx >= lines.Length) return;
+            int lastIdx = blockExtentEndIdx(lines, startIdx, endLine);
+
+            List<string> output = new List<string>(lines);
+            output.RemoveRange(startIdx, lastIdx - startIdx + 1);
+            File.WriteAllLines(filePath, output);
+        }
+
+        /// Move a whole block (its header plus everything indented under it) so
+        /// that it sits immediately BEFORE <paramref name="insertBeforeLine"/>.
+        /// Line numbers are all 1-based and expressed in the CURRENT file, before
+        /// the move.
+        ///
+        /// The block's lines are relocated verbatim. That is only correct when
+        /// the destination is at the same nesting depth as the source — which is
+        /// exactly the case the tree offers, since a drag is confined to siblings
+        /// within one scope. Re-indenting is therefore deliberately not done: a
+        /// block moved among its own siblings keeps its indentation by definition,
+        /// and rewriting it would risk disturbing the bodies inside it.
+        public static void MoveBlock(string filePath, int headerLine, int endLine,
+                int insertBeforeLine) {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
+            string[] lines = File.ReadAllLines(filePath);
+            int startIdx = headerLine - 1;
+            if (startIdx < 0 || startIdx >= lines.Length) return;
+            int lastIdx = blockExtentEndIdx(lines, startIdx, endLine);
+            int count = lastIdx - startIdx + 1;
+
+            List<string> moved = new List<string>(count);
+            for (int i = startIdx; i <= lastIdx; i++) moved.Add(lines[i]);
+
+            List<string> output = new List<string>(lines);
+            output.RemoveRange(startIdx, count);
+
+            // Translate the destination into post-removal coordinates. A target
+            // below the block shifts up by everything we just cut; a target
+            // inside the block is meaningless (it moved with it) so the block
+            // stays where it was.
+            int insertIdx = insertBeforeLine - 1;
+            if (insertIdx > lastIdx) insertIdx -= count;
+            else if (insertIdx > startIdx) insertIdx = startIdx;
+            if (insertIdx < 0) insertIdx = 0;
+            if (insertIdx > output.Count) insertIdx = output.Count;
+
+            output.InsertRange(insertIdx, moved);
+            File.WriteAllLines(filePath, output);
+        }
+
+        /// Last line INDEX (0-based) belonging to the block whose header is at
+        /// <paramref name="startIdx"/>. The parser's own end line is the floor;
+        /// past it we keep absorbing lines that are blank or indented deeper than
+        /// the header, because those are still the block's body (trailing blank
+        /// lines and comment tails included).
+        ///
+        /// Shared by delete and move so the two can never disagree about where a
+        /// block ends — a mismatch there would either strand body lines behind or
+        /// swallow the following statement.
+        private static int blockExtentEndIdx(string[] lines, int startIdx, int endLine) {
+            string headerIndent = leadingWhitespace(lines[startIdx]);
+            int lastIdx = Math.Max(startIdx, Math.Min(endLine, lines.Length) - 1);
+            for (int i = lastIdx + 1; i < lines.Length; i++) {
+                if (string.IsNullOrWhiteSpace(lines[i])) { lastIdx = i; continue; }
+                if (leadingWhitespace(lines[i]).Length > headerIndent.Length) { lastIdx = i; continue; }
+                break;
+            }
+            return lastIdx;
+        }
+
+        /// True when a def lives inside a block body (if-clause or `with`), keyed
+        /// as "block:&lt;headerLine&gt;". Such a def is only ever
+        /// written by splicing into that block, never by an end-of-file append.
+        private static bool isBlockScoped(DefBase def) {
+            string key = def?.ScopeKey;
+            return !string.IsNullOrEmpty(key) && key.StartsWith("block:");
         }
 
         // ---- File rewrite ------------------------------------------------------
@@ -794,7 +1097,19 @@ namespace CustomAssets.Editor.Io {
             // existing by start line DESCENDING so splices from bottom to top
             // don't invalidate earlier ranges.
             List<DefBase> existing = defs.Where(d => d.SourceStartLine > 0).ToList();
-            List<DefBase> appended = defs.Where(d => d.SourceStartLine <= 0).ToList();
+            // A pending def that belongs INSIDE a block (keyed "block:<headerLine>")
+            // must never be appended at end-of-file: that would silently move it out
+            // of its block. Those go through AppendDefIntoClause instead, driven by
+            // the save flow, so they are excluded here and stay in memory until then.
+            //
+            // A pending BINDING is excluded for the same reason by a different
+            // route: it has no scope key at all, because the block it belongs to is
+            // its recipe's `with` body — which RenderRecipe writes for it.
+            List<DefBase> appended = defs
+                .Where(d => d.SourceStartLine <= 0
+                            && !isBlockScoped(d)
+                            && !(d is BindRecipeDef b && b.IsPendingInOwner))
+                .ToList();
             existing.Sort((a, b) => b.SourceStartLine.CompareTo(a.SourceStartLine));
 
             foreach (DefBase def in existing) {
@@ -808,20 +1123,11 @@ namespace CustomAssets.Editor.Io {
                 // Preserve the original line's leading whitespace so a
                 // definition nested inside an `if/elif/else` body re-emits
                 // with matching indentation.
-                string originalIndent = readLeadingWhitespace(output[startIdx]);
+                string originalIndent = leadingWhitespace(output[startIdx]);
                 string rendered = renderDefinition(def);
                 if (rendered == null) continue; // unknown def kind with no raw source
                 output.RemoveRange(startIdx, endIdx - startIdx + 1);
-                string[] renderedLines = rendered.Split('\n');
-                if (originalIndent.Length > 0) {
-                    for (int i = 0; i < renderedLines.Length; i++) {
-                        // Skip empty lines so we don't introduce trailing-WS
-                        // noise on blank separators inside the rendered block.
-                        if (renderedLines[i].Length > 0)
-                            renderedLines[i] = originalIndent + renderedLines[i];
-                    }
-                }
-                output.InsertRange(startIdx, renderedLines);
+                output.InsertRange(startIdx, indentBlock(rendered, originalIndent));
             }
 
             if (appended.Count > 0) {
@@ -864,10 +1170,20 @@ namespace CustomAssets.Editor.Io {
         // knows to skip the splice.
         private static string renderDefinition(DefBase def) {
             if (def is RecipeDef r)         return RenderRecipe(r);
+            // A binding that belongs to a recipe sits INSIDE that recipe's `with`
+            // block, where the recipe is implicit — so it must re-emit in context
+            // form (machine only). Without this an individual save would rewrite
+            // `bind_recipe(machine, …)` as `bind_recipe(recipe, machine, …)`,
+            // changing the file on a no-op save. A standalone binding has no
+            // owner and does name its recipe explicitly.
+            if (def is BindRecipeDef br)    return renderBindRecipe(br, contextForm: br.IsContextForm || br.OwnerRecipe != null);
             if (def is ResearchDef rs)      return renderResearch(rs);
             if (def is UnlockRecipeDef ur)  return renderUnlockRecipe(ur);
+            if (def is MigrateRecipeDef mr) return renderMigrateRecipe(mr);
             if (def is UnlockProductDef up) return renderUnlockProduct(up);
             if (def is UnlockMachineDef um) return renderUnlockMachine(um);
+            if (def is UnlockEntityDef ue)  return renderUnlockEntity(ue);
+            if (def is RemoveUnlockDef rmu) return renderRemoveUnlock(rmu);
             if (def is ProductLooseDef pl)  return renderProductLoose(pl);
             if (def is ProductFluidDef pf)  return renderProductFluid(pf);
             if (def is ProductUnitDef pu)   return renderProductUnit(pu);
@@ -879,7 +1195,10 @@ namespace CustomAssets.Editor.Io {
             if (def is ToolbarCategoryDef tc) return renderToolbarCategory(tc);
             if (def is GeneratorDef gd)     return renderGenerator(gd);
             if (def is EditRecipeDef er)    return renderEditRecipe(er);
+            if (def is RecipeProductActionDef pa) return renderProductAction(pa);
+            if (def is UnbindRecipeDef ubr) return renderUnbindRecipe(ubr);
             if (def is EditMachinePortsDef ep) return renderEditMachinePorts(ep);
+            if (def is EditEntityCostsDef ec) return renderEditEntityCosts(ec);
             if (def is BuildMachineDef bm)  return renderBuildMachine(bm);
             if (def is HousingDef hd)       return renderHousing(hd);
             if (def is SettlementDecorationDef sdd) return renderSettlementDecoration(sdd);
@@ -887,6 +1206,9 @@ namespace CustomAssets.Editor.Io {
             if (def is SettlementIspDef sid)        return renderSettlementIsp(sid);
             if (def is HospitalDef hpd)             return renderHospital(hpd);
             if (def is MineTowerDef mtd)            return renderMineTower(mtd);
+            if (def is FarmDef fmd)                 return renderFarm(fmd);
+            if (def is CropDef crd)                 return renderCrop(crd);
+            if (def is EditCropDef ecd)             return renderEditCrop(ecd);
             if (def is ResearchLabDef rld)          return renderResearchLab(rld);
             if (def is NuclearReactorDef nrd)       return renderNuclearReactor(nrd);
             if (def is EditNuclearReactorFuelsDef enrf) return renderEditNuclearReactorFuels(enrf);
@@ -907,7 +1229,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("define_box_type(\n");
-            sb.Append("    boxTypeId = "); appendIdRef(sb, def.BoxTypeId, vars); sb.Append(",\n");
+            sb.Append("    boxTypeId = "); appendNewId(sb, def.BoxTypeId); sb.Append(",\n");
             sb.Append("    token     = "); appendString(sb, def.Token);
             if (def.HeightFrom != 0) sb.Append(",\n    heightFrom = ").Append(def.HeightFrom);
             appendOptionalInt   (sb, "heightTo",        def.HeightTo);
@@ -933,7 +1255,12 @@ namespace CustomAssets.Editor.Io {
             } else {
                 value = host.LayoutSourceStr;
             }
-            appendOptionalString(sb, "layout_str", value);
+            // COI's EntityLayoutParser rejects grids whose rows differ in
+            // length, so whatever path produced the string (structured emit,
+            // raw-text editing, or a jagged SourceLayoutStr captured from a
+            // cloned game proto), rows are padded to a rectangle on the way
+            // to the file.
+            appendOptionalString(sb, "layout_str", LayoutCodec.PadRectangular(value));
         }
 
         // edit_machine_ports(machine, add_ports=[Port(...), ...])
@@ -947,6 +1274,69 @@ namespace CustomAssets.Editor.Io {
                 sb.Append(",\n    add_ports = ");
                 appendPortList(sb, def.AddPorts);
             }
+            if (def.AutoSelectRecipes.HasValue) {
+                sb.Append(",\n    auto_select_recipes = ").Append(def.AutoSelectRecipes.Value ? "True" : "False");
+            }
+            sb.Append("\n)");
+            return sb.ToString();
+        }
+
+        // edit_crop(crop, ...) — every rate emits only when the modder set it,
+        // so a call that just doubles a yield stays two arguments long.
+        private static string renderEditCrop(EditCropDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            sb.Append("edit_crop(\n");
+            sb.Append("    crop = "); appendIdRef(sb, def.CropId, vars);
+            if (!string.IsNullOrEmpty(def.ProductProducedId) && def.ProductProducedQuantity.HasValue) {
+                sb.Append(",\n    productProduced = Product(");
+                appendIdRef(sb, def.ProductProducedId, vars);
+                sb.Append(", Quantity(").Append(def.ProductProducedQuantity.Value).Append("))");
+            }
+            appendOptionalInt(sb, "multiplyYieldPercent",             def.MultiplyYieldPercent);
+            appendOptionalInt(sb, "growthDurationDays",               def.GrowthDurationDays);
+            appendOptionalInt(sb, "consumedWaterPerDay",              def.ConsumedWaterPerDay);
+            appendOptionalInt(sb, "consumedFertilityPercentPerDay",   def.ConsumedFertilityPercentPerDay);
+            appendOptionalInt(sb, "minFertilityToStartGrowthPercent", def.MinFertilityToStartGrowthPercent);
+            appendOptionalInt(sb, "surviveWithNoWaterDays",           def.SurviveWithNoWaterDays);
+            if (def.RequiresGreenhouse.HasValue) {
+                sb.Append(",\n    requiresGreenhouse = ")
+                  .Append(def.RequiresGreenhouse.Value ? "True" : "False");
+            }
+            if (def.PlantByDefault.HasValue) {
+                sb.Append(",\n    plantByDefault = ")
+                  .Append(def.PlantByDefault.Value ? "True" : "False");
+            }
+            sb.Append("\n)");
+            return sb.ToString();
+        }
+
+        // edit_entity_costs(entity, workers, maintenance, ..., products,
+        // multiplyPercent). Only `entity` is unconditional; every other
+        // argument emits solely when the modder set it, so a call that only
+        // retunes the worker count stays a two-argument call.
+        //
+        // Emission order mirrors the editor form: staffing and upkeep first,
+        // then the build-material list last (it is the tallest argument, and
+        // burying the scalars under it makes the call hard to skim).
+        private static string renderEditEntityCosts(EditEntityCostsDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            sb.Append("edit_entity_costs(\n");
+            sb.Append("    entity = "); appendIdRef(sb, def.EntityId, vars);
+            appendOptionalInt   (sb, "workers",                   def.Workers);
+            appendOptionalDouble(sb, "maintenance",               def.Maintenance);
+            appendOptionalIdRef (sb, "maintenanceProduct",        def.MaintenanceProductId, vars);
+            appendOptionalInt   (sb, "maintenanceBufferMonths",   def.MaintenanceBufferMonths);
+            appendOptionalInt   (sb, "initialMaintenancePercent", def.InitialMaintenancePercent);
+            appendOptionalInt   (sb, "priority",                  def.Priority);
+            if (def.Products != null && def.Products.Count > 0) {
+                sb.Append(",\n    products = ");
+                appendProductList(sb, def.Products, vars);
+            }
+            appendOptionalInt   (sb, "multiplyPercent",           def.MultiplyPercent);
             sb.Append("\n)");
             return sb.ToString();
         }
@@ -960,7 +1350,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_machine(\n");
-            sb.Append("    machineId            = "); appendIdRef(sb, def.MachineId, vars); sb.Append(",\n");
+            sb.Append("    machineId            = "); appendNewId(sb, def.MachineId); sb.Append(",\n");
             sb.Append("    source               = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",        def.Name);
             appendOptionalString(sb, "description", def.Description);
@@ -989,6 +1379,12 @@ namespace CustomAssets.Editor.Io {
             if (!def.CopyGraphics) {
                 sb.Append(",\n    copy_graphics        = False");
             }
+            // Only emitted when the modder overrode the inherited flag —
+            // blank stays absent so the common "inherit from source" case
+            // keeps the call terse.
+            if (def.AutoSelectRecipes.HasValue) {
+                sb.Append(",\n    auto_select_recipes  = ").Append(def.AutoSelectRecipes.Value ? "True" : "False");
+            }
             emitLayoutStr(sb, def);
             if (def.LockedOnInit.HasValue) {
                 sb.Append(",\n    lockedOnInit         = ").Append(def.LockedOnInit.Value ? "True" : "False");
@@ -1007,7 +1403,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_housing(\n");
-            sb.Append("    housingId       = "); appendIdRef(sb, def.HousingId, vars); sb.Append(",\n");
+            sb.Append("    housingId       = "); appendNewId(sb, def.HousingId); sb.Append(",\n");
             sb.Append("    source          = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",            def.Name);
             appendOptionalString(sb, "description",     def.Description);
@@ -1034,7 +1430,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_settlement_decoration(\n");
-            sb.Append("    decorationId  = "); appendIdRef(sb, def.DecorationId, vars); sb.Append(",\n");
+            sb.Append("    decorationId  = "); appendNewId(sb, def.DecorationId); sb.Append(",\n");
             sb.Append("    source        = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",         def.Name);
             appendOptionalString(sb, "description",  def.Description);
@@ -1052,7 +1448,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_settlement_food(\n");
-            sb.Append("    foodModuleId      = "); appendIdRef(sb, def.FoodModuleId, vars); sb.Append(",\n");
+            sb.Append("    foodModuleId      = "); appendNewId(sb, def.FoodModuleId); sb.Append(",\n");
             sb.Append("    source            = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",              def.Name);
             appendOptionalString(sb, "description",       def.Description);
@@ -1070,7 +1466,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_settlement_isp(\n");
-            sb.Append("    ispModuleId           = "); appendIdRef(sb, def.IspModuleId, vars); sb.Append(",\n");
+            sb.Append("    ispModuleId           = "); appendNewId(sb, def.IspModuleId); sb.Append(",\n");
             sb.Append("    source                = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",                  def.Name);
             appendOptionalString(sb, "description",           def.Description);
@@ -1088,7 +1484,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_hospital(\n");
-            sb.Append("    hospitalId        = "); appendIdRef(sb, def.HospitalId, vars); sb.Append(",\n");
+            sb.Append("    hospitalId        = "); appendNewId(sb, def.HospitalId); sb.Append(",\n");
             sb.Append("    source            = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",              def.Name);
             appendOptionalString(sb, "description",       def.Description);
@@ -1108,7 +1504,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_mine_tower(\n");
-            sb.Append("    mineTowerId  = "); appendIdRef(sb, def.MineTowerId, vars); sb.Append(",\n");
+            sb.Append("    mineTowerId  = "); appendNewId(sb, def.MineTowerId); sb.Append(",\n");
             sb.Append("    source       = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",        def.Name);
             appendOptionalString(sb, "description", def.Description);
@@ -1119,12 +1515,106 @@ namespace CustomAssets.Editor.Io {
             return sb.ToString();
         }
 
+        // build_farm(farmId, source, name, description,
+        //     yieldMultiplierPercent, demandsMultiplierPercent,
+        //     fertilityReplenishPercent, waterCollected,
+        //     waterEvaporationPerDay, hasIrrigationAndFertilizerSupport,
+        //     isGreenhouse, research, lockedOnInit)
+        private static string renderFarm(FarmDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            sb.Append("build_farm(\n");
+            sb.Append("    farmId                        = "); appendNewId(sb, def.FarmId); sb.Append(",\n");
+            sb.Append("    source                        = "); appendIdRef(sb, def.SourceId, vars);
+            appendOptionalString(sb, "name",                       def.Name);
+            appendOptionalString(sb, "description",                def.Description);
+            appendOptionalInt   (sb, "yieldMultiplierPercent",     def.YieldMultiplierPercent);
+            appendOptionalInt   (sb, "demandsMultiplierPercent",   def.DemandsMultiplierPercent);
+            appendOptionalInt   (sb, "fertilityReplenishPercent",  def.FertilityReplenishPercent);
+            if (!string.IsNullOrEmpty(def.WaterCollectedProductId) && def.WaterCollectedQuantity.HasValue) {
+                sb.Append(",\n    waterCollected                = Product(");
+                appendIdRef(sb, def.WaterCollectedProductId, vars);
+                sb.Append(", Quantity(").Append(def.WaterCollectedQuantity.Value).Append("))");
+            }
+            appendOptionalInt   (sb, "waterEvaporationPerDay",     def.WaterEvaporationPerDay);
+            if (def.HasIrrigationAndFertilizerSupport.HasValue) {
+                sb.Append(",\n    hasIrrigationAndFertilizerSupport = ")
+                  .Append(def.HasIrrigationAndFertilizerSupport.Value ? "True" : "False");
+            }
+            if (def.IsGreenhouse.HasValue) {
+                sb.Append(",\n    isGreenhouse                  = ")
+                  .Append(def.IsGreenhouse.Value ? "True" : "False");
+            }
+            emitLayoutStr(sb, def);
+            appendOptionalIdRef (sb, "research",                   def.ResearchId, vars);
+            if (def.LockedOnInit.HasValue) {
+                sb.Append(",\n    lockedOnInit                  = ").Append(def.LockedOnInit.Value ? "True" : "False");
+            }
+            sb.Append("\n)");
+            return sb.ToString();
+        }
+
+        // add_crop(cropId, name, productProduced, consumedWaterPerDay,
+        //     consumedFertilityPercentPerDay, minFertilityToStartGrowthPercent,
+        //     growthDurationDays, surviveWithNoWaterDays, icon, prefab,
+        //     requiresGreenhouse, plantByDefault, description, research,
+        //     farms) — OR clone_crop(cropId, source, …same tail…) when
+        // <see cref="CropDef.SourceId"/> is set.
+        private static string renderCrop(CropDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            bool isClone = !string.IsNullOrEmpty(def.SourceId);
+            sb.Append(isClone ? "clone_crop(\n" : "add_crop(\n");
+            sb.Append("    cropId                          = "); appendNewId(sb, def.CropId);
+            if (isClone) {
+                sb.Append(",\n    source                          = "); appendIdRef(sb, def.SourceId, vars);
+            }
+            appendOptionalString(sb, "name",                             def.Name);
+            appendOptionalString(sb, "description",                      def.Description);
+            if (def.ProductProduced != null && !string.IsNullOrEmpty(def.ProductProduced.ProductId)) {
+                sb.Append(",\n    productProduced                 = Product(");
+                appendIdRef(sb, def.ProductProduced.ProductId, vars);
+                sb.Append(", Quantity(").Append(def.ProductProduced.Quantity).Append("))");
+            }
+            appendOptionalInt   (sb, "consumedWaterPerDay",              def.ConsumedWaterPerDay);
+            appendOptionalInt   (sb, "consumedFertilityPercentPerDay",   def.ConsumedFertilityPercentPerDay);
+            appendOptionalInt   (sb, "minFertilityToStartGrowthPercent", def.MinFertilityToStartGrowthPercent);
+            appendOptionalInt   (sb, "growthDurationDays",               def.GrowthDurationDays);
+            appendOptionalInt   (sb, "surviveWithNoWaterDays",           def.SurviveWithNoWaterDays);
+            if (!string.IsNullOrEmpty(def.IconPath)) {
+                sb.Append(",\n    icon                            = ");
+                appendIconRef(sb, def.IconPath, vars);
+            }
+            appendOptionalString(sb, "prefab",                           def.PrefabPath);
+            if (def.RequiresGreenhouse.HasValue) {
+                sb.Append(",\n    requiresGreenhouse              = ")
+                  .Append(def.RequiresGreenhouse.Value ? "True" : "False");
+            }
+            if (def.PlantByDefault.HasValue) {
+                sb.Append(",\n    plantByDefault                  = ")
+                  .Append(def.PlantByDefault.Value ? "True" : "False");
+            }
+            appendOptionalIdRef (sb, "research",                         def.ResearchId, vars);
+            if (def.Farms != null && def.Farms.Count > 0) {
+                sb.Append(",\n    farms                           = [");
+                for (int i = 0; i < def.Farms.Count; i++) {
+                    if (i > 0) sb.Append(", ");
+                    appendIdRef(sb, def.Farms[i], vars);
+                }
+                sb.Append("]");
+            }
+            sb.Append("\n)");
+            return sb.ToString();
+        }
+
         private static string renderResearchLab(ResearchLabDef def) {
             StringBuilder sb = new StringBuilder();
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_research_lab(\n");
-            sb.Append("    researchLabId            = "); appendIdRef(sb, def.ResearchLabId, vars); sb.Append(",\n");
+            sb.Append("    researchLabId            = "); appendNewId(sb, def.ResearchLabId); sb.Append(",\n");
             sb.Append("    source                   = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",                     def.Name);
             appendOptionalString(sb, "description",              def.Description);
@@ -1166,7 +1656,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_nuclear_reactor(\n");
-            sb.Append("    reactorId              = "); appendIdRef(sb, def.ReactorId, vars); sb.Append(",\n");
+            sb.Append("    reactorId              = "); appendNewId(sb, def.ReactorId); sb.Append(",\n");
             sb.Append("    source                 = "); appendIdRef(sb, def.SourceId, vars);
             appendOptionalString(sb, "name",                   def.Name);
             appendOptionalString(sb, "description",            def.Description);
@@ -1336,19 +1826,26 @@ namespace CustomAssets.Editor.Io {
         // modder-authored ids ("Product_X") get quoted.
         private static void appendFuelPairList(StringBuilder sb, List<FuelPairRef> items,
                 System.Collections.Generic.Dictionary<string, string> vars) {
-            sb.Append("[\n");
+            appendFuelPairList(new PyWriter(sb, PyWriter.IndentUnit), items, vars);
+        }
+
+        private static void appendFuelPairList(PyWriter w, List<FuelPairRef> items,
+                System.Collections.Generic.Dictionary<string, string> vars) {
+            StringBuilder sb = w.Buffer;
+            PyWriter item = w.Indent();
+            w.Append("[");
             for (int i = 0; i < items.Count; i++) {
                 FuelPairRef p = items[i];
-                sb.Append("        FuelPair(fuelIn=");
+                item.Append("\n");
+                sb.Append("FuelPair(fuelIn=");
                 appendIdRef(sb, p.FuelIn, vars);
                 sb.Append(", spentFuelOut=");
                 appendIdRef(sb, p.SpentFuelOut, vars);
                 sb.Append(", durationSeconds=").Append(p.DurationSeconds);
                 sb.Append(")");
                 if (i < items.Count - 1) sb.Append(",");
-                sb.Append("\n");
             }
-            sb.Append("    ]");
+            w.Append("\n]");
         }
 
         // [Port(name="X", type="input", shape="IoPortShape_Pipe",
@@ -1358,10 +1855,17 @@ namespace CustomAssets.Editor.Io {
         // modder typed a non-tuple shape (typed-ref / Vector3i ctor / list
         // literal) that the loader couldn't reduce to integers.
         private static void appendPortList(StringBuilder sb, List<PortRef> items) {
-            sb.Append("[\n");
+            appendPortList(new PyWriter(sb, PyWriter.IndentUnit), items);
+        }
+
+        private static void appendPortList(PyWriter w, List<PortRef> items) {
+            StringBuilder sb = w.Buffer;
+            PyWriter item = w.Indent();
+            w.Append("[");
             for (int i = 0; i < items.Count; i++) {
                 PortRef p = items[i];
-                sb.Append("        Port(name=");
+                item.Append("\n");
+                sb.Append("Port(name=");
                 appendString(sb, p.Name);
                 sb.Append(", type=");
                 appendString(sb, p.Type);
@@ -1383,9 +1887,8 @@ namespace CustomAssets.Editor.Io {
                 }
                 sb.Append(")");
                 if (i < items.Count - 1) sb.Append(",");
-                sb.Append("\n");
             }
-            sb.Append("    ]");
+            w.Append("\n]");
         }
 
         // add_texture(path, replace=None) — single-line when no replace,
@@ -1483,14 +1986,27 @@ namespace CustomAssets.Editor.Io {
         // name/description and the recipe id can be a typed-ref to a vanilla
         // proto (Ids.Recipes.X), so appendIdRef handles both shapes.
         private static string renderEditRecipe(EditRecipeDef def) {
+            // Block form: the header carries only the recipe; every change is a
+            // sub-action statement in the body, each splicing itself by scope like
+            // an if-clause's statements. renderDefinition re-renders the HEADER ONLY
+            // — its source range covers just the `with edit_recipe(...):` line, and
+            // the body statements own their own ranges. (Block CREATION, which needs
+            // a `pass` body, goes through editEmitBlockHeader below, not here.)
+            if (def.EmitAsWithBlock) {
+                StringBuilder blk = new StringBuilder();
+                appendCommentLines(blk, def.Comment);
+                blk.Append(editBlockHeaderLine(def));
+                return blk.ToString();
+            }
+
             StringBuilder sb = new StringBuilder();
             appendStmtPrefix(sb, def);
             sb.Append("edit_recipe(\n");
             var vars = def.SourceFileVariables;
             sb.Append("    "); appendIdRef(sb, def.RecipeId, vars);
-            if (def.DurationSeconds.HasValue) {
+            if (def.DurationSeconds.HasValue || !string.IsNullOrWhiteSpace(def.DurationExpression)) {
                 sb.Append(",\n    duration = Duration.FromSec(")
-                  .Append(def.DurationSeconds.Value).Append(")");
+                  .Append(durationArg(def.DurationSeconds, def.DurationExpression)).Append(")");
             }
             if (def.Ingredients != null && def.Ingredients.Count > 0) {
                 sb.Append(",\n    ingredients = ");
@@ -1505,11 +2021,80 @@ namespace CustomAssets.Editor.Io {
             }
             if (def.ResearchId != null) {
                 sb.Append(",\n    research = "); appendIdRef(sb, def.ResearchId, vars);
+                if (!def.UnlockMachine) {
+                    sb.Append(",\n    unlock_machine = False");
+                }
             }
             if (def.PowerPercent.HasValue) {
                 sb.Append(",\n    power = ").Append(def.PowerPercent.Value);
             }
             sb.Append("\n)");
+            return sb.ToString();
+        }
+
+        // Just the `with edit_recipe(recipe) [as v]:` header line (no comment, no
+        // body). Shared by renderEditRecipe (re-render) and the block-creation path.
+        private static string editBlockHeaderLine(EditRecipeDef def) {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("with edit_recipe(");
+            appendIdRef(sb, def.RecipeId, def.SourceFileVariables);
+            sb.Append(")");
+            if (!string.IsNullOrEmpty(def.VariableName)) {
+                sb.Append(" as ").Append(def.VariableName);
+            }
+            sb.Append(":");
+            return sb.ToString();
+        }
+
+        /// Render a NEW `with edit_recipe(recipe):` block with a `pass` body, for
+        /// first insertion into a file. The editor then adds sub-actions into it
+        /// with AppendDefIntoClause, which replaces the `pass`. Mirrors the
+        /// `if <cond>:\n    pass` shape AppendIfBlockIntoClause writes.
+        public static string RenderEditRecipeBlockHeader(EditRecipeDef def) {
+            StringBuilder sb = new StringBuilder();
+            PyWriter w = new PyWriter(sb);
+            appendCommentLines(sb, def.Comment);
+            sb.Append(editBlockHeaderLine(def));
+            w.Indent().Append("\npass");
+            return w.ToString();
+        }
+
+        // set_ingredient / set_product / remove_ingredient / remove_product — a
+        // sub-action inside a `with edit_recipe(...)` body. Rendered at column 0;
+        // the block splice shifts it into place. The recipe is implicit (the
+        // enclosing block supplies it), so only the product (+ quantity for a set)
+        // is emitted.
+        // Rendered on ONE line: these verbs take one or two short operands, so the
+        // multi-line argument style the bigger calls use would only add noise. A
+        // single line also matches how a modder naturally writes them, keeping the
+        // load→save round-trip byte-identical.
+        private static string renderProductAction(RecipeProductActionDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            string fn = (def.IsRemoval ? "remove_" : "set_")
+                + (def.IsInput ? "ingredient" : "product");
+            sb.Append(fn).Append("(");
+            appendIdRef(sb, def.ProductId, vars);
+            if (!def.IsRemoval) {
+                sb.Append(", Quantity(").Append(def.Quantity ?? 0).Append(")");
+            }
+            sb.Append(")");
+            return sb.ToString();
+        }
+
+        // unbind_recipe(machine, research=...) — context form (recipe implicit),
+        // one line for the same reason as the product actions above.
+        private static string renderUnbindRecipe(UnbindRecipeDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            sb.Append("unbind_recipe(");
+            appendIdRef(sb, def.MachineId, vars);
+            if (def.ResearchId != null) {
+                sb.Append(", research = "); appendIdRef(sb, def.ResearchId, vars);
+            }
+            sb.Append(")");
             return sb.ToString();
         }
 
@@ -1544,7 +2129,7 @@ namespace CustomAssets.Editor.Io {
             appendStmtPrefix(sb, def);
             sb.Append("add_toolbar_category(\n");
             var vars = def.SourceFileVariables;
-            sb.Append("    categoryId = "); appendIdRef(sb, def.CategoryId, vars); sb.Append(",\n");
+            sb.Append("    categoryId = "); appendNewId(sb, def.CategoryId); sb.Append(",\n");
             sb.Append("    name       = "); appendString(sb, def.Name);     sb.Append(",\n");
             sb.Append("    icon       = "); appendIconRef(sb, def.IconPath, def.SourceFileVariables); sb.Append(",\n");
             sb.Append("    parent     = "); appendIdRef(sb, def.ParentId, vars);  sb.Append(",\n");
@@ -1562,7 +2147,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_generator(\n");
-            sb.Append("    id                  = "); appendIdRef(sb, def.GeneratorId, vars);       sb.Append(",\n");
+            sb.Append("    id                  = "); appendNewId(sb, def.GeneratorId);             sb.Append(",\n");
             sb.Append("    name                = "); appendString(sb, def.Name);                    sb.Append(",\n");
             sb.Append("    inputProduct        = ").Append(def.InputProductExpression ?? "None");  sb.Append(",\n");
             sb.Append("    outputElectricityKw = ").Append(def.OutputElectricityKw ?? 0);
@@ -1595,7 +2180,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_product_loose(\n");
-            sb.Append("    productId = "); appendIdRef(sb, def.ProductId, vars); sb.Append(",\n");
+            sb.Append("    productId = "); appendNewId(sb, def.ProductId); sb.Append(",\n");
             sb.Append("    name      = "); appendString(sb, def.Name);     sb.Append(",\n");
             sb.Append("    icon      = "); appendIconRef(sb, def.IconPath, def.SourceFileVariables); sb.Append(",\n");
             sb.Append("    material  = ").Append(def.MaterialExpression ?? "None");
@@ -1606,6 +2191,7 @@ namespace CustomAssets.Editor.Io {
             appendOptionalBool  (sb, "isStorable",      def.IsStorable);
             appendOptionalBool  (sb, "isRecyclable",    def.IsRecyclable);
             appendOptionalBool  (sb, "isWaste",         def.IsWaste);
+            appendOptionalBoolOrNull(sb, "isLocked",    def.IsLocked);
             appendOptionalBool  (sb, "isRough",         def.IsRough);
             appendOptionalBool  (sb, "pinToHomeScreen", def.PinToHomeScreen);
             appendOptionalInt   (sb, "maxTransport",    def.MaxTransport);
@@ -1622,7 +2208,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_product_fluid(\n");
-            sb.Append("    productId = "); appendIdRef(sb, def.ProductId, vars); sb.Append(",\n");
+            sb.Append("    productId = "); appendNewId(sb, def.ProductId); sb.Append(",\n");
             sb.Append("    name      = "); appendString(sb, def.Name);     sb.Append(",\n");
             sb.Append("    icon      = "); appendIconRef(sb, def.IconPath, def.SourceFileVariables);
             appendOptionalRaw   (sb, "color",                def.ColorExpression);
@@ -1634,6 +2220,7 @@ namespace CustomAssets.Editor.Io {
             appendOptionalString(sb, "description", def.Description);
             appendOptionalBool  (sb, "isStorable",  def.IsStorable);
             appendOptionalBool  (sb, "isWaste",     def.IsWaste);
+            appendOptionalBoolOrNull(sb, "isLocked", def.IsLocked);
             sb.Append("\n)");
             return sb.ToString();
         }
@@ -1645,7 +2232,7 @@ namespace CustomAssets.Editor.Io {
             var vars = def.SourceFileVariables;
             appendStmtPrefix(sb, def);
             sb.Append("build_product_unit(\n");
-            sb.Append("    productId = "); appendIdRef(sb, def.ProductId, vars); sb.Append(",\n");
+            sb.Append("    productId = "); appendNewId(sb, def.ProductId); sb.Append(",\n");
             sb.Append("    name      = "); appendString(sb, def.Name);     sb.Append(",\n");
             sb.Append("    icon      = "); appendIconRef(sb, def.IconPath, def.SourceFileVariables); sb.Append(",\n");
             sb.Append("    prefab    = ").Append(def.PrefabExpression ?? "None");
@@ -1655,6 +2242,7 @@ namespace CustomAssets.Editor.Io {
             appendOptionalString(sb, "description",                   def.Description);
             appendOptionalBool  (sb, "isStorable",                    def.IsStorable);
             appendOptionalBool  (sb, "isWaste",                       def.IsWaste);
+            appendOptionalBoolOrNull(sb, "isLocked",                  def.IsLocked);
             appendOptionalString(sb, "packingMode",                   def.PackingMode);
             appendOptionalBool  (sb, "allowPackingNoise",             def.AllowPackingNoise);
             appendOptionalBool  (sb, "rotateSecondPackedItem90Degs",  def.RotateSecondPackedItem90Degs);
@@ -1685,9 +2273,26 @@ namespace CustomAssets.Editor.Io {
             if (!value) return;
             sb.Append(",\n    ").Append(name).Append(" = True");
         }
+        // Tri-state counterpart for bool args whose runtime default is NOT
+        // simply False — `isLocked` defaults to "locked when a research is
+        // set". For those, an explicit False is meaningful and omitting is a
+        // third, distinct state, so null is the only thing we may drop.
+        private static void appendOptionalBoolOrNull(StringBuilder sb, string name, bool? value) {
+            if (!value.HasValue) return;
+            sb.Append(",\n    ").Append(name).Append(" = ").Append(value.Value ? "True" : "False");
+        }
         private static void appendOptionalInt(StringBuilder sb, string name, int? value) {
             if (!value.HasValue) return;
             sb.Append(",\n    ").Append(name).Append(" = ").Append(value.Value);
+        }
+        // Fractional counterpart of appendOptionalInt. Formatted with the
+        // INVARIANT culture on purpose: on a comma-decimal locale the default
+        // ToString() would emit `maintenance = 4,0`, which the Python parser
+        // reads as two arguments rather than one fractional number.
+        private static void appendOptionalDouble(StringBuilder sb, string name, double? value) {
+            if (!value.HasValue) return;
+            sb.Append(",\n    ").Append(name).Append(" = ")
+              .Append(value.Value.ToString("0.0###", System.Globalization.CultureInfo.InvariantCulture));
         }
         // Backwards-compat shim — kept for callers that pre-date variable
         // round-trip and don't yet have a SourceFileVariables map to pass.
@@ -1724,6 +2329,16 @@ namespace CustomAssets.Editor.Io {
                 int y = def.PositionY ?? 0;
                 sb.Append(",\n    position = (").Append(x).Append(", ").Append(y).Append(")");
             }
+            // parents — the tech-tree wiring. Emitted before icon so the call
+            // reads in the same order the API declares its arguments.
+            if (def.Parents != null && def.Parents.Count > 0) {
+                sb.Append(",\n    parents = [");
+                for (int i = 0; i < def.Parents.Count; i++) {
+                    if (i > 0) sb.Append(", ");
+                    appendIdRef(sb, def.Parents[i], def.SourceFileVariables);
+                }
+                sb.Append("]");
+            }
             if (!string.IsNullOrEmpty(def.IconPath)) {
                 sb.Append(",\n    icon = "); appendIconRef(sb, def.IconPath, def.SourceFileVariables);
             }
@@ -1739,7 +2354,10 @@ namespace CustomAssets.Editor.Io {
             return sb.ToString();
         }
 
-        // add_unlock_recipe(research, machine, proto) — three positional ids.
+        // add_unlock_recipe(research, machine, recipe) — three positional ids,
+        // plus `unlock_machine = False` when the node should NOT hand over the
+        // machine along with the recipe. Written only in that direction: true is
+        // the API default, so spelling it out on every unlock would be noise.
         // Typed-ref vs string-literal heuristic is the same as build_recipe.
         private static string renderUnlockRecipe(UnlockRecipeDef def) {
             StringBuilder sb = new StringBuilder();
@@ -1749,7 +2367,80 @@ namespace CustomAssets.Editor.Io {
             sb.Append("    "); appendIdRef(sb, def.ResearchId, vars); sb.Append(",\n");
             sb.Append("    "); appendIdRef(sb, def.MachineId, vars);  sb.Append(",\n");
             sb.Append("    "); appendIdRef(sb, def.RecipeId, vars);
+            if (!def.UnlockMachine) {
+                sb.Append(",\n    unlock_machine = False");
+            }
             sb.Append("\n)");
+            return sb.ToString();
+        }
+
+        // migrate_recipe(old, new, since) — tombstone for a removed recipe id.
+        // Named args throughout: the call reads as prose ("old X becomes new Y")
+        // and `old`/`new` are easy to transpose positionally, which would silently
+        // migrate the wrong direction. `old` is always a quoted literal — it names
+        // a recipe that no longer exists, so it can never be a file variable.
+        private static string renderMigrateRecipe(MigrateRecipeDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            sb.Append("migrate_recipe(\n");
+            sb.Append("    old = ");  appendString(sb, def.OldRecipeId); sb.Append(",\n");
+            sb.Append("    new = ");  appendIdRef(sb, def.NewRecipeId, vars);
+            if (!string.IsNullOrWhiteSpace(def.Since)) {
+                sb.Append(",\n    since = ");
+                appendString(sb, def.Since);
+            }
+            sb.Append("\n)");
+            return sb.ToString();
+        }
+
+        // bind_recipe(recipe, machine, duration, ports, multiplier,
+        // minPartialUtilization, research) — attaches a recipe to a machine.
+        // recipe + machine are positional; everything else is an optional named
+        // arg emitted only when meaningfully set (so the file doesn't accrete
+        // explicit defaults). `ports` reuses the Product(...) list shape.
+        /// <paramref name="contextForm"/>: inside a `with build_recipe(...)`
+        /// block the recipe is implicit, so only the machine is emitted as the
+        /// leading positional. Outside a block both are emitted.
+        private static string renderBindRecipe(BindRecipeDef def, bool contextForm = false) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            // Rendered at column 0 — the splice layer shifts the whole statement
+            // into its block. `arg` supplies the argument indent after each "\n".
+            PyWriter w = new PyWriter(sb);
+            PyWriter arg = w.Indent();
+            arg.Append("bind_recipe(\n");
+            if (!contextForm) {
+                appendIdRef(sb, def.RecipeId, vars);
+                arg.Append(",\n");
+            }
+            appendIdRef(sb, def.MachineId, vars);
+            if (def.DurationSeconds.HasValue || !string.IsNullOrWhiteSpace(def.DurationExpression)) {
+                arg.Append(",\nduration = Duration.FromSec(");
+                sb.Append(durationArg(def.DurationSeconds, def.DurationExpression)).Append(")");
+            }
+            // Always emit the port map — a binding is self-describing about how
+            // every product routes to a machine port (the editor seeds it fully).
+            arg.Append(",\nports = ");
+            appendPortMapList(arg, def.Ports ?? new List<PortMapRef>(), vars);
+            if (def.Multiplier.HasValue && def.Multiplier.Value != 1) {
+                arg.Append(",\nmultiplier = ");
+                sb.Append(def.Multiplier.Value);
+            }
+            if (def.MinPartialUtilizationPercent.HasValue) {
+                arg.Append(",\nminPartialUtilization = ");
+                sb.Append(def.MinPartialUtilizationPercent.Value);
+            }
+            if (def.ResearchId != null) {
+                arg.Append(",\nresearch = "); appendIdRef(sb, def.ResearchId, vars);
+                // Only meaningful with a research node — a binding without one
+                // wires no unlock at all, so the flag would be dead text.
+                if (!def.UnlockMachine) {
+                    arg.Append(",\nunlock_machine = False");
+                }
+            }
+            w.Append("\n)");
             return sb.ToString();
         }
 
@@ -1773,6 +2464,39 @@ namespace CustomAssets.Editor.Io {
             sb.Append("add_unlock_machine(\n");
             sb.Append("    "); appendIdRef(sb, def.ResearchId, vars); sb.Append(",\n");
             sb.Append("    "); appendIdRef(sb, def.MachineId, vars);
+            sb.Append("\n)");
+            return sb.ToString();
+        }
+
+        // add_unlock_entity(research, entity). Named rather than positional on
+        // the second argument so a reader can tell it apart from
+        // add_unlock_machine at a glance.
+        private static string renderUnlockEntity(UnlockEntityDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            sb.Append("add_unlock_entity(\n");
+            sb.Append("    research = "); appendIdRef(sb, def.ResearchId, vars); sb.Append(",\n");
+            sb.Append("    entity   = "); appendIdRef(sb, def.EntityId, vars);
+            sb.Append("\n)");
+            return sb.ToString();
+        }
+
+        // remove_unlock(research, target, machine=…). Named args throughout —
+        // `target` accepts any kind of proto, so spelling it out is what tells a
+        // reader whether a bare id is the thing being removed or the machine it
+        // is scoped to. `machine` is emitted only when the removal is scoped.
+        private static string renderRemoveUnlock(RemoveUnlockDef def) {
+            StringBuilder sb = new StringBuilder();
+            var vars = def.SourceFileVariables;
+            appendStmtPrefix(sb, def);
+            sb.Append("remove_unlock(\n");
+            sb.Append("    research = "); appendIdRef(sb, def.ResearchId, vars); sb.Append(",\n");
+            sb.Append("    target   = "); appendIdRef(sb, def.TargetId, vars);
+            if (!string.IsNullOrEmpty(def.MachineId)) {
+                sb.Append(",\n    machine  = ");
+                appendIdRef(sb, def.MachineId, vars);
+            }
             sb.Append("\n)");
             return sb.ToString();
         }
@@ -1832,26 +2556,81 @@ namespace CustomAssets.Editor.Io {
             sb.Append('"');
         }
 
+        /// Shim for callers that still build on a raw StringBuilder. A list is
+        /// always an ARGUMENT, i.e. one level inside its call, so that is the
+        /// depth the writer starts at.
+        // Text for a `Duration.FromSec(...)` argument. An expression wins over the
+        // number: the int is only what the loader could parse, so re-emitting it would
+        // replace `config.smelt_seconds` with whatever it happened to fall back to.
+        // Both are kept in the model, so clearing the expression restores the number.
+        private static string durationArg(int? seconds, string expression) {
+            return string.IsNullOrWhiteSpace(expression)
+                ? (seconds ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : expression.Trim();
+        }
+
         private static void appendProductList(StringBuilder sb, List<ProductRef> items,
                 System.Collections.Generic.Dictionary<string, string> variables = null) {
-            sb.Append("[\n");
+            appendProductList(new PyWriter(sb, PyWriter.IndentUnit), items, variables);
+        }
+
+        private static void appendProductList(PyWriter w, List<ProductRef> items,
+                System.Collections.Generic.Dictionary<string, string> variables = null) {
+            StringBuilder sb = w.Buffer;
+            PyWriter item = w.Indent();
+            w.Append("[");
             for (int i = 0; i < items.Count; i++) {
                 ProductRef p = items[i];
-                sb.Append("        Product(");
+                // The writer supplies the item indent after each newline, so the
+                // entry itself starts at "Product(" — no hand-counted spaces.
+                item.Append("\n");
+                sb.Append("Product(");
                 appendIdRef(sb, p.ProductId, variables);
                 // Quantity(N) wrapper matches modder convention. The loader
                 // unwraps it back into the int field, so a load → edit → save
                 // cycle preserves the same code form.
-                sb.Append(", Quantity(").Append(p.Quantity).Append(")");
+                //
+                // An EXPRESSION wins over the number: `Quantity(config.batch)` must
+                // come back out as it went in, not as the 0 the int field holds for
+                // something it could not parse.
+                sb.Append(", Quantity(")
+                  .Append(string.IsNullOrWhiteSpace(p.QuantityExpression)
+                      ? p.Quantity.ToString()
+                      : p.QuantityExpression.Trim())
+                  .Append(")");
                 if (!string.IsNullOrEmpty(p.Port) && p.Port != "*") {
                     sb.Append(", ");
                     appendString(sb, p.Port);
                 }
                 sb.Append(")");
                 if (i < items.Count - 1) sb.Append(",");
-                sb.Append("\n");
             }
-            sb.Append("    ]");
+            w.Append("\n]");
+        }
+
+        // bind_recipe's `ports` — a list of PortMap(product, "X") (no quantity).
+        private static void appendPortMapList(StringBuilder sb, List<PortMapRef> items,
+                System.Collections.Generic.Dictionary<string, string> variables = null) {
+            appendPortMapList(new PyWriter(sb, PyWriter.IndentUnit), items, variables);
+        }
+
+        private static void appendPortMapList(PyWriter w, List<PortMapRef> items,
+                System.Collections.Generic.Dictionary<string, string> variables = null) {
+            StringBuilder sb = w.Buffer;
+            if (items == null || items.Count == 0) { sb.Append("[]"); return; }
+            PyWriter item = w.Indent();
+            w.Append("[");
+            for (int i = 0; i < items.Count; i++) {
+                PortMapRef p = items[i];
+                item.Append("\n");
+                sb.Append("PortMap(");
+                appendIdRef(sb, p.ProductId, variables);
+                sb.Append(", ");
+                appendString(sb, string.IsNullOrEmpty(p.Port) ? "*" : p.Port);
+                sb.Append(")");
+                if (i < items.Count - 1) sb.Append(",");
+            }
+            w.Append("\n]");
         }
     }
 }

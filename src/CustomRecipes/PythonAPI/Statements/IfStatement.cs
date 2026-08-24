@@ -83,7 +83,15 @@ namespace PythonAPI.Statements
 				return false;
 			}
 
-			if (Expressions.Expressions.__fix__(condition) <= Fix32.Zero) {
+			// A string condition is truthy when non-empty (Python semantics). __fix__
+			// has no string conversion, so `if config.some_text:` would otherwise throw
+			// instead of testing the value.
+			if (condition is string text) {
+				if (text.Length == 0) {
+					return false;
+				}
+			}
+			else if (Expressions.Expressions.__fix__(condition) <= Fix32.Zero) {
 				return false;
 			}
 
@@ -124,7 +132,13 @@ namespace PythonAPI.Statements
 				return false;
 			}
 
-			if (Expressions.Expressions.__fix__(condition) <= Fix32.Zero) {
+			// See Executed(): non-empty string is truthy, __fix__ can't take a string.
+			if (condition is string text) {
+				if (text.Length == 0) {
+					return false;
+				}
+			}
+			else if (Expressions.Expressions.__fix__(condition) <= Fix32.Zero) {
 				return false;
 			}
 

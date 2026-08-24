@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Chemistry / fluids pack: flask with a bubbling product + feed pipes. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f3a3f"/>
+      <stop offset="1" stop-color="#16232b"/>
+    </linearGradient>
+    <linearGradient id="fluid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5fe0b0"/>
+      <stop offset="1" stop-color="#1f9c78"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="28" fill="url(#bg)"/>
+
+  <!-- feed pipes -->
+  <g stroke="#5b6675" stroke-width="14" stroke-linecap="round" fill="none">
+    <path d="M20 62 H70 V96"/>
+    <path d="M236 62 H186 V96"/>
+  </g>
+  <g fill="#7d8a99">
+    <rect x="58" y="90" width="24" height="12" rx="3"/>
+    <rect x="174" y="90" width="24" height="12" rx="3"/>
+  </g>
+
+  <!-- flask body -->
+  <path d="M104 56 h48 v52 l44 78 a20 20 0 0 1 -17 30 H77 a20 20 0 0 1 -17 -30 l44 -78 Z"
+        fill="#2c3b45" stroke="#93a4b3" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- fluid -->
+  <path d="M76 156 l16 -28 h72 l16 28 l14 24 a14 14 0 0 1 -12 21 H74 a14 14 0 0 1 -12 -21 Z"
+        fill="url(#fluid)"/>
+
+  <!-- bubbles -->
+  <g fill="#d8fff2" opacity="0.85">
+    <circle cx="106" cy="176" r="9"/>
+    <circle cx="140" cy="192" r="6"/>
+    <circle cx="122" cy="204" r="4"/>
+  </g>
+
+  <!-- neck collar -->
+  <rect x="98" y="48" width="60" height="16" rx="6" fill="#93a4b3"/>
+</svg>

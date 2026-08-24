@@ -19,10 +19,12 @@ namespace PythonAPI.Expressions {
 			this.right = right;
 		}
 
-		public Reference<object> GetReference(IDictionary<string, object> context) {
+		// Most operators produce a value that cannot be assigned back to. IndexExpression
+		// overrides both: `x[k] = v` needs a writable reference to the subscripted slot.
+		public virtual Reference<object> GetReference(IDictionary<string, object> context) {
 			throw new System.NotImplementedException();
 		}
-		public Task<Reference<object>> GetReferenceAsync(IDictionary<string, object> context) {
+		public virtual Task<Reference<object>> GetReferenceAsync(IDictionary<string, object> context) {
 			throw new NotImplementedException();
 		}
 

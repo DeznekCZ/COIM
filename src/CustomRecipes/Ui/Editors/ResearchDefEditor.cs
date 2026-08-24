@@ -30,8 +30,13 @@ namespace CustomAssets.Ui.Editors {
         private readonly TextField m_posY;
         private readonly AssetPathPicker m_icon;
         private readonly ProtoPicker<ProductProto> m_tier;
+        private readonly Column m_parentsHolder;
+        private readonly PackModel m_model;
+        private readonly ProtosDb m_protosDb;
 
         public ResearchDefEditor(LoadedPack pack, PackModel model, ProtosDb protosDb) {
+            m_model    = model;
+            m_protosDb = protosDb;
             // Each AddField call:
             //   1. wraps the field in a labeled column
             //   2. adds the column to this editor's body
@@ -118,6 +123,15 @@ namespace CustomAssets.Ui.Editors {
                 m_posY.Text(value.PositionY.HasValue ? value.PositionY.Value.ToString() : "");
             });
 
+            // Parents — the node's prerequisites, i.e. what attaches it to the
+            // tech tree. Surfaced as a real field rather than merely preserved:
+            // an invisible round-tripped value is one nobody can fix when it's
+            // wrong.
+            m_parentsHolder = new Column();
+            m_parentsHolder.AlignItemsStretch().Gap(2.px());
+            AddField("parents (prerequisite research; empty = root node)",
+                m_parentsHolder, onRefresh: rebuildParents);
+
             m_icon = AddField(
                 "icon (pack asset or Mafi typed-ref; (none) to omit)",
                 new AssetPathPicker(
@@ -129,6 +143,70 @@ namespace CustomAssets.Ui.Editors {
                     variableCandidates: () => EditorHelpers.AssetVariablesIn(
                         model, value, CustomAssets.Editor.AssetsCatalog.AssetKind.Image)),
                 onRefresh: () => m_icon.RefreshDisplay());
+        }
+
+        // One picker row per parent plus an "+ Add parent" footer. Rebuilt
+        // wholesale on any structural change, since each row captures its own
+        // index.
+        private void rebuildParents() {
+            m_parentsHolder.Clear();
+            if (value == null)
+            {
+                return;
+            }
+            if (value.Parents == null)
+            {
+                value.Parents = new System.Collections.Generic.List<string>();
+            }
+
+            // State the count explicitly. "No rows" is ambiguous — it could mean
+            // the node genuinely has no prerequisites, or that the value failed
+            // to reach the form — and those need very different fixes.
+            m_parentsHolder.Add(new Label(new LocStrFormatted(value.Parents.Count == 0
+                    ? "no parents loaded — this node is a root of the tech tree"
+                    : value.Parents.Count + " parent(s) loaded from build_research(parents = [...])"))
+                .TinyFontSize()
+                .Color(value.Parents.Count == 0 ? ColorRgba.LightGray : ColorRgba.White));
+
+            for (int i = 0; i < value.Parents.Count; i++)
+            {
+                int index = i;
+                Row row = new Row().Gap(4.pt()).AlignItemsCenter();
+                ResearchIdPicker picker = new ResearchIdPicker(
+                    m_model, m_protosDb,
+                    ownerDef: value,
+                    getId: () => index < value.Parents.Count ? value.Parents[index] : null,
+                    setId: id => {
+                        if (value == null || index >= value.Parents.Count)
+                        {
+                            return;
+                        }
+                        value.Parents[index] = id;
+                        MarkEdited();
+                    },
+                    title: new LocStrFormatted("Pick parent research"));
+                row.Add(picker.FlexGrow(1f));
+                row.Add(new ButtonText(new LocStrFormatted("✕"), () => {
+                    if (value == null || index >= value.Parents.Count)
+                    {
+                        return;
+                    }
+                    value.Parents.RemoveAt(index);
+                    MarkEdited();
+                    rebuildParents();
+                }).Tooltip(new LocStrFormatted("Remove this prerequisite")));
+                m_parentsHolder.Add(row);
+            }
+
+            m_parentsHolder.Add(new ButtonText(new LocStrFormatted("+ Add parent"), () => {
+                if (value == null)
+                {
+                    return;
+                }
+                value.Parents.Add(null);
+                MarkEdited();
+                rebuildParents();
+            }));
         }
 
         private static int? parseNullableInt(string s) {

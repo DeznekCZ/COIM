@@ -319,7 +319,8 @@ namespace CustomAssets.Ui.Editors {
                 Action onChanged,
                 Action onStructureChanged,
                 Action<Action> onGrabRow,
-                Action onReleaseOnRow) {
+                Action onReleaseOnRow,
+                bool showPort = true) {
             Row row = new Row();
             row.Gap(2.pt()).AlignItemsCenter();
 
@@ -332,24 +333,29 @@ namespace CustomAssets.Ui.Editors {
                 emptyLabel: new LocStrFormatted("(pick product...)"),
                 title: new LocStrFormatted("Pick product")).FlexGrow(1f));
 
-            TextField qty = new TextField()
-                .Text(p.Quantity.ToString())
-                .PositiveIntegersOnly()
-                .ForFieldSetMinWidth(36.px())
-                .Width(56.px());
-            qty.OnValueChanged(v => {
-                if (int.TryParse(v, out int parsed)) {
-                    int clamped = parsed < 1 ? 1 : parsed;
-                    p.Quantity = clamped;
-                    if (clamped != parsed) qty.Text(clamped.ToString());
-                    onChanged?.Invoke();
-                }
-            });
-            row.Add(qty);
+            // Amount: a plain number, or an expression (`config.batch_size`,
+            // `base_amount * 2`) authored through the fx composer. The expression wins
+            // on emit and the number stays as the fallback — see ProductRef.
+            row.Add(new ExpressionField(
+                getNumber:     () => p.Quantity,
+                setNumber:     v  => p.Quantity = v ?? 1,
+                getExpression: () => p.QuantityExpression,
+                setExpression: v  => p.QuantityExpression = v,
+                onChanged:     () => onChanged?.Invoke(),
+                minValue:      1));
+
+            // In the split model a recipe's products carry no port — routing is
+            // per machine binding — so the recipe form hides this column. It is
+            // still shown for edit_recipe, which keeps the legacy shape.
+            if (!showPort) {
+                row.Add(new ButtonText(new LocStrFormatted("✕"), onRemove));
+                row.OnMouseUp(_ => onReleaseOnRow?.Invoke());
+                return row;
+            }
 
             ProductProto resolved = ResolveProduct(protosDb, p.ProductId);
             bool isVirtualProduct = resolved != null
-                && resolved.Type == VirtualProductProto.ProductType;
+                && resolved.Type.Matches(VirtualProductProto.ProductType);
             List<string> options = new List<string> { "*" };
             if (portLayouts != null) {
                 foreach (string n in portLayouts.Keys) options.Add(n);
@@ -384,6 +390,200 @@ namespace CustomAssets.Ui.Editors {
             row.OnMouseUp(_ => onReleaseOnRow?.Invoke());
 
             return row;
+        }
+
+        // ---- Port assignment editor (port-centric) ---------------------------
+
+        private const string AutoOption = "(auto)";
+        private const string NoneOption = "(unused)";
+
+        /// Icon size in the port-assignment dropdowns. Smaller than the 32px the
+        /// proto pickers use — these rows are dense and one per machine port.
+        private static readonly Px PortOptionIconSize = 20.px();
+
+
+        /// Port-centric editor for a binding's port map: ONE ROW PER MACHINE PORT
+        /// (not per product), each with a dropdown choosing which of the recipe's
+        /// products is routed through it. The recipe declares what the accepted
+        /// products are; the binding decides which port each one lands on —
+        /// automatically by default, or by hand here.
+        ///
+        /// Writes back into <paramref name="portMap"/> keyed by PRODUCT (that's the
+        /// shape `bind_recipe(ports=…)` takes). Assigning one product to several
+        /// ports merges into a single multi-port selector like "AB", because the
+        /// runtime rejects two map entries for the same product.
+        internal static UiComponent BuildPortAssignmentEditor(
+                ProtosDb protosDb,
+                MachineProto machine,
+                List<ProductRef> recipeInputs,
+                List<ProductRef> recipeOutputs,
+                List<PortMapRef> portMap,
+                Action onChanged) {
+            Column col = new Column();
+            col.AlignItemsStretch().Gap(1.pt());
+            col.Add(new Label(new LocStrFormatted("ports (one row per machine port):")));
+
+            if (machine == null) {
+                col.Add(new Label(new LocStrFormatted("   (pick a machine first)")));
+                return col;
+            }
+
+            col.Add(buildPortSection(protosDb, machine, isInput: true,
+                sideProducts: recipeInputs, portMap: portMap, onChanged: onChanged));
+            col.Add(buildPortSection(protosDb, machine, isInput: false,
+                sideProducts: recipeOutputs, portMap: portMap, onChanged: onChanged));
+            return col;
+        }
+
+        private static UiComponent buildPortSection(
+                ProtosDb protosDb, MachineProto machine, bool isInput,
+                List<ProductRef> sideProducts, List<PortMapRef> portMap, Action onChanged) {
+            Column section = new Column();
+            section.AlignItemsStretch().Gap(1.pt());
+            section.Add(new Label(new LocStrFormatted(isInput ? "  Inputs:" : "  Outputs:")));
+
+            IoPortType want = isInput ? IoPortType.Input : IoPortType.Output;
+            List<ProductRef> products = sideProducts ?? new List<ProductRef>();
+
+            // What the runtime would pick if this port were left on auto — shown
+            // in the "(auto)" option so the default is visible, not a mystery.
+            List<string> autoPorts = ComputeAutoAssignedPorts(protosDb, products, machine, isInput);
+            Dictionary<string, string> autoByPort = new Dictionary<string, string>(StringComparer.Ordinal);
+            for (int i = 0; i < products.Count && i < autoPorts.Count; i++) {
+                if (!string.IsNullOrEmpty(autoPorts[i]) && !autoByPort.ContainsKey(autoPorts[i])) {
+                    autoByPort[autoPorts[i]] = products[i].ProductId;
+                }
+            }
+
+            bool anyPort = false;
+            foreach (var port in machine.Ports) {
+                if (port.Type != want) continue;
+                anyPort = true;
+                string portName = port.Name.ToString();
+
+                // Only products whose type this port can actually carry.
+                List<string> options = new List<string> { AutoOption, NoneOption };
+                foreach (ProductRef p in products) {
+                    if (string.IsNullOrEmpty(p.ProductId)) continue;
+                    ProductProto resolved = ResolveProduct(protosDb, p.ProductId);
+                    if (resolved != null && port.Shape != null
+                            && !port.Shape.AllowedProductType.Matches(resolved.Type)) {
+                        continue;
+                    }
+                    if (!options.Contains(p.ProductId)) options.Add(p.ProductId);
+                }
+
+                string current = findProductForPort(portMap, portName) ?? AutoOption;
+                if (!options.Contains(current)) options.Add(current);
+
+                Row row = new Row();
+                row.Gap(2.pt()).AlignItemsCenter();
+
+                string shapeName = port.Shape != null
+                    ? (port.Shape.Strings.Name.TranslatedString ?? port.Shape.Id.Value)
+                    : "?";
+                row.Add(new Label(new LocStrFormatted(
+                        "   " + portName + " | " + (isInput ? "IN " : "OUT")))
+                    .Class(Cls.fontMonospace).Width(70.px()));
+
+                // What the port physically accepts, as the game's own product-type
+                // badge (the same icon the train-depot UI stamps on wagon tiles).
+                // Port shapes have no UI icon of their own, so the type stands in.
+                // When a badge exists the shape name moves into its tooltip — the
+                // icon already says it, and the rows stay narrow; only fall back to
+                // spelling it out when there is none.
+                string typeIcon = port.Shape != null
+                    ? Mafi.Unity.Ui.ProductTypesIcons.GetIconOrNull(port.Shape.AllowedProductType)
+                    : null;
+                if (!string.IsNullOrEmpty(typeIcon)) {
+                    row.Add(new Icon(typeIcon)
+                        .Size(PortOptionIconSize)
+                        .Tooltip(new LocStrFormatted(shapeName)));
+                } else {
+                    row.Add(new Label(new LocStrFormatted(shapeName))
+                        .Class(Cls.fontMonospace).Width(190.px()));
+                }
+
+                autoByPort.TryGetValue(portName, out string autoProd);
+                string autoHint = autoProd != null ? AutoOption + " → " + autoProd : AutoOption;
+                string capturedPort = portName;
+                string capturedAutoProd = autoProd;
+                Dropdown<string> pick = new Dropdown<string>(
+                        (option, index, isInDropdown) => buildProductOption(
+                            protosDb, option, autoHint, capturedAutoProd))
+                    .SetOptions(options)
+                    .FlexGrow(1f);
+                pick.SetValue(current);
+                pick.OnValueChanged((v, _) => {
+                    assignProductToPort(portMap, capturedPort, v == AutoOption || v == NoneOption ? null : v);
+                    onChanged?.Invoke();
+                });
+                row.Add(pick);
+                section.Add(row);
+            }
+
+            if (!anyPort) {
+                section.Add(new Label(new LocStrFormatted("   (machine has no ports of this direction)")));
+            }
+            return section;
+        }
+
+        /// One entry in a port's product dropdown: the product's icon (when it
+        /// resolves) followed by its id. "(auto)" borrows the icon of whatever the
+        /// runtime would pick, so the default reads at a glance; "(unused)" has none.
+        private static UiComponent buildProductOption(
+                ProtosDb protosDb, string option, string autoHint, string autoProductId) {
+            Row row = new Row();
+            row.Gap(2.pt()).AlignItemsCenter();
+
+            string iconFor =
+                option == AutoOption ? autoProductId :
+                option == NoneOption ? null : option;
+
+            ProductProto proto = string.IsNullOrEmpty(iconFor) ? null : ResolveProduct(protosDb, iconFor);
+            if (proto != null && !string.IsNullOrEmpty(proto.IconPath)) {
+                row.Add(new Icon(proto.IconPath).Size(PortOptionIconSize));
+            }
+            row.Add(new Label(new LocStrFormatted(option == AutoOption ? autoHint : option)));
+            return row;
+        }
+
+        /// Which product is currently routed through <paramref name="portName"/>?
+        /// A selector may list several ports ("AB"), so this checks membership.
+        private static string findProductForPort(List<PortMapRef> portMap, string portName) {
+            if (portMap == null) return null;
+            foreach (PortMapRef m in portMap) {
+                if (string.IsNullOrEmpty(m.Port) || m.Port == "*") continue;
+                if (m.Port.IndexOf(portName[0]) >= 0) return m.ProductId;
+            }
+            return null;
+        }
+
+        /// Route <paramref name="portName"/> to <paramref name="productId"/> (null =
+        /// back to auto). The port is first detached from whatever held it, then
+        /// appended to the target product's selector — so one product ending up on
+        /// two ports becomes a single "AB" entry rather than two conflicting ones.
+        private static void assignProductToPort(List<PortMapRef> portMap, string portName, string productId) {
+            if (portMap == null) return;
+            char c = portName[0];
+
+            for (int i = portMap.Count - 1; i >= 0; i--) {
+                PortMapRef m = portMap[i];
+                if (string.IsNullOrEmpty(m.Port) || m.Port == "*") continue;
+                if (m.Port.IndexOf(c) < 0) continue;
+                m.Port = m.Port.Replace(portName, "");
+                if (string.IsNullOrEmpty(m.Port)) portMap.RemoveAt(i);
+            }
+
+            if (string.IsNullOrEmpty(productId)) return;
+
+            foreach (PortMapRef m in portMap) {
+                if (m.ProductId != productId) continue;
+                if (string.IsNullOrEmpty(m.Port) || m.Port == "*") m.Port = portName;
+                else if (m.Port.IndexOf(c) < 0) m.Port += portName;
+                return;
+            }
+            portMap.Add(new PortMapRef(productId, portName));
         }
 
         // Leftmost drag handle for a reorderable row. 14px-wide column
@@ -433,7 +633,7 @@ namespace CustomAssets.Ui.Editors {
         internal static UiComponent BuildProductListEditor(
                 ProtosDb protosDb,
                 string label, bool isInput, MachineProto machine,
-                List<ProductRef> list, Action onChanged) {
+                List<ProductRef> list, Action onChanged, bool showPort = true) {
             Column listColumn = new Column();
             listColumn.Gap(1.pt()).AlignItemsStretch();
 
@@ -497,7 +697,7 @@ namespace CustomAssets.Ui.Editors {
                         list.RemoveAt(captured);
                         rebuild();
                         onChanged?.Invoke();
-                    }, onChanged, onStructureChanged, onGrabRow, onReleaseOnRow));
+                    }, onChanged, onStructureChanged, onGrabRow, onReleaseOnRow, showPort));
                 }
                 listColumn.Add(AddIconButton(
                     "Add " + label.TrimEnd('s'),

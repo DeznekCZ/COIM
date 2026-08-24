@@ -1,4 +1,264 @@
-﻿v0.2.0 | 2026-06-12:
+﻿v0.4.2 | 2026-08-25:
+- new unlock_machine argument on add_unlock_recipe, build_recipe, bind_recipe
+  and edit_recipe - stop a recipe unlock from also handing over the MACHINE
+  A recipe unlock grants the machine it names, not just the recipe, and that
+  stays the DEFAULT (unlock_machine = True) so no existing pack changes
+  behaviour. Pass unlock_machine = False for the recipe on its own.
+  - why you usually want False: the game derives its game-start LOCKED set from
+    exactly these unlock entries, so naming a machine on a node also takes that
+    machine AWAY until the node is researched - a pack adding one recipe to a
+    vanilla Flare was locking the Flare. And a node that binds several recipes
+    across several machines hands out every one of those machines
+  - the machine argument itself is not going anywhere: the game uses it to file
+    the recipe under the right machine in the research UI, which it does
+    whichever way the flag is set
+  - add_unlock_machine(research, machine) next to a recipe-only unlock says the
+    same thing more plainly when the machine is the point of the node
+  - requires CustomAssets >= 0.4.2 to pass explicitly; packs pinning older keep
+    the machine unlock exactly as before
+  - visual editor: an "unlock_machine" field on the recipe-unlock, bind-recipe
+    and edit-recipe forms. Blank = the default (machine granted); type "false"
+    to opt out. The argument is written to the file only when false
+  - the machine's ICON on the node is unaffected either way - that never came
+    from the unlock unit
+  - add_unlock_recipe's third argument is `recipe`, which is what the runtime
+    has always bound it as; the stub used to spell it `proto`. Positional calls
+    are unaffected, and the editor still reads `proto=` when it sees it
+- new remove_unlock(research, target, machine) takes something back OFF a
+  research node - the counterpart to the whole add_unlock_* family
+  - ONE call, not four: removal matches by prototype id, so it needs none of the
+    product / machine / entity / recipe split that adding does. Products,
+    machines, buildings, vehicles, train cars and recipes are all named the same
+    way
+  - `machine` is optional and only scopes a RECIPE removal. The same node
+    routinely unlocks one recipe on several machines, so naming the machine
+    drops just that pair; omitted, every unlock of the target on that node goes
+  - neither `target` nor `machine` is resolved through the prototype database,
+    so cleaning up an unlock for something a game update dropped is a no-op with
+    a note in the log rather than a load failure. Same when the node never
+    unlocked the target in the first place
+  - the node's icon for the removed target is cleaned up too, but only once
+    nothing that stayed still needs it - dropping one recipe does not strip the
+    machine icon from the node's other recipes on that same machine
+  - it does NOT unbind the recipe from the machine, only stops the node from
+    unlocking it. Use unbind_recipe(machine) inside `with edit_recipe(recipe):`
+    when you want both
+  - visual editor: "remove unlock" under Research. The target picker does not
+    browse the whole prototype database - it lists exactly what the chosen node
+    currently unlocks (plus anything this pack's own add_unlock_* calls add to
+    it), and picking a recipe unlock fills in its machine for you
+- changing of prices of entities
+  new edit_entity_costs(entity, workers, maintenance, maintenanceProduct,
+  maintenanceBufferMonths, initialMaintenancePercent, priority, products,
+  multiplyPercent) retunes what an ALREADY-REGISTERED entity costs to build:
+  - not machine-only - the price lives on the shared EntityProto base, so
+    machines, buildings, trucks, excavators, tree harvesters, locomotives,
+    cargo wagons and ships are all valid targets through the one call
+  - `products` restates the build materials outright; `multiplyPercent` scales
+    whatever is in place (100 = unchanged, 150 = 1.5x). Prefer the multiplier
+    for whole-game rebalances - it keeps working when a game update retunes the
+    underlying prices
+  - every argument is an independent override; omitting one leaves that part of
+    the vanilla cost untouched
+  - workers and maintenance are refused (with a warning) on entities the game
+    never staffs or maintains, instead of writing an upkeep nothing collects
+  - visual editor: the target picker now lists vehicles and train cars beside
+    machines and buildings, shows the entity's CURRENT cost above the form,
+    hides the workers/maintenance rows for targets that cannot use them, and
+    offers a one-click "copy this entity's current cost into the list"
+- new edit_crop(crop, productProduced, multiplyYieldPercent, growthDurationDays,
+  consumedWaterPerDay, consumedFertilityPercentPerDay,
+  minFertilityToStartGrowthPercent, surviveWithNoWaterDays, requiresGreenhouse,
+  plantByDefault) retunes an EXISTING crop's rates in place - the edit_* sibling
+  of add_crop / clone_crop, using the same argument names
+  - changes the crop the game already has, so farms already growing it and saves
+    already using it pick up the new numbers
+  - multiplyYieldPercent scales the harvest without restating which product the
+    crop grows, for rebalance packs that touch many crops
+  - consumedFertilityPercentPerDay accepts negative values (green-manure crops
+    replenish the soil), so it is deliberately not clamped to positives
+- new add_unlock_entity(research, entity) adds ANY entity to an existing research
+  node - vehicles, train cars and buildings as well as machines. The game's
+  unlock unit always accepted these; the machine-shaped restriction was ours
+  - add_unlock_machine is unchanged and still loads, saves and edits as before,
+    so existing packs keep working. It is no longer offered in the editor's
+    "+ add" list, since add_unlock_entity supersedes it and takes machines too
+- FIX: saving in the visual editor no longer deletes a research node's parents
+  - build_research(parents = [...]) was not carried by the editor, and saving
+    re-renders the whole call, so editing ANY definition in a file stripped the
+    parents from every build_research in it - silently orphaning those nodes
+    from the tech tree
+  - parents now round-trip and are editable in the research form as a list of
+    prerequisite pickers, with a line stating how many were loaded so an empty
+    list is never ambiguous
+  - the research picker itself could come up EMPTY: it read every research node
+    unguarded, and one node that threw while being read aborted the build
+    before the popup was ever opened, so the whole list vanished rather than
+    one row. Nodes are now read defensively and skipped with a warning, the
+    "Game research - N node(s)" header always shows the real count, and an
+    unreadable icon can no longer cost the row. Research graphics are the
+    likely trigger, since add_unlock_machine / add_unlock_entity append to the
+    same IconsProtos array the picker reads its icon from
+  - same fix for build_product_loose / _fluid / _unit isLocked, which was being
+    dropped the same way and quietly unlocking products that were meant to be
+    gated behind research
+  - build_research positional arguments now match the runtime: slot 3 is costs
+    (it was declared "difficulty", a name nothing read, so a positional cost was
+    silently ignored), slot 5 is parents and slot 6 is icon. `difficulty` still
+    works as a named alias for `costs`
+  - add_toolbar_category's 5th argument is now declared "entities" to match the
+    name the implementation actually reads; passing it positionally used to be
+    ignored
+- visual editor: the entity picker (used by edit_entity_costs, add_unlock_entity
+  and toolbar categories) no longer freezes when opened
+  - it used to build a button, labels and an icon for EVERY candidate before
+    showing anything, and every search keystroke then swept all of those rows
+  - now it collects plain data first and renders rows a chunk per frame, so the
+    popup opens immediately and fills in; searching re-renders just the matches
+  - a "showing N of M" line reports the real match count, so a list still
+    filling in can no longer be mistaken for the complete list
+  - one prototype with unreadable metadata used to abort the build and silently
+    drop every entry after it; each is now read defensively and skipped
+- config.json fields can now gate definitions with a plain if/elif/else - a
+  build_*/add_* call in a branch that does not run is never registered
+  - numeric fields arrive as int/float like a literal would; they used to arrive
+    as long/double, which threw "Can not convert to __fix__" on first use
+  - new config.get(name, fallback) and config.has(name) for fields an older
+    config.json may not define, so a new field cannot break a whole file
+  - reading a field that config.json does not define now names the field, the
+    config.json it looked in, and the fields that ARE defined
+  - string config fields can be compared (==, !=) and tested for truthiness
+  - `config` is now typed in the CustomAssets IntelliSense stub
+  - see MODDING.md "Pack configuration" and the AirFiltering sample pack
+- new "Pack Settings" window on the game's main toolbar (Ctrl+Shift+O), with one
+  tab per activated mod that exposes settings
+  - available in an ORDINARY game: the recipe editor is sandbox-gated, so mod
+    settings players are meant to change could not live inside it
+  - values only, written back to each pack's own config.json, and only the mods
+    actually changed are written
+  - carries a standing warning that changing a mod's settings can break a save
+    that is already running on the old values
+- visual editor: the three pack-level editors now open IN THE MAIN PANE instead of
+  as popups over the tree - dependencies/mod info (🔗), translations (TT) and
+  config fields (CFG)
+  - the button of the pane on screen stays lit, the same highlight a selected tree
+    row uses, so it is always clear what the main area is showing
+  - selecting a definition drops the pane and its highlight; clicking the lit
+    button again rebuilds that pane from disk, which is also how unsaved edits are
+    discarded
+  - translations is no longer a separate movable window
+- translations now also collect the mod's OWN strings: display_name,
+  description_short and description_long from manifest.json, plus every config
+  field description from config.json (keys `mod.*` and `config.<field>.description`)
+- visual editor: new "CFG" button on the pack card edits the CURRENT pack's
+  config fields: add/remove/reorder, kind (bool/int/float/text), default,
+  description, min/max, max length, regex. Saving preserves $schema and any key
+  the editor does not model
+  - both surfaces say plainly that values apply after the save is reloaded
+- config fields can declare "editable": "on_add" for settings that are only
+  meant to be set when the mod is added to a game (typically a field that gates
+  whether recipes or products get registered)
+  - the settings panel locks those fields, with a per-field unlock for a player
+    who accepts the risk; an absent "editable" still means "always"
+- numeric fields in the definition editors accept an EXPRESSION instead of a fixed
+  number - recipe ingredient/product amounts and durations, via a new "fx" button
+  - the composer offers a chip per config field of the pack, the operators and a
+    number box; the same box stays freely typeable, so a variable defined earlier
+    in the file works too
+  - live preview evaluates against the pack's config values through the same code
+    the game runs at load time
+  - clearing the expression restores the plain number the field had
+- FIX: saving a recipe no longer destroys a hand-written expression. The loader
+  could only read a literal, so `Quantity(config.batch_size)` loaded as 0 and was
+  written back as `Quantity(0)`; the same applied to a computed duration.
+  Expressions now round-trip verbatim
+- numeric config fields can carry an "expression" computed from the pack's other
+  fields, e.g. "expression": "belt_speed * 2" (hand-authored: a config field is a
+  constant, so the CFG dialog deliberately has no expression box)
+  - same syntax as Definitions/*.py, only the pack's own fields in scope
+  - a cycle, an unknown name or a non-numeric result is logged and the field
+    falls back to its "default" instead of breaking the pack
+- config values are now CONSTANTS: `config.x = v` and `config["x"] = v` from a
+  definition file are refused instead of silently rewriting the player's settings
+- arithmetic and comparisons now mix int and float (`belt_speed * 1.5`,
+  `if config.ratio > 1:`), which previously threw "Types has no multiply yet or
+  never (different type)". Same-type behaviour is unchanged, including int/int
+  division staying integer division
+- square-bracket indexing x[key] now works; it used to throw "Index operator is
+  not defined" for everything
+  - dictionaries by name (config["enable_x"], and any computed key), lists,
+    tuples and strings by position, with Python's negative indexing (items[-1])
+  - assignment through a subscript too: items[0] = v, config["k"] = v, and the
+    augmented forms (config["count"] += 1)
+  - a missing dictionary key reports the same message as the dotted form instead
+    of silently reading as None; a bad index type or an out-of-range position
+    says which it was
+  - string + string concatenation now works (the docs always claimed it did)
+
+v0.4.0 | 2026-07-27:
+- new auto_select_recipes flag on build_machine / clone_machine controls whether a
+  freshly-placed machine auto-selects its recipes:
+  - True  = the machine auto-selects every unlocked recipe on placement / unlock
+  - False = the machine starts with NO recipe selected so the player picks one
+  - blank = inherit the source machine's behaviour (unchanged from before)
+  note: the game still auto-selects when a machine has exactly one unlocked recipe -
+  this is a game-side rule the flag cannot override
+- edit_machine_ports gained the same auto_select_recipes flag so an EXISTING (vanilla
+  or modded) machine's recipe auto-select behaviour can be flipped in place; the call
+  may be used purely for this, with no add_ports
+- visual editor: build_machine and edit_machine_ports now show a live read-out of the
+  source/target machine's current auto-select state and the effective result of the
+  override, so you can see whether the behaviour is active before saving
+
+v0.3.0 | 2026-07-20:
+- updated for the Captain of Industry build from 2026-07-18, which made recipes
+  machine-less - a RecipeProto no longer carries a duration or ports
+- recipes are now defined in two steps:
+  - build_recipe(...) defines only the recipe itself (inputs, outputs, power)
+  - new bind_recipe(recipe, machine, duration, ports, multiplier,
+    minPartialUtilization, research) attaches it to a machine
+  - one recipe can be bound to several machines, each with its own duration,
+    port mapping and throughput multiplier
+  - legacy build_recipe(machine = ..., duration = ...) keeps working unchanged
+- new PortMap(product, port) describes a binding's port mapping - product and
+  port only, no quantity (quantities belong to the recipe). A port can be a
+  single letter "A", several ports "AB", or "*" for the first free compatible
+  slot
+- outputs of the same product type are now spread across distinct ports
+  automatically - fixes "output port matching is ambiguous" for recipes with
+  several fluid (or several loose) outputs
+- python scripts: the parser understands `with` / `as`, so a recipe can be
+  written as `with build_recipe(...) as r:` with the bind_recipe(...) calls in
+  the body attaching to it implicitly (the recipe may also be passed explicitly)
+- visual editor: a recipe's machines are shown as TABS with [add] / [remove]
+  above the tab strip; duration, port mapping, multiplier, partial utilization
+  and research are edited per machine tab instead of on the recipe itself
+- visual editor: recipes are saved as `with build_recipe(...) as r:` blocks -
+  opening a legacy build_recipe(machine = ...) recipe and saving it upgrades
+  the file to the split format
+- fixed build_product_loose against the new LooseProductProto.Gfx (prefabPath
+  and useRoughPileMeshes were replaced by a shared product mesh family)
+- docs: new RECIPES.md covering the split API, the `with` form, PortMap and the
+  legacy one-shot form; recipes section of MODDING.md updated to match
+- added the CustomAssets_RecipeSplitTest sample pack, which exercises every
+  recipe path (with/as, with without as, explicit bind, multi-type outputs,
+  legacy one-shot)
+- visual editor: added search box to the "add definition" picker (filters all
+  entries, hides section headers with no matches)
+- visual editor: added "new definition file..." entry to the "add definition"
+  picker - asks for a name, creates Definitions/<name>.py and registers
+  "import <name>" in __init__.py
+- visual editor: definitions can now be added directly to __init__.py
+  (previously the "+ add definition" button was hidden there)
+- visual editor: added "takes effect after a game restart" note where it
+  applies - under "+ add port" in every port list, and at the top of every
+  entity clone editor (protos are registered at load time, so new ports and
+  clones cannot show up in the in-game lists until the next launch)
+- docs: new "When changes take effect" section in MODDING.md, plus a note in
+  the PortMap section of RECIPES.md
+  recipes guide online: https://coigame.com/Topic/1704/-Recipes
+
+v0.2.0 | 2026-06-12:
 - new big feature:
   - added option to use ingame visual tool to change game data (instead of python scripts)
 - fixed order of products in exhaust scrubber

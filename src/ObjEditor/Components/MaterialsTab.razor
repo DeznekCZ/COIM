@@ -1,0 +1,166 @@
+@inject SceneStore Store
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="materials-tab">
+
+    <aside class="material-list">
+        <div class="muted small" style="padding:8px 4px;">@Store.Mesh.Materials.Count material(s)</div>
+        <div class="list-scroll tall">
+            @foreach (var m in Store.Mesh.Materials.Values.OrderBy(m => m.Id))
+            {
+                <div class="row clickable @(Store.SelectedMaterialId == m.Id ? "selected" : "")"
+                     @onclick="() => Store.SelectMaterial(m.Id)">
+                    <span class="swatch" style="background:@SwatchOf(m)"></span>
+                    <span>@m.Name</span>
+                    @if (m.TextureBytes != null)
+                    {
+                        <span class="tag">tex</span>
+                    }
+                </div>
+            }
+        </div>
+        <div class="row" style="padding:8px 4px 0;">
+            <button @onclick="AddMaterial">+ Material</button>
+        </div>
+    </aside>
+
+    <section class="material-detail">
+        @if (Store.SelectedMaterialId is int mid && Store.Mesh.Materials.TryGetValue(mid, out var mat))
+        {
+            <div class="panel">
+                <h3>Material m@(mat.Id)</h3>
+                <div class="row">
+                    <label class="lbl-wide">Name</label>
+                    <input type="text" value="@mat.Name"
+                           @onchange="e => Store.SetMaterialName(mat.Id, e.Value?.ToString() ?? mat.Name)" />
+                </div>
+                <div class="row">
+                    <label class="lbl-wide">Diffuse</label>
+                    <input type="color" value="@HexOf(mat)"
+                           @onchange="e => SetDiffuseFromHex(mat.Id, e.Value?.ToString())" />
+                    <span class="muted small mono">@FormatRgb(mat)</span>
+                </div>
+                <div class="row">
+                    <label class="lbl-wide">Used by</label>
+                    <span class="muted small">@CountFacesUsing(mat.Id) face(s)</span>
+                </div>
+                <div class="row">
+                    <button class="danger" @onclick="() => Store.DeleteMaterial(mat.Id)"
+                            disabled="@(Store.Mesh.Materials.Count <= 1)">Delete</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Texture</h3>
+                @if (mat.TextureBytes is not null)
+                {
+                    <div class="texture-preview">
+                        <img src="@TextureDataUrl(mat)" alt="texture" />
+                        <div class="muted small mono">@mat.TextureBytes.Length bytes
+                            @if (!string.IsNullOrEmpty(mat.TexturePath))
+                            {
+                                <span> · @System.IO.Path.GetFileName(mat.TexturePath)</span>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="muted small">No texture loaded.</p>
+                }
+                <div class="row">
+                    <button @onclick="() => LoadTexture(mat.Id)">Load image…</button>
+                    @if (mat.TextureBytes is not null)
+                    {
+                        <button @onclick="() => LoadTexture(mat.Id)"
+                                title="Re-pick the texture file. Use this when the source image changed on disk and you want to refresh.">
+                            Reload
+                        </button>
+                        <button class="danger" @onclick="() => ClearTexture(mat.Id)">Remove</button>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="panel">
+                <p class="muted">Pick a material on the left, or add one with <b>+ Material</b>.</p>
+            </div>
+        }
+    </section>
+
+</div>
+
+@code {
+    protected override void OnInitialized() { Store.OnChange += Rerender; }
+    private async void Rerender() { await InvokeAsync(StateHasChanged); }
+    public void Dispose() { Store.OnChange -= Rerender; }
+
+    private void AddMaterial()
+    {
+        var name = $"material{Store.Mesh.Materials.Count + 1}";
+        var mat = Store.AddMaterial(name);
+        Store.SelectMaterial(mat.Id);
+    }
+
+    private void SetDiffuseFromHex(int id, string? hex)
+    {
+        if (string.IsNullOrEmpty(hex) || !hex.StartsWith("#") || hex.Length != 7) return;
+        if (!int.TryParse(hex.AsSpan(1, 2), System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture, out var r)) return;
+        if (!int.TryParse(hex.AsSpan(3, 2), System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture, out var g)) return;
+        if (!int.TryParse(hex.AsSpan(5, 2), System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture, out var b)) return;
+        Store.SetMaterialDiffuse(id, r / 255.0, g / 255.0, b / 255.0);
+    }
+
+    private async Task ClearTexture(int id)
+    {
+        Store.SetMaterialTexture(id, "", Array.Empty<byte>());
+        if (Store.Mesh.Materials.TryGetValue(id, out var m)) m.TextureBytes = null;
+        Store.Notify();
+        try { await JS.InvokeVoidAsync("objEditor.clearMaterialTexture", id); }
+        catch (Exception ex) { Diag.Log("clearMaterialTexture: " + ex); }
+    }
+
+    private async Task LoadTexture(int matId)
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<System.Text.Json.JsonElement?>(
+                "objEditor.openFilePicker", "Image (PNG/JPG)", new[] { "png", "jpg", "jpeg" });
+            if (result is null || result.Value.ValueKind == System.Text.Json.JsonValueKind.Null)
+                return;
+            var name = result.Value.GetProperty("name").GetString() ?? "texture";
+            var b64 = result.Value.GetProperty("base64").GetString() ?? "";
+            var bytes = Convert.FromBase64String(b64);
+            Store.SetMaterialTexture(matId, name, bytes);
+            // Push the decoded image to the GL side so the viewport samples it
+            // immediately — store keeps the bytes for OBJ/MTL export.
+            await JS.InvokeVoidAsync("objEditor.setMaterialTexture", matId, b64);
+        }
+        catch (Exception ex) { Diag.Log("LoadTexture: " + ex); }
+    }
+
+    private int CountFacesUsing(int id) => Store.Mesh.Faces.Values.Count(f => f.MaterialId == id);
+
+    private static string SwatchOf(Material m)
+    {
+        int To255(double d) => Math.Clamp((int)Math.Round(d * 255), 0, 255);
+        return $"rgb({To255(m.Diffuse.R)},{To255(m.Diffuse.G)},{To255(m.Diffuse.B)})";
+    }
+    private static string HexOf(Material m)
+    {
+        int To255(double d) => Math.Clamp((int)Math.Round(d * 255), 0, 255);
+        return $"#{To255(m.Diffuse.R):x2}{To255(m.Diffuse.G):x2}{To255(m.Diffuse.B):x2}";
+    }
+    private static string FormatRgb(Material m) =>
+        string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "{0:0.000} {1:0.000} {2:0.000}", m.Diffuse.R, m.Diffuse.G, m.Diffuse.B);
+    private static string TextureDataUrl(Material m) =>
+        m.TextureBytes != null
+            ? "data:image/png;base64," + Convert.ToBase64String(m.TextureBytes)
+            : "";
+}

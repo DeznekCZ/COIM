@@ -36,6 +36,8 @@ namespace CustomAssets.Ui.Editors {
         private readonly TextField m_copyLayout;
         private readonly TextField m_copyPorts;
         private readonly TextField m_copyGraphics;
+        private readonly TextField m_autoSelectRecipes;
+        private readonly Column m_autoSelectInfo;
         private readonly TextField m_lockedOnInit;
         // See [[EditMachinePortsDefEditor.m_portList]] — held for direct
         // Refresh() after a layout-grid click.
@@ -75,6 +77,7 @@ namespace CustomAssets.Ui.Editors {
                         },
                         title: new LocStrFormatted("Pick source machine"),
                         variableResolver: EditorHelpers.VariableResolverFor(value)));
+                    updateAutoSelectInfo();
                 });
 
             m_previewHolder = new Column();
@@ -179,6 +182,31 @@ namespace CustomAssets.Ui.Editors {
                 }),
                 onRefresh: () => m_copyGraphics.Text(value.CopyGraphics ? "true" : "false"));
 
+            // Tri-state recipe auto-select override. Blank = inherit the
+            // source machine's flag; true = the placed machine auto-selects
+            // every unlocked recipe; false = it starts with no recipe
+            // selected so the player picks one.
+            m_autoSelectRecipes = AddField(
+                "auto_select_recipes (true / false / blank to inherit from source)",
+                new TextField().OnValueChanged(v => {
+                    if (value == null) return;
+                    string s = (v ?? "").Trim().ToLowerInvariant();
+                    if (s == "true") value.AutoSelectRecipes = true;
+                    else if (s == "false") value.AutoSelectRecipes = false;
+                    else value.AutoSelectRecipes = null;
+                    updateAutoSelectInfo();
+                }),
+                onRefresh: () => m_autoSelectRecipes.Text(value.AutoSelectRecipes.HasValue
+                    ? (value.AutoSelectRecipes.Value ? "true" : "false")
+                    : ""));
+
+            // Live read-out of what the placed machine will actually do,
+            // given the source's flag and the override above. Refreshed
+            // whenever the source or the override changes.
+            m_autoSelectInfo = new Column();
+            m_autoSelectInfo.AlignItemsStretch();
+            AddField("", m_autoSelectInfo, onRefresh: updateAutoSelectInfo);
+
             m_lockedOnInit = AddField(
                 "lockedOnInit (true / false / blank to inherit research default)",
                 new TextField().OnValueChanged(v => {
@@ -256,8 +284,44 @@ namespace CustomAssets.Ui.Editors {
             return '?';
         }
 
+        // Render the effective recipe auto-select behaviour into
+        // m_autoSelectInfo: the source machine's flag, the override, and the
+        // resulting behaviour once placed. Gives the modder a clear "this is
+        // active / inactive" read-out instead of having to reason about the
+        // inherited flag themselves.
+        private void updateAutoSelectInfo() {
+            if (m_autoSelectInfo == null) return;
+            m_autoSelectInfo.Clear();
+            if (value == null) return;
+
+            MachineProto src = RecipeFormParts.ResolveMachine(m_protosDb, value.SourceId);
+            bool? overrideVal = value.AutoSelectRecipes;
+            bool? sourceVal   = src != null ? src.UseAllRecipesAtStartOrAfterUnlock : (bool?)null;
+            bool? effective   = overrideVal ?? sourceVal;
+
+            string sourceText = src == null
+                ? "unknown (pick a source machine)"
+                : (sourceVal.Value ? "ON — auto-selects all recipes" : "OFF — no recipe pre-selected");
+            m_autoSelectInfo.Add(new Label(new LocStrFormatted(
+                "Source machine auto-select: " + sourceText)).Color(ColorRgba.LightGray));
+
+            string effText;
+            if (!effective.HasValue) {
+                effText = "unknown until a source is picked";
+            } else if (effective.Value) {
+                effText = "ACTIVE — the placed machine auto-selects every unlocked recipe";
+            } else {
+                effText = "OFF — the placed machine starts with no recipe selected "
+                    + "(a machine with a single unlocked recipe still auto-selects it)";
+            }
+            string prefix = overrideVal.HasValue ? "Effective (overridden): " : "Effective (inherited): ";
+            m_autoSelectInfo.Add(new Label(new LocStrFormatted(prefix + effText))
+                .Color(effective == true ? ColorRgba.White : ColorRgba.LightGray));
+        }
+
         private void refreshPreview() {
             m_previewHolder.Clear();
+            updateAutoSelectInfo();
             if (value == null) return;
 
             MachineProto src = RecipeFormParts.ResolveMachine(m_protosDb, value.SourceId);

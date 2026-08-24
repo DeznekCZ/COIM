@@ -225,7 +225,22 @@ namespace CustomAssets.Data.Mod {
             pack.Files.Clear();
             DirectoryInfo modules = new DirectoryInfo(Path.Combine(pack.RootPath, "Definitions"));
             if (!modules.Exists) return;
+            // __init__.py FIRST, matching CustomAssetRegistrator.RegisterData and
+            // this list's documented contract. A bare EnumerateFiles would leave
+            // Files in directory order, so after the first save of a session the
+            // list silently stopped meaning "load order" — which anything
+            // reasoning about definition order (see PackLoadOrder) depends on.
+            List<FileInfo> ordered = new List<FileInfo>();
+            FileInfo initFile = new FileInfo(Path.Combine(modules.FullName, "__init__.py"));
+            if (initFile.Exists) ordered.Add(initFile);
             foreach (FileInfo file in modules.EnumerateFiles("*.py")) {
+                if (string.Equals(file.FullName, initFile.FullName,
+                        System.StringComparison.OrdinalIgnoreCase)) {
+                    continue;
+                }
+                ordered.Add(file);
+            }
+            foreach (FileInfo file in ordered) {
                 Token[] tokens = Tokenizer.ParseFile(file.FullName);
                 Block block = Lexer.Parse(tokens);
                 pack.Files.Add(new LoadedFile(file.FullName, block));

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Recipes pack: two inputs transformed into one output. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f2a45"/>
+      <stop offset="1" stop-color="#1a1826"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="28" fill="url(#bg)"/>
+
+  <!-- inputs -->
+  <g>
+    <rect x="30" y="52" width="62" height="62" rx="12" fill="#5f7fd6"/>
+    <rect x="30" y="142" width="62" height="62" rx="12" fill="#41b6a4"/>
+  </g>
+
+  <!-- flow lines merging -->
+  <g fill="none" stroke="#7d8a99" stroke-width="10" stroke-linecap="round">
+    <path d="M100 83 H110 Q126 83 126 106 V118"/>
+    <path d="M100 173 H110 Q126 173 126 150 V138"/>
+  </g>
+
+  <!-- arrow -->
+  <path d="M118 112 H144 V94 L180 128 L144 162 V144 H118 Z" fill="#e8a33d"/>
+
+  <!-- output -->
+  <rect x="188" y="98" width="58" height="60" rx="12" fill="#e8a33d"/>
+  <rect x="188" y="98" width="58" height="18" rx="12" fill="#f5c477"/>
+</svg>

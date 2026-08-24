@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Farming / crops pack: wheat sheaf over tilled soil rows. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f5a2c"/>
+      <stop offset="1" stop-color="#1e2a17"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="28" fill="url(#bg)"/>
+  <circle cx="128" cy="102" r="58" fill="#ffe08a" opacity="0.16"/>
+
+  <!-- soil rows -->
+  <g fill="#6b4a2c">
+    <rect x="16" y="186" width="224" height="16" rx="8"/>
+    <rect x="16" y="212" width="224" height="16" rx="8"/>
+  </g>
+
+  <!-- stalks -->
+  <g stroke="#c8a13c" stroke-width="9" stroke-linecap="round" fill="none">
+    <path d="M128 190 V72"/>
+    <path d="M92 194 Q86 140 100 96"/>
+    <path d="M164 194 Q170 140 156 96"/>
+  </g>
+
+  <!-- grain heads -->
+  <g fill="#f0c75e">
+    <ellipse cx="128" cy="62" rx="15" ry="28"/>
+    <ellipse cx="98" cy="86" rx="13" ry="25" transform="rotate(-18 98 86)"/>
+    <ellipse cx="158" cy="86" rx="13" ry="25" transform="rotate(18 158 86)"/>
+  </g>
+
+  <!-- leaves -->
+  <g fill="#7dc04a">
+    <path d="M128 150 Q92 140 78 112 Q116 112 128 150 Z"/>
+    <path d="M128 150 Q164 140 178 112 Q140 112 128 150 Z"/>
+  </g>
+</svg>

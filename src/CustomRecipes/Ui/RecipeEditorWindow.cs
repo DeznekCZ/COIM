@@ -125,11 +125,123 @@ namespace CustomAssets.Ui {
         // current value into it via Value(...), and add it to the statement
         // column. The editor's Value(...) returns DefEditor<T> (covariant
         // chain), so we cast on the way back to call it.
+        /// Swap in a freshly loaded model. ALWAYS go through this rather than
+        /// assigning m_currentModel directly.
+        ///
+        /// The per-kind editor cache below captures the model each editor was
+        /// CONSTRUCTED with, and a save+reload replaces the model wholesale. A
+        /// cached editor left holding the previous one keeps reading and MUTATING
+        /// a model nothing else references: "+ add machine" appended its new
+        /// binding to the dead model, so the tree (which reads the live one) never
+        /// showed it and the save never wrote it. Dropping the cache forces every
+        /// editor to be rebuilt against the model that is actually current.
+        private void setCurrentModel(PackModel model) {
+            setCurrentModel(model, null);
+        }
+
+        /// <paramref name="justWritten"/>: defs that were persisted immediately
+        /// before this reload. They now exist in the file, so the fresh model
+        /// already contains its own instances of them and the outgoing ones must
+        /// NOT be carried over — that would show each of them twice.
+        private void setCurrentModel(PackModel model,
+                System.Collections.Generic.ICollection<DefBase> justWritten) {
+            PackModel previous = m_currentModel;
+            m_currentModel = model;
+            m_editorCache.Clear();
+            if (previous != null && model != null) {
+                carryOverUnwritten(previous, model, justWritten);
+            }
+        }
+
+        /// Move in-memory-only definitions from the outgoing model into the
+        /// freshly loaded one.
+        ///
+        /// PackLoader.Load rebuilds the model purely from what is on DISK, so
+        /// anything not yet written simply vanishes when a reload happens. And
+        /// reloads happen for reasons unrelated to the entry being edited — most
+        /// often flushCompletedNewDefs auto-writing some OTHER def. The visible
+        /// effect was a brand-new entry disappearing the moment it was clicked.
+        ///
+        /// An incomplete entry is exactly the one that most needs to survive: it
+        /// can't be written yet (mandatory fields still empty), so memory is the
+        /// only place it exists until the modder finishes filling it in.
+        private void carryOverUnwritten(PackModel previous, PackModel fresh,
+                System.Collections.Generic.ICollection<DefBase> justWritten) {
+            foreach (DefBase def in previous.Definitions) {
+                if (!isUnwritten(def)) continue;                       // came from a file
+                if (justWritten != null && justWritten.Contains(def)) continue;
+
+                // Already on disk under a different instance? Then this one is a
+                // spent draft, not a pending entry.
+                //
+                // A def's SourceStartLine is NOT updated when it gets written —
+                // the write is always followed by a reload that replaces the
+                // instance — so "unwritten" stops being true of the OBJECT the
+                // moment its content reaches the file. Carrying it over anyway
+                // re-added an entry that already existed, and because the stale
+                // instance never stopped looking unwritten it came back on every
+                // later reload too. This check is what keeps the carry-over from
+                // resurrecting saved and deleted entries.
+                if (existsIn(fresh, def)) continue;
+
+                // A binding's owner link points into the OLD model, whose recipe
+                // instances are now garbage. Re-point it at the equivalent recipe
+                // in the fresh model, or the binding is orphaned: it would render
+                // nowhere and never be written as part of any block.
+                if (def is BindRecipeDef bind && bind.OwnerRecipe != null) {
+                    RecipeDef owner = bind.OwnerRecipe;
+                    RecipeDef relinked = fresh.Recipes.FirstOrDefault(
+                        r => r.RecipeId == owner.RecipeId && r.SourceFile == owner.SourceFile);
+                    if (relinked == null) continue;   // owner is gone — drop the orphan
+                    bind.OwnerRecipe = relinked;
+                    bind.SourceFileVariables = relinked.SourceFileVariables;
+                    relinked.EmitAsWithBlock = true;
+                    // The reload may have turned the owner INTO a block (its
+                    // previous save wrote one), which changes where this binding
+                    // belongs — see RecipeDef.TryGetBlockHeaderLine.
+                    bind.ScopeKey = relinked.TryGetBlockHeaderLine(out int headerLine)
+                        ? "block:" + headerLine
+                        : null;
+                }
+                fresh.Definitions.Add(def);
+            }
+        }
+
+        /// True when <paramref name="model"/> already holds a definition that
+        /// represents the same thing as <paramref name="candidate"/> — same kind,
+        /// same identity, same file.
+        ///
+        /// Identity has to come from DisplayId rather than object reference: a
+        /// reload builds entirely new instances, so the freshly-parsed copy of a
+        /// def shares nothing with the in-memory draft it came from. An
+        /// INCOMPLETE draft has no meaningful DisplayId yet, but it also cannot
+        /// have been written, so it never matches anything here and is always
+        /// carried over — which is the behaviour that matters.
+        private static bool existsIn(PackModel model, DefBase candidate) {
+            if (model?.Definitions == null || candidate == null) return false;
+            string id = candidate.DisplayId;
+            if (string.IsNullOrEmpty(id)) return false;
+            foreach (DefBase other in model.Definitions) {
+                if (ReferenceEquals(other, candidate)) continue;
+                if (other.Kind == candidate.Kind
+                        && other.DisplayId == id
+                        && string.Equals(other.SourceFile, candidate.SourceFile,
+                                StringComparison.Ordinal)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void showEditor<T>(T def, System.Func<Editors.DefEditor<T>> factory)
                 where T : DefBase {
             System.Type key = typeof(T);
             if (!m_editorCache.TryGetValue(key, out Column cached)) {
                 cached = factory();
+                // Subscribe ONCE, at construction — the cached editor is
+                // reused for every def of this kind, so subscribing on each
+                // showEditor call would stack duplicate handlers.
+                ((Editors.DefEditor<T>)cached).DefEdited += refreshRowMarker;
                 m_editorCache[key] = cached;
             }
             ((Editors.DefEditor<T>)cached).Value(def);
@@ -169,6 +281,13 @@ namespace CustomAssets.Ui {
         private readonly System.Collections.Generic.Dictionary<DefBase, UiComponent>
             m_rowLabelByDef = new System.Collections.Generic.Dictionary<DefBase, UiComponent>();
 
+        // Companion to m_rowLabelByDef holding each row's state marker (the
+        // ⚠ / ● glyph left of the label). Kept separate so a field edit can
+        // repaint just the marker via refreshRowMarker instead of running a
+        // full rebuildTree on every keystroke.
+        private readonly System.Collections.Generic.Dictionary<DefBase, Label>
+            m_rowMarkerByDef = new System.Collections.Generic.Dictionary<DefBase, Label>();
+
         public RecipeEditorWindow(UiContext uiContext, Mafi.Unity.IMain main) : base(WindowTitle) {
             m_uiContext = uiContext;
             m_main      = main;
@@ -196,16 +315,21 @@ namespace CustomAssets.Ui {
             m_statementColumn.AlignItemsStretch().Width(100.Percent());
             // Same width-propagation fix as m_statementColumn — without it
             // the per-file CollapsibleGroups in the tree hugged their
-            // header text width instead of filling the left pane.
-            m_treeColumn.AlignItemsStretch().Width(100.Percent());
-            m_packCard        = new PackCardView(onSwitchPack, onOpenDepsDialog, onOpenTranslations);
+            // header text width instead of filling the left pane. The gap
+            // separates the "+ new file" panel and the per-file cards, which
+            // otherwise stack edge to edge and read as one block.
+            m_treeColumn.AlignItemsStretch()
+                        .Width(100.Percent())
+                        .Gap(CollapsibleGroup.HeaderBodyGap.px());
+            m_packCard        = new PackCardView(onSwitchPack, onOpenDepsDialog, onOpenTranslations,
+                                                 onOpenConfigDialog);
 
             // ---- Three content panels: tree (top-left), pack info (bottom-left), editor (right).
             // Each Mafi Panel adds its own background + bolts so the regions visually
             // separate without us drawing borders by hand.
             ScrollColumn treeScroll = new ScrollColumn();
             treeScroll.Add(m_treeColumn);
-			treeScroll.FlexGrow(1f).AlignItemsStretch();
+            treeScroll.FlexGrow(1f).AlignItemsStretch();
             Panel treePanel = new Panel();
             treePanel.BodyAdd(treeScroll);
             treePanel.FlexGrow(1f);
@@ -312,7 +436,11 @@ namespace CustomAssets.Ui {
 
         private void selectPack(LoadedPack pack) {
             m_currentPack = pack;
-            m_currentModel = PackLoader.Load(pack);
+            // Point the expression controls at this pack's config.json so the fx
+            // composer offers its fields and can preview what an expression evaluates
+            // to. Cleared and re-read on every pack switch.
+            ExpressionContext.SetPack(pack?.RootPath);
+            setCurrentModel(PackLoader.Load(pack));
             m_selectedRecipe = null;
             m_packCard.SetPack(pack);
 
@@ -362,6 +490,7 @@ namespace CustomAssets.Ui {
         private void rebuildTree() {
             m_treeColumn.Clear();
             m_rowLabelByDef.Clear();
+            m_rowMarkerByDef.Clear();
             if (m_currentModel == null || m_currentPack == null) return;
 
             // "+ new file" header — scaffold flow is a follow-up todo.
@@ -370,7 +499,7 @@ namespace CustomAssets.Ui {
             // the same panel-chrome look as the tree, pack-info, and editor
             // panels in the outer layout.
             Panel newFilePanel = new Panel();
-            newFilePanel.BodyAdd(c => c.Padding(3.px()),
+            newFilePanel.BodyAdd(c => c.Padding(CollapsibleGroup.CardPadding.px()),
                 new ButtonText(new LocStrFormatted("+ new file"), onNewFile));
             m_treeColumn.Add(newFilePanel);
 
@@ -403,6 +532,11 @@ namespace CustomAssets.Ui {
                     System.Collections.Generic.List<DefBase>>(StringComparer.Ordinal);
                 foreach (DefBase d in m_currentModel.Definitions) {
                     if (d.SourceFile != file.AbsolutePath) continue;
+                    // A binding still waiting to be written into its recipe's
+                    // block is not a member of any run — its owner's group is the
+                    // only thing that draws it. Without this it would appear a
+                    // second time as a loose sibling of the recipe.
+                    if (d is BindRecipeDef pending && pending.IsPendingInOwner) continue;
                     string key = (d.ScopeKey ?? "top") + "#" + d.RunIndex;
                     if (!defsByScopeRun.TryGetValue(key, out var list)) {
                         list = new System.Collections.Generic.List<DefBase>();
@@ -427,6 +561,18 @@ namespace CustomAssets.Ui {
                     new LocStrFormatted(headerText),
                     expanded: defaultExpanded);
 
+                // "+ add definition…" lives in the header, next to the collapse
+                // chevron — the same place a `with` block or an `if` clause keeps
+                // its add button. As a body row it scrolled away from the file it
+                // belonged to on long files, and it moved every time the file's
+                // contents changed length.
+                //
+                // __init__.py gets one too: the load-order-only convention is a
+                // recommendation, not a constraint — the runtime executes defs
+                // there fine, and small packs are often simpler as one file. The
+                // tip label below still nudges toward splitting.
+                fileGroup.Header.Add(buildFileAddButton(file.AbsolutePath));
+
                 // Read the source lines once per file so the conditional walk
                 // can label each if/elif/else clause with its verbatim header
                 // text. Tolerate read failure — falls back to a generic label
@@ -449,31 +595,47 @@ namespace CustomAssets.Ui {
                     // Always note the load-order entry point and flag the
                     // recommendation when definitions are present.
                     if (recipesInFile.Count > 0 || otherDefsInFile.Count > 0) {
-                        fileGroup.Body.Add(new Label(new LocStrFormatted(
+                        fileGroup.Body.Add(buildBodyNote(
                             "⚠ Tip: prefer to keep __init__.py for load order only and " +
-                            "move definitions into separate files (products, recipes, research, …).")));
+                            "move definitions into separate files (products, recipes, research, …)."));
                     }
-                    fileGroup.Body.Add(new Label(new LocStrFormatted(
-                        "Load order — edit via the 🔗 deps dialog on the pack card.")));
+                    fileGroup.Body.Add(buildBodyNote(
+                        "Load order — edit via the 🔗 deps dialog on the pack card."));
                 } else if (recipesInFile.Count == 0 && otherDefsInFile.Count == 0) {
-                    fileGroup.Body.Add(new Label(new LocStrFormatted(
-                        "(no recognised statements — products/research/asset editors land later)")));
-                }
-
-                // Single "+ add definition…" button on every non-init file.
-                // Opens a FloatingColumn popup with one row per DefKind so
-                // the modder picks what to insert without flooding the tree
-                // with 16 sibling buttons. Skipped on __init__.py since the
-                // convention keeps it for load-order imports only.
-                if (!isInit) {
-                    string targetFile = file.AbsolutePath;
-                    ButtonText addBtn = fileGroup.Body.AddAndReturn(new ButtonText(
-                        new LocStrFormatted("+ add definition…"), null));
-                    addBtn.OnClick(() => openAddDefPopup(addBtn, targetFile));
+                    fileGroup.Body.Add(buildBodyNote(
+                        "(no recognised statements — products/research/asset editors land later)"));
                 }
 
                 m_treeColumn.Add(fileGroup);
             }
+        }
+
+        /// A prose line inside a group's body — the load-order pointer, the
+        /// "nothing recognised here" placeholder, the __init__.py tip.
+        ///
+        /// Indented to the same column as the labels of the rows around it: as a
+        /// plain Label it started at the card's left edge, a good half-inch left
+        /// of everything else in the body, which is what made a file group with
+        /// one note in it look mis-laid.
+        private static Label buildBodyNote(string text) {
+            Label note = new Label(new LocStrFormatted(text));
+            note.TinyFontSize()
+                .PaddingLeft(CollapsibleGroup.TextIndent.px())
+                .Color(ColorRgba.LightGray);
+            return note;
+        }
+
+        /// "Add a definition to this file" button for a file group's header —
+        /// the file-level counterpart of buildBlockAddButton, sharing its icon and
+        /// square sizing so a file header and a block header read identically.
+        /// The button anchors its own popup.
+        private UiComponent buildFileAddButton(string targetFile) {
+            ButtonIcon add = squareHeaderIcon(new ButtonIcon(Button.General,
+                    "Assets/Unity/UserInterface/General/Plus.svg")
+                .Tooltip(new LocStrFormatted("Add a definition to "
+                    + Path.GetFileName(targetFile))));
+            add.OnClick(() => openAddDefPopup(add, targetFile));
+            return add;
         }
 
         // Popup launched by the "+ add definition…" button on each file
@@ -483,18 +645,316 @@ namespace CustomAssets.Ui {
         private void openAddDefPopup(UiComponent anchor, string targetFile) {
             openAddDefPickerPopup(anchor,
                 title: "Add definition to " + Path.GetFileName(targetFile),
-                onPick: kind => onAddDefToFile(targetFile, kind));
+                onPick: kind => onAddDefToFile(targetFile, kind),
+                onNewFile: () => openNewFileNamePrompt(anchor));
         }
 
         // Per-clause sibling — same picker, just routes the click through
         // onAddDefToClause so the def splices into the if-chain clause
         // body with proper indentation instead of the file end.
+        /// Trash button for a whole BLOCK (an `if`/`elif`/`else` clause or a `with`
+        /// block). A block has no single def whose line range covers it — the header
+        /// def, when there is one, spans only the header lines — so deleting it goes
+        /// through PackEmitter.DeleteBlock with the block's full extent instead of
+        /// the usual per-def path, which would leave the body behind.
+        private UiComponent buildBlockTrash(string filePath, int headerLine, int endLine,
+                string describe) {
+            ButtonIcon trash = squareHeaderIcon(new ButtonIcon(
+                    Button.Danger,
+                    "Assets/Unity/UserInterface/General/Trash128.png")
+                .Tooltip(new LocStrFormatted("Delete " + describe
+                    + " and everything inside it (Shift+click to skip confirm)")));
+            trash.AttachConfirmationInline(
+                new LocStrFormatted("Delete"),
+                () => new LocStrFormatted("Delete " + describe + " and everything inside it?"),
+                () => onDeleteBlock(filePath, headerLine, endLine, describe));
+            trash.RootElement.RegisterCallback<UnityEngine.UIElements.MouseDownEvent>(evt => {
+                if (evt.button == 0 && evt.shiftKey) {
+                    onDeleteBlock(filePath, headerLine, endLine, describe);
+                    evt.StopImmediatePropagation();
+                }
+            });
+            return trash;
+        }
+
+        /// Track a selectable block header the same way buildTreeRow tracks an
+        /// ordinary row, so applySelectionHighlight flips its highlight on
+        /// selection without a tree rebuild. A block header stands in for a
+        /// statement that has no row of its own; without this it would be the one
+        /// selectable thing in the tree that never looked selected.
+        private void registerHeaderSelection(CollapsibleGroup group, DefBase def) {
+            if (group?.HeaderButton == null || def == null) return;
+            group.HeaderButton.ClassRootIff(Cls.selected, isCurrentlySelected(def));
+            m_rowLabelByDef[def] = group.HeaderButton;
+        }
+
+        /// Settings button for a block's own definition — the `with build_recipe(…)`
+        /// recipe, or an `if` clause's condition. Opens the same right-pane editor
+        /// the def's tree row used to.
+        ///
+        /// It replaces that row: a block header plus a full-width row for the very
+        /// statement the header already displays was two lines saying one thing,
+        /// and it stopped the group from shrinking. The header now carries the
+        /// text; this button carries the click.
+        private UiComponent buildDefSettingsButton(DefBase def, string describe) {
+            ButtonIcon settings = squareHeaderIcon(new ButtonIcon(
+                    Button.General,
+                    "Assets/Unity/UserInterface/General/Configure.svg")
+                .Tooltip(new LocStrFormatted("Edit " + describe)));
+            settings.OnClick(() => onDefRowClicked(def));
+            return settings;
+        }
+
+        /// Pin a header icon button to the same square box as the group's collapse
+        /// chevron. ButtonIcon sizes itself from icon + padding, which lands close
+        /// to but not exactly on the chevron's box — enough that a header read as a
+        /// row of mismatched controls. Both ends now come from CollapsibleGroup's
+        /// constants, so they can only drift together.
+        ///
+        private static ButtonIcon squareHeaderIcon(ButtonIcon button) {
+            return sizeIconButton(button,
+                CollapsibleGroup.ButtonSize, CollapsibleGroup.IconSize);
+        }
+
+        /// The leaf-row counterpart of <see cref="squareHeaderIcon"/>: same idea,
+        /// one size down, for the controls that sit on a def row rather than on a
+        /// group header.
+        private static ButtonIcon squareRowIcon(ButtonIcon button) {
+            return sizeIconButton(button,
+                CollapsibleGroup.RowButtonSize, CollapsibleGroup.RowIconSize);
+        }
+
+        /// Pin an icon button to an exact square box.
+        ///
+        /// Both halves are needed, because a Button is TWO elements and the
+        /// fluent API splits across them: Width/Height go to the outer wrapper
+        /// (UiComponent.SetSizeInternal → Element), while Padding, background and
+        /// border go to the inner one that actually draws the button
+        /// (UiComponentDecorated.GetElementForPaddingInternal → InnerElement).
+        /// The shadowed variants (General, Danger, …) give the inner element
+        /// flexGrow(1), so it fills whatever box the wrapper has — and then the
+        /// variant's own asymmetric USS padding eats the icon from the inside.
+        /// Sizing alone shrank the row's delete icon to a sliver; padding alone
+        /// left the box whatever shape the variant felt like.
+        ///
+        /// Symmetric padding of (box - icon) / 2 makes the inner content box
+        /// exactly icon-sized, so the icon is centred by construction — no
+        /// alignment call, which a ButtonIcon couldn't take anyway (it is not an
+        /// IFlexComponent).
+        private static ButtonIcon sizeIconButton(ButtonIcon button, int box, int icon) {
+            return button
+                .Compact()
+                .IconSize(icon.px())
+                .Width(box.px())
+                .Height(box.px())
+                .Padding(((box - icon) / 2).px())
+                .FlexShrink(0f);
+        }
+
+        /// Delete a block from the file, then reload so the tree reflects it. Unlike
+        /// a def delete there is nothing to remove from the model by hand — the
+        /// reload rebuilds it from the rewritten source.
+        private void onDeleteBlock(string filePath, int headerLine, int endLine, string describe) {
+            if (m_currentPack == null || string.IsNullOrEmpty(filePath)) return;
+            try {
+                PackEmitter.DeleteBlock(filePath, headerLine, endLine);
+                PackRegistry.RescanPack(m_currentPack);
+                setCurrentModel(PackLoader.Load(m_currentPack));
+                m_selectedRecipe = null;
+                m_selectedOther = null;
+                rebuildTree();
+                showEmptyStatement("Deleted " + describe + " from "
+                    + Path.GetFileName(filePath) + ".");
+                Log.Info("RecipeEditor: deleted block @ line " + headerLine
+                    + " in " + Path.GetFileName(filePath));
+            } catch (Exception ex) {
+                Log.Exception(ex);
+                Log.Warning("RecipeEditor: block delete failed — " + ex.Message);
+            }
+        }
+
+        /// Section header inside a block: the group's name at the left, a thin rule
+        /// filling the middle, and the add button at the right end. It sits ABOVE
+        /// the statements it introduces (a recipe's "Bindings" divider goes between
+        /// the recipe row and its first binding), so the rule reads as the boundary
+        /// between the block's own header and its contents.
+        ///
+        /// The button hands itself to the callback as the popup anchor, so the
+        /// picker opens against the separator rather than somewhere arbitrary.
+        private static UiComponent buildSectionSeparator(string label) {
+            Row row = new Row();
+            // Indented to the label column so the caption starts where the rows
+            // it introduces start, and the rule fills what's left of the width.
+            row.AlignItemsCenter()
+               .Gap(CollapsibleGroup.ControlGap.px())
+               .PaddingTopBottom(CollapsibleGroup.RowGap.px())
+               .PaddingLeft(CollapsibleGroup.TextIndent.px());
+
+            if (!string.IsNullOrEmpty(label)) {
+                row.Add(new Label(new LocStrFormatted(label)).TinyFontSize());
+            }
+
+            Column rule = new Column();
+            rule.Height(1.px()).FlexGrow(1f).Background(new ColorRgba(96, 96, 104, 255));
+            row.Add(rule);
+            return row;
+        }
+
+        /// "Add a statement inside this block" button, for a block's HEADER —
+        /// alongside settings and delete, so every block control sits in one place
+        /// and the separator below stays a plain divider.
+        private UiComponent buildBlockAddButton(string targetFile, int blockHeaderLine,
+                string describe, bool isEditBlock = false) {
+            ButtonIcon add = squareHeaderIcon(new ButtonIcon(Button.General,
+                    "Assets/Unity/UserInterface/General/Plus.svg")
+                .Tooltip(new LocStrFormatted("Add "
+                    + (isEditBlock ? "a change inside " : "a definition inside ") + describe)));
+            // An edit block accepts only its own sub-action verbs, so it gets a
+            // focused picker of those six rather than the full def list.
+            if (isEditBlock) {
+                add.OnClick(() => openEditSubActionPopup(add, targetFile, blockHeaderLine));
+            } else {
+                add.OnClick(() => openAddDefIntoClausePopup(add, targetFile, blockHeaderLine));
+            }
+            return add;
+        }
+
+        // The six verbs valid inside a `with edit_recipe(...)` block.
+        private enum EditSubAction {
+            SetIngredient,
+            SetProduct,
+            RemoveIngredient,
+            RemoveProduct,
+            BindMachine,
+            UnbindMachine,
+        }
+
+        // Focused picker listing only the edit sub-actions. Anchored to the block's
+        // own add button (so which block it targets is obvious), it mirrors the
+        // clause add popup but with a fixed, short option list.
+        private void openEditSubActionPopup(UiComponent anchor, string targetFile,
+                int blockHeaderLine) {
+            FloatingColumn popup = new FloatingColumn(
+                FloaterPositionPolicy.BELOW,
+                keepOpenOnHover: false,
+                openAfterDelay: false,
+                closeOnClickOutside: true);
+            PanelWithHeader panel = popup.AddAndReturn(new PanelWithHeader(
+                    new LocStrFormatted("add change")))
+                .AlignItemsStretch()
+                .Gap(2.pt())
+                .MinWidth(300.px());
+
+            ScrollColumn list = new ScrollColumn();
+            list.Gap(1.pt()).AlignItemsStretch();
+            panel.BodyAdd(list);
+
+            // entries unused for filtering here (short fixed list), but the shared
+            // row builder wants the collection — a throwaway satisfies it.
+            var entries = new System.Collections.Generic.List<PickerEntry>();
+            (EditSubAction kind, string label, string hint)[] options = {
+                (EditSubAction.SetIngredient,    "set ingredient amount", "set_ingredient(product, quantity)"),
+                (EditSubAction.SetProduct,       "set product amount",    "set_product(product, quantity)"),
+                (EditSubAction.RemoveIngredient, "remove ingredient",     "remove_ingredient(product)"),
+                (EditSubAction.RemoveProduct,    "remove product",        "remove_product(product)"),
+                (EditSubAction.BindMachine,      "add machine",           "bind_recipe(machine, ...)"),
+                (EditSubAction.UnbindMachine,    "remove machine",        "unbind_recipe(machine)"),
+            };
+            foreach ((EditSubAction kind, string label, string hint) opt in options) {
+                EditSubAction captured = opt.kind;
+                addPopupActionRow(list, entries, opt.label, opt.hint, () => {
+                    popup.Close();
+                    onAddSubActionToEdit(targetFile, blockHeaderLine, captured);
+                });
+            }
+
+            popup.Open(anchor);
+        }
+
+        // Create + insert one edit sub-action into a `with edit_recipe(...)` block.
+        // Mirrors onAddDefToClause: pending (missing required fields) → into the
+        // model under the block scope so the modder finishes it in the form; ready
+        // → spliced straight into the block body.
+        private void onAddSubActionToEdit(string filePath, int blockHeaderLine,
+                EditSubAction kind) {
+            if (m_currentModel == null) return;
+
+            // The edit's recipe id — the sub-actions carry it for display and
+            // validation. Resolve it from the block header def so every child of
+            // this block agrees on which recipe it patches.
+            string recipeId = null;
+            foreach (DefBase d in m_currentModel.Definitions) {
+                if (d is EditRecipeDef ed
+                        && ed.TryGetBlockHeaderLine(out int hl) && hl == blockHeaderLine) {
+                    recipeId = ed.RecipeId;
+                    break;
+                }
+            }
+
+            DefBase created = createSubAction(kind, recipeId);
+            if (created == null) return;
+            created.SourceFile = filePath;
+
+            Mafi.Collections.Lyst<string> missing = created.MissingMandatoryFields();
+            if (missing != null && missing.Count > 0) {
+                created.ScopeKey = blockScopeKey(blockHeaderLine);
+                m_currentModel.Definitions.Add(created);
+                rebuildTree();
+                onOtherDefSelected(created);
+                return;
+            }
+
+            try {
+                PackEmitter.AppendDefIntoClause(filePath, blockHeaderLine, created, m_currentModel);
+                if (m_currentPack != null) {
+                    PackRegistry.RescanPack(m_currentPack);
+                    setCurrentModel(PackLoader.Load(m_currentPack));
+                }
+                rebuildTree();
+            } catch (Exception ex) {
+                Log.Exception(ex);
+                Log.Warning("RecipeEditor: add-sub-action failed - " + ex.Message);
+            }
+        }
+
+        private static DefBase createSubAction(EditSubAction kind, string recipeId) {
+            switch (kind) {
+                case EditSubAction.SetIngredient:
+                    return new RecipeProductActionDef { RecipeId = recipeId, IsInput = true,  IsRemoval = false };
+                case EditSubAction.SetProduct:
+                    return new RecipeProductActionDef { RecipeId = recipeId, IsInput = false, IsRemoval = false };
+                case EditSubAction.RemoveIngredient:
+                    return new RecipeProductActionDef { RecipeId = recipeId, IsInput = true,  IsRemoval = true };
+                case EditSubAction.RemoveProduct:
+                    return new RecipeProductActionDef { RecipeId = recipeId, IsInput = false, IsRemoval = true };
+                case EditSubAction.BindMachine:
+                    // A context-form binding: recipe is implicit in the block, so it
+                    // carries the edit's recipe id but renders machine-only. No
+                    // OwnerRecipe (the context is an EditRecipeDef, not a RecipeDef),
+                    // so IsContextForm is what tells the emitter to omit the recipe.
+                    return new BindRecipeDef { RecipeId = recipeId, IsContextForm = true };
+                case EditSubAction.UnbindMachine:
+                    return new UnbindRecipeDef { RecipeId = recipeId };
+            }
+            return null;
+        }
+
+        /// Scope key for the body of a block — an `if`, an `else`, or a `with`.
+        /// They're all just "statements indented under a header", and the header
+        /// LINE already says which one it is, so there is a single key format and
+        /// nothing has to pass a block kind around.
+        private static string blockScopeKey(int headerLine) {
+            return "block:" + headerLine;
+        }
+
         private void openAddDefIntoClausePopup(UiComponent anchor,
-                string targetFile, int clauseHeaderLine) {
+                string targetFile, int blockHeaderLine) {
+            // Short title: the popup opens anchored to the block's own add
+            // button, so which block and file it targets is already obvious from
+            // where it appeared. Spelling it out only made the popup wide.
             openAddDefPickerPopup(anchor,
-                title: "Add definition inside clause @ line " + clauseHeaderLine
-                    + " of " + Path.GetFileName(targetFile),
-                onPick: kind => onAddDefToClause(targetFile, clauseHeaderLine, kind));
+                title: "add",
+                onPick: kind => onAddDefToClause(targetFile, blockHeaderLine, kind));
         }
 
         // Build + open the shared "pick a def kind" picker. Both the
@@ -504,6 +964,16 @@ namespace CustomAssets.Ui {
         // up everywhere it's relevant.
         private void openAddDefPickerPopup(UiComponent anchor,
                 string title, Action<DefKind> onPick) {
+            openAddDefPickerPopup(anchor, title, onPick, onNewFile: null);
+        }
+
+        // Full form. `onNewFile`, when non-null, adds a "new file" row at the
+        // top of the picker — used by the file-level surface so the modder can
+        // spin up a fresh module (and its __init__.py import) from the same
+        // place they add definitions. The clause-level surface passes null:
+        // creating a file from inside an if-block body would be nonsensical.
+        private void openAddDefPickerPopup(UiComponent anchor,
+                string title, Action<DefKind> onPick, Action onNewFile) {
             FloatingColumn popup = new FloatingColumn(
                 FloaterPositionPolicy.BELOW,
                 keepOpenOnHover: false,
@@ -514,70 +984,179 @@ namespace CustomAssets.Ui {
                 .AlignItemsStretch()
                 .Gap(2.pt())
                 .MinWidth(360.px())
-                .MaxHeight(520.px());
+                .MaxHeight(560.px());
+
+            // Search field lives in the header so it stays pinned while the
+            // list below scrolls. The option list is ~35 entries across 9
+            // sections — long enough that scroll-hunting is slower than
+            // typing two characters.
+            TextField search = new TextField()
+                .Placeholder(new LocStrFormatted("search definitions…"));
+            panel.Header.Add(search);
 
             ScrollColumn list = new ScrollColumn();
             list.Gap(1.pt()).MaxHeight(460.px()).AlignItemsStretch();
             panel.BodyAdd(list);
+
+            // Filter model: entries in visual order, each carrying a
+            // pre-lowercased haystack. A null haystack marks a section
+            // header — headers have no text of their own worth matching, and
+            // are shown or hidden based on whether any row under them
+            // survived the filter (see applyFilter below).
+            var entries = new System.Collections.Generic.List<PickerEntry>();
 
             Action<DefKind> pick = kind => {
                 popup.Close();
                 onPick(kind);
             };
 
+            if (onNewFile != null) {
+                addPopupHeader(list, entries, "File");
+                addPopupActionRow(list, entries, "new definition file…",
+                    "creates <name>.py + `import <name>` in __init__.py",
+                    () => {
+                        popup.Close();
+                        onNewFile();
+                    });
+            }
+
             // Same order the toolbar would have shown — recipe-shaped first
             // (recipe, edit_recipe, research), then products, then unlocks,
             // then asset registrations. Within each group, the most common
             // is listed first.
-            list.Add(new Label(new LocStrFormatted("Products")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "product (loose)",   "build_product_loose(...)",          DefKind.ProductLoose,           pick);
-            addPopupRow(list, "product (fluid)",   "build_product_fluid(...)",          DefKind.ProductFluid,           pick);
-            addPopupRow(list, "product (unit)",    "build_product_unit(...)",           DefKind.ProductUnit,            pick);
-            list.Add(new Label(new LocStrFormatted("Recipes")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "build recipe",      "build_recipe(...)",                 DefKind.Recipe,                 pick);
-            addPopupRow(list, "edit recipe",       "edit_recipe(...)",                  DefKind.EditRecipe,             pick);
-            list.Add(new Label(new LocStrFormatted("Machines")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "build machine",     "build_machine(...)",                DefKind.BuildMachine,           pick);
-            addPopupRow(list, "build generator",   "build_generator(...)",              DefKind.Generator,              pick);
-            addPopupRow(list, "edit machine ports","edit_machine_ports(...)",           DefKind.EditMachinePorts,       pick);
-            list.Add(new Label(new LocStrFormatted("Settlements")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "build housing",     "build_housing(...)",                DefKind.Housing,                pick);
-            addPopupRow(list, "build decoration",  "build_settlement_decoration(...)",  DefKind.SettlementDecoration,   pick);
-            addPopupRow(list, "build food module", "build_settlement_food(...)",        DefKind.SettlementFood,         pick);
-            addPopupRow(list, "build ISP module",  "build_settlement_isp(...)",         DefKind.SettlementIsp,          pick);
-            addPopupRow(list, "build hospital",    "build_hospital(...)",               DefKind.Hospital,               pick);
-            list.Add(new Label(new LocStrFormatted("Buildings")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "build mine tower",  "build_mine_tower(...)",             DefKind.MineTower,              pick);
-            addPopupRow(list, "build research lab","build_research_lab(...)",           DefKind.ResearchLab,            pick);
-            addPopupRow(list, "build nuclear reactor", "build_nuclear_reactor(...)",    DefKind.NuclearReactor,         pick);
-            addPopupRow(list, "edit reactor fuels",    "edit_nuclear_reactor_fuels(...)",      DefKind.EditNuclearReactorFuels,      pick);
-            addPopupRow(list, "edit reactor fluids",   "edit_nuclear_reactor_fluids(...)",     DefKind.EditNuclearReactorFluids,     pick);
-            addPopupRow(list, "edit reactor enrichment","edit_nuclear_reactor_enrichment(...)",DefKind.EditNuclearReactorEnrichment, pick);
-            addPopupRow(list, "edit reactor ports",    "edit_nuclear_reactor_ports(...)",      DefKind.EditNuclearReactorPorts,      pick);
-            list.Add(new Label(new LocStrFormatted("Research")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "research",          "build_research(...)",               DefKind.Research,               pick);
-            addPopupRow(list, "unlock recipe",     "add_unlock_recipe(...)",            DefKind.UnlockRecipe,           pick);
-            addPopupRow(list, "unlock product",    "add_unlock_product(...)",           DefKind.UnlockProduct,          pick);
-            addPopupRow(list, "unlock machine",    "add_unlock_machine(...)",           DefKind.UnlockMachine,          pick);
-            list.Add(new Label(new LocStrFormatted("Toolbars")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "toolbar category",  "add_toolbar_category(...)",         DefKind.ToolbarCategory,        pick);
-            list.Add(new Label(new LocStrFormatted("Assets")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "texture",           "add_texture(...)",                  DefKind.Texture,                pick);
-            addPopupRow(list, "material (loose)",  "add_loose_product_material(...)",   DefKind.MaterialLoose,          pick);
-            addPopupRow(list, "material (texture)","add_texture_material(...)",         DefKind.MaterialTexture,        pick);
-            addPopupRow(list, "prefab (box)",      "add_prefab_box(...)",               DefKind.PrefabBox,              pick);
-            addPopupRow(list, "prefab (unit)",     "add_unit_prefab(...)",              DefKind.UnitPrefab,             pick);
-            list.Add(new Label(new LocStrFormatted("Conditionals")).Class(Cls.groupHeader).PaddingTop(3.pt()));
-            addPopupRow(list, "if block",          "if True:\n    pass",                DefKind.IfBlock,                pick);
+            addPopupHeader(list, entries, "Products");
+            addPopupRow(list, entries, "product (loose)",   "build_product_loose(...)",          DefKind.ProductLoose,           pick);
+            addPopupRow(list, entries, "product (fluid)",   "build_product_fluid(...)",          DefKind.ProductFluid,           pick);
+            addPopupRow(list, entries, "product (unit)",    "build_product_unit(...)",           DefKind.ProductUnit,            pick);
+            addPopupHeader(list, entries, "Recipes");
+            addPopupRow(list, entries, "build recipe",      "build_recipe(...)",                 DefKind.Recipe,                 pick);
+            addPopupRow(list, entries, "bind recipe",       "bind_recipe(...) — attach to machine", DefKind.BindRecipe,          pick);
+            addPopupRow(list, entries, "edit recipe",       "edit_recipe(...)",                  DefKind.EditRecipe,             pick);
+            addPopupRow(list, entries, "edit recipe (block)","with edit_recipe(...): — patch with sub-actions", DefKind.EditRecipeBlock, pick);
+            addPopupRow(list, entries, "migrate recipe",    "migrate_recipe(...) — remap a removed recipe id", DefKind.MigrateRecipe, pick);
+            addPopupHeader(list, entries, "Machines");
+            addPopupRow(list, entries, "build machine",     "build_machine(...)",                DefKind.BuildMachine,           pick);
+            addPopupRow(list, entries, "build generator",   "build_generator(...)",              DefKind.Generator,              pick);
+            addPopupRow(list, entries, "edit machine ports","edit_machine_ports(...)",           DefKind.EditMachinePorts,       pick);
+            addPopupHeader(list, entries, "Settlements");
+            addPopupRow(list, entries, "build housing",     "build_housing(...)",                DefKind.Housing,                pick);
+            addPopupRow(list, entries, "build decoration",  "build_settlement_decoration(...)",  DefKind.SettlementDecoration,   pick);
+            addPopupRow(list, entries, "build food module", "build_settlement_food(...)",        DefKind.SettlementFood,         pick);
+            addPopupRow(list, entries, "build ISP module",  "build_settlement_isp(...)",         DefKind.SettlementIsp,          pick);
+            addPopupRow(list, entries, "build hospital",    "build_hospital(...)",               DefKind.Hospital,               pick);
+            addPopupHeader(list, entries, "Buildings");
+            addPopupRow(list, entries, "build mine tower",  "build_mine_tower(...)",             DefKind.MineTower,              pick);
+            addPopupRow(list, entries, "build farm",        "build_farm(...)",                   DefKind.Farm,                   pick);
+            addPopupRow(list, entries, "add crop",          "add_crop(...) / clone_crop(...)",   DefKind.Crop,                   pick);
+            addPopupRow(list, entries, "edit crop",         "edit_crop(...) — retune an existing crop's rates", DefKind.EditCrop, pick);
+            addPopupRow(list, entries, "build research lab","build_research_lab(...)",           DefKind.ResearchLab,            pick);
+            addPopupRow(list, entries, "build nuclear reactor", "build_nuclear_reactor(...)",    DefKind.NuclearReactor,         pick);
+            addPopupRow(list, entries, "edit reactor fuels",    "edit_nuclear_reactor_fuels(...)",      DefKind.EditNuclearReactorFuels,      pick);
+            addPopupRow(list, entries, "edit reactor fluids",   "edit_nuclear_reactor_fluids(...)",     DefKind.EditNuclearReactorFluids,     pick);
+            addPopupRow(list, entries, "edit reactor enrichment","edit_nuclear_reactor_enrichment(...)",DefKind.EditNuclearReactorEnrichment, pick);
+            addPopupRow(list, entries, "edit reactor ports",    "edit_nuclear_reactor_ports(...)",      DefKind.EditNuclearReactorPorts,      pick);
+            addPopupHeader(list, entries, "Research");
+            addPopupRow(list, entries, "research",          "build_research(...)",               DefKind.Research,               pick);
+            addPopupRow(list, entries, "unlock recipe",     "add_unlock_recipe(...)",            DefKind.UnlockRecipe,           pick);
+            addPopupRow(list, entries, "unlock product",    "add_unlock_product(...)",           DefKind.UnlockProduct,          pick);
+            // `unlock machine` is deliberately NOT offered here — add_unlock_entity
+            // supersedes it and takes machines too. The DefKind, editor and
+            // round-trip for add_unlock_machine all stay in place so existing
+            // packs that use it keep loading, saving and editing unchanged.
+            addPopupRow(list, entries, "unlock entity",     "add_unlock_entity(...) — machine, building, vehicle or train car", DefKind.UnlockEntity, pick);
+            addPopupRow(list, entries, "remove unlock",     "remove_unlock(...) — take a product, machine, entity or recipe back off a node", DefKind.RemoveUnlock, pick);
+            addPopupHeader(list, entries, "Toolbars");
+            addPopupRow(list, entries, "toolbar category",  "add_toolbar_category(...)",         DefKind.ToolbarCategory,        pick);
+            // Its own group rather than sitting under "Machines": Costs lives
+            // on EntityProto, so this call re-prices vehicles and train cars
+            // just as readily as machines, and filing it under Machines would
+            // hide that.
+            addPopupHeader(list, entries, "Balancing");
+            addPopupRow(list, entries, "edit entity costs",
+                "edit_entity_costs(...) — re-price a machine, building, vehicle or train car",
+                DefKind.EditEntityCosts, pick);
+            addPopupHeader(list, entries, "Assets");
+            addPopupRow(list, entries, "texture",           "add_texture(...)",                  DefKind.Texture,                pick);
+            addPopupRow(list, entries, "material (loose)",  "add_loose_product_material(...)",   DefKind.MaterialLoose,          pick);
+            addPopupRow(list, entries, "material (texture)","add_texture_material(...)",         DefKind.MaterialTexture,        pick);
+            addPopupRow(list, entries, "prefab (box)",      "add_prefab_box(...)",               DefKind.PrefabBox,              pick);
+            addPopupRow(list, entries, "prefab (unit)",     "add_unit_prefab(...)",              DefKind.UnitPrefab,             pick);
+            addPopupHeader(list, entries, "Conditionals");
+            addPopupRow(list, entries, "if block",          "if True:\n    pass",                DefKind.IfBlock,                pick);
+
+            search.OnValueChanged(v => applyPickerFilter(entries, v));
+            search.FocusOnShow();
 
             popup.Open(anchor);
         }
 
+        // Show/hide picker entries against the typed needle. Rows match on
+        // their own haystack (title + subtitle + kind name); headers are
+        // resolved in a second backward pass so a section whose rows all
+        // filtered out doesn't leave a dangling caption behind.
+        private static void applyPickerFilter(
+                System.Collections.Generic.List<PickerEntry> entries, string value) {
+            string needle = (value ?? "").Trim().ToLowerInvariant();
+            bool showAll = needle.Length == 0;
+
+            foreach (PickerEntry entry in entries) {
+                if (entry.Haystack == null) {
+                    continue;
+                }
+                entry.Component.Visible(showAll || entry.Haystack.Contains(needle));
+            }
+
+            // Walk backwards so each header sees whether any row between it
+            // and the next header stayed visible.
+            bool sectionHasVisibleRow = false;
+            for (int i = entries.Count - 1; i >= 0; i--) {
+                PickerEntry entry = entries[i];
+                if (entry.Haystack == null) {
+                    entry.Component.Visible(showAll || sectionHasVisibleRow);
+                    sectionHasVisibleRow = false;
+                    continue;
+                }
+                if (showAll || entry.Haystack.Contains(needle)) {
+                    sectionHasVisibleRow = true;
+                }
+            }
+        }
+
+        private static void addPopupHeader(ScrollColumn list,
+                System.Collections.Generic.List<PickerEntry> entries, string text) {
+            Label header = new Label(new LocStrFormatted(text))
+                .Class(Cls.groupHeader).PaddingTop(3.pt());
+            list.Add(header);
+            entries.Add(new PickerEntry(header, null));
+        }
+
         private void addPopupRow(ScrollColumn list,
+                System.Collections.Generic.List<PickerEntry> entries,
                 string title, string subtitle, DefKind kind, Action<DefKind> onPick) {
+            // Include the enum name in the haystack so searching "editrecipe"
+            // or "unlock" finds the row even when the display title words it
+            // differently from the Python call.
+            addPopupRowCore(list, entries, title, subtitle,
+                extraHaystack: kind.ToString(),
+                onClick: () => onPick(kind));
+        }
+
+        // Non-DefKind picker row (e.g. "new definition file…") — same shape
+        // as a def row so the list reads uniformly, but its click runs an
+        // arbitrary action instead of creating a definition.
+        private void addPopupActionRow(ScrollColumn list,
+                System.Collections.Generic.List<PickerEntry> entries,
+                string title, string subtitle, Action onClick) {
+            addPopupRowCore(list, entries, title, subtitle,
+                extraHaystack: null, onClick: onClick);
+        }
+
+        private void addPopupRowCore(ScrollColumn list,
+                System.Collections.Generic.List<PickerEntry> entries,
+                string title, string subtitle, string extraHaystack, Action onClick) {
             ButtonRow row = new ButtonRow(
                 Mafi.Unity.UiToolkit.Library.Button.General,
-                () => onPick(kind));
+                () => onClick());
             row.Class(Cls.group);
             row.Gap(3.pt()).AlignItemsCenter().PaddingLeftRight(2.pt());
             Column stack = new Column {
@@ -588,6 +1167,10 @@ namespace CustomAssets.Ui {
             stack.Fill();
             row.Add(stack);
             list.Add(row);
+
+            string haystack = (title + " " + subtitle + " " + (extraHaystack ?? ""))
+                .ToLowerInvariant();
+            entries.Add(new PickerEntry(row, haystack));
         }
 
         // Add a fresh def into the body of an if/elif/else clause at the
@@ -604,12 +1187,29 @@ namespace CustomAssets.Ui {
                     PackEmitter.AppendIfBlockIntoClause(filePath, clauseHeaderLine, "True");
                     if (m_currentPack != null) {
                         PackRegistry.RescanPack(m_currentPack);
-                        m_currentModel = PackLoader.Load(m_currentPack);
+                        setCurrentModel(PackLoader.Load(m_currentPack));
                     }
                     rebuildTree();
                 } catch (Exception ex) {
                     Log.Exception(ex);
                     Log.Warning("RecipeEditor: add-if-inside-clause failed - " + ex.Message);
+                }
+                return;
+            }
+            // A nested `with edit_recipe(...)` block inside a clause: render the
+            // whole header+pass block and splice it in, same as a fresh if-block.
+            if (kind == DefKind.EditRecipeBlock) {
+                try {
+                    PackEmitter.AppendEditBlockIntoClause(filePath, clauseHeaderLine,
+                        freshId("RecipeToEdit"));
+                    if (m_currentPack != null) {
+                        PackRegistry.RescanPack(m_currentPack);
+                        setCurrentModel(PackLoader.Load(m_currentPack));
+                    }
+                    rebuildTree();
+                } catch (Exception ex) {
+                    Log.Exception(ex);
+                    Log.Warning("RecipeEditor: add-edit-block-inside-clause failed - " + ex.Message);
                 }
                 return;
             }
@@ -623,6 +1223,13 @@ namespace CustomAssets.Ui {
                 // Same "in-memory only until required fields are filled"
                 // contract as onAddDefToFile. Add to the model so it's
                 // visible + editable; save runs the splice path later.
+                //
+                // The scope key MUST match what PackLoader assigns to defs inside
+                // this block ("block:<headerLine>") — the tree buckets rows by
+                // (ScopeKey ?? "top"), so without it the pending def renders at the
+                // top of the file instead of inside the clause it was added to.
+                // onSaveDef reads the same key back to append it in the right place.
+                created.ScopeKey = blockScopeKey(clauseHeaderLine);
                 m_currentModel.Definitions.Add(created);
                 Log.Info("RecipeEditor: added '" + created.DisplayId + "' to clause @ line "
                     + clauseHeaderLine + " (in-memory only — fill "
@@ -636,7 +1243,7 @@ namespace CustomAssets.Ui {
                 PackEmitter.AppendDefIntoClause(filePath, clauseHeaderLine, created, m_currentModel);
                 if (m_currentPack != null) {
                     PackRegistry.RescanPack(m_currentPack);
-                    m_currentModel = PackLoader.Load(m_currentPack);
+                    setCurrentModel(PackLoader.Load(m_currentPack));
                 }
                 rebuildTree();
             } catch (Exception ex) {
@@ -653,7 +1260,7 @@ namespace CustomAssets.Ui {
             try {
                 PackEmitter.AppendElseClauseToFile(filePath, afterLine, leadingIndent ?? "");
                 PackRegistry.RescanPack(m_currentPack);
-                m_currentModel = PackLoader.Load(m_currentPack);
+                setCurrentModel(PackLoader.Load(m_currentPack));
                 rebuildTree();
             } catch (Exception ex) {
                 Log.Exception(ex);
@@ -680,7 +1287,10 @@ namespace CustomAssets.Ui {
         // instantiate with sensible defaults.
         private enum DefKind {
             Recipe,
+            BindRecipe,
             EditRecipe,
+            EditRecipeBlock,
+            MigrateRecipe,
             Research,
             ProductLoose,
             ProductFluid,
@@ -688,6 +1298,8 @@ namespace CustomAssets.Ui {
             UnlockRecipe,
             UnlockProduct,
             UnlockMachine,
+            UnlockEntity,
+            RemoveUnlock,
             Texture,
             MaterialLoose,
             MaterialTexture,
@@ -696,6 +1308,7 @@ namespace CustomAssets.Ui {
             Generator,
             ToolbarCategory,
             EditMachinePorts,
+            EditEntityCosts,
             BuildMachine,
             Housing,
             SettlementDecoration,
@@ -703,6 +1316,9 @@ namespace CustomAssets.Ui {
             SettlementIsp,
             Hospital,
             MineTower,
+            Farm,
+            Crop,
+            EditCrop,
             ResearchLab,
             NuclearReactor,
             EditNuclearReactorFuels,
@@ -728,6 +1344,11 @@ namespace CustomAssets.Ui {
         // goes through onOtherDefSelected (the typed-form dispatcher).
         private void onAddDefToFile(string filePath, DefKind kind) {
             if (m_currentModel == null) return;
+            // Commit any previously-added entry that has since been filled
+            // in, so adding a second entry doesn't strand the first one in
+            // memory. Safe to run before createDef — it only touches defs
+            // that are already complete.
+            flushCompletedNewDefs();
             // Structural kinds (IfBlock) don't go through createDef +
             // AppendDef — they live in the AST, not the typed model.
             // Route them to dedicated raw-text splicers instead.
@@ -736,12 +1357,30 @@ namespace CustomAssets.Ui {
                     PackEmitter.AppendIfBlockToFile(filePath, "True");
                     if (m_currentPack != null) {
                         PackRegistry.RescanPack(m_currentPack);
-                        m_currentModel = PackLoader.Load(m_currentPack);
+                        setCurrentModel(PackLoader.Load(m_currentPack));
                     }
                     rebuildTree();
                 } catch (Exception ex) {
                     Log.Exception(ex);
                     Log.Warning("RecipeEditor: add-if failed - " + ex.Message);
+                }
+                return;
+            }
+            // A `with edit_recipe(...)` block is structural too — it needs a `pass`
+            // body to be valid Python, which the normal AppendDef path (header-only
+            // render) doesn't provide. Write it whole, then the modder picks the
+            // recipe on the header and adds sub-actions.
+            if (kind == DefKind.EditRecipeBlock) {
+                try {
+                    PackEmitter.AppendEditBlockToFile(filePath, freshId("RecipeToEdit"));
+                    if (m_currentPack != null) {
+                        PackRegistry.RescanPack(m_currentPack);
+                        setCurrentModel(PackLoader.Load(m_currentPack));
+                    }
+                    rebuildTree();
+                } catch (Exception ex) {
+                    Log.Exception(ex);
+                    Log.Warning("RecipeEditor: add-edit-block failed - " + ex.Message);
                 }
                 return;
             }
@@ -789,7 +1428,7 @@ namespace CustomAssets.Ui {
                 try {
                     PackEmitter.AppendDef(created, m_currentModel);
                     PackRegistry.RescanPack(m_currentPack);
-                    m_currentModel = PackLoader.Load(m_currentPack);
+                    setCurrentModel(PackLoader.Load(m_currentPack));
                     Log.Info("RecipeEditor: added '" + newDisplayId + "' to "
                         + Path.GetFileName(filePath));
                 } catch (Exception ex) {
@@ -925,6 +1564,7 @@ namespace CustomAssets.Ui {
         private static string kindIdPrefix(DefKind kind) {
             switch (kind) {
                 case DefKind.Recipe:          return "NewRecipe";
+                case DefKind.BindRecipe:      return "Bind_Recipe";
                 case DefKind.EditRecipe:      return "EditRecipe";
                 case DefKind.Research:        return "NewResearch";
                 case DefKind.ProductLoose:    return "Product_NewLoose";
@@ -933,6 +1573,8 @@ namespace CustomAssets.Ui {
                 case DefKind.UnlockRecipe:    return "Unlock_Recipe";
                 case DefKind.UnlockProduct:   return "Unlock_Product";
                 case DefKind.UnlockMachine:   return "Unlock_Machine";
+                case DefKind.UnlockEntity:    return "Unlock_Entity";
+                case DefKind.RemoveUnlock:    return "Remove_Unlock";
                 case DefKind.Texture:         return "Assets/NewTexture";
                 case DefKind.MaterialLoose:   return "Assets/NewLooseMat";
                 case DefKind.MaterialTexture: return "Assets/NewTexMat";
@@ -941,6 +1583,7 @@ namespace CustomAssets.Ui {
                 case DefKind.Generator:       return "NewGenerator";
                 case DefKind.ToolbarCategory: return "NewCategory";
                 case DefKind.EditMachinePorts:return "EditMachinePorts";
+                case DefKind.EditEntityCosts: return "EditEntityCosts";
                 case DefKind.BuildMachine:    return "NewMachine";
                 case DefKind.Housing:               return "NewHousing";
                 case DefKind.SettlementDecoration:  return "NewDecoration";
@@ -948,6 +1591,9 @@ namespace CustomAssets.Ui {
                 case DefKind.SettlementIsp:         return "NewIspModule";
                 case DefKind.Hospital:              return "NewHospital";
                 case DefKind.MineTower:             return "NewMineTower";
+                case DefKind.Farm:                  return "NewFarm";
+                case DefKind.Crop:                  return "NewCrop";
+                case DefKind.EditCrop:              return "EditCrop";
                 case DefKind.ResearchLab:           return "NewResearchLab";
                 case DefKind.NuclearReactor:        return "NewNuclearReactor";
                 case DefKind.EditNuclearReactorFuels: return "EditReactorFuels";
@@ -966,6 +1612,10 @@ namespace CustomAssets.Ui {
             switch (kind) {
                 case DefKind.Recipe:
                     return new RecipeDef { RecipeId = id, Name = "New recipe", Description = "" };
+                case DefKind.BindRecipe:
+                    // Composite DisplayId (recipe @ machine) — nothing to seed;
+                    // the modder picks the recipe + machine in the form.
+                    return new BindRecipeDef();
                 case DefKind.EditRecipe:
                     return new EditRecipeDef { RecipeId = id };
                 case DefKind.Research:
@@ -976,6 +1626,10 @@ namespace CustomAssets.Ui {
                     return new ProductFluidDef { ProductId = id, Name = "New fluid product" };
                 case DefKind.ProductUnit:
                     return new ProductUnitDef { ProductId = id, Name = "New unit product" };
+                case DefKind.MigrateRecipe:
+                    // Composite DisplayId (old → new); both ids are filled in by
+                    // the modder, so there is nothing sensible to seed.
+                    return new MigrateRecipeDef();
                 case DefKind.UnlockRecipe:
                     // Unlock kinds compute DisplayId from their (research,
                     // machine, recipe) composite — no Id field to seed.
@@ -984,6 +1638,12 @@ namespace CustomAssets.Ui {
                     return new UnlockProductDef();
                 case DefKind.UnlockMachine:
                     return new UnlockMachineDef();
+                case DefKind.UnlockEntity:
+                    return new UnlockEntityDef();
+                case DefKind.RemoveUnlock:
+                    // Composite DisplayId (target @ machine) — the modder picks
+                    // the node and then what to take off it, so nothing to seed.
+                    return new RemoveUnlockDef();
                 case DefKind.Texture:
                     return new TextureDef { Path = id };
                 case DefKind.MaterialLoose:
@@ -1002,6 +1662,10 @@ namespace CustomAssets.Ui {
                     // No primary id field on edit_machine_ports itself —
                     // the modder picks the target machine in the editor.
                     return new EditMachinePortsDef();
+                case DefKind.EditEntityCosts:
+                    // Same shape — the target entity is picked in the editor,
+                    // so there's no id to seed here.
+                    return new EditEntityCostsDef();
                 case DefKind.BuildMachine:
                     return new BuildMachineDef { MachineId = id, Name = "New machine" };
                 case DefKind.Housing:
@@ -1016,6 +1680,13 @@ namespace CustomAssets.Ui {
                     return new HospitalDef { HospitalId = id, Name = "New hospital" };
                 case DefKind.MineTower:
                     return new MineTowerDef { MineTowerId = id, Name = "New mine tower" };
+                case DefKind.Farm:
+                    return new FarmDef { FarmId = id, Name = "New farm" };
+                case DefKind.Crop:
+                    return new CropDef { CropId = id, Name = "New crop" };
+                case DefKind.EditCrop:
+                    // No primary id — the modder picks the target crop in the editor.
+                    return new EditCropDef();
                 case DefKind.ResearchLab:
                     return new ResearchLabDef { ResearchLabId = id, Name = "New research lab" };
                 case DefKind.NuclearReactor:
@@ -1082,7 +1753,8 @@ namespace CustomAssets.Ui {
                     System.Collections.Generic.List<DefBase>> defsByScopeRun,
                 string[] sourceLines,
                 string sourceFile,
-                string scopeKey) {
+                string scopeKey,
+                int itemIndexOffset = 0) {
             // Tree position is driven by the model's per-(scope, run) ordering,
             // not by per-statement AST lookups — that way drag operations on
             // a row simply mutate the model list and the next rebuildTree
@@ -1093,13 +1765,104 @@ namespace CustomAssets.Ui {
             // run into "before" and "after" halves. We walk the AST only to
             // discover those boundaries (and to render clause headers); the
             // defs themselves come from defsByScopeRun in model order.
+            // Sibling items at this scope, in the order their components are added
+            // to `container`. Blocks are draggable, and Reorderable reports an
+            // index among the container's children — so this list must stay
+            // exactly parallel to those children, including skipping runs that
+            // rendered nothing. onBlockReordered turns an index pair into the
+            // source line a block is moved in front of.
+            var items = new System.Collections.Generic.List<LineSpan>();
+
             int currentRun = 0;
             foreach (PythonAPI.Statements.IStatement stmt in statements) {
+                // `with <expr>:` block — same treatment as an if-chain: flush the
+                // run that ended here, then render the block as a group whose body
+                // is this method applied recursively under the block's scope. That
+                // recursion is what places `with:`-scoped statements (a recipe's
+                // machine bindings, or an `if` nested in the body) INSIDE the block
+                // instead of leaving them to scatter into the enclosing run.
+                if (stmt is PythonAPI.Statements.WithStatement ws) {
+                    addItem(items, renderRun(container, defsByScopeRun, scopeKey, currentRun));
+                    currentRun++;
+
+                    // The block header IS the recipe's row: it carries the recipe's
+                    // own label rather than the raw `with build_recipe(` source
+                    // line, which says nothing about which recipe this is. The def
+                    // is parked under its own "blockheader:<line>" scope so only
+                    // this branch renders it, and it opens from the settings button
+                    // instead of a separate row restating the same thing.
+                    string headerKey = "blockheader:" + ws.StartLine + "#0";
+                    DefBase headerDef = null;
+                    if (defsByScopeRun.TryGetValue(headerKey, out var headerDefs)
+                            && headerDefs.Count > 0) {
+                        headerDef = headerDefs[0];
+                    }
+                    // The header can front either a `with build_recipe(...)` recipe
+                    // or a `with edit_recipe(...)` edit block — different icon,
+                    // wording and body-divider, same machinery.
+                    bool isEditBlock = headerDef is EditRecipeDef;
+                    string headerIcon = isEditBlock ? "✎ " : "🔗 ";
+                    string headerText =
+                        headerDef is RecipeDef headerRecipe ? displayLabelFor(headerRecipe)
+                        : headerDef is EditRecipeDef headerEdit ? "edit " + (headerEdit.RecipeId ?? "<recipe>")
+                        : (readSourceLineTrimmed(sourceLines, ws.StartLine) ?? "with …:");
+                    string blockNoun = isEditBlock ? "this edit block" : "this recipe block";
+                    // The header IS the def's row — there is no separate tree row
+                    // for a `with`-block header — so clicking it selects the def,
+                    // like every other statement. The settings button stays as the
+                    // explicit affordance.
+                    DefBase capturedHeaderDef = headerDef;
+                    var withGroup = new CollapsibleGroup(
+                        new LocStrFormatted(headerIcon + headerText), expanded: true,
+                        onLabelClick: headerDef != null
+                            ? () => onDefRowClicked(capturedHeaderDef)
+                            : (System.Action)null);
+
+                    if (headerDef != null) {
+                        registerHeaderSelection(withGroup, headerDef);
+                        withGroup.Header.Add(buildDefSettingsButton(headerDef,
+                            isEditBlock ? "this edit" : "this recipe"));
+                    }
+
+                    // Add + delete sit together at the right end, so every block
+                    // header reads the same way: toggle, label, settings, add,
+                    // delete. Deleting the block takes the recipe AND its bindings —
+                    // the header's own range covers only the header lines, so the
+                    // block-level delete lives here.
+                    if (sourceFile != null) {
+                        withGroup.Header.Add(buildBlockAddButton(
+                            sourceFile, ws.StartLine, blockNoun, isEditBlock));
+                        withGroup.Header.Add(buildBlockTrash(sourceFile, ws.StartLine,
+                            ws.EndLine > 0 ? ws.EndLine : ws.StartLine, blockNoun));
+                    }
+
+                    // Plain divider between the header and its body — bindings for a
+                    // recipe, changes for an edit.
+                    if (sourceFile != null) {
+                        withGroup.Body.Add(buildSectionSeparator(
+                            isEditBlock ? "Changes" : "Bindings"));
+                    }
+
+                    if (ws.Block != null) {
+                        // The separator above already occupies a child slot, so
+                        // the body's statements start one index further in.
+                        renderStatementsTree(ws.Block.statements, withGroup.Body,
+                                             defsByScopeRun, sourceLines, sourceFile,
+                                             scopeKey: blockScopeKey(ws.StartLine),
+                                             itemIndexOffset: sourceFile != null ? 1 : 0);
+                    }
+
+                    int withEnd = ws.EndLine > 0 ? ws.EndLine : ws.StartLine;
+                    container.Add(wrapBlockWithGrip(withGroup, sourceFile, items,
+                        new LineSpan(ws.StartLine, withEnd), itemIndexOffset));
+                    continue;
+                }
+
                 if (stmt is PythonAPI.Statements.IfStatement ifs) {
                     // Flush the run that ended at this if-chain BEFORE
                     // rendering the clause groups, so the clause sits
                     // visually between its before-run and after-run.
-                    renderRun(container, defsByScopeRun, scopeKey, currentRun);
+                    addItem(items, renderRun(container, defsByScopeRun, scopeKey, currentRun));
                     currentRun++;
 
                     // Walk Parent chain and reverse so we render from the
@@ -1119,19 +1882,29 @@ namespace CustomAssets.Ui {
                     // clauses on the same chain.
                     bool chainHasElse = chain.Count > 0
                         && chain[chain.Count - 1].Condition == null;
+
+                    // Every clause of the chain goes into ONE parent component.
+                    // An `elif`/`else` is only legal directly after its `if`, so
+                    // the chain has to be indivisible in the tree too: as separate
+                    // container children the clauses were separate drop targets,
+                    // and dropping a block between them would have written a
+                    // stranded `elif` — a syntax error. One child also means one
+                    // sibling slot and one grip, so the chain moves as a unit.
+                    Column chainColumn = new Column();
+                    chainColumn.AlignItemsStretch().Gap(CollapsibleGroup.RowGap.px());
+
                     for (int i = 0; i < chain.Count; i++) {
                         PythonAPI.Statements.IfStatement clause = chain[i];
                         string header = readSourceLineTrimmed(sourceLines, clause.StartLine)
                             ?? (clause.Condition != null ? "if/elif:" : "else:");
-                        var clauseGroup = new CollapsibleGroup(
-                            new LocStrFormatted("🔀 " + header), expanded: true);
-                        // For `if`/`elif` clauses, synthesize an IfBlockDef so
-                        // the condition becomes a clickable tree row that
-                        // opens the proper right-pane editor (mode dropdown +
-                        // product picker). `else` has no condition to edit, so
-                        // it just hosts its children directly.
+                        // For `if`/`elif` clauses, synthesize an IfBlockDef so the
+                        // condition can be edited — it opens from the header itself
+                        // (click to select, or the settings button) rather than a
+                        // row below, which just restated the header. `else` has no
+                        // condition, so its header is not selectable.
+                        IfBlockDef ifBlock = null;
                         if (clause.Condition != null && sourceFile != null) {
-                            IfBlockDef ifBlock = new IfBlockDef {
+                            ifBlock = new IfBlockDef {
                                 Condition = extractConditionFromHeaderLine(
                                     readSourceLineTrimmed(sourceLines, clause.StartLine)),
                                 SourceFile = sourceFile,
@@ -1139,25 +1912,52 @@ namespace CustomAssets.Ui {
                                 SourceEndLine = clause.StartLine,
                                 AstStartLine = clause.StartLine,
                             };
-                            clauseGroup.Body.Add(buildTreeRow(ifBlock));
-                        }
-                        if (clause.Block != null) {
-                            renderStatementsTree(clause.Block.statements, clauseGroup.Body,
-                                                 defsByScopeRun, sourceLines, sourceFile,
-                                                 scopeKey: "clause:" + clause.StartLine);
                         }
 
-                        // "+ add definition" inside this clause's body —
-                        // splices the new def into the clause with proper
-                        // body indentation (same code path the file-level
-                        // popup uses, but routed through AppendDefIntoClause).
+                        IfBlockDef capturedIfBlock = ifBlock;
+                        var clauseGroup = new CollapsibleGroup(
+                            new LocStrFormatted("🔀 " + header), expanded: true,
+                            onLabelClick: ifBlock != null
+                                ? () => onDefRowClicked(capturedIfBlock)
+                                : (System.Action)null);
+
+                        if (ifBlock != null) {
+                            registerHeaderSelection(clauseGroup, ifBlock);
+                            clauseGroup.Header.Add(buildDefSettingsButton(ifBlock, "this condition"));
+                        }
+
+                        // Add + delete last, matching the `with` block header order.
+                        // Removing the OPENING `if` has to take the rest of the
+                        // chain with it — a stranded `elif`/`else` is a syntax
+                        // error — so it spans to the last clause's end; an
+                        // `elif`/`else` removes only itself.
                         if (sourceFile != null) {
-                            string targetFileForClause = sourceFile;
-                            int clauseHeaderLine = clause.StartLine;
-                            ButtonText addInClauseBtn = clauseGroup.Body.AddAndReturn(new ButtonText(
-                                new LocStrFormatted("+ add definition inside this clause…"), null));
-                            addInClauseBtn.OnClick(() =>
-                                openAddDefIntoClausePopup(addInClauseBtn, targetFileForClause, clauseHeaderLine));
+                            PythonAPI.Statements.IfStatement lastClause = chain[chain.Count - 1];
+                            bool isOpeningIf = i == 0;
+                            int delFrom = clause.StartLine;
+                            int delTo = isOpeningIf
+                                ? (lastClause.EndLine > 0 ? lastClause.EndLine : lastClause.StartLine)
+                                : (clause.EndLine > 0 ? clause.EndLine : clause.StartLine);
+                            clauseGroup.Header.Add(buildBlockAddButton(
+                                sourceFile, clause.StartLine, "this clause"));
+                            clauseGroup.Header.Add(buildBlockTrash(sourceFile, delFrom, delTo,
+                                isOpeningIf && chain.Count > 1
+                                    ? "this if/else chain"
+                                    : "this " + (clause.Condition != null ? "clause" : "else")));
+                        }
+
+                        // Same shape as a recipe's "Bindings" divider — a labelled
+                        // rule introducing the statements the clause guards. The
+                        // add button for them lives on the header, beside delete.
+                        if (sourceFile != null) {
+                            clauseGroup.Body.Add(buildSectionSeparator("Statements"));
+                        }
+                        if (clause.Block != null) {
+                            // Offset by the separator, as in the `with` body above.
+                            renderStatementsTree(clause.Block.statements, clauseGroup.Body,
+                                                 defsByScopeRun, sourceLines, sourceFile,
+                                                 scopeKey: blockScopeKey(clause.StartLine),
+                                                 itemIndexOffset: sourceFile != null ? 1 : 0);
                         }
 
                         // "+ add else" on the LAST clause when the chain
@@ -1175,8 +1975,18 @@ namespace CustomAssets.Ui {
                                 () => onAddElseToChain(targetFileForElse, afterLine, leadingIndent)));
                         }
 
-                        container.Add(clauseGroup);
+                        chainColumn.Add(clauseGroup);
                     }
+
+                    // The chain is a single sibling: one grip, one span covering
+                    // the opening `if` through the last clause's end, so a drag
+                    // carries the `elif`s and `else` along with it.
+                    PythonAPI.Statements.IfStatement chainLast = chain[chain.Count - 1];
+                    int chainStart = chain[0].StartLine;
+                    int chainEnd = chainLast.EndLine > 0
+                        ? chainLast.EndLine : chainLast.StartLine;
+                    container.Add(wrapBlockWithGrip(chainColumn, sourceFile, items,
+                        new LineSpan(chainStart, chainEnd), itemIndexOffset));
                 }
                 // Every other statement (EvaluateStatement, AssignmentStatement,
                 // FunctionDef, …) is non-clausal and contributes nothing to
@@ -1187,7 +1997,95 @@ namespace CustomAssets.Ui {
             }
             // Flush the final run (everything at this scope after the last
             // if-chain, OR the only run when no clauses exist at all).
-            renderRun(container, defsByScopeRun, scopeKey, currentRun);
+            addItem(items, renderRun(container, defsByScopeRun, scopeKey, currentRun));
+        }
+
+        // Record a rendered sibling. Null means the run rendered nothing, so it
+        // must NOT take a slot — the list has to stay parallel to the container's
+        // real children for drag indices to mean anything.
+        private static void addItem(
+                System.Collections.Generic.List<LineSpan> items, LineSpan span) {
+            if (span != null) items.Add(span);
+        }
+
+        /// Wrap a block group in a row carrying a drag grip, and register it as a
+        /// sibling item.
+        ///
+        /// The grip lives on the WRAPPER, beside the group and spanning its
+        /// height, rather than inside the group's header — Reorderable reports an
+        /// index within the dragged element's container, so the element it
+        /// manipulates has to be the direct child of `container`, and a grip on
+        /// the header would also fight the header's own buttons.
+        private UiComponent wrapBlockWithGrip(UiComponent group, string sourceFile,
+                System.Collections.Generic.List<LineSpan> items, LineSpan span,
+                int itemIndexOffset) {
+            items.Add(span);
+
+            // Nothing to move a block relative to without a file to rewrite.
+            if (string.IsNullOrEmpty(sourceFile)) return group;
+
+            Column grip = new Column();
+            grip.Class(Cls.dragHandle)
+                .AlignSelfStretch()
+                .Width(CollapsibleGroup.GripWidth.px())
+                .FlexShrink(0f);
+
+            Row row = new Row();
+            row.AlignItemsStretch().Gap(CollapsibleGroup.ControlGap.px());
+            row.Add(grip);
+            row.Add(group.FlexGrow(1f));
+
+            string capturedFile = sourceFile;
+            var capturedItems = items;
+            int offset = itemIndexOffset;
+            Reorderable reorder = new Reorderable(grip.RootElement);
+            // Reorderable counts EVERY child of the container, including any the
+            // caller placed before the statements (a nested block's body opens
+            // with its section separator). Subtract those to get back to an index
+            // into `items`.
+            reorder.OnOrderChanged += (oldIdx, newIdx) =>
+                onBlockReordered(capturedFile, capturedItems, oldIdx - offset, newIdx - offset);
+            row.AddManipulator(reorder);
+            return row;
+        }
+
+        /// Translate a block drag into a source-file move.
+        ///
+        /// `items` is this scope's siblings in render order, so the drop target is
+        /// whatever sits at the new index: dragging DOWN means "after that item",
+        /// dragging UP means "before it". The move is committed to the file
+        /// immediately and the pack reloaded, because a block's position is
+        /// structure — unlike a within-run reorder, there is no model list whose
+        /// order could stand in for it until the next save.
+        private void onBlockReordered(string sourceFile,
+                System.Collections.Generic.List<LineSpan> items, int oldIdx, int newIdx) {
+            if (m_currentPack == null || oldIdx == newIdx) return;
+            if (oldIdx < 0 || oldIdx >= items.Count) return;
+            if (newIdx < 0 || newIdx >= items.Count) return;
+
+            LineSpan moved = items[oldIdx];
+            LineSpan target = items[newIdx];
+            if (moved == null || target == null) {
+                // A run made entirely of not-yet-written entries has no position
+                // on disk to move against. Refuse rather than guess.
+                Log.Warning("RecipeEditor: cannot move that block yet — a neighbouring "
+                    + "entry has not been written to the file. Save first, then move it.");
+                return;
+            }
+
+            int insertBeforeLine = newIdx > oldIdx ? target.End + 1 : target.Start;
+            try {
+                PackEmitter.MoveBlock(sourceFile, moved.Start, moved.End, insertBeforeLine);
+                PackRegistry.RescanPack(m_currentPack);
+                setCurrentModel(PackLoader.Load(m_currentPack));
+                rebuildTree();
+                Log.Info("RecipeEditor: moved block at line " + moved.Start
+                    + " before line " + insertBeforeLine
+                    + " in " + Path.GetFileName(sourceFile));
+            } catch (Exception ex) {
+                Log.Exception(ex);
+                Log.Warning("RecipeEditor: block move failed — " + ex.Message);
+            }
         }
 
         // Pull the (scope, run) bucket from defsByScopeRun in current model
@@ -1198,14 +2096,21 @@ namespace CustomAssets.Ui {
         // Column is what keeps reorder strictly within (scope, run).
         // No-op when the bucket is empty (a leading/trailing if-chain
         // leaves its adjacent run with zero defs).
-        private void renderRun(
+        /// Returns the run's source line span, or null when it added nothing.
+        ///
+        /// The caller needs both facts to keep a per-scope list of sibling items
+        /// aligned with the container's actual children: Reorderable reports an
+        /// index among those children, so a run that renders nothing must not
+        /// occupy a slot, and one that does has to contribute the line range a
+        /// block dragged next to it will be positioned against.
+        private LineSpan renderRun(
                 UiComponent container,
                 System.Collections.Generic.Dictionary<string,
                     System.Collections.Generic.List<DefBase>> defsByScopeRun,
                 string scopeKey,
                 int runIndex) {
             string key = (scopeKey ?? "top") + "#" + runIndex;
-            if (!defsByScopeRun.TryGetValue(key, out var defs) || defs.Count == 0) return;
+            if (!defsByScopeRun.TryGetValue(key, out var defs) || defs.Count == 0) return null;
 
             Column runColumn = new Column();
             // Stretch each row to the run-column's full width so flex-
@@ -1213,7 +2118,10 @@ namespace CustomAssets.Ui {
             // proper bounds. Without this the row sizes to its content,
             // which pushes long-label rows past the tree panel's right
             // edge.
-            runColumn.AlignItemsStretch();
+            // Gap rather than per-row padding: the run column is the Reorderable
+            // arena, so spacing declared here applies uniformly to the rows being
+            // dragged and doesn't change any row's own hit area.
+            runColumn.AlignItemsStretch().Gap(CollapsibleGroup.RowGap.px());
             // Keep a reference to the def list so the drag callback can
             // translate visual order changes into in-memory reorderings of
             // model.Definitions. The list captured here is the same one
@@ -1222,11 +2130,99 @@ namespace CustomAssets.Ui {
             // extra plumbing.
             System.Collections.Generic.List<DefBase> defsRef = defs;
             foreach (DefBase def in defsRef) {
-                UiComponent row = buildTreeRow(def, onReordered: (oldIdx, newIdx) =>
-                    onRunReordered(defsRef, oldIdx, newIdx));
-                runColumn.Add(row);
+                System.Action<int, int> reorderCb = (oldIdx, newIdx) =>
+                    onRunReordered(defsRef, oldIdx, newIdx);
+
+                // A recipe that owns machine bindings is emitted as a
+                // `with build_recipe(...):` block, so render it the same way an
+                // if-clause is rendered: a CollapsibleGroup whose header is the
+                // block statement and whose body holds the recipe row itself plus
+                // one row per binding.
+                //
+                // The whole block moves as one unit, so the grip lives on a wrapper
+                // Row beside the group (spanning its full height) rather than on the
+                // recipe row inside it. Reorderable reports an index within the
+                // dragged element's container, so the element it manipulates must be
+                // the direct runColumn child — that's this wrapper. Every def still
+                // contributes exactly one runColumn child, so indices stay aligned
+                // with defsRef. Putting the grip on the group's Header instead would
+                // fight the header's click-to-collapse.
+                // A recipe that is already a `with` block IN THE FILE is rendered by
+                // the AST walk above (its header lives under "blockheader:<line>" and
+                // never reaches a run). The group below is only for a recipe that has
+                // no block on disk yet — a newly added one, or a legacy recipe whose
+                // migration hasn't been saved — so its pending bindings still show
+                // under it instead of floating loose.
+                // PENDING bindings only. One that already exists in the file has
+                // its own range and "block:<line>" scope, and is drawn by the AST
+                // walk inside that block — listing it here as well is exactly the
+                // double-draw this guard exists to prevent.
+                System.Collections.Generic.List<BindRecipeDef> ownBindings =
+                    def is RecipeDef rcp && m_currentModel != null
+                        ? m_currentModel.BindingsOf(rcp)
+                            .Where(b => b.IsPendingInOwner)
+                            .ToList()
+                        : null;
+                if (def is RecipeDef recipeWithBinds
+                        && ownBindings != null && ownBindings.Count > 0) {
+                    string withHeader = "with " + prependVariableName(recipeWithBinds,
+                        string.IsNullOrEmpty(recipeWithBinds.RecipeId)
+                            ? "<no id>" : recipeWithBinds.RecipeId) + ":";
+                    var withGroup = new CollapsibleGroup(
+                        new LocStrFormatted("🔗 " + withHeader), expanded: true);
+                    // Inner rows are not individually reorderable — no grip on them.
+                    withGroup.Body.Add(buildTreeRow(def));
+                    foreach (BindRecipeDef bind in ownBindings) {
+                        withGroup.Body.Add(buildTreeRow(bind));
+                    }
+
+                    Column blockGrip = new Column();
+                    blockGrip.Class(Cls.dragHandle)
+                             .AlignSelfStretch()
+                             .Width(CollapsibleGroup.GripWidth.px())
+                             .FlexShrink(0f);
+
+                    Row blockRow = new Row();
+                    blockRow.AlignItemsStretch().Gap(CollapsibleGroup.ControlGap.px());
+                    blockRow.Add(blockGrip);
+                    blockRow.Add(withGroup.FlexGrow(1f));
+
+                    Reorderable blockReorder = new Reorderable(blockGrip.RootElement);
+                    blockReorder.OnOrderChanged += (oldIdx, newIdx) => reorderCb(oldIdx, newIdx);
+                    blockRow.AddManipulator(blockReorder);
+
+                    runColumn.Add(blockRow);
+                    continue;
+                }
+
+                runColumn.Add(buildTreeRow(def, reorderCb));
             }
             container.Add(runColumn);
+
+            // Span across the defs that actually exist on disk. Pending ones have
+            // no line yet and simply don't extend the range; if the whole run is
+            // pending the span is unknown, and a drop against it is refused
+            // rather than guessed at.
+            int start = int.MaxValue, end = 0;
+            foreach (DefBase def in defsRef) {
+                if (def.SourceStartLine <= 0) continue;
+                if (def.SourceStartLine < start) start = def.SourceStartLine;
+                if (def.SourceEndLine > end) end = def.SourceEndLine;
+            }
+            return start <= end ? new LineSpan(start, end) : null;
+        }
+
+        /// A contiguous range of source lines occupied by one sibling in the tree
+        /// — a run of statements, or a whole block. Used to turn a drag's index
+        /// change into the line a block should be moved in front of.
+        private sealed class LineSpan {
+            public readonly int Start;
+            public readonly int End;
+
+            public LineSpan(int start, int end) {
+                Start = start;
+                End = end;
+            }
         }
 
         // Splice a new condition into the if/elif header line. Preserves the
@@ -1258,7 +2254,7 @@ namespace CustomAssets.Ui {
                 File.WriteAllLines(sourceFile, lines,
                     new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 PackRegistry.RescanPack(m_currentPack);
-                m_currentModel = PackLoader.Load(m_currentPack);
+                setCurrentModel(PackLoader.Load(m_currentPack));
                 // Selection by recipe id survives the reload via the
                 // existing onSavePack pattern; reuse that mechanism by
                 // calling rebuildTree + leaving selection alone.
@@ -1302,14 +2298,8 @@ namespace CustomAssets.Ui {
             // siblings in the same draggable run.
             string labelText = def is RecipeDef rd ? displayLabelFor(rd) : displayLabelForDef(def);
             ButtonText selectBtn;
-            if (def is RecipeDef rec) {
-                RecipeDef cap = rec;
-                selectBtn = new ButtonText(Button.Area, new LocStrFormatted(labelText),
-                    () => onRecipeSelected(cap));
-            } else {
-                selectBtn = new ButtonText(Button.Area, new LocStrFormatted(labelText),
-                    () => onOtherDefSelected(capturedDef));
-            }
+            selectBtn = new ButtonText(Button.Area, new LocStrFormatted(labelText),
+                () => onDefRowClicked(capturedDef));
             selectBtn.FlexGrow(1f)
                      .FlexShrink(1f)
                      // MinWidth(0) lets flexbox shrink the button below its
@@ -1332,26 +2322,44 @@ namespace CustomAssets.Ui {
             // Drag handle (left grip column). Reorderable confines drag to
             // its target.parent.contentContainer, so this row's container
             // (one Column per (scope, run)) is the drag arena.
+            //
+            // The column is added to EVERY row, grip texture or not: a row that
+            // can't be dragged (a binding inside a `with` group) still has to
+            // start its label in the same place as its draggable siblings, or
+            // the body's label column goes ragged.
             Column dragHandle = new Column();
-            dragHandle.Class(Cls.dragHandle)
-                      .AlignSelfStretch()
-                      .Width(8.px());
+            dragHandle.AlignSelfStretch()
+                      .Width(CollapsibleGroup.GripWidth.px())
+                      .FlexShrink(0f);
+            if (onReordered != null) dragHandle.Class(Cls.dragHandle);
 
-            // Dirty marker. Hidden when clean; an orange "â—" when the def
-            // has uncommitted in-memory changes (field edit or reorder).
-            Label dirtyMarker = new Label(new LocStrFormatted(def.Dirty ? "â—" : ""));
-            dirtyMarker.Width(10.px()).Color(ColorRgba.Orange);
+            // State marker. Three states, most severe first:
+            //   ⚠ red    — mandatory fields still empty (an "uninitialized"
+            //              entry; it can't be written to the pack file yet).
+            //   ● orange — complete but with uncommitted in-memory changes.
+            //   (blank)  — clean and on disk.
+            //
+            // Fixed box, centred glyph, no shrink: ⚠ is wider than the 10px the
+            // marker used to get, so it spilled over the label beside it, and a
+            // shrinkable marker moved the label column around as rows changed
+            // state.
+            Label dirtyMarker = new Label(new LocStrFormatted(markerTextFor(def)));
+            dirtyMarker.Width(CollapsibleGroup.MarkerWidth.px())
+                       .FlexShrink(0f)
+                       .TextAlign(Mafi.Unity.UiToolkit.Component.TextAlignment.CenterMiddle)
+                       .Color(markerColorFor(def));
+            dirtyMarker.Tooltip(new LocStrFormatted(markerTooltipFor(def)));
+            m_rowMarkerByDef[def] = dirtyMarker;
 
             // Trash button. AttachConfirmationInline wraps OnClick with a
             // floating confirm popup; the MouseDown listener short-circuits
             // it when Shift+LMB is held so power-users can bypass the
             // popup. StopImmediatePropagation prevents the underlying
             // Clickable manipulator from then firing OnClick.
-            ButtonIcon trash = new ButtonIcon(
+            ButtonIcon trash = squareRowIcon(new ButtonIcon(
                     Button.Danger,
                     "Assets/Unity/UserInterface/General/Trash128.png")
-                .IconSize(14.px())
-                .Tooltip(new LocStrFormatted("Delete (Shift+click to skip confirm)"));
+                .Tooltip(new LocStrFormatted("Delete (Shift+click to skip confirm)")));
             trash.AttachConfirmationInline(
                 new LocStrFormatted("Delete"),
                 () => new LocStrFormatted("Delete '"
@@ -1365,14 +2373,23 @@ namespace CustomAssets.Ui {
             });
 
             Row row = new Row();
-            row.AlignItemsCenter().Gap(2.pt());
+            row.AlignItemsCenter().Gap(CollapsibleGroup.ControlGap.px());
+            // grip + gap + marker + gap == CollapsibleGroup.TextIndent, so the
+            // label lands in the same column as the group header's label above
+            // it. Rows that aren't reorderable (a recipe inside a `with` group —
+            // the GROUP carries the grip — or a binding, which is ordered by its
+            // recipe) keep the width but not the grip texture.
             row.Add(dragHandle);
             row.Add(dirtyMarker);
             row.Add(selectBtn);
             row.Add(trash);
 
             // Reorderable manipulator. drag-handle is the grip; OnOrderChanged
-            // fires after drop with the row's new container index.
+            // fires after drop with the DRAGGED COMPONENT's new index inside its
+            // container, so the manipulated element must be a direct child of the
+            // run's Column — which this row is. A recipe rendered as a `with` group
+            // is NOT: it gets wrapped, and the wrapper carries its own grip and
+            // manipulator instead (see renderStatementsTree).
             if (onReordered != null) {
                 Reorderable reorderable = new Reorderable(dragHandle.RootElement);
                 System.Action<int, int> capturedCallback = onReordered;
@@ -1434,6 +2451,11 @@ namespace CustomAssets.Ui {
         // than rebuilding the tree on every click; called from the two
         // selection handlers below.
         private void applySelectionHighlight() {
+            // A definition selection and a pack-level pane are mutually exclusive views
+            // of the main area, so lighting a tree row must un-light the pane buttons.
+            if (m_selectedRecipe != null || m_selectedOther != null) {
+                m_packCard?.SetActivePane(PackCardView.PackPane.None);
+            }
             foreach (var kvp in m_rowLabelByDef) {
                 if (kvp.Value == null) continue;
                 kvp.Value.ClassRootIff(Cls.selected, isCurrentlySelected(kvp.Key));
@@ -1487,6 +2509,7 @@ namespace CustomAssets.Ui {
             m_statementColumn.Add(new Label(new LocStrFormatted(recipe.Kind + " — "
                 + (string.IsNullOrEmpty(recipe.DisplayId) ? "<no id>" : recipe.DisplayId)))
                 .FontBold());
+            appendMissingFieldRowsForDef(recipe);
 
             RecipeDef commentTarget = recipe;
             m_statementColumn.Add(labeledField("comment (notes shown above the recipe)",
@@ -1507,7 +2530,10 @@ namespace CustomAssets.Ui {
                     .OnValueChanged(v => commentTarget.VariableName = string.IsNullOrEmpty(v) ? null : v)));
 
             showEditor<RecipeDef>(recipe,
-                () => new Editors.RecipeDefEditor(m_uiContext.ProtosDb, m_currentModel));
+                // onBindingsChanged: bindings are listed in the TREE as children of
+                // their recipe, so adding/removing one has to refresh it.
+                () => new Editors.RecipeDefEditor(m_uiContext.ProtosDb, m_currentModel,
+                    onBindingsChanged: rebuildTree));
 
             if (!string.IsNullOrEmpty(recipe.SourceFile)) {
                 m_statementColumn.Add(new Label(new LocStrFormatted(
@@ -1525,6 +2551,28 @@ namespace CustomAssets.Ui {
         // distinguish recipes from product/research/asset entries at a
         // glance.
         private static string displayLabelForDef(DefBase def) {
+            // bind_recipe rows read as a sub-item of the recipe they follow: an
+            // indented "↳ machine (duration)" so a recipe's machines line up as
+            // a visual sublist without restructuring the run/drag tree.
+            if (def is BindRecipeDef brd) {
+                string mach = string.IsNullOrEmpty(brd.MachineId) ? "<pick machine>" : brd.MachineId;
+                string rcp  = string.IsNullOrEmpty(brd.RecipeId) ? "" : "  [" + brd.RecipeId + "]";
+                string dur  = brd.DurationSeconds.HasValue ? " (" + brd.DurationSeconds.Value + "s)" : "";
+                return prependVariableName(def, "    ↳ bind → " + mach + dur + rcp);
+            }
+            // edit_recipe sub-actions read as indented verbs under the edit block,
+            // mirroring how bind rows read under a recipe.
+            if (def is RecipeProductActionDef pa) {
+                string prod = string.IsNullOrEmpty(pa.ProductId) ? "<pick product>" : pa.ProductId;
+                string arrow = pa.IsRemoval ? " ✕ remove " : " ✎ set ";
+                string noun = pa.IsInput ? "ingredient" : "product";
+                string qty = !pa.IsRemoval && pa.Quantity.HasValue ? " = " + pa.Quantity.Value : "";
+                return prependVariableName(def, "    ↳" + arrow + noun + " " + prod + qty);
+            }
+            if (def is UnbindRecipeDef ubd) {
+                string mach = string.IsNullOrEmpty(ubd.MachineId) ? "<pick machine>" : ubd.MachineId;
+                return prependVariableName(def, "    ↳ ✕ unbind → " + mach);
+            }
             string id = string.IsNullOrEmpty(def.DisplayId) ? "<no id>" : def.DisplayId;
             string label = "[" + def.Kind + "] " + id;
             string name = def.DisplayName;
@@ -1550,6 +2598,7 @@ namespace CustomAssets.Ui {
             m_statementColumn.Clear();
             m_statementColumn.Add(new Label(new LocStrFormatted(def.Kind + " — "
                 + (string.IsNullOrEmpty(def.DisplayId) ? "<no id>" : def.DisplayId))).FontBold());
+            appendMissingFieldRowsForDef(def);
 
             // Comment editor — shared across all Def kinds since it lives on
             // DefBase. Multi-line, no placeholder (see TextField placeholder
@@ -1588,9 +2637,13 @@ namespace CustomAssets.Ui {
             try {
                 if      (def is IfBlockDef ib)         showEditor<IfBlockDef>(ib, () => new Editors.IfBlockDefEditor(m_uiContext.ProtosDb, saveIfCondition));
                 else if (def is ResearchDef rs)        showEditor<ResearchDef>(rs, () => new Editors.ResearchDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
+                else if (def is BindRecipeDef brd)     showEditor<BindRecipeDef>(brd, () => new Editors.BindRecipeDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is MigrateRecipeDef mrd)  showEditor<MigrateRecipeDef>(mrd, () => new Editors.MigrateRecipeDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is UnlockRecipeDef ur)    showEditor<UnlockRecipeDef>(ur, () => new Editors.UnlockRecipeDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is UnlockProductDef up)   showEditor<UnlockProductDef>(up, () => new Editors.UnlockProductDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is UnlockMachineDef um)   showEditor<UnlockMachineDef>(um, () => new Editors.UnlockMachineDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is UnlockEntityDef ue)    showEditor<UnlockEntityDef>(ue, () => new Editors.UnlockEntityDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is RemoveUnlockDef rmu)   showEditor<RemoveUnlockDef>(rmu, () => new Editors.RemoveUnlockDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is ProductLooseDef pl)    showEditor<ProductLooseDef>(pl, () => new Editors.ProductLooseDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
                 else if (def is ProductFluidDef pf)    showEditor<ProductFluidDef>(pf, () => new Editors.ProductFluidDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
                 else if (def is ProductUnitDef pu)     showEditor<ProductUnitDef>(pu, () => new Editors.ProductUnitDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
@@ -1602,7 +2655,10 @@ namespace CustomAssets.Ui {
                 else if (def is ToolbarCategoryDef tc) showEditor<ToolbarCategoryDef>(tc, () => new Editors.ToolbarCategoryDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
                 else if (def is GeneratorDef gd)       showEditor<GeneratorDef>(gd, () => new Editors.GeneratorDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is EditRecipeDef er)      showEditor<EditRecipeDef>(er, () => new Editors.EditRecipeDefEditor(m_uiContext.ProtosDb, m_currentModel));
+                else if (def is RecipeProductActionDef rpa) showEditor<RecipeProductActionDef>(rpa, () => new Editors.RecipeProductActionDefEditor(m_uiContext.ProtosDb));
+                else if (def is UnbindRecipeDef ubr)   showEditor<UnbindRecipeDef>(ubr, () => new Editors.UnbindRecipeDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is EditMachinePortsDef emp) showEditor<EditMachinePortsDef>(emp, () => new Editors.EditMachinePortsDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is EditEntityCostsDef eec) showEditor<EditEntityCostsDef>(eec, () => new Editors.EditEntityCostsDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is BuildMachineDef bmd)   showEditor<BuildMachineDef>(bmd, () => new Editors.BuildMachineDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is HousingDef hd)         showEditor<HousingDef>(hd, () => new Editors.HousingDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is SettlementDecorationDef sdd) showEditor<SettlementDecorationDef>(sdd, () => new Editors.SettlementDecorationDefEditor(m_currentModel, m_uiContext.ProtosDb));
@@ -1610,6 +2666,9 @@ namespace CustomAssets.Ui {
                 else if (def is SettlementIspDef sid)  showEditor<SettlementIspDef>(sid, () => new Editors.SettlementIspDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is HospitalDef hpd)       showEditor<HospitalDef>(hpd, () => new Editors.HospitalDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is MineTowerDef mtd)      showEditor<MineTowerDef>(mtd, () => new Editors.MineTowerDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is FarmDef fmd)           showEditor<FarmDef>(fmd, () => new Editors.FarmDefEditor(m_currentModel, m_uiContext.ProtosDb));
+                else if (def is CropDef crd)           showEditor<CropDef>(crd, () => new Editors.CropDefEditor(m_currentPack, m_currentModel, m_uiContext.ProtosDb));
+                else if (def is EditCropDef ecd)       showEditor<EditCropDef>(ecd, () => new Editors.EditCropDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is ResearchLabDef rld)    showEditor<ResearchLabDef>(rld, () => new Editors.ResearchLabDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is NuclearReactorDef nrd) showEditor<NuclearReactorDef>(nrd, () => new Editors.NuclearReactorDefEditor(m_currentModel, m_uiContext.ProtosDb));
                 else if (def is EditNuclearReactorFuelsDef enrf) showEditor<EditNuclearReactorFuelsDef>(enrf, () => new Editors.EditNuclearReactorFuelsDefEditor(m_currentModel, m_uiContext.ProtosDb));
@@ -1671,7 +2730,7 @@ namespace CustomAssets.Ui {
                 try {
                     PackEmitter.DeleteDef(def);
                     PackRegistry.RescanPack(m_currentPack);
-                    m_currentModel = PackLoader.Load(m_currentPack);
+                    setCurrentModel(PackLoader.Load(m_currentPack));
                     Log.Info("RecipeEditor: deleted '" + displayId + "' from "
                         + sourceFileName);
                 } catch (Exception ex) {
@@ -1683,6 +2742,154 @@ namespace CustomAssets.Ui {
             rebuildTree();
             showEmptyStatement("Deleted '" + displayId + "'"
                 + (wasOnDisk ? (" from " + sourceFileName + ".") : "."));
+        }
+
+        // ---- Uninitialized-entry detection -------------------------------
+        //
+        // A def is "uninitialized" when DefBase.MissingMandatoryFields still
+        // reports empty required arguments. Such a def is deliberately NOT
+        // written to the pack file (emitting `edit_machine_ports(machine =
+        // None)` crashes the mod loader on the next reload), so it lives in
+        // memory only until the modder fills the gaps. These helpers make
+        // that state visible instead of leaving it to Player.log.
+
+        private static bool isIncomplete(DefBase def) {
+            Mafi.Collections.Lyst<string> missing = def?.MissingMandatoryFields();
+            return missing != null && missing.Count > 0;
+        }
+
+        // True when the def has never reached the pack file. SourceStartLine
+        // is the sentinel: onAddDefToFile seeds freshly-created defs with 0
+        // and the loader always assigns a 1-based line to anything it read
+        // from disk.
+        private static bool isUnwritten(DefBase def) {
+            return def != null && def.SourceStartLine <= 0;
+        }
+
+        private static string markerTextFor(DefBase def) {
+            if (isIncomplete(def)) return "⚠";
+            return def.Dirty ? "●" : "";
+        }
+
+        private static ColorRgba markerColorFor(DefBase def) {
+            return isIncomplete(def) ? ColorRgba.Red : ColorRgba.Orange;
+        }
+
+        private static string markerTooltipFor(DefBase def) {
+            Mafi.Collections.Lyst<string> missing = def?.MissingMandatoryFields();
+            if (missing != null && missing.Count > 0) {
+                return "Not written to the pack yet — still missing: "
+                    + string.Join(", ", missing);
+            }
+            return def != null && def.Dirty ? "Unsaved changes" : "";
+        }
+
+        // Repaint one row's marker in place. Called on every field edit so
+        // the ⚠ clears the instant the last required field is filled,
+        // without the cost (and lost text-field focus) of a rebuildTree.
+        private void refreshRowMarker(DefBase def) {
+            if (def == null) return;
+            if (!m_rowMarkerByDef.TryGetValue(def, out Label marker)) return;
+            marker.Value(new LocStrFormatted(markerTextFor(def)));
+            marker.Color(markerColorFor(def));
+            marker.Tooltip(new LocStrFormatted(markerTooltipFor(def)));
+        }
+
+        // Red banner listing what an incomplete def still needs, plus a note
+        // on what happens once it's complete. Rendered at the TOP of the
+        // form (before the per-kind body) so it's the first thing seen.
+        private void appendMissingFieldRowsForDef(DefBase def) {
+            Mafi.Collections.Lyst<string> missing = def?.MissingMandatoryFields();
+            if (missing == null || missing.Count == 0) return;
+            m_statementColumn.Add(new Label(new LocStrFormatted(
+                    "⚠ incomplete — required: " + string.Join(", ", missing)))
+                .Color(ColorRgba.Red).FontBold());
+            m_statementColumn.Add(new Label(new LocStrFormatted(isUnwritten(def)
+                    ? "This entry exists in the editor only. It is written to "
+                      + "the pack file as soon as every required field is filled."
+                    : "Saving is blocked until the required fields are filled — "
+                      + "the on-disk copy keeps its previous contents."))
+                .Color(ColorRgba.LightGray).TinyFontSize());
+        }
+
+        // Write out every in-memory-only def that has since become complete.
+        // This is what makes a newly-added entry reach the mod without the
+        // modder having to press Save: the flush runs whenever they navigate
+        // away from the entry or add another one.
+        //
+        // Deliberately NOT run on each keystroke — AppendDef is followed by a
+        // RescanPack + full PackLoader.Load, which replaces every DefBase
+        // instance and would tear the form out from under the field being
+        // typed into.
+        //
+        // Returns true when at least one def was appended (so the caller
+        // knows m_currentModel has been replaced and its DefBase references
+        // are stale).
+        private bool flushCompletedNewDefs() {
+            if (m_currentModel == null || m_currentPack == null) return false;
+            System.Collections.Generic.List<DefBase> pending =
+                m_currentModel.Definitions.Where(
+                    d => isUnwritten(d)
+                        && !(d is IfBlockDef)
+                        && !string.IsNullOrEmpty(d.SourceFile)
+                        // A binding whose recipe is not a block on disk YET has
+                        // nowhere of its own to go: it is written as the body of
+                        // the `with` block the recipe's own save opens (see
+                        // PackEmitter.RenderRecipe). Auto-appending it here would
+                        // land it at end-of-file, outside the block.
+                        && !(d is BindRecipeDef ob && ob.IsPendingInOwner)
+                        && !isIncomplete(d)).ToList();
+            if (pending.Count == 0) return false;
+
+            // Track exactly which ones reached disk. Everything else that is
+            // still unwritten — including anything that threw below — has to
+            // survive the reload, so it must NOT be in this set.
+            System.Collections.Generic.List<DefBase> written =
+                new System.Collections.Generic.List<DefBase>();
+            foreach (DefBase def in pending) {
+                try {
+                    // A def that belongs inside a block splices into it; only a
+                    // top-level def goes through the end-of-file append.
+                    if (tryGetBlockHeaderLine(def, out int blockLine)) {
+                        PackEmitter.AppendDefIntoClause(
+                            def.SourceFile, blockLine, def, m_currentModel);
+                    } else {
+                        PackEmitter.AppendDef(def, m_currentModel);
+                    }
+                    written.Add(def);
+                    Log.Info("RecipeEditor: auto-wrote new entry '"
+                        + (def.DisplayId ?? def.Kind) + "' to "
+                        + Path.GetFileName(def.SourceFile)
+                        + " (all required fields now filled).");
+                } catch (Exception ex) {
+                    Log.Exception(ex);
+                    Log.Warning("RecipeEditor: auto-write of '"
+                        + (def.DisplayId ?? def.Kind) + "' failed — " + ex.Message
+                        + ". It stays in memory; use Save to retry.");
+                }
+            }
+            if (written.Count == 0) return false;
+
+            PackRegistry.RescanPack(m_currentPack);
+            setCurrentModel(PackLoader.Load(m_currentPack), written);
+            return true;
+        }
+
+        // Tree-row click entry point. Flushes any now-complete new entries
+        // first, then re-resolves the clicked def against the (possibly
+        // reloaded) model before handing off to the per-kind form. Without
+        // the re-resolve the form would bind to an orphaned DefBase whose
+        // edits no longer reach m_currentModel.
+        private void onDefRowClicked(DefBase def) {
+            if (flushCompletedNewDefs()) {
+                string kind = def.Kind;
+                string id   = def.DisplayId;
+                def = m_currentModel.Definitions.FirstOrDefault(
+                    d => d.Kind == kind && d.DisplayId == id) ?? def;
+                rebuildTree();
+            }
+            if (def is RecipeDef recipe) onRecipeSelected(recipe);
+            else onOtherDefSelected(def);
         }
 
         // Append every PackValidator issue whose source file + line range
@@ -1734,6 +2941,69 @@ namespace CustomAssets.Ui {
         // entries in the same file keep their Dirty markers; the saved
         // entry's Dirty flag clears. RescanPack runs so subsequent edits on
         // this def see fresh line ranges after the splice shifted them.
+        // Read the if-clause header line back out of a def's ScopeKey. PackLoader
+        // keys every block body as "block:&lt;headerLine&gt;" and onAddDefToClause stamps
+        // the same shape onto pending defs, so this recovers where a not-yet-written
+        // def is supposed to land. False for top-level defs.
+        private static bool tryGetBlockHeaderLine(DefBase def, out int headerLine) {
+            headerLine = 0;
+            string key = def?.ScopeKey;
+            if (string.IsNullOrEmpty(key)) return false;
+            // Every block body — `if`, `else`, `with` — is keyed "block:<headerLine>".
+            // A pending def in one must be spliced into that block, never appended
+            // at end-of-file (which would silently move it out of the block).
+            const string prefix = "block:";
+            if (!key.StartsWith(prefix)) return false;
+            return int.TryParse(key.Substring(prefix.Length), out headerLine) && headerLine > 0;
+        }
+
+        /// Pre-save load-order gate. Returns true when it is safe to write.
+        ///
+        /// <paramref name="def"/> null = whole-pack save, so every violation
+        /// counts. Otherwise only the ones ORIGINATING from that def block the
+        /// write; violations elsewhere are still logged so the modder can see
+        /// the pack is not clean, but they don't stop an unrelated edit.
+        ///
+        /// The violations are also pushed into <see cref="PackModel.Issues"/> so
+        /// the per-def red rows (appendIssueRowsForDef) surface them in place,
+        /// rather than the modder having to find them in Player.log.
+        private bool checkReferenceOrder(DefBase def) {
+            if (m_currentModel == null || m_currentPack == null) return true;
+            System.Collections.Generic.List<PackReferenceValidator.Violation> all;
+            try {
+                all = PackReferenceValidator.Validate(m_currentModel, m_currentPack);
+            } catch (Exception ex) {
+                // A validator bug must never make the editor unable to save.
+                Log.Exception(ex);
+                return true;
+            }
+            if (all.Count == 0) return true;
+
+            foreach (PackReferenceValidator.Violation v in all) {
+                PackIssue issue = v.ToIssue();
+                bool alreadyListed = m_currentModel.Issues.Any(
+                    i => i.SourceFile == issue.SourceFile
+                         && i.Line == issue.Line
+                         && i.Message == issue.Message);
+                if (!alreadyListed) m_currentModel.Issues.Add(issue);
+            }
+
+            System.Collections.Generic.List<PackReferenceValidator.Violation> blocking = def == null
+                ? all
+                : all.Where(v => ReferenceEquals(v.Source, def)).ToList();
+
+            foreach (PackReferenceValidator.Violation v in all) {
+                string prefix = blocking.Contains(v) ? "cannot save — " : "also in this pack — ";
+                Log.Warning("RecipeEditor: " + prefix + PackReferenceValidator.Describe(v));
+            }
+            if (blocking.Count == 0) return true;
+
+            DiagnosticTrace.Step(
+                $"checkReferenceOrder[{def?.Kind ?? "pack"}]: blocked — {blocking.Count} forward reference(s)");
+            rebuildTree();
+            return false;
+        }
+
         private void onSaveDef(DefBase def) {
             if (def == null || m_currentPack == null) {
                 Log.Info("RecipeEditor: SaveDef clicked but no def/pack selected.");
@@ -1751,12 +3021,41 @@ namespace CustomAssets.Ui {
                     + "' — required fields still empty: " + string.Join(", ", missing));
                 return;
             }
+            // Refuse a forward reference by bare id: this def naming another
+            // definition of THIS pack that is created later in load order. The
+            // runtime has no forward references, so writing it produces a pack
+            // that fails to load. Only violations this def is responsible for
+            // block it — the rest of the pack is reported as issues, not held
+            // against the entry being saved.
+            if (!checkReferenceOrder(def)) return;
             // Freshly added defs without a source range yet can't go through
             // the single-entry path â€” they need the appended-defs flow that
             // PackEmitter.Save runs. Fall back to onSavePack in that case.
             if (string.IsNullOrEmpty(def.SourceFile) || def.SourceStartLine <= 0) {
+                // …unless it was added INSIDE an if-clause. PackEmitter.Save appends
+                // new defs at the end of the file, which would silently move it out
+                // of the clause it belongs to, so route those through the
+                // clause-aware splice instead (same call onAddDefToClause makes once
+                // the mandatory fields are filled).
+                if (!string.IsNullOrEmpty(def.SourceFile)
+                        && tryGetBlockHeaderLine(def, out int clauseLine)) {
+                    DiagnosticTrace.Step($"onSaveDef[{def.Kind}/{def.DisplayId}]: pending in clause @ {clauseLine} → AppendDefIntoClause");
+                    try {
+                        PackEmitter.AppendDefIntoClause(def.SourceFile, clauseLine, def, m_currentModel);
+                        PackRegistry.RescanPack(m_currentPack);
+                        setCurrentModel(PackLoader.Load(m_currentPack));
+                        rebuildTree();
+                    } catch (Exception ex) {
+                        Log.Exception(ex);
+                        Log.Warning("RecipeEditor: save-into-clause failed — " + ex.Message);
+                    }
+                    return;
+                }
                 DiagnosticTrace.Step($"onSaveDef[{def.Kind}/{def.DisplayId}]: no SourceFile/StartLine → onSavePack");
-                onSavePack();
+                // The per-def gate above already passed for THIS def. Don't let
+                // the pack-wide gate re-run and block the modder's edit over a
+                // pre-existing problem somewhere else in the pack.
+                onSavePack(alreadyValidated: true);
                 return;
             }
             DiagnosticTrace.Step($"onSaveDef[{def.Kind}/{def.DisplayId}]: BEGIN file={Path.GetFileName(def.SourceFile)} lines={def.SourceStartLine}-{def.SourceEndLine}");
@@ -1771,7 +3070,7 @@ namespace CustomAssets.Ui {
                 string previousOtherKind = m_selectedOther?.Kind;
                 string previousOtherId   = m_selectedOther?.DisplayId;
                 DiagnosticTrace.Step("onSaveDef: PackLoader.Load BEGIN");
-                m_currentModel = PackLoader.Load(m_currentPack);
+                setCurrentModel(PackLoader.Load(m_currentPack));
                 DiagnosticTrace.Step("onSaveDef: PackLoader.Load END");
                 m_selectedRecipe = previousRecipeId != null
                     ? m_currentModel.Recipes.FirstOrDefault(r => r.RecipeId == previousRecipeId)
@@ -1807,11 +3106,16 @@ namespace CustomAssets.Ui {
         // EndLine make this round-trip cleanly: load → edit → save → reload
         // produces the same RecipeDef values. Exceptions surface in Player.log;
         // a status banner in the editor is a follow-up.
-        private void onSavePack() {
+        /// <paramref name="alreadyValidated"/> is set by the single-def save path,
+        /// which has already run the gate scoped to the def being written.
+        private void onSavePack(bool alreadyValidated = false) {
             if (m_currentModel == null || m_currentPack == null) {
                 Log.Info("RecipeEditor: Save clicked but no pack/model selected.");
                 return;
             }
+            // Whole-pack gate: a save that writes every definition must not leave
+            // any of them naming a prototype this pack only creates later.
+            if (!alreadyValidated && !checkReferenceOrder(null)) return;
             DiagnosticTrace.Step($"onSavePack[{m_currentPack.ModId}]: BEGIN recipes={m_currentModel.Recipes.Count()} other={m_currentModel.OtherDefinitions.Count()}");
             try {
                 DiagnosticTrace.Step("onSavePack: PackEmitter.Save BEGIN");
@@ -1831,7 +3135,7 @@ namespace CustomAssets.Ui {
                 string previousOtherKind = m_selectedOther?.Kind;
                 string previousOtherId   = m_selectedOther?.DisplayId;
                 DiagnosticTrace.Step("onSavePack: PackLoader.Load BEGIN");
-                m_currentModel = PackLoader.Load(m_currentPack);
+                setCurrentModel(PackLoader.Load(m_currentPack));
                 DiagnosticTrace.Step("onSavePack: PackLoader.Load END");
                 m_selectedRecipe = previousRecipeId != null
                     ? m_currentModel.Recipes.FirstOrDefault(r => r.RecipeId == previousRecipeId)
@@ -2069,6 +3373,8 @@ namespace CustomAssets.Ui {
                 case SettlementIspDef sid:        sid.IspModuleId  = newId; break;
                 case HospitalDef hpd:             hpd.HospitalId   = newId; break;
                 case MineTowerDef mtd:            mtd.MineTowerId  = newId; break;
+                case FarmDef fmd:                 fmd.FarmId       = newId; break;
+                case CropDef crd:                 crd.CropId       = newId; break;
                 case ResearchLabDef rld:          rld.ResearchLabId= newId; break;
                 case NuclearReactorDef nrd:       nrd.ReactorId    = newId; break;
             }
@@ -2123,6 +3429,112 @@ namespace CustomAssets.Ui {
                 seed++;
             } while (File.Exists(fullPath) && seed < 1000);
 
+            createDefinitionFile(definitionsDir, fileName);
+        }
+
+        // Prompt for a module name, then create the file. Reached from the
+        // "new definition file…" row in the add-definition picker — the
+        // toolbar's "+ new file" button skips this and auto-names instead.
+        //
+        // Anchored on the same component the picker was, so the prompt opens
+        // where the modder's attention already is.
+        private void openNewFileNamePrompt(UiComponent anchor) {
+            if (m_currentPack == null) {
+                Log.Info("RecipeEditor: new-file requested but no pack selected.");
+                return;
+            }
+            string definitionsDir = Path.Combine(m_currentPack.RootPath ?? "", "Definitions");
+            if (!Directory.Exists(definitionsDir)) {
+                Log.Warning("RecipeEditor: Definitions/ folder missing at "
+                            + definitionsDir + " — cannot create file.");
+                return;
+            }
+
+            FloatingColumn popup = new FloatingColumn(
+                FloaterPositionPolicy.BELOW,
+                keepOpenOnHover: false,
+                openAfterDelay: false,
+                closeOnClickOutside: true);
+            PanelWithHeader panel = popup.AddAndReturn(new PanelWithHeader(
+                    new LocStrFormatted("New definition file")))
+                .AlignItemsStretch()
+                .Gap(2.pt())
+                .MinWidth(340.px());
+
+            TextField nameField = new TextField()
+                .Placeholder(new LocStrFormatted("module name, e.g. products"));
+            panel.BodyAdd(nameField);
+            panel.BodyAdd(new Label(new LocStrFormatted(
+                    "Creates Definitions/<name>.py and appends `import <name>` "
+                    + "to __init__.py so it loads."))
+                .Class(Cls.fontMonospace).TinyFontSize());
+
+            Label error = new Label(new LocStrFormatted(""));
+            error.Visible(false);
+            panel.BodyAdd(error);
+
+            // PanelWithHeader.BodyAdd returns the PANEL (for chaining), not the
+            // child — so build the button first and add it.
+            ButtonText create = new ButtonText(new LocStrFormatted("create"), null);
+            panel.BodyAdd(create);
+            create.OnClick(() => {
+                // TextField exposes its current text via GetText(); `Value` is the
+                // IComponentWithText SETTER extension, hence the method-group error.
+                string fileName = normalizeModuleFileName(nameField.GetText());
+                if (fileName == null) {
+                    // Label has no Text(...) setter — text is set through the
+                    // IComponentWithText `Value(LocStrFormatted)` extension.
+                    error.Value(new LocStrFormatted(
+                        "⚠ Use letters, digits and underscores only; must not start with a digit."));
+                    error.Visible(true);
+                    return;
+                }
+                if (File.Exists(Path.Combine(definitionsDir, fileName))) {
+                    error.Value(new LocStrFormatted("⚠ " + fileName + " already exists."));
+                    error.Visible(true);
+                    return;
+                }
+                popup.Close();
+                createDefinitionFile(definitionsDir, fileName);
+            });
+
+            nameField.FocusOnShow();
+            popup.Open(anchor);
+        }
+
+        // Coerce user input into a legal Python module file name, or null if
+        // it can't be. A trailing ".py" is accepted and stripped so both
+        // "products" and "products.py" work. The identifier rules match what
+        // the lexer accepts for `import <name>` — a file the runtime can't
+        // import is worse than a rejected keystroke.
+        private static string normalizeModuleFileName(string raw) {
+            string name = (raw ?? "").Trim();
+            if (name.EndsWith(".py", StringComparison.OrdinalIgnoreCase)) {
+                name = name.Substring(0, name.Length - 3);
+            }
+            if (name.Length == 0) {
+                return null;
+            }
+            if (char.IsDigit(name[0])) {
+                return null;
+            }
+            for (int i = 0; i < name.Length; i++) {
+                char c = name[i];
+                if (!char.IsLetterOrDigit(c) && c != '_') {
+                    return null;
+                }
+            }
+            if (name == "__init__") {
+                return null;
+            }
+            return name + ".py";
+        }
+
+        // Write the stub file, register it in __init__.py's load order, and
+        // reload the pack so the tree shows it. Shared by the auto-named
+        // toolbar flow and the named prompt above.
+        private void createDefinitionFile(string definitionsDir, string fileName) {
+            string fullPath = Path.Combine(definitionsDir, fileName);
             try {
                 // Stub content matches what ModBuilder generates for empty
                 // definition files — imports are enough for the modder to
@@ -2144,7 +3556,7 @@ namespace CustomAssets.Ui {
                 // Rescan + rebuild the tree so the new file appears as its own
                 // CollapsibleGroup, primed for + new recipe.
                 PackRegistry.RescanPack(m_currentPack);
-                m_currentModel = PackLoader.Load(m_currentPack);
+                setCurrentModel(PackLoader.Load(m_currentPack));
                 rebuildTree();
                 Log.Info("RecipeEditor: created '" + fullPath + "'");
             } catch (Exception ex) {
@@ -2275,23 +3687,49 @@ namespace CustomAssets.Ui {
             picker.Open(m_packCard.SwitchButton);
         }
 
+        // The three pack-level panes (dependencies / translations / config fields) all
+        // render into the SAME main pane a definition's form uses, rather than floating
+        // over it: they are editors like any other, they need the room, and a popup
+        // covering the tree made it impossible to check a definition while editing one.
+        //
+        // Clicking the button that is already showing rebuilds its pane from disk,
+        // which is also the discard path for unsaved edits.
         private void onOpenDepsDialog() {
             if (m_currentPack == null) return;
-            // Anchor above the pack card so the dialog appears in the same
-            // visual region as the trigger button. closeOnClickOutside is
-            // handled by FloatingColumn itself.
-            PackDepsDialog.Open(m_currentPack, m_packCard);
+            showPackPane(PackCardView.PackPane.Deps,
+                () => new PackDepsPanel(m_currentPack));
         }
 
-        // TT button on the pack card opens the translations editor scoped to
-        // the current pack. The dialog is its own movable Window (rather
-        // than a popup anchored to the card) so the modder can keep it open
-        // alongside the main recipe form and switch between the two while
-        // translating. Each language is saved to a separate file under
-        // <pack>/Localization/<lang>.json.
+        // CFG on the pack card — this pack's config.json fields. The player-facing
+        // settings across all packs live in their own toolbar window
+        // (ModSettingsWindow), because this editor is sandbox-gated.
+        private void onOpenConfigDialog() {
+            if (m_currentPack == null) return;
+            showPackPane(PackCardView.PackPane.Config,
+                () => new PackConfigPanel(m_currentPack));
+        }
+
+        // TT on the pack card — the translations editor for the current pack. Each
+        // language is saved to its own file under <pack>/Localization/<lang>.json.
         private void onOpenTranslations() {
             if (m_currentPack == null || m_currentModel == null) return;
-            TranslationsDialog.Open(m_currentPack, m_currentModel, m_uiContext);
+            showPackPane(PackCardView.PackPane.Translations,
+                () => new TranslationsPanel(m_currentPack, m_currentModel));
+        }
+
+        // Render a pack-level pane into the editor area and light its button. The tree
+        // selection is dropped: what the pane shows is now the subject, so leaving a
+        // recipe row highlighted would claim otherwise. The footer's Save/Duplicate act
+        // on a DEFINITION, so they go disabled — each pane carries its own Save.
+        private void showPackPane(PackCardView.PackPane pane, Func<UiComponent> build) {
+            m_selectedRecipe = null;
+            m_selectedOther  = null;
+            applySelectionHighlight();
+
+            m_statementColumn.Clear();
+            m_statementColumn.Add(build());
+            rebuildEditorFooter(null, includeVerify: false);
+            m_packCard.SetActivePane(pane);
         }
 
         private void onMigrateNow() {
@@ -2310,7 +3748,7 @@ namespace CustomAssets.Ui {
                 // the underlying recipes' line ranges shifted; the modder can
                 // re-pick from the rebuilt tree.
                 PackRegistry.RescanPack(m_currentPack);
-                m_currentModel = PackLoader.Load(m_currentPack);
+                setCurrentModel(PackLoader.Load(m_currentPack));
                 m_selectedRecipe = null;
                 rebuildTree();
                 showEmptyStatement("Migrated to __init__.py — wrote "
@@ -2341,6 +3779,20 @@ namespace CustomAssets.Ui {
                          " (" + r.Passed + "/" + r.RecipesChecked + " OK, " + r.Failed + " failed)");
             } catch (Exception ex) {
                 Log.Exception(ex);
+            }
+        }
+
+        // One row in the add-definition picker, paired with the lower-cased text
+        // the search box matches against. A null Haystack marks a SECTION HEADER
+        // — headers never match the needle themselves; applyPickerFilter decides
+        // their visibility from whether any row in their section survived.
+        private sealed class PickerEntry {
+            public readonly UiComponent Component;
+            public readonly string Haystack;
+
+            public PickerEntry(UiComponent component, string haystack) {
+                Component = component;
+                Haystack = haystack;
             }
         }
     }

@@ -57,8 +57,11 @@ namespace CustomAssets.StubBuilder
         private static void WriteConfigGroup(StringBuilder sb, ScannedConfig config)
         {
             if (config.IsEmpty) return;
-            sb.AppendLine("# config.json fields exposed at runtime as `config.<field>` (see CustomAssets API).");
-            sb.AppendLine("# Defaults shown here are the schema defaults; the runtime value may be player-overridden.");
+            sb.AppendLine("# config.json fields of this pack, listed for reference. To READ them at");
+            sb.AppendLine("# runtime import the config object from the API, not this class:");
+            sb.AppendLine("#     from CustomAssets import config");
+            sb.AppendLine("#     if config.<field>: ...");
+            sb.AppendLine("# The values below are the schema defaults from config.json.");
             sb.AppendLine("class Config:");
             sb.AppendLine("    def __init__(self):");
             sb.AppendLine("        pass");

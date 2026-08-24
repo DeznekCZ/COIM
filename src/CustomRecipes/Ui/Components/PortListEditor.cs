@@ -99,6 +99,14 @@ namespace CustomAssets.Ui.Components {
                     m_onChanged?.Invoke();
                     Refresh();
                 }));
+
+            // Ports are read off the proto when the game registers it at
+            // load time, so a port added here is written to source but is
+            // invisible to the running session. Say so next to the button
+            // rather than letting the modder conclude the edit was lost.
+            Add(new RestartNotice(
+                "New ports are registered when the game loads — add one here, " +
+                "save, then restart the game to see it on the building."));
         }
 
         // One port-row form: name / type / shape / position / direction /

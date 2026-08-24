@@ -1,6 +1,12 @@
 from Mafi import Duration, Quantity
 from Mafi.Base import Assets, Ids
-from CustomAssets import add_loose_product_material, add_texture, build_product_loose, build_recipe, Product
+from CustomAssets import add_loose_product_material, add_texture, build_product_loose, build_recipe, config, Product
+
+# This pack ships a config.json; its fields arrive as `config.<field>`. Anything
+# inside a branch that does not run is simply never registered — see the T2 recipe
+# below. `config.get(name, fallback)` reads a field that an older config.json may
+# not define yet, without failing the whole file.
+media_per_batch = config.get("scrubber_media_per_batch", 2)
 
 # Pile material for our new loose product. Only the albedo is overridden; normals and the
 # smooth/metal channel are inherited from the default reference material so the surface
@@ -56,21 +62,23 @@ build_recipe(
 )
 
 # Producer recipe: 3 iron ore + 1 limestone -> 4 iron-limestone filter media.
-# Lossless mixing in the Industrial Mixer; auto-available with the machine.
-build_recipe(
-    recipeId    = "CustomRecipe_AirFilterIL_Mixing_T2",
-    name        = "Filter media (iron + limestone) mixing",
-    description = "Mix 2 iron ore + 6 limestone into 4 filter media. More efficient than vanilla filter media production when iron ore is plentiful.",
-    machine     = Ids.Machines.IndustrialMixerT2,
-    ingredients = [
-        Product(Ids.Products.IronOre,    Quantity(2)),
-        Product(Ids.Products.Limestone,  Quantity(6))
-    ],
-    products = [
-        Product("Product_FilterMediaIronLime", Quantity(8))
-    ],
-    duration = Duration.FromSec(30)
-)
+# Lossless mixing in the Industrial Mixer T2; only registered when the player left
+# enable_tier2_mixing on in config.json.
+if config.enable_tier2_mixing:
+    build_recipe(
+        recipeId    = "CustomRecipe_AirFilterIL_Mixing_T2",
+        name        = "Filter media (iron + limestone) mixing",
+        description = "Mix 2 iron ore + 6 limestone into 4 filter media. More efficient than vanilla filter media production when iron ore is plentiful.",
+        machine     = Ids.Machines.IndustrialMixerT2,
+        ingredients = [
+            Product(Ids.Products.IronOre,    Quantity(2)),
+            Product(Ids.Products.Limestone,  Quantity(6))
+        ],
+        products = [
+            Product("Product_FilterMediaIronLime", Quantity(config.mixer_t2_output))
+        ],
+        duration = Duration.FromSec(30)
+    )
 
 # Consumer recipe: add next recipe to air crubber research
 build_recipe(
@@ -82,7 +90,7 @@ build_recipe(
     ingredients = [
         Product(Ids.Products.Exhaust, Quantity(160)),
         Product(Ids.Products.Water,   Quantity(16)),
-        Product("Product_FilterMediaIronLime", Quantity(2))
+        Product("Product_FilterMediaIronLime", Quantity(media_per_batch))
     ],
     products = [
         Product(Ids.Products.Sulfur, Quantity(4)),

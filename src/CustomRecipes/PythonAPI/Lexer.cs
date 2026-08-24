@@ -109,6 +109,13 @@ namespace CustomAssets.Python {
 					ParseElse(ifs2, tree, token.line);
 					break;
 
+				case PythonTokens.withp:
+					// `with <expr> [as <name>]:` context block. Used for the
+					// recipe-authoring form `with build_recipe(...) as r:` where the
+					// body's bind_recipe(...) calls attach to the context recipe.
+					ParseWith(tree, token.line);
+					break;
+
 				case PythonTokens.name:
 					// Statement starting with a name. Three mutually exclusive shapes:
 					//   1) plain assignment   "x = expr"

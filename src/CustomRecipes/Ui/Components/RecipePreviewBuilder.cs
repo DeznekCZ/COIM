@@ -29,12 +29,15 @@ namespace CustomAssets.Ui.Components {
 
         /// Build a preview for a registered RecipeProto. Caller owns the
         /// returned UI element.
-        public static RecipeUi BuildForGame(RecipeProto recipe) {
+        public static RecipeUi BuildForGame(RecipeProto recipe, Duration? duration = null) {
             RecipeUi ui = new RecipeUi();
             ui.AddBackground();
             foreach (RecipeInput inp in recipe.AllInputs)   ui.AddStaticInput(inp);
             foreach (RecipeOutput outp in recipe.AllOutputs) ui.AddStaticOutput(outp);
-            ui.SetDuration(recipe.Duration);
+            // 0.3.0: duration lives on the per-machine binding, not the recipe.
+            // The caller passes it when a specific binding is in view; otherwise
+            // the preview simply omits the duration bar.
+            if (duration.HasValue) ui.SetDuration(duration.Value);
             return ui;
         }
 
@@ -71,15 +74,19 @@ namespace CustomAssets.Ui.Components {
             List<T> result = new List<T>();
             if (refs == null) return result;
             foreach (ProductRef r in refs) {
-                ProductProto proto = resolveProduct(r.ProductId, protosDb);
+                ProductProto proto = ResolveProduct(r.ProductId, protosDb);
                 if (proto == null) continue;
                 result.Add(ctor(proto, new Quantity(r.Quantity)));
             }
             return result;
         }
 
-        private static ProductProto resolveProduct(string id, ProtosDb protosDb) {
-            if (string.IsNullOrEmpty(id)) return null;
+        /// A modded <see cref="ProductRef"/>'s id → the game proto it names,
+        /// or null when the id belongs to a product this pack defines (no
+        /// proto yet) or resolves to nothing at all. Public because the
+        /// picker's search text needs the same resolution the preview uses.
+        public static ProductProto ResolveProduct(string id, ProtosDb protosDb) {
+            if (string.IsNullOrEmpty(id) || protosDb == null) return null;
             Option<ProductProto> direct = protosDb.Get<ProductProto>(new Proto.ID(id));
             if (direct.HasValue) return direct.Value;
             // Typed-ref fallback (Ids.Products.X) — modders write these
