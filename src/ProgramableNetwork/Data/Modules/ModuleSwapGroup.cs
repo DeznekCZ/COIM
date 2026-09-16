@@ -28,6 +28,8 @@ public static class SwapGroups
     public const string LogisticsModeSet = "logistics_mode_set";
     public const string LogisticsModeGet = "logistics_mode_get";
     public const string Notifications = "notifications";
+    /// <summary>The three LAD tiers — swapping upgrades a placed ladder in place, keeping its cables and program text.</summary>
+    public const string Ladder = "ladder";
     public const string StorageLimitGet = "storage_limit_get";
     public const string StorageFlowSet = "storage_flow_set";
     public const string StorageLogisticsSet = "storage_logistics_set";

@@ -44,6 +44,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	private readonly ButtonIcon m_colorButton;
 	private readonly VariableWindowController m_variableWindowController;
 	private readonly PlcPyCodeEditorWindowController m_plcPyCodeEditorWindowController;
+	private readonly LadderEditorWindowController m_ladderEditorWindowController;
+	private readonly LadderCodeWindowController m_ladderCodeWindowController;
 
 	// TODO
 	public ModuleConnector m_higlightedOutput;
@@ -90,6 +92,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		CameraController cameraController,
 		VariableWindowController variableWindowController,
 		PlcPyCodeEditorWindowController plcPyCodeEditorWindowController,
+		LadderEditorWindowController ladderEditorWindowController,
+		LadderCodeWindowController ladderCodeWindowController,
 		NewInstanceOf<EntityHighlighter> entityHighlighter,
 		NewInstanceOf<EntityHighlighter> entityHighlighterSelectable,
 		LinesFactory linesFactory,
@@ -111,6 +115,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 		m_console = console;
 		m_variableWindowController = variableWindowController;
 		m_plcPyCodeEditorWindowController = plcPyCodeEditorWindowController;
+		m_ladderEditorWindowController = ladderEditorWindowController;
+		m_ladderCodeWindowController = ladderCodeWindowController;
 
 		// Wider than the default 650px inspector so the module grid + cable corridors
 		// + the left bus gutter + side connections panel all have room without
@@ -394,6 +400,8 @@ public partial class ControllerInspector : BaseInspector<Controller>, ISelection
 	public CameraController CameraController { get; }
 	public VariableWindowController VariableWindowController => m_variableWindowController;
 	public PlcPyCodeEditorWindowController PlcPyCodeEditorWindowController => m_plcPyCodeEditorWindowController;
+	public LadderEditorWindowController LadderEditorWindowController => m_ladderEditorWindowController;
+	public LadderCodeWindowController LadderCodeWindowController => m_ladderCodeWindowController;
 
 	public override bool InputUpdate() {
 		if (EntitySelectionInput != null) {

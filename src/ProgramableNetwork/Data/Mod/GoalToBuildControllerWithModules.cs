@@ -25,9 +25,12 @@ namespace ProgramableNetwork;
 /// there is no module-added event to hook.
 ///
 /// Serialization mirrors the mod's Module contract: [ManuallyWrittenSerialization] + static delegate thunks.
-/// All live state ([DoNotSave]) is rebuilt in <see cref="initAfterLoad"/> / re-subscribed lazily; only the
-/// base goal flags persist. The base <see cref="Goal"/> calls <see cref="Destroy"/> on completion, which
-/// unsubscribes — so the listeners live exactly "until the tutorial is done".
+/// The manager references are persisted alongside the base goal flags (as Mafi's own GoalToBuildStorage does)
+/// rather than resolved in <see cref="initAfterLoad"/>: Mafi only logs an exception thrown out of an
+/// [InitAfterLoad] method, so a resolver-only restore leaves the fields null and blows up on the next update.
+/// The remaining live state ([DoNotSave]) is rebuilt / re-subscribed lazily. The base <see cref="Goal"/> calls
+/// <see cref="Destroy"/> on completion, which unsubscribes — so the listeners live exactly "until the tutorial
+/// is done".
 /// </summary>
 [ManuallyWrittenSerialization]
 public class GoalToBuildControllerWithModules : Goal
@@ -49,17 +52,25 @@ public class GoalToBuildControllerWithModules : Goal
         }
     }
 
+    // Version 1: base goal flags only.
+    // Version 2: the manager references are stored in the save (see SerializeData) instead of being
+    //            re-resolved after load — Mafi only *logs* an exception thrown out of an [InitAfterLoad]
+    //            method, so a purely resolver-based restore turns any hiccup there into null fields and a
+    //            NullReferenceException on the next update. Mafi's own GoalToBuildStorage stores its
+    //            EntitiesManager for the same reason.
+    private const int VERSION_MANAGER_REFS = 2;
+
     private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction =
         (obj, writer) => ((GoalToBuildControllerWithModules)obj).SerializeData(writer);
     private static readonly Action<object, BlobReader> s_deserializeDataDelayedAction =
         (obj, reader) => ((GoalToBuildControllerWithModules)obj).DeserializeData(reader);
 
+    private EntitiesManager m_entitiesManager;
+    private IConstructionManager m_constructionManager;
+    [DoNotSave]
+    private DependencyResolver m_resolver;
     [DoNotSave]
     private Proto m_goalProto;
-    [DoNotSave]
-    private EntitiesManager m_entitiesManager;
-    [DoNotSave]
-    private IConstructionManager m_constructionManager;
     [DoNotSave]
     private Controller m_target;
     [DoNotSave]
@@ -70,6 +81,8 @@ public class GoalToBuildControllerWithModules : Goal
     private bool m_subscribed;
     [DoNotSave]
     private int m_lastCount;
+    [DoNotSave]
+    private bool m_loggedMissingRefs;
 
     public GoalToBuildControllerWithModules(Proto goalProto, EntitiesManager entitiesManager, IConstructionManager constructionManager)
         : base(goalProto)
@@ -99,7 +112,10 @@ public class GoalToBuildControllerWithModules : Goal
 
     protected override bool UpdateInternal()
     {
-        ensureSubscribed();
+        if (!ensureSubscribed())
+        {
+            return false;
+        }
 
         int total = m_goalProto.RequiredModules.Length;
         int have = 0;
@@ -135,17 +151,75 @@ public class GoalToBuildControllerWithModules : Goal
 
     protected override void UpdateTitleOnLoad()
     {
+        // Runs at InitPriority.Lowest, i.e. after initAfterLoad — but only if that one managed to restore
+        // the proto. Skip rather than throw out of the init hook.
+        if (m_goalProto == null)
+        {
+            return;
+        }
         updateTitle(m_lastCount);
+    }
+
+    // Fills in references the post-load init hook could not restore. Mafi runs [InitAfterLoad] methods inside
+    // a catch-all that only logs the failure (BlobReader.FinalizeLoadingTimeSliced), and DependencyResolver
+    // refuses a Resolve while it is already inside an external call — so that hook can legitimately fail
+    // part-way through and leave these null. Retrying here, on the sim thread, recovers such a save.
+    private bool tryRestoreRefs()
+    {
+        if (m_goalProto == null)
+        {
+            m_goalProto = Prototype as Proto;
+        }
+
+        if (m_resolver != null && (m_entitiesManager == null || m_constructionManager == null))
+        {
+            try
+            {
+                if (m_entitiesManager == null)
+                {
+                    m_entitiesManager = m_resolver.Resolve<EntitiesManager>();
+                }
+                if (m_constructionManager == null)
+                {
+                    m_constructionManager = m_resolver.Resolve<IConstructionManager>();
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!m_loggedMissingRefs)
+                {
+                    m_loggedMissingRefs = true;
+                    Log.Exception(ex, $"[Programable Network] Goal '{Prototype?.Id}' failed to resolve its managers.");
+                }
+            }
+        }
+
+        return m_goalProto != null && m_entitiesManager != null && m_constructionManager != null;
     }
 
     // Links to the last-placed controller and subscribes to construction events with AddNonSaveable, so the
     // listeners are not serialized and re-attach on the first update after load. Idempotent.
-    private void ensureSubscribed()
+    // Returns false when the goal has no live references to work with (a save whose post-load init did not
+    // complete): the goal then simply never progresses instead of throwing on every update.
+    private bool ensureSubscribed()
     {
         if (m_subscribed)
         {
-            return;
+            return true;
         }
+
+        if (!tryRestoreRefs())
+        {
+            if (!m_loggedMissingRefs)
+            {
+                m_loggedMissingRefs = true;
+                Log.Error($"[Programable Network] Goal '{Prototype?.Id}' has no live references after load "
+                    + $"(proto: {m_goalProto != null}, entities: {m_entitiesManager != null}, "
+                    + $"construction: {m_constructionManager != null}); it will not track progress.");
+            }
+            return false;
+        }
+
         m_subscribed = true;
 
         // On a fresh activation there is usually no controller yet (the preceding goal isn't done); on a
@@ -171,6 +245,7 @@ public class GoalToBuildControllerWithModules : Goal
         };
         m_constructionManager.EntityConstructed.AddNonSaveable(this, m_onConstructed);
         m_constructionManager.EntityStartedDeconstruction.AddNonSaveable(this, m_onDeconstruction);
+        return true;
     }
 
     // Highest entity id among constructed controllers = most recently placed (ids are monotonic).
@@ -198,24 +273,32 @@ public class GoalToBuildControllerWithModules : Goal
     protected override void SerializeData(BlobWriter writer)
     {
         base.SerializeData(writer);
-        writer.WriteInt(/* Version */ 1);
+        writer.WriteInt(/* Version */ VERSION_MANAGER_REFS);
+        EntitiesManager.Serialize(m_entitiesManager, writer);
+        writer.WriteGeneric(m_constructionManager);
     }
 
     protected override void DeserializeData(BlobReader reader)
     {
         base.DeserializeData(reader);
-        // Read (and currently ignore) the version stamp; gate future fields on it per the deserialization skill.
-        reader.ReadInt();
+        int version = reader.ReadInt();
+        if (version >= VERSION_MANAGER_REFS)
+        {
+            m_entitiesManager = EntitiesManager.Deserialize(reader);
+            m_constructionManager = reader.ReadGenericAs<IConstructionManager>();
+        }
         reader.RegisterInitAfterLoad(this, nameof(initAfterLoad), InitPriority.Normal);
     }
 
     [InitAfterLoad(InitPriority.Normal)]
     private void initAfterLoad(DependencyResolver resolver)
     {
-        // Prototype is restored by base.DeserializeData; rebuild the non-saved live references from it.
+        // Stash the resolver first, so tryRestoreRefs can retry later even if anything below fails.
+        m_resolver = resolver;
+
+        // Only version-1 saves reach here without their manager references; tryRestoreRefs does the rest and
+        // is deliberately the single place that touches Prototype / Resolve, so both paths behave the same.
         // m_subscribed defaults to false, so the listeners re-attach on the next UpdateInternal (if still active).
-        m_goalProto = (Proto)Prototype;
-        m_entitiesManager = resolver.Resolve<EntitiesManager>();
-        m_constructionManager = resolver.Resolve<IConstructionManager>();
+        tryRestoreRefs();
     }
 }
