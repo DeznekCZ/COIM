@@ -558,7 +558,7 @@ public class Modules : ModuleGroup, IModuleGroup {
 			.SetDescription("Maintains a running average of <b>input</b> over up to <b>count</b> field samples (default 10). Outputs current sample count to <b>count</b> and the running mean to <b>average</b>. Errors if count < 1.")
 			.AddCategory(Category.Arithmetic)
 			.AddInput("input", "Input")
-			.AddOutput("count", "Average")
+			.AddOutput("count", "Count")
 			.AddOutput("average", "Average")
 			.AddInt32Field("count", "Count", "Maximum number of values to be counted in average with default: 10", 10)
 			.Action(m => {
